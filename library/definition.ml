@@ -591,4 +591,3 @@ let directory_children tt stamp oid =
     match te with
       DirectoryDefinition def -> def#get_children
     | TermDefinition def -> error ["Term Table"; "root children"; "directory"; "not"] [oid] []
- ()

@@ -1331,7 +1331,7 @@ struct
             Goal _
           | Extract _
           | Identity _
-          | Unjustified _  as ext ->
+          | Unjustified _ ->
                if addr = [] then [] else (List.rev (List.tl addr))
           | Wrapped (_, ext) ->
                aux (0::addr) ext

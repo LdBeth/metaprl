@@ -209,7 +209,7 @@ let add_dform tbl df =
    (*
     * DEBUG: the raw mode can never be mentioned explicitly.
     *)
-   let modes =
+   let () =
       match df.dform_modes with
          AllModes
        | PrimitiveModes ->
@@ -926,10 +926,6 @@ let format_term base =
             print_term pprec buf eq t
       in
          aux
-
-   (* Print a list of terms *)
-   and print_termlist pprec buf eq l =
-      List.iter (print_entry pprec buf eq) l
 
    in
    fun buf t ->

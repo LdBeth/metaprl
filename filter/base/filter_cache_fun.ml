@@ -11,7 +11,7 @@
  * See the file doc/htmlman/default.html or visit http://metaprl.org/
  * for more information.
  *
- * Copyright (C) 1998 Jason Hickey, Cornell University
+ * Copyright (C) 1998-2005 MetaPRL Group, Cornell University and Caltech
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -807,7 +807,6 @@ struct
             NormalKind
          else
             let ty_shape = shape_of_term ty_term in
-            let ty_opname = opname_of_term ty_term in
             let ty_class_opname =
                try ShapeTable.find cache.typeenv ty_shape with
                   Not_found ->
@@ -1243,8 +1242,6 @@ struct
    let rec inline_sig_components watch barg cache path self items =
       if !debug_filter_cache then
          eprintf "FilterCache.inline_sig_components: %s%t" (string_of_path path) eflush;
-      (* Get the opname for this path *)
-      let opprefix = make_opname path in
 
       (* Get all the sub-summaries *)
       let inline_component summ (item, _) =
@@ -1343,8 +1340,6 @@ struct
          summ
 
    and inline_str_components barg cache path self (items : (term, meta_term, str_proof, str_resource, str_ctyp, str_expr, str_item) summary_item_loc list) =
-      (* Get the opname for this path *)
-      let opprefix = make_opname path in
 
       (* Get all the sub-summaries *)
       let inline_component summ (item, _) =

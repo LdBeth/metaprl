@@ -206,9 +206,7 @@ let rec param_of_mbparameter mbparameter =
   else if bequal b !mbs_MString then make_param (MString (Lm_symbol.add (string_value mbparameter)))
   else if bequal b !mbs_MToken then make_param (MToken (Lm_symbol.add (string_value mbparameter)))
   else if bequal b !mbs_MLongInteger then make_param (MNumber (Lm_symbol.add (string_value mbparameter)))
-  else let ((x, y) as fg) = dest_lint32 b in failwith "param_of_mbparameter1"(* ["mbparameter_of_parameter1"; "not"] [] [(inatural_term x); (inatural_term y)]*)
-
-
+  else failwith "param_of_mbparameter1"(* let ((x, y) as fg) = dest_lint32 b in f ["mbparameter_of_parameter1"; "not"] [] [(inatural_term x); (inatural_term y)]*)
 
 let opname_of_param p =
   match (dest_param p) with

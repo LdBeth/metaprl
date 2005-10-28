@@ -13,7 +13,7 @@
  * See the file doc/htmlman/default.html or visit http://metaprl.org/
  * for more information.
  *
- * Copyright (C) 1998 Jason Hickey, Cornell University
+ * Copyright (C) 1998-2005 MetaPRL Group, Cornell University and Caltech
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -29,8 +29,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 open Lm_debug
 open Lm_symbol
@@ -260,7 +260,6 @@ struct
     * Variables are wrapped.
     *)
    let dest_var t =
-      let loc = dest_loc "dest_var" t in
       let t = one_subterm "dest_var_t" t in
          if is_var_term t then
             string_of_symbol (ToTerm.Term.dest_var t)
@@ -1031,11 +1030,6 @@ struct
             let _loc, s, t = dest_loc_string_term "dest_char_patt" t in
                <:patt< $chr:s$ >>, t
          in add_patt "patt_char" dest_char_patt
-      and patt_lid_op =
-         let dest_lid_patt t =
-            let _loc, t = dest_loc_term "dest_lid_patt" t in
-               <:patt< $lid:dest_var t$ >>, t
-         in add_patt "patt_lid" dest_lid_patt
       and patt_uid_op =
          let dest_patt_id t =
             if is_var_term t then
@@ -1469,7 +1463,11 @@ struct
                   mk_simple_named_term type_lab_op loc s [mk_type t]
              | MLast.TyPol (_, strs, t) ->
                   mk_simple_term type_pol_op loc [mk_olist_term (List.map (mk_string type_class_id_op) strs); mk_type t]
-
+             | t ->
+                  (* XXX: TODO: Fill in the appropriate TyPrv entry, once OCaml 3.08 compatibility is no longer required *)
+                  Stdpp.raise_with_loc (MLast. loc_of_ctyp t) (Invalid_argument "You are using a feature that was added in OCaml 3.09.
+MetaPRL does not support this yet in order to remain compatible with OCaml 3.08")
+            
    (*
     * Signatures.
     *)
@@ -2468,7 +2466,7 @@ struct
 
    let wrap_default s dest def t =
       try dest t with
-         FormatError (s', t) as exn ->
+         FormatError (s', t) ->
             eprintf "Warning: FormatError: %s.%s term is omitted\n" s s';
             eprintf "Term: %s\n" (Simple_print.SimplePrint.short_string_of_term t);
             eprintf "\tThis is usually because the OCaml term format has changed\n";

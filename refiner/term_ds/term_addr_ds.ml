@@ -6,7 +6,7 @@
  * See the file doc/htmlman/default.html or visit http://metaprl.org/
  * for more information.
  *
- * Copyright (C) 1998-2003 Aleksey Nogin, Cornell University
+ * Copyright (C) 1998-2005 MetaPRL Group, Cornell University and Caltech
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -22,7 +22,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Authors: Aleksey Nogin <nogin@cs.caltech.edu>
+ * Author: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 
 (************************************************************************
@@ -331,7 +331,7 @@ struct
       let i = make_index FAIL i (SeqHyp.length s.sequent_hyps) in
       let hyp, arg =
          match SeqHyp.get s.sequent_hyps i with
-            Hypothesis (v,t) as hyp ->
+            Hypothesis (v,t) ->
                let term, arg = f t in
                   Hypothesis (v,term), arg
           | Context (v, conts, ts) ->

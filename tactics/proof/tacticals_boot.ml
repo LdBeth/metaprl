@@ -10,7 +10,7 @@
  * See the file doc/htmlman/default.html or visit http://metaprl.org/
  * for more information.
  *
- * Copyright (C) 1998 Jason Hickey, Cornell University
+ * Copyright (C) 1998-2005 MetaPRL Group, Cornell University and Caltech
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -26,8 +26,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *
  *)
 
@@ -167,7 +167,6 @@ struct
 
    let progressT tac =
       let aux p =
-         let t = Sequent.goal p in
          let tac' pp =
             match pp with
                [p'] ->
@@ -591,8 +590,7 @@ struct
    let onMHypsT = onMClausesT
 
 	let rec onAllT baseT thenT tac i = function
-	 | [hd] ->
-			let i' = pred i in
+	   [hd] ->
 			(match hd with
 				Hypothesis _ ->
 					tac i

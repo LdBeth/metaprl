@@ -236,8 +236,6 @@ declare patt_float[f:s] : TyOCaml
  * Binding.
  *)
 declare patt_var{x. 'p : TyOCaml} : TyOCaml
-declare patt_lid{'p1 : TyOCaml; 'p2 : TyOCaml} : TyOCaml
-declare patt_lid[name:s] : TyOCaml
 declare patt_uid{'p1 : TyOCaml; 'p2 : TyOCaml} : TyOCaml
 declare patt_uid[name:s] : TyOCaml
 
@@ -649,7 +647,6 @@ declare patt_ifelse[start:n, finish:n]{'pwe : TyOCaml; 'pwel : TyOCaml} : TyOCam
 declare patt_if[start:n, finish:n]{'pwe : TyOCaml} : TyOCaml
 declare patt_in[start:n, finish:n]{'e1 : TyOCaml} : TyOCaml
 declare patt_int[start:n, finish:n, i:n]{'p1 : TyOCaml} : TyOCaml
-declare patt_lid[start:n, finish:n]{'p1 : TyOCaml; 'p2 : TyOCaml} : TyOCaml
 declare patt_list_arg[start:n, finish:n]{'p1 : TyOCaml} : TyOCaml
 declare patt_list_end[start:n, finish:n]{'p1 : TyOCaml} : TyOCaml
 declare patt_list[start:n, finish:n]{'p1 : TyOCaml} : TyOCaml

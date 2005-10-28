@@ -62,7 +62,7 @@ let _ =
  *	and a local one. We assume local is refiner and remote may be a library or editor.
  *	Any eval request contains environment record. Any broadcast is matched against
  *	the broadcast filter ( matches lib stamp and member table types ).
-*	Configure will add to environment.
+ *	Configure will add to environment.
  *)
 
 
@@ -219,7 +219,6 @@ let ipassport_param = make_param (token "!passport")
  *)
 let broadcast_eval env tstamp commit_stamp bcasts =
   print_string "num bcasts "; print_string (string_of_int (List.length bcasts));  print_newline();
-  let count = ref 1 in
   map (function bipass ->
     print_string ".";
     let ipass = term_of_unbound_term bipass in
@@ -521,8 +520,7 @@ let connect orb name host rport =
 
   let connection =  { link = tlink; orb = orb; ro_address = address } in
   orb.connections <- (connection :: orb.connections);
-  let rsp = config_send_state
-    connection (iinform_term (ienvironment_address_term ["JPROVER"])) in
+  config_send_state connection (iinform_term (ienvironment_address_term ["JPROVER"]));
   connection
 
 let irevoke_parameter = make_param (token "!revoke")
@@ -676,8 +674,8 @@ let broadcasts_of_istart_term s =
     { term_op = o;
       term_terms = [_; _; _; bs] } when opeq o istart_op
      -> (term_of_unbound_term bs)
-  |_ -> ( let name = (opname_of_term s) in
-	 (*print_term s;*) error ["orb"; "start"; "broadcasts"; "not"; "start"] [] [s])
+  |_ ->
+	 (*print_term s;*) error ["orb"; "start"; "broadcasts"; "not"; "start"] [] [s]
 
 let start_broadcasts e =
   let t =

@@ -2630,7 +2630,7 @@ struct
             false
        | Empty :: r ->    (* may become possible after purity *)
             exists_solved_Zero_At r slist
-       | NodeAt ({pospos=pospos; pol=pospol} as pos) :: r ->
+       | NodeAt {pospos=pospos; pol=pospol} :: r ->
             if ((Set.mem slist pospos) or (pospol = One)) then  (* recall slist is the unsolved list *)
                exists_solved_Zero_At r slist
             else
@@ -4384,7 +4384,7 @@ let do_prove mult_limit hyps concls calculus =
       let reconstr_proof =
 			reconstruct ftree red_ordering sigmaQ ext_proof calculus consts
 		in
-      let sequent_proof = make_test_interface consts reconstr_proof in
+      let _sequent_proof = make_test_interface consts reconstr_proof in
       open_box 0;
       force_newline ();
       force_newline ();

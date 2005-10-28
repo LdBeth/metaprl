@@ -9,7 +9,7 @@
  * See the file doc/htmlman/default.html or visit http://metaprl.org/
  * for more information.
  *
- * Copyright (C) 1998 Alexey Nogin, Cornell University
+ * Copyright (C) 1998-2005 MetaPRL Group, Cornell University and Caltech
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -25,7 +25,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Authors: Alexey Nogin
+ * Author: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 INCLUDE "refine_error.mlh"
 
@@ -749,7 +749,6 @@ struct
    let rec param_vars_term vars t =
       match get_core t with
          Sequent seq ->
-            let hyps = seq.sequent_hyps in
             let vars =
                SeqHyp.fold (fun vars _ hyp ->
                      match hyp with

@@ -93,7 +93,7 @@ let faux_mbs bterms =
 let faux_ascii bterms =
   let persist = term_of_unbound_term (hd bterms) and
       data = term_of_unbound_term (hd (tl bterms)) in
-  let ((s, y) as st) = (Db.stamp_and_type_of_idata_persist_term persist) in
+  let s, y = Db.stamp_and_type_of_idata_persist_term persist in
   let data' = Db.db_read s y in
   print_newline();
   if alpha_equal data data' then print_string "+" else print_string "-" ;
@@ -102,7 +102,7 @@ let faux_ascii bterms =
 
 let faux_ascii_quick bterms =
   let persist = term_of_unbound_term (hd bterms) in
-  let ((s, y) as st) = (Db.stamp_and_type_of_idata_persist_term persist) in
+  let s, y = Db.stamp_and_type_of_idata_persist_term persist in
   let data = Db.db_read s y in
   print_newline();
   print_string "faq";
@@ -111,13 +111,13 @@ let faux_ascii_quick bterms =
 
 let faux_ascii_file bterms =
   let persist = term_of_unbound_term (hd bterms) in
-  let ((s, y) as st) = (Db.stamp_and_type_of_idata_persist_term persist) in
+  let s, y = Db.stamp_and_type_of_idata_persist_term persist in
   let data = Db.db_read s y in
   print_newline();
   print_string "faf";
   print_newline();
   let filename = "/amd/noon/y/nuprl/nuprll/nuprl-light/library/mbnode.txt" in
-  let rterm = Mbterm.write_node_to_file (Mbterm.mbterm_of_term data) filename in
+  Mbterm.write_node_to_file (Mbterm.mbterm_of_term data) filename;
   print_newline();
   print_string "aw";
   print_newline();

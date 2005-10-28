@@ -146,12 +146,6 @@ dform patt_uid_df1 : patt_format{patt_uid{patt_uid[name:s]; 'p1}; 'p2} =
 dform patt_uid_df2 : patt_format{patt_uid[start:n, finish:n]{'p1; 'p2}; 'p3} =
    patt_format{patt_uid{'p1; 'p2}; 'p3}
 
-dform patt_lid_df1 : patt_format{patt_lid{patt_lid[name:s]; 'p1}; 'p2} =
-   patt_format{'p1; ocons{'name; 'p2}}
-
-dform patt_lid_df2 : patt_format{patt_lid[start:n, finish:n]{'p1; 'p2}; 'p3} =
-   patt_format{patt_lid{'p1; 'p2}; 'p3}
-
 (*
  * Projection.
  *)
