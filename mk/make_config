@@ -16,46 +16,6 @@ MakeConfig(name) =
 # put it into mk/config.local or edit mk/make_config.
 
 #
-# Do you want native and/or byte code?
-# Set COMPILATION_MODE to one of the following vaues:
-#    byte - compile everything bytecode
-#    native - compile everything to native code
-#    both - compile both native and bytecode
-#    mixed - compile the MetaPRL preprocessor to native code,
-#            and compile the MetaPRL theories and the interactive
-#            proof editor to bytecode.
-#
-# The default value is "mixed" since it is the most efficient mode
-# for the theory development.
-#
-COMPILATION_MODE = $(COMPILATION_MODE)
-
-#
-# Term module to use: ds or std
-# See doc/htmlman/developer-guide/term_modules.html or
-# http://metaprl.org/developer-guide/term_modules.html
-# for more information.
-# If not sure, use ds
-#
-TERMS = $(TERMS)
-
-#
-# What representation to use for hypothesis and conclusion lists
-# Possible values: Lm_array, Lm_splay (for splay trees)
-# If not sure, use Lm_array
-#
-SEQ_SET = $(SEQ_SET)
-
-#
-# Refiner verbosity: VERBOSE or SIMPLE
-# See doc/htmlman/developer-guide/refiner_verb_and_simp.html or
-# http://metaprl.org/developer-guide/refiner_verb_and_simp.html
-# for more information.
-# If not sure, use VERBOSE
-#
-REFINER = $(REFINER)
-
-#
 # This is the list of theory directories theory/*
 # that you want to compile.  You want to include at least
 #    THEORIES = base
@@ -72,6 +32,25 @@ REFINER = $(REFINER)
 #    THEORIES = base mytheory
 #
 THEORIES = $(THEORIES)
+
+#####################################################################################
+# It is normally safe to leave the remaining variables set to their default values.
+#
+
+#
+# Do you want native and/or byte code?
+# Set COMPILATION_MODE to one of the following vaues:
+#    byte - compile everything bytecode
+#    native - compile everything to native code
+#    both - compile both native and bytecode
+#    mixed - compile the MetaPRL preprocessor to native code,
+#            and compile the MetaPRL theories and the interactive
+#            proof editor to bytecode.
+#
+# The default value is "mixed" since it is the most efficient mode
+# for the theory development.
+#
+COMPILATION_MODE = $(COMPILATION_MODE)
 
 #
 # The OpenSSL package (available in Linux at least) (true/false)
@@ -106,16 +85,6 @@ $(if $(NCURSES_AVAILABLE), $"NCURSES_ENABLED = $(NCURSES_ENABLED)", $"# NCURSES_
 #
 CC = $(CC)
 CFLAGS = $(CFLAGS)
-
-#
-# Whether to build MetaPRL native code with profiling enabled
-# (see man gprof).
-#
-# When enabled, overrides NATIVE_ENABLED and BYTE_ENABLED.
-# When set to "compact", passes the "-compact" option to ocamlopt
-# which makes all memory allocations more obvious in profiling graphs.
-#
-NATIVE_PROFILING_ENABLED = $(NATIVE_PROFILING_ENABLED)
 """
 
     CONFIG3 = $"""
@@ -128,6 +97,41 @@ LATEX = $(LATEX)
 # Whether to compile in various test theories and files (true/false)
 #
 TESTS_ENABLED = $(TESTS_ENABLED)
+
+#
+# Refiner verbosity: VERBOSE or SIMPLE
+# See doc/htmlman/developer-guide/refiner_verb_and_simp.html or
+# http://metaprl.org/developer-guide/refiner_verb_and_simp.html
+# for more information.
+# If not sure, use VERBOSE
+#
+REFINER = $(REFINER)
+
+#
+# Term module to use: ds or std
+# See doc/htmlman/developer-guide/term_modules.html or
+# http://metaprl.org/developer-guide/term_modules.html
+# for more information.
+# If not sure, use ds
+#
+TERMS = $(TERMS)
+
+#
+# What representation to use for hypothesis and conclusion lists
+# Possible values: Lm_array, Lm_splay (for splay trees)
+# If not sure, use Lm_array
+#
+SEQ_SET = $(SEQ_SET)
+
+#
+# Whether to build MetaPRL native code with profiling enabled
+# (see man gprof).
+#
+# When enabled, overrides NATIVE_ENABLED and BYTE_ENABLED.
+# When set to "compact", passes the "-compact" option to ocamlopt
+# which makes all memory allocations more obvious in profiling graphs.
+#
+NATIVE_PROFILING_ENABLED = $(NATIVE_PROFILING_ENABLED)
 
 #
 # If ENSROOT is defined, it should point
