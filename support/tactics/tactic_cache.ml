@@ -1195,7 +1195,7 @@ let find_node_children extract { node_world = world } subgoals =
  * In the process, we hash the outgoing subgoals to squash
  * the DAG.
  *)
-let set_node_children extract ({ node_goal = { goal_subgoals = subgoals } as goal } as node) =
+let set_node_children extract ({ node_goal = { goal_subgoals = subgoals } } as node) =
    match subgoals with
       Unsolvable ->
          node.node_status <- Unprovable

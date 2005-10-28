@@ -581,11 +581,10 @@ let proof_dir modname name =
  *)
 let parse_path shell name =
    let updir rev_dir count =
-      let length = List.length rev_dir in
-         if count >= List.length rev_dir then
-            []
-         else
-            Lm_list_util.nth_tl count rev_dir
+      if count >= List.length rev_dir then
+         []
+      else
+         Lm_list_util.nth_tl count rev_dir
    in
    let rec collect rev_dir names =
       match names with

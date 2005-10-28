@@ -46,6 +46,7 @@ open Lm_thread
 open Opname
 open Precedence
 open Refiner.Refiner.Term
+open Refiner.Refiner.TermOp
 
 open Theory
 
@@ -209,12 +210,11 @@ struct
 
       let list_dforms name =
          synchronize (fun shell ->
-               let opname = make_opname [name] in
                let mk_dform_option = function
                   DFormInheritPrec ->
                      inherit_term
-                | DFormPrec name' ->
-                     mk_simple_term prec_op [mk_simple_term (make_opname [name'; name]) []]
+                | DFormPrec s ->
+                     mk_string_term prec_op s
                 | DFormParens ->
                      parens_term
                in
@@ -251,8 +251,8 @@ struct
                 | (h, _) :: t ->
                      let precs = collect t in
                         match h with
-                           Prec name' ->
-                              mk_simple_term (make_opname [name'; name]) [] :: precs
+                           Prec s ->
+                              mk_string_term prec_op s :: precs
                          | _ ->
                               precs
                in
@@ -271,8 +271,8 @@ struct
                                      prec_right = right
                            } ->
                               begin
-                                 let left = mk_simple_term (make_opname [left; name]) [] in
-                                 let right = mk_simple_term (make_opname [right; name]) [] in
+                                 let left = mk_string_term prec_op left in
+                                 let right = mk_string_term prec_op right in
                                     match rel with
                                        LTRelation ->
                                           ("lt", left, right) :: rels

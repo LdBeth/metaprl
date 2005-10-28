@@ -60,7 +60,7 @@ let handle_syscall command =
       match command with
          SyscallRestart ->
             Shell_current.flush ();
-            (try Unix.execv Sys.argv.(0) Sys.argv; -1 with
+            (try Unix.execv Sys.argv.(0) Sys.argv with
                 Unix.Unix_error (errno, funinfo, arginfo) ->
                    eprintf "Execv failed: %s %s(%s)@." (Unix.error_message errno) funinfo arginfo;
                    -1)

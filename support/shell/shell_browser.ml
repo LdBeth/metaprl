@@ -461,7 +461,6 @@ struct
    let session_entry =
       let default =
          let id = Lm_thread_shell.get_pid () in
-         let empty_buffer = Buffer.create 1 in
             { session_id              = id;
               session_cwd             = "/";
               session_menu_version    = 0;
@@ -563,15 +562,10 @@ struct
                               session.session_styles          <- None)) ()) pids
 
    let invalidate_directory session cwd =
-      let { session_menu_version    = menu_version;
-            session_buttons_version = buttons_version;
-            session_content_version = content_version
-          } = session
-      in
-         Session.add_directory cwd;
-         Session.add_file (Top.filename ());
-         session.session_cwd <- cwd;
-         invalidate_session_directories ()
+      Session.add_directory cwd;
+      Session.add_file (Top.filename ());
+      session.session_cwd <- cwd;
+      invalidate_session_directories ()
 
    let maybe_invalidate_directory session =
       let cwd = Top.pwd () in

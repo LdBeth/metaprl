@@ -377,7 +377,6 @@ let load_aux arg pack_info =
       State.write pack_entry (fun pack ->
             let { pack_cache = cache } = pack in
                try
-                  let path = [name] in
                   let info = Cache.StrFilterCache.load cache arg name ImplementationType AnySuffix in
                   let pack_str =
                      { pack_str_info = info;
@@ -571,7 +570,7 @@ let group_of_module pack name =
  *)
 let save_aux code arg pack_info =
    auto_loading_str arg pack_info (function
-      { pack_str = Some { pack_str_info = info } } as package ->
+      { pack_str = Some { pack_str_info = info } } ->
          Cache.StrFilterCache.set_mode info InteractiveSummary;
          Cache.StrFilterCache.save info arg (OnlySuffixes [code]);
          set_status pack_info PackUnmodified
@@ -587,7 +586,7 @@ let backup = save_aux "cmoz"
  *)
 let revert pack_info =
    synchronize_node pack_info (function
-         { pack_info = pack_entry; pack_str = Some str_info } as package ->
+         { pack_info = pack_entry; pack_str = Some str_info } ->
             let { pack_str_info = info; pack_parse = parse_arg } = str_info in
                Cache.StrFilterCache.revert_proofs info parse_arg;
                set_status pack_info PackUnmodified

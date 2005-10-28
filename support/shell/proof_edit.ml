@@ -19,7 +19,7 @@
  * See the file doc/htmlman/default.html or visit http://metaprl.org/
  * for more information.
  *
- * Copyright (C) 1998 Jason Hickey, Cornell University
+ * Copyright (C) 1998-2005 MetaPRL Group, Cornell University and Caltech
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -433,7 +433,6 @@ let check_ped window refiner opname ped =
             let c1, c2 = node_count_of_ped ped in
                RefIncomplete (c1, c2)
        | Proof.StatusComplete ->
-            let proof = proof_of_ped ped in
             let c1, c2 = node_count_of_ped ped in
                try
                   RefComplete (c1, c2, Refine.compute_dependencies refiner opname)
@@ -495,7 +494,6 @@ let display_term_aux newline dfm term =
       DisplayText ->
          Dform.format_term dfm.df_base buf term;
          if newline then Lm_rformat.format_newline buf;
-         let width = Mp_term.term_width Pervasives.stdout dfm.df_width in
          Lm_rformat_text.print_text_channel (Mp_term.term_width Pervasives.stdout dfm.df_width) buf stdout;
          flush stdout
     | DisplayTex ->

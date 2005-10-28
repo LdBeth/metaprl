@@ -1485,7 +1485,7 @@ struct
     * Make a term with only strings parameters.
     *)
    let mk_strings_term opname l =
-      mk_xlist_term (List.map (fun s -> mk_string_param_term opname s []) l)
+      mk_xlist_term (List.map (fun s -> mk_string_term opname s) l)
 
    (*
     * Parameters.
@@ -1521,16 +1521,16 @@ struct
     * Display form options.
     *)
    let mk_dform_mode mode =
-      mk_string_param_term dform_mode_op mode []
+      mk_string_term dform_mode_op mode
 
    let mk_dform_except_mode mode =
-      mk_string_param_term dform_except_mode_op mode []
+      mk_string_term dform_except_mode_op mode
 
    let mk_dform_opt = function
       DFormInheritPrec ->
          mk_simple_term dform_prec_op []
     | DFormPrec s ->
-         mk_string_param_term dform_prec_op s []
+         mk_string_term dform_prec_op s
     | DFormParens ->
          mk_simple_term dform_parens_op []
 
@@ -1574,10 +1574,7 @@ struct
       (name, { resource_input = input;
                resource_output = output
        }) =
-      mk_string_param_term resource_op name [
-         convert.ctyp_f input;
-         convert.ctyp_f output
-      ]
+      mk_string_dep0_dep0_term resource_op name (convert.ctyp_f input) (convert.ctyp_f output)
 
    let term_of_rewrite convert { rw_name = name;
                                     rw_redex = redex;
@@ -1674,12 +1671,12 @@ struct
    let term_of_typeclass_parent = function
       ParentExtends opname ->
          let t = mk_term (mk_op opname []) [] in
-            mk_string_param_term parent_kind_op "extends" [t]
+            mk_string_dep0_term parent_kind_op "extends" t
     | ParentInclude opname ->
          let t = mk_term (mk_op opname []) [] in
-            mk_string_param_term parent_kind_op "include" [t]
+            mk_string_dep0_term parent_kind_op "include" t
     | ParentNone ->
-         mk_string_param_term parent_kind_op "none" []
+         mk_string_term parent_kind_op "none"
 
    let shape_normal_term = mk_term (mk_op shape_normal_op []) []
    let shape_iform_term = mk_term (mk_op shape_iform_op []) []
@@ -1700,21 +1697,21 @@ struct
    let mk_ty_param_term convert param =
       match param with
          TyNumber ->
-            mk_string_param_term ty_param_op "n" []
+            mk_string_term ty_param_op "n"
        | TyString ->
-            mk_string_param_term ty_param_op "s" []
+            mk_string_term ty_param_op "s"
        | TyShape ->
-            mk_string_param_term ty_param_op "sh" []
+            mk_string_term ty_param_op "sh"
        | TyOperator ->
-            mk_string_param_term ty_param_op "op" []
+            mk_string_term ty_param_op "op"
        | TyToken t ->
-            mk_string_param_term ty_param_op "t" [convert.term_f t]
+            mk_string_dep0_term ty_param_op "t" (convert.term_f t)
        | TyLevel ->
-            mk_string_param_term ty_param_op "l" []
+            mk_string_term ty_param_op "l"
        | TyVar ->
-            mk_string_param_term ty_param_op "v" []
+            mk_string_term ty_param_op "v"
        | TyQuote ->
-            mk_string_param_term ty_param_op "@" []
+            mk_string_term ty_param_op "@"
 
    let mk_ty_bterm_term convert bterm =
       let { ty_bvars = bvars; ty_bterm = term } = bterm in
@@ -1745,7 +1742,7 @@ struct
       in
       let term = convert.term_f term in
       let res = term_of_resources convert res in
-         mk_string_param_term term_def_op name [term; res]
+         mk_string_dep0_dep0_term term_def_op name term res
 
    let term_of_declare_type convert shapeclass ty_term ty_opname =
       let shapeclass = mk_shapeclass_term shapeclass in
@@ -1804,25 +1801,25 @@ struct
     | Parent par ->
          term_of_parent convert par
     | Module (name, info) ->
-         mk_string_param_term module_op name [mk_xlist_term (term_list convert info)]
+         mk_string_dep0_term module_op name (mk_xlist_term (term_list convert info))
     | DForm df ->
          term_of_dform convert df
     | Prec p ->
-         mk_string_param_term prec_op p []
+         mk_string_term prec_op p
     | PrecRel { prec_rel = rel; prec_left = left; prec_right = right } ->
          mk_prec_rel_term rel left right
     | Id id ->
          mk_number_term id_op (Lm_num.num_of_int id)
     | Resource (name, r) ->
-         mk_string_param_term resource_op name [convert.resource_f r]
+         mk_string_dep0_term resource_op name (convert.resource_f r)
     | Improve { improve_name = name; improve_expr = expr } ->
-         mk_string_param_term improve_op name [mk_bnd_expr convert expr]
+         mk_string_dep0_term improve_op name (mk_bnd_expr convert expr)
     | MLGramUpd (Infix op) ->
-         mk_string_param_term infix_op op []
+         mk_string_term infix_op op
     | MLGramUpd (Suffix op) ->
-         mk_string_param_term suffix_op op []
+         mk_string_term suffix_op op
     | MagicBlock { magic_name = name; magic_code = items } ->
-         mk_string_param_term magic_block_op name [mk_xlist_term (List.map convert.item_f items)]
+         mk_string_dep0_term magic_block_op name (mk_xlist_term (List.map convert.item_f items))
     | Comment t ->
          mk_simple_term comment_op [convert.term_f t]
     | PRLGrammar _ ->
