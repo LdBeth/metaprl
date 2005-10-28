@@ -165,7 +165,7 @@ let mk_var_contexts_null loc v i =
       Stdpp.raise_with_loc loc (Failure "No context known for SO variables (need to specify contexts explicitly when not inside a rule")
 
 let default_saved_tactic =
-   let loc = dummy_loc in
+   let _loc = dummy_loc in
       ("\"no saved tactic\"", <:expr< $str: "no saved tactic"$ >>)
 
 (*
@@ -277,7 +277,7 @@ end);;
  * Extend the grammar.
  *)
 let save_term state t =
-   let loc = dummy_loc in
+   let _loc = dummy_loc in
    let v = state.state_inline_var in
       state.state_inline_var <- succ v;
       state.state_inline_terms <- (v, t) :: state.state_inline_terms;

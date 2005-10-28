@@ -63,7 +63,7 @@ struct
 
       refine_item:
          [[ e = expr ->
-             Shell_state.set_tactic (Shell_state.get_text loc) e;
+             Shell_state.set_tactic (Shell_state.get_text _loc) e;
              e
           ]];
    END

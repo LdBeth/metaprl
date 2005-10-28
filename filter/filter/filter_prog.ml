@@ -105,6 +105,8 @@ type wrap_arg =
  * TERMS                                                                *
  ************************************************************************)
 
+let () = Stdpp.loc_name := "_loc"
+
 (*
  * Convert between expressions and terms.
  *)
