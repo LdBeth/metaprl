@@ -108,7 +108,7 @@ let bool name default info set =
       in
          set name v flag
    in
-   let arg_set name v =
+   let arg_set _ v =
       if default then
          Arg.Clear v
       else

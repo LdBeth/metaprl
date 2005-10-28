@@ -981,13 +981,13 @@ let serve_http start connect info port =
             Lm_ssl.serve fd passwd_name dh_name
        | None ->
             let ssl = Lm_ssl.socket passwd_name in
-               Lm_ssl.bind ssl Unix.inet_addr_any port;
+               Lm_ssl.bind ssl inet_addr port;
                Lm_ssl.listen ssl dh_name 10;
                ssl
    in
    let info = start ssl info in
       if Thread.enabled then
-         for i = 2 to !http_threads do
+         for _i = 2 to !http_threads do
             ignore (Thread.create (serve connect ssl) info)
          done;
       serve connect ssl info;
