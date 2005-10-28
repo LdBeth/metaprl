@@ -296,6 +296,12 @@ VersionCheck($(CAMLP4_VERSION),     $(CAMLP4))
 VersionCheck($(CAMLP4R_VERSION),    $(CAMLP4R))
 VersionCheck($(CAMLP4O_VERSION),    $(CAMLP4O))
 
+#
+# XXX: This is here to make sure that Camlp4 3.08 acts the same way as 3.09
+# (in 3.08 the default value is loc, but in 3.09 it's _loc).
+#
+LOC = -loc _loc
+
 %.cmo %.cmi: $(OCAMLC_VERSION)
 %.cmx: $(OCAMLOPT_VERSION)
 

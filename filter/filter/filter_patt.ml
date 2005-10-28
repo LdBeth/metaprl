@@ -1,4 +1,4 @@
-(*x
+(*
  * Camlp4 implementation of term patterns.
  * For now, we only allow patterns that are
  * one level deep: the patterns can not be
@@ -68,7 +68,7 @@ let is_xconcl_term = is_no_subterms_term xconcl_opname
  *    _
  *    __.*
  *)
-let patt_of_var loc v =
+let patt_of_var _loc v =
    let s = Lm_symbol.to_string v in
    let len = String.length s in
       if len = 0 || s.[0] = '_' && (len = 1 || s.[1] = '_') then
@@ -86,7 +86,7 @@ let patt_of_fso_var loc t =
  * Turn a term into a pattern expression.
  * The bterms should all be vars.
  *)
-let build_term_patt loc term =
+let build_term_patt _loc term =
    let { term_op = op; term_terms = bterms } = dest_term term in
    let { op_name = op; op_params = params } = dest_op op in
 
@@ -95,7 +95,7 @@ let build_term_patt loc term =
    let ops = List.fold_right (fun x l -> <:patt< [$str:String.escaped x$ :: $l$] >>) ops <:patt< [] >> in
 
    (* Parameter patterns *)
-   let patt_of_var = patt_of_var loc in
+   let patt_of_var = patt_of_var _loc in
    let params =
       List.map (fun param ->
             match dest_param param with
@@ -183,7 +183,7 @@ let build_term_patt loc term =
  * The _final_ context matches all the rest of the hyps.
  * If there is no context, then the match must be exact.
  *)
-let build_sequent_patt loc t =
+let build_sequent_patt _loc t =
    let { sequent_args = args;
          sequent_hyps = hyps;
          sequent_concl = concl
@@ -203,7 +203,7 @@ let build_sequent_patt loc t =
    in
 
    (* Pattern for the arguments *)
-   let args = build_term_patt loc args in
+   let args = build_term_patt _loc args in
 
    (* Collect the hyps--if there is a context, it should be final *)
    let rec build_hyps hyps =
@@ -211,11 +211,11 @@ let build_sequent_patt loc t =
          [] ->
             <:patt< [] >>
        | Hypothesis (v, t) :: hyps ->
-            let v = patt_of_var loc v in
-            let p = patt_of_fso_var loc t in
+            let v = patt_of_var _loc v in
+            let p = patt_of_fso_var _loc t in
                <:patt< [Term_sig.Hypothesis ($v$, $p$) :: $build_hyps hyps$] >>
        | [Context (v, _, _)] ->
-            let v = patt_of_var loc v in
+            let v = patt_of_var _loc v in
                <:patt< $v$ >>
        | Context (v, _, _) :: _ ->
             raise (Invalid_argument ("Context var " ^ string_of_symbol v ^ " should be the final hyp"))
@@ -225,7 +225,7 @@ let build_sequent_patt loc t =
    (* Collect the goals *)
    let concl =
       if is_fso_var_term concl then
-         <:patt< $patt_of_fso_var loc concl$ >>
+         <:patt< $patt_of_fso_var _loc concl$ >>
       else if is_xconcl_term concl then
          <:patt< _ >>
       else
@@ -238,14 +238,14 @@ let build_sequent_patt loc t =
  *)
 let build_term_patt t =
    (* Fake the location for now *)
-   let loc = dummy_loc in
+   let _loc = dummy_loc in
 
    if is_var_term t then
       <:patt< $lid: string_of_symbol (dest_var t)$ >>
    else if is_sequent_term t then
-      build_sequent_patt loc t
+      build_sequent_patt _loc t
    else
-      build_term_patt loc t
+      build_term_patt _loc t
 
 (*!
  * @docoff

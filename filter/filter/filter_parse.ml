@@ -157,7 +157,7 @@ let get_string_param loc t =
 (*
  * Wrap a code block with a binding variable.
  *)
-let wrap_code loc v body =
+let wrap_code _loc v body =
    let v =
       match v with
          Some v -> string_of_symbol (dest_var v)
@@ -1047,27 +1047,27 @@ let () = add_quot "dform" true
 let () = add_quot "doc" false
 let () = add_quot "topdoc" false
 
-let rec mk_list_expr loc = function
+let rec mk_list_expr _loc = function
    [] -> <:expr< [] >>
- | hd :: tl -> <:expr< $uid:"::"$ $hd$ $mk_list_expr loc tl$ >>
+ | hd :: tl -> <:expr< $uid:"::"$ $hd$ $mk_list_expr _loc tl$ >>
 
-let expr_of_bvar_con loc = function
+let expr_of_bvar_con _loc = function
    ConBVarConst s -> <:expr< $str: s$ >>
  | ConBVarExpr e -> e
 
-let expr_of_pcon loc = function
+let expr_of_pcon _loc = function
    ConPStr s, shape ->
       let shape =
          match shape with
             ShapeString -> "String"
           | _ ->
-               Stdpp.raise_with_loc loc (Invalid_argument "\"con\" quotation: string constant parameter must be of string kind")
+               Stdpp.raise_with_loc _loc (Invalid_argument "\"con\" quotation: string constant parameter must be of string kind")
       in
          <:expr< Refiner.Refiner.Term.make_param (Term_sig.$uid:shape$ $str:s$) >>
  | ConPToken opname, shape ->
       let strings = Opname.dest_opname opname in
       let strings = List.map (fun s -> <:expr< $str: s$ >>) strings in
-          <:expr< Refiner.Refiner.Term.make_param (Term_sig.Token (Opname.make_opname $mk_list_expr loc strings$)) >>
+          <:expr< Refiner.Refiner.Term.make_param (Term_sig.Token (Opname.make_opname $mk_list_expr _loc strings$)) >>
  | ConPMeta l, ShapeLevel ->
       <:expr<
          Refiner.Refiner.Term.make_param
@@ -1082,7 +1082,7 @@ let expr_of_pcon loc = function
           | ShapeToken -> "MToken"
           | ShapeShape -> "MShape"
           | ShapeOperator -> "MOperator"
-          | _ -> Stdpp.raise_with_loc loc (Invalid_argument "\"con\" quotation: unsupported meta-parameter")
+          | _ -> Stdpp.raise_with_loc _loc (Invalid_argument "\"con\" quotation: unsupported meta-parameter")
       in
          <:expr< Refiner.Refiner.Term.make_param (Term_sig.$uid:shape$ $str:string_of_symbol s$) >>
  | ConPExpr e, shape ->
@@ -1104,13 +1104,13 @@ let expr_of_pcon loc = function
       <:expr< Refiner.Refiner.Term.make_param (Term_sig.Number (Lm_num.num_of_int $e$)) >>
  | ConPNum _, _
  | ConPInt _, _ ->
-      Stdpp.raise_with_loc loc (Invalid_argument "\"con\" quotation: numeric parameter of non-numeric kind?")
+      Stdpp.raise_with_loc _loc (Invalid_argument "\"con\" quotation: numeric parameter of non-numeric kind?")
 
 let is_simp_bterm = function
    [], _ -> true
  | _ -> false
 
-let rec expr_of_term_con loc = function
+let rec expr_of_term_con _loc = function
    ConTerm t ->
       add_parsed_binding (BindTerm t)
  | ConExpr e ->
@@ -1120,45 +1120,45 @@ let rec expr_of_term_con loc = function
  | ConConstruct (op, params, bterms) ->
       let op = add_parsed_binding (BindOpname op) in
          if params = [] && List.for_all is_simp_bterm bterms then
-            let bterms = mk_list_expr loc (List.map (fun (_, bt) -> expr_of_term_con loc bt) bterms) in
+            let bterms = mk_list_expr _loc (List.map (fun (_, bt) -> expr_of_term_con _loc bt) bterms) in
                <:expr< Refiner.Refiner.Term.mk_simple_term $op$ $bterms$ >>
          else
-            let bterms = mk_list_expr loc (List.map (expr_of_bterm_con loc) bterms) in
-            let params = mk_list_expr loc (List.map (expr_of_pcon loc) params) in
+            let bterms = mk_list_expr _loc (List.map (expr_of_bterm_con _loc) bterms) in
+            let params = mk_list_expr _loc (List.map (expr_of_pcon _loc) params) in
                <:expr< Refiner.Refiner.Term.mk_term (Refiner.Refiner.Term.mk_op $op$ $params$) $bterms$ >>
  | ConSequent (arg, hyps, concl) ->
-      let arg = expr_of_term_con loc arg in
-      let hyps = expr_of_hyps_con loc hyps in
-      let concl = expr_of_term_con loc concl in
+      let arg = expr_of_term_con _loc arg in
+      let hyps = expr_of_hyps_con _loc hyps in
+      let concl = expr_of_term_con _loc concl in
          <:expr< Refiner.Refiner.TermMan.mk_sequent_term (**)
                     { Refiner.Refiner.TermType.sequent_args = $arg$;
                       Refiner.Refiner.TermType.sequent_hyps = Refiner.Refiner.Term.SeqHyp.of_list $hyps$;
                       Refiner.Refiner.TermType.sequent_concl = $concl$
          } >>
 
-and expr_of_bterm_con loc (bvars, bt) =
-   let bt = expr_of_term_con loc bt in
+and expr_of_bterm_con _loc (bvars, bt) =
+   let bt = expr_of_term_con _loc bt in
       if bvars = [] then
          <:expr< Refiner.Refiner.Term.mk_simple_bterm $bt$ >>
       else
-         let bvars = mk_list_expr loc (List.map (expr_of_bvar_con loc) bvars) in
+         let bvars = mk_list_expr _loc (List.map (expr_of_bvar_con _loc) bvars) in
             <:expr< Refiner.Refiner.Term.mk_bterm $bvars$ $bt$ >>
 
-and expr_of_hyps_con loc hyps =
+and expr_of_hyps_con _loc hyps =
    match hyps with
       [] ->
          <:expr< [] >>
     | hyp :: hyps ->
-         let hyps = expr_of_hyps_con loc hyps in
+         let hyps = expr_of_hyps_con _loc hyps in
             match hyp with
                ConContext (v, args) ->
-                  let args = mk_list_expr loc (List.map (expr_of_term_con loc) args) in
+                  let args = mk_list_expr _loc (List.map (expr_of_term_con _loc) args) in
                   let e = <:expr< Context (Lm_symbol.add $v$, $args$) >> in
                      <:expr< [ $e$ :: $hyps$ ] >>
              | ConHypList l ->
                   <:expr< $l$ @ $hyps$ >>
              | ConHypothesis (v, t) ->
-                  let e = <:expr< Hypothesis ($v$, $expr_of_term_con loc t$) >> in
+                  let e = <:expr< Hypothesis ($v$, $expr_of_term_con _loc t$) >> in
                      <:expr< [ $e$ :: $hyps$ ] >>
 
 let con_exp s =
@@ -1177,7 +1177,7 @@ let _ = Quotation.add "con" (Quotation.ExAst (con_exp, con_patt))
  *)
 let action_exp s =
    let e = con_exp s in
-   let loc = dummy_loc in
+   let _loc = dummy_loc in
       <:expr< fun argv -> $e$ >>
 
 let action_patt _ =
@@ -1333,10 +1333,10 @@ let sig_keyword kw loc =
 (*
  * Empty items.
  *)
-let empty_sig_item loc =
+let empty_sig_item _loc =
    <:sig_item< declare $list:[]$ end >>
 
-let empty_str_item loc =
+let empty_str_item _loc =
    <:str_item< declare $list:[]$ end >>
 
 (*
@@ -1354,188 +1354,188 @@ EXTEND
    interf:
       [[ interf_opening; st = LIST0 interf_item; EOI ->
           let f () =
-             let proc = SigFilter.get_proc loc in
+             let proc = SigFilter.get_proc _loc in
              let id = SigFilter.hash proc in
                 SigFilter.add_command proc (Id id, dummy_loc);
                 SigFilter.save proc AnySuffix;
                 SigFilter.extract () proc
           in
-             handle_exn f "interf" loc, false
+             handle_exn f "interf" _loc, false
        ]];
 
    interf_opening:
       [[ OPT "PRL_interface" ->
           let f () =
-             SigFilter.get_proc loc
+             SigFilter.get_proc _loc
           in
-             handle_exn f "interf_opening" loc
+             handle_exn f "interf_opening" _loc
        ]];
 
    interf_item:
       [[ s = sig_item; OPT ";;" ->
           let f () =
-             let proc = SigFilter.get_proc loc in
+             let proc = SigFilter.get_proc _loc in
              let () =
                 if !debug_filter_parse then
                    eprintf "Filter_parse.interf_item: adding item%t" eflush;
-                if get_checked_bindings loc <> [] then
-                   Stdpp.raise_with_loc loc (Invalid_argument "Filter_parse.interf_item: sig item has bindings");
+                if get_checked_bindings _loc <> [] then
+                   Stdpp.raise_with_loc _loc (Invalid_argument "Filter_parse.interf_item: sig item has bindings");
                 match s with
                    <:sig_item< declare $list: []$ end >> ->
                       ()
                  | _ ->
                       let item = SummaryItem { item_bindings = []; item_item = s } in
-                         SigFilter.add_command proc (item, loc)
+                         SigFilter.add_command proc (item, _loc)
              in
-                s, loc
+                s, _loc
            in
-              handle_exn f "interf_item" loc
+              handle_exn f "interf_item" _loc
        ]];
 
    implem:
       [[ implem_opening; st = LIST0 implem_item; EOI ->
           let f () =
-             let proc = StrFilter.get_proc loc in
+             let proc = StrFilter.get_proc _loc in
              let interf = StrFilter.check proc () InterfaceType in
                 StrFilter.set_mode proc InteractiveSummary;
                 StrFilter.save proc (OnlySuffixes ["cmoz"]);
                 StrFilter.extract interf proc
           in
-             handle_exn f "implem" loc, false
+             handle_exn f "implem" _loc, false
        ]];
 
    implem_opening:
       [[ OPT "PRL_implementation" ->
          let f () =
-            StrFilter.get_proc loc
+            StrFilter.get_proc _loc
          in
-            handle_exn f "implem_opening" loc
+            handle_exn f "implem_opening" _loc
        ]];
 
    implem_item:
       [[ s = str_item; OPT ";;" ->
           let f () =
-             let proc = StrFilter.get_proc loc in
+             let proc = StrFilter.get_proc _loc in
              let () =
                 match s with
                    <:str_item< declare $list: []$ end >> ->
-                      if get_checked_bindings loc <> [] then
-                         Stdpp.raise_with_loc loc (Invalid_argument "Filter_parse.implem_item: empty str item has bindings")
+                      if get_checked_bindings _loc <> [] then
+                         Stdpp.raise_with_loc _loc (Invalid_argument "Filter_parse.implem_item: empty str item has bindings")
                  | _ ->
-                      StrFilter.add_command proc (SummaryItem (bind_item loc s), loc)
+                      StrFilter.add_command proc (SummaryItem (bind_item _loc s), _loc)
              in
-                s, loc
+                s, _loc
           in
-             handle_exn f "implem_item" loc
+             handle_exn f "implem_item" _loc
        ]];
 
    sig_item:
       [[ "extends"; path = mod_ident ->
           let f () =
-             SigFilter.declare_parent (SigFilter.get_proc loc) loc path
+             SigFilter.declare_parent (SigFilter.get_proc _loc) _loc path
           in
-             handle_exn f "extends" loc;
-             empty_sig_item loc
+             handle_exn f "extends" _loc;
+             empty_sig_item _loc
         | "derive"; path = mod_ident ->
           let f () =
-             SigFilter.declare_parent (SigFilter.get_proc loc) loc path
+             SigFilter.declare_parent (SigFilter.get_proc _loc) _loc path
           in
-             handle_exn f "derive" loc;
-             empty_sig_item loc
+             handle_exn f "derive" _loc;
+             empty_sig_item _loc
 
           (************************************************************************
            * Opname classes.
            *)
         | "declare"; "typeclass"; sc = shapeclass; name = opname_name; typeclass_type = opt_typeclass_type; typeclass_parent = opt_typeclass_parent ->
           let f () =
-             SigFilter.declare_typeclass (SigFilter.get_proc loc) loc sc name typeclass_type typeclass_parent
+             SigFilter.declare_typeclass (SigFilter.get_proc _loc) _loc sc name typeclass_type typeclass_parent
           in
-             handle_exn f "declare-typeclass" loc;
-             empty_sig_item loc
+             handle_exn f "declare-typeclass" _loc;
+             empty_sig_item _loc
         | "declare"; "type"; sc = shapeclass; quote = quote_term; ty_parent = opt_type_parent ->
           let f () =
-             let quote = parse_declare_type loc quote in
-                SigFilter.declare_type (SigFilter.get_proc loc) loc sc quote ty_parent
+             let quote = parse_declare_type _loc quote in
+                SigFilter.declare_type (SigFilter.get_proc _loc) _loc sc quote ty_parent
           in
-             handle_exn f "declare-type" loc;
-             empty_sig_item loc
+             handle_exn f "declare-type" _loc;
+             empty_sig_item _loc
         | "declare"; "type"; sc = shapeclass; quote = quote_term; ty_parent = opt_type_parent; "="; cases = declare_cases ->
           let f () =
-             let quote = parse_declare_type loc quote in
-             let cases = List.map (parse_declare_term loc) cases in
-                SigFilter.declare_type_cases (SigFilter.get_proc loc) loc sc quote ty_parent cases
+             let quote = parse_declare_type _loc quote in
+             let cases = List.map (parse_declare_term _loc) cases in
+                SigFilter.declare_type_cases (SigFilter.get_proc _loc) _loc sc quote ty_parent cases
           in
-             handle_exn f "declare-type-cases" loc;
-             empty_sig_item loc
+             handle_exn f "declare-type-cases" _loc;
+             empty_sig_item _loc
         | "declare"; sc = shapeclass; quote = quote_term ->
           let f () =
-             let quote = parse_declare_term loc quote in
-                SigFilter.declare_term (SigFilter.get_proc loc) loc sc quote
+             let quote = parse_declare_term _loc quote in
+                SigFilter.declare_term (SigFilter.get_proc _loc) _loc sc quote
           in
-             handle_exn f "declare" loc;
-             empty_sig_item loc
+             handle_exn f "declare" _loc;
+             empty_sig_item _loc
         | "define"; sc = shapeclass; name = LIDENT; res = optresources; ":"; quote = quote_term; "<-->"; def = term ->
           let f () =
-             let proc = SigFilter.get_proc loc in
-             let quote = parse_define_quote loc quote in
-             let () = SigFilter.declare_define_term proc sc (parse_define_redex loc quote) in
-             let quote, def = parse_define_term loc name sc quote def in
-                SigFilter.define_term proc loc sc name quote def res
+             let proc = SigFilter.get_proc _loc in
+             let quote = parse_define_quote _loc quote in
+             let () = SigFilter.declare_define_term proc sc (parse_define_redex _loc quote) in
+             let quote, def = parse_define_term _loc name sc quote def in
+                SigFilter.define_term proc _loc sc name quote def res
            in
-              handle_exn f ("define " ^ name) loc;
-              empty_sig_item loc
+              handle_exn f ("define " ^ name) _loc;
+              empty_sig_item _loc
         | "declare"; "rewrite"; redex = term; "<-->"; contractum = term ->
           let f () =
-             let redex, contractum = parse_type_rewrite loc redex contractum in
-                SigFilter.declare_type_rewrite (SigFilter.get_proc loc) loc redex contractum
+             let redex, contractum = parse_type_rewrite _loc redex contractum in
+                SigFilter.declare_type_rewrite (SigFilter.get_proc _loc) _loc redex contractum
           in
-             handle_exn f "declare-rewrite" loc;
-             empty_sig_item loc
+             handle_exn f "declare-rewrite" _loc;
+             empty_sig_item _loc
 
           (************************************************************************
            * Standard forms.
            *)
         | "rewrite"; name = LIDENT; args = optarglist; ":"; t = mterm ->
            let f () =
-              let proc = SigFilter.get_proc loc in
-              let t, args, _ = TermGrammar.parse_rewrite loc name t args in
-                 SigFilter.declare_rewrite proc loc name args t () no_resources
+              let proc = SigFilter.get_proc _loc in
+              let t, args, _ = TermGrammar.parse_rewrite _loc name t args in
+                 SigFilter.declare_rewrite proc _loc name args t () no_resources
            in
-             handle_exn f ("rewrite " ^ name) loc;
-             empty_sig_item loc
+             handle_exn f ("rewrite " ^ name) _loc;
+             empty_sig_item _loc
         | "iform"; name = LIDENT; ":"; t = mterm ->
            let f () =
-              let proc = SigFilter.get_proc loc in
-              let t = parse_iform loc name t in
-              let redex, contractum = SigFilter.declare_input_form proc loc name t in
-                 SigFilter.add_iform proc loc redex contractum
+              let proc = SigFilter.get_proc _loc in
+              let t = parse_iform _loc name t in
+              let redex, contractum = SigFilter.declare_input_form proc _loc name t in
+                 SigFilter.add_iform proc _loc redex contractum
            in
-              handle_exn f ("iform " ^ name) loc;
-              empty_sig_item loc
+              handle_exn f ("iform " ^ name) _loc;
+              empty_sig_item _loc
         | "ml_rw"; name = LIDENT; args = optarglist; ":"; t = parsed_term ->
            let f () =
-              let proc = SigFilter.get_proc loc in
-              let args = List.map (parse_term loc) args in
-                SigFilter.declare_mlrewrite proc loc name args t None no_resources
+              let proc = SigFilter.get_proc _loc in
+              let args = List.map (parse_term _loc) args in
+                SigFilter.declare_mlrewrite proc _loc name args t None no_resources
            in
-             handle_exn f ("ml_rw " ^ name) loc;
-             empty_sig_item loc
+             handle_exn f ("ml_rw " ^ name) _loc;
+             empty_sig_item _loc
         | "rule"; name = LIDENT; args = optarglist; ":"; mt = mterm ->
            let f () =
-              let proc = SigFilter.get_proc loc in
-              let t, args, _ = TermGrammar.parse_rule loc name mt args in
-                 SigFilter.declare_rule proc loc name args t () no_resources
+              let proc = SigFilter.get_proc _loc in
+              let t, args, _ = TermGrammar.parse_rule _loc name mt args in
+                 SigFilter.declare_rule proc _loc name args t () no_resources
            in
-              handle_exn f ("rule " ^ name) loc;
-              empty_sig_item loc
+              handle_exn f ("rule " ^ name) _loc;
+              empty_sig_item _loc
         | mlrule_keyword; name = LIDENT; args = optarglist; ":"; t = parsed_term ->
            let f () =
-              let proc = SigFilter.get_proc loc in
-              let args = List.map (parse_term loc) args in
-                 SigFilter.declare_mlaxiom proc loc name args t None no_resources
+              let proc = SigFilter.get_proc _loc in
+              let args = List.map (parse_term _loc) args in
+                 SigFilter.declare_mlaxiom proc _loc name args t None no_resources
            in
-              handle_exn f ("mlrule " ^ name) loc;
-              empty_sig_item loc
+              handle_exn f ("mlrule " ^ name) _loc;
+              empty_sig_item _loc
         | "resource"; "("; input = ctyp; ","; output = ctyp; ")"; name = LIDENT ->
            let f () =
               let r =
@@ -1543,101 +1543,101 @@ EXTEND
                    resource_output = output
                  }
               in
-              let proc = SigFilter.get_proc loc in
-                 SigFilter.declare_resource proc loc name r;
-                 SigFilter.define_resource proc loc name r
+              let proc = SigFilter.get_proc _loc in
+                 SigFilter.declare_resource proc _loc name r;
+                 SigFilter.define_resource proc _loc name r
            in
-              handle_exn f ("resource " ^ name) loc;
-              empty_sig_item loc
+              handle_exn f ("resource " ^ name) _loc;
+              empty_sig_item _loc
         | "dform"; name = LIDENT; ":"; options = parsed_df_options ->
            let f () =
               let options', t = options in
-                 SigFilter.declare_dform (SigFilter.get_proc loc) loc name options' t;
+                 SigFilter.declare_dform (SigFilter.get_proc _loc) _loc name options' t;
            in
-              handle_exn f ("dform " ^ name) loc;
-              empty_sig_item loc
+              handle_exn f ("dform " ^ name) _loc;
+              empty_sig_item _loc
         | "infix"; name = ident ->
            let f () =
-              SigFilter.declare_gupd (SigFilter.get_proc loc) loc (Infix name)
+              SigFilter.declare_gupd (SigFilter.get_proc _loc) _loc (Infix name)
            in
-              handle_exn f ("infix " ^ name) loc;
-              empty_sig_item loc
+              handle_exn f ("infix " ^ name) _loc;
+              empty_sig_item _loc
         | "suffix"; name = ident ->
            let f () =
-              SigFilter.declare_gupd (SigFilter.get_proc loc) loc (Suffix name)
+              SigFilter.declare_gupd (SigFilter.get_proc _loc) _loc (Suffix name)
            in
-              handle_exn f ("suffix " ^ name) loc;
-              empty_sig_item loc
+              handle_exn f ("suffix " ^ name) _loc;
+              empty_sig_item _loc
         | "prec"; name = LIDENT ->
            let f () =
-              SigFilter.declare_prec (SigFilter.get_proc loc) loc name
+              SigFilter.declare_prec (SigFilter.get_proc _loc) _loc name
            in
-              handle_exn f ("prec " ^ name) loc;
-              empty_sig_item loc
+              handle_exn f ("prec " ^ name) _loc;
+              empty_sig_item _loc
         | "topval"; name = LIDENT; ":"; t = ctyp ->
            let f () =
-              SigFilter.declare_topval (SigFilter.get_proc loc) loc <:sig_item< value $name$ : $t$ >>
+              SigFilter.declare_topval (SigFilter.get_proc _loc) _loc <:sig_item< value $name$ : $t$ >>
            in
-              handle_exn f ("topval " ^ name) loc;
-              empty_sig_item loc
+              handle_exn f ("topval " ^ name) _loc;
+              empty_sig_item _loc
         | "topval"; "("; name = operator; ")"; ":"; t = ctyp ->
            let f () =
-              SigFilter.declare_topval (SigFilter.get_proc loc) loc <:sig_item< value $name$ : $t$ >>
+              SigFilter.declare_topval (SigFilter.get_proc _loc) _loc <:sig_item< value $name$ : $t$ >>
            in
-              handle_exn f ("topval " ^ name) loc;
-              empty_sig_item loc
+              handle_exn f ("topval " ^ name) _loc;
+              empty_sig_item _loc
         | "doc"; doc_sig ->
-          empty_sig_item loc
+          empty_sig_item _loc
 
           (* Grammar *)
         | "lex_token"; id = singleterm; ":"; regex = STRING; t = OPT token_expansion ->
           let f () =
-             SigFilter.add_token (SigFilter.get_proc loc) loc (opname_of_term (parse_term loc id.aterm)) regex t;
+             SigFilter.add_token (SigFilter.get_proc _loc) _loc (opname_of_term (parse_term _loc id.aterm)) regex t;
           in
-             handle_exn f "lex_token" loc;
-             empty_sig_item loc
+             handle_exn f "lex_token" _loc;
+             empty_sig_item _loc
 
         | "lex_token"; id = singleterm; ":"; regex1 = STRING; regex2 = STRING; t = OPT token_expansion ->
           let f () =
-             SigFilter.add_token_pair (SigFilter.get_proc loc) loc (opname_of_term (parse_term loc id.aterm)) regex1 regex2 t;
+             SigFilter.add_token_pair (SigFilter.get_proc _loc) _loc (opname_of_term (parse_term _loc id.aterm)) regex1 regex2 t;
           in
-             handle_exn f "lex_token pair" loc;
-             empty_sig_item loc
+             handle_exn f "lex_token pair" _loc;
+             empty_sig_item _loc
 
         | "production"; t = term; opt_prec = OPT prec_term; "<--"; args = LIST0 term SEP ";" ->
           let f () =
-             let args, t = parse_production loc args t in
-                SigFilter.add_production (SigFilter.get_proc loc) loc args opt_prec t
+             let args, t = parse_production _loc args t in
+                SigFilter.add_production (SigFilter.get_proc _loc) _loc args opt_prec t
           in
-             handle_exn f "production" loc;
-             empty_sig_item loc
+             handle_exn f "production" _loc;
+             empty_sig_item _loc
 
         | "lex_prec"; assoc = prec_declare; "["; args = LIST1 parsed_term SEP ";"; "]"; rel = prec_relation ->
           let f () =
-             SigFilter.input_prec (SigFilter.get_proc loc) loc assoc args rel;
+             SigFilter.input_prec (SigFilter.get_proc _loc) _loc assoc args rel;
           in
-             handle_exn f "lex_prec" loc;
-             empty_sig_item loc
+             handle_exn f "lex_prec" _loc;
+             empty_sig_item _loc
 
         | "parser"; t = term; ":"; id = parsed_term ->
           let f () =
-             let t = unchecked_term_of_parsed_term loc t in
-                SigFilter.add_parser (SigFilter.get_proc loc) loc t (opname_of_term id);
+             let t = unchecked_term_of_parsed_term _loc t in
+                SigFilter.add_parser (SigFilter.get_proc _loc) _loc t (opname_of_term id);
           in
-             handle_exn f "parser" loc;
-             empty_sig_item loc
+             handle_exn f "parser" _loc;
+             empty_sig_item _loc
 
         | "GENGRAMMAR" ->
           let f () =
-             SigFilter.compile_parser (SigFilter.get_proc loc) loc;
+             SigFilter.compile_parser (SigFilter.get_proc _loc) _loc;
           in
-             handle_exn f "GENGRAMMAR" loc;
-             empty_sig_item loc
+             handle_exn f "GENGRAMMAR" _loc;
+             empty_sig_item _loc
 
-        | "prim" -> str_keyword "prim" loc
-        | "interactive" -> str_keyword "interactive" loc
-        | "prim_rw" -> str_keyword "prim_rw" loc
-        | "interactive_rw" -> str_keyword "interactive_rw" loc
+        | "prim" -> str_keyword "prim" _loc
+        | "interactive" -> str_keyword "interactive" _loc
+        | "prim_rw" -> str_keyword "prim_rw" _loc
+        | "interactive_rw" -> str_keyword "interactive_rw" _loc
        ]];
 
    doc_sig:
@@ -1645,303 +1645,303 @@ EXTEND
            let f () =
                match dest_quot q with
                   "doc", com ->
-                     SigFilter.declare_comment (SigFilter.get_proc loc) loc (mk_string_term comment_string_op com)
+                     SigFilter.declare_comment (SigFilter.get_proc _loc) _loc (mk_string_term comment_string_op com)
                 | (name, q) ->
-                     let q = unchecked_term_of_parsed_term loc (parse_quotation loc "doc" name q) in
-                        SigFilter.declare_comment (SigFilter.get_proc loc) loc q
+                     let q = unchecked_term_of_parsed_term _loc (parse_quotation _loc "doc" name q) in
+                        SigFilter.declare_comment (SigFilter.get_proc _loc) _loc q
            in
-              handle_exn f "comment" loc;
+              handle_exn f "comment" _loc;
         | t = parsed_term ->
-           SigFilter.declare_comment (SigFilter.get_proc loc) loc t
+           SigFilter.declare_comment (SigFilter.get_proc _loc) _loc t
        ]];
 
    str_item:
       [[ "extends"; path = mod_ident ->
           let f () =
-             StrFilter.declare_parent (StrFilter.get_proc loc) loc path
+             StrFilter.declare_parent (StrFilter.get_proc _loc) _loc path
           in
-             handle_exn f "extends" loc;
-             empty_str_item loc
+             handle_exn f "extends" _loc;
+             empty_str_item _loc
         | "derive"; path = mod_ident ->
           let f () =
-             StrFilter.declare_parent (StrFilter.get_proc loc) loc path
+             StrFilter.declare_parent (StrFilter.get_proc _loc) _loc path
           in
-             handle_exn f "derive" loc;
-             empty_str_item loc
+             handle_exn f "derive" _loc;
+             empty_str_item _loc
 
           (************************************************************************
            * Opname classes.
            *)
         | "declare"; "typeclass"; sc = shapeclass; name = opname_name; typeclass_type = opt_typeclass_type; typeclass_parent = opt_typeclass_parent ->
           let f () =
-             StrFilter.declare_typeclass (StrFilter.get_proc loc) loc sc name typeclass_type typeclass_parent
+             StrFilter.declare_typeclass (StrFilter.get_proc _loc) _loc sc name typeclass_type typeclass_parent
           in
-             handle_exn f "declare-typeclass" loc;
-             empty_str_item loc
+             handle_exn f "declare-typeclass" _loc;
+             empty_str_item _loc
         | "declare"; "type"; sc = shapeclass; quote = quote_term; ty_parent = opt_type_parent ->
           let f () =
-             let quote = parse_declare_type loc quote in
-                StrFilter.declare_type (StrFilter.get_proc loc) loc sc quote ty_parent
+             let quote = parse_declare_type _loc quote in
+                StrFilter.declare_type (StrFilter.get_proc _loc) _loc sc quote ty_parent
           in
-             handle_exn f "declare-type" loc;
-             empty_str_item loc
+             handle_exn f "declare-type" _loc;
+             empty_str_item _loc
         | "declare"; "type"; sc = shapeclass; quote = quote_term; ty_parent = opt_type_parent; "="; cases = declare_cases ->
           let f () =
-             let quote = parse_declare_type loc quote in
-             let cases = List.map (parse_declare_term loc) cases in
-                StrFilter.declare_type_cases (StrFilter.get_proc loc) loc sc quote ty_parent cases
+             let quote = parse_declare_type _loc quote in
+             let cases = List.map (parse_declare_term _loc) cases in
+                StrFilter.declare_type_cases (StrFilter.get_proc _loc) _loc sc quote ty_parent cases
           in
-             handle_exn f "declare-type-cases" loc;
-             empty_str_item loc
+             handle_exn f "declare-type-cases" _loc;
+             empty_str_item _loc
         | "declare"; sc = shapeclass; quote = quote_term ->
           let f () =
-             let quote = parse_declare_term loc quote in
-                StrFilter.declare_term (StrFilter.get_proc loc) loc sc quote
+             let quote = parse_declare_term _loc quote in
+                StrFilter.declare_term (StrFilter.get_proc _loc) _loc sc quote
           in
-             handle_exn f "declare" loc;
-             empty_str_item loc
+             handle_exn f "declare" _loc;
+             empty_str_item _loc
         | "define"; sc = shapeclass; name = LIDENT; res = optresources; ":"; quote = quote_term; "<-->"; def = term ->
           let f () =
-             let proc = StrFilter.get_proc loc in
-             let quote = parse_define_quote loc quote in
-             let () = StrFilter.declare_define_term proc sc (parse_define_redex loc quote) in
-             let quote, def = parse_define_term loc name sc quote def in
-                StrFilter.define_term proc loc sc name quote def res
+             let proc = StrFilter.get_proc _loc in
+             let quote = parse_define_quote _loc quote in
+             let () = StrFilter.declare_define_term proc sc (parse_define_redex _loc quote) in
+             let quote, def = parse_define_term _loc name sc quote def in
+                StrFilter.define_term proc _loc sc name quote def res
            in
-              handle_exn f ("define " ^ name) loc;
-              empty_str_item loc
+              handle_exn f ("define " ^ name) _loc;
+              empty_str_item _loc
         | "declare"; "rewrite"; redex = term; "<-->"; contractum = term ->
           let f () =
-             let redex, contractum = parse_type_rewrite loc redex contractum in
-                StrFilter.declare_type_rewrite (StrFilter.get_proc loc) loc redex contractum
+             let redex, contractum = parse_type_rewrite _loc redex contractum in
+                StrFilter.declare_type_rewrite (StrFilter.get_proc _loc) _loc redex contractum
           in
-             handle_exn f "declare-rewrite" loc;
-             empty_str_item loc
+             handle_exn f "declare-rewrite" _loc;
+             empty_str_item _loc
 
           (************************************************************************
            * Standard grammar.
            *)
         | "prim_rw"; name = LIDENT; res = optresources; args = optarglist; ":"; t = mterm ->
            let f () =
-              let proc = StrFilter.get_proc loc in
-              let t, args, res = parse_rewrite loc name t args res in
-                 StrFilter.declare_rewrite proc loc name args t (Primitive xnil_term) res
+              let proc = StrFilter.get_proc _loc in
+              let t, args, res = parse_rewrite _loc name t args res in
+                 StrFilter.declare_rewrite proc _loc name args t (Primitive xnil_term) res
            in
-              handle_exn f ("prim_rw " ^ name) loc;
-              empty_str_item loc
+              handle_exn f ("prim_rw " ^ name) _loc;
+              empty_str_item _loc
         | "iform"; name = LIDENT; ":"; t = mterm ->
           let f () =
-              let proc = StrFilter.get_proc loc in
-              let t = parse_iform loc name t in
+              let proc = StrFilter.get_proc _loc in
+              let t = parse_iform _loc name t in
               let redex, contractum =
-                 StrFilter.declare_input_form (StrFilter.get_proc loc) loc name t
+                 StrFilter.declare_input_form (StrFilter.get_proc _loc) _loc name t
               in
-                 StrFilter.add_iform proc loc redex contractum
+                 StrFilter.add_iform proc _loc redex contractum
            in
-              handle_exn f ("iform " ^ name) loc;
-              empty_str_item loc
+              handle_exn f ("iform " ^ name) _loc;
+              empty_str_item _loc
         | "interactive_rw"; name = LIDENT; res = optresources; args = optarglist; ":"; t = mterm ->
            let f () =
-              let proc = StrFilter.get_proc loc in
-              let t, args, res = parse_rewrite loc name t args res in
-                 StrFilter.declare_rewrite proc loc name args t Incomplete res
+              let proc = StrFilter.get_proc _loc in
+              let t, args, res = parse_rewrite _loc name t args res in
+                 StrFilter.declare_rewrite proc _loc name args t Incomplete res
            in
-              handle_exn f ("interactive_rw " ^ name) loc;
-              empty_str_item loc
+              handle_exn f ("interactive_rw " ^ name) _loc;
+              empty_str_item _loc
         | "derived_rw"; name = LIDENT; res = optresources; args = optarglist; ":"; t = mterm ->
            let f () =
-              let proc = StrFilter.get_proc loc in
-              let t, args, res = parse_rewrite loc name t args res in
-                 StrFilter.declare_rewrite proc loc name args t Incomplete res
+              let proc = StrFilter.get_proc _loc in
+              let t, args, res = parse_rewrite _loc name t args res in
+                 StrFilter.declare_rewrite proc _loc name args t Incomplete res
            in
-              handle_exn f ("derived_rw " ^ name) loc;
-              empty_str_item loc
+              handle_exn f ("derived_rw " ^ name) _loc;
+              empty_str_item _loc
         | "thm_rw"; name = LIDENT; res = optresources; args = optarglist; ":"; t = mterm; "="; body = expr ->
            let f () =
-              let proc = StrFilter.get_proc loc in
-              let t, args, res = parse_rewrite loc name t args res in
-                 StrFilter.declare_rewrite proc loc name args t (Derived body) res
+              let proc = StrFilter.get_proc _loc in
+              let t, args, res = parse_rewrite _loc name t args res in
+                 StrFilter.declare_rewrite proc _loc name args t (Derived body) res
            in
-              handle_exn f ("thm_rw " ^ name) loc;
-             empty_str_item loc
+              handle_exn f ("thm_rw " ^ name) _loc;
+             empty_str_item _loc
         | "ml_rw"; name = LIDENT; res = optresources; args = optarglist; ":"; t = parsed_bound_term; "="; code = expr ->
            let f () =
-              let proc = StrFilter.get_proc loc in
-              let args = List.map (parse_term loc) args in
-              let code = bind_item loc (wrap_code loc t.aname code) in
-                 StrFilter.declare_mlrewrite proc loc name args t.aterm (Some code) res
+              let proc = StrFilter.get_proc _loc in
+              let args = List.map (parse_term _loc) args in
+              let code = bind_item _loc (wrap_code _loc t.aname code) in
+                 StrFilter.declare_mlrewrite proc _loc name args t.aterm (Some code) res
            in
-              handle_exn f ("ml_rw " ^ name) loc;
-              empty_str_item loc
+              handle_exn f ("ml_rw " ^ name) _loc;
+              empty_str_item _loc
         | "prim"; name = LIDENT; res = optresources; params = optarglist; ":"; body = rule_body ->
            let f () =
-              let proc = StrFilter.get_proc loc in
+              let proc = StrFilter.get_proc _loc in
               let mt, extract = body in
-              let mt, params, res, extract = parse_rule_with_extract loc name mt params res extract in
-                 define_prim proc loc name params mt extract res
+              let mt, params, res, extract = parse_rule_with_extract _loc name mt params res extract in
+                 define_prim proc _loc name params mt extract res
            in
-              handle_exn f ("prim " ^ name) loc;
-              empty_str_item loc
+              handle_exn f ("prim " ^ name) _loc;
+              empty_str_item _loc
         | "thm"; name = LIDENT; res = optresources; params = optarglist; ":"; mt = bmterm; "="; tac = expr ->
            let f () =
-              let proc = StrFilter.get_proc loc in
-              let mt, params, res = parse_rule loc name mt params res in
-                 define_thm proc loc name params mt tac res
+              let proc = StrFilter.get_proc _loc in
+              let mt, params, res = parse_rule _loc name mt params res in
+                 define_thm proc _loc name params mt tac res
            in
-              handle_exn f ("thm " ^ name) loc;
-              empty_str_item loc
+              handle_exn f ("thm " ^ name) _loc;
+              empty_str_item _loc
         | "interactive"; name = LIDENT; res = optresources; params = optarglist; ":"; mt = bmterm ->
            let f () =
-              let proc = StrFilter.get_proc loc in
-              let mt, params, res = parse_rule loc name mt params res in
-                 define_int_thm proc loc name params mt res
+              let proc = StrFilter.get_proc _loc in
+              let mt, params, res = parse_rule _loc name mt params res in
+                 define_int_thm proc _loc name params mt res
            in
-              handle_exn f ("interactive " ^ name) loc;
-              empty_str_item loc
+              handle_exn f ("interactive " ^ name) _loc;
+              empty_str_item _loc
         | "derived"; name = LIDENT; res = optresources; params = optarglist; ":"; mt = bmterm ->
            let f () =
-              let proc = StrFilter.get_proc loc in
-              let mt, params, res = parse_rule loc name mt params res in
-                 define_int_thm proc loc name params mt res
+              let proc = StrFilter.get_proc _loc in
+              let mt, params, res = parse_rule _loc name mt params res in
+                 define_int_thm proc _loc name params mt res
            in
-              handle_exn f ("derived " ^ name) loc;
-              empty_str_item loc
+              handle_exn f ("derived " ^ name) _loc;
+              empty_str_item _loc
         | mlrule_keyword; name = LIDENT; res = optresources; args = optarglist; ":"; t = parsed_bound_term; "="; code = expr ->
            let f () =
-              let proc = StrFilter.get_proc loc in
-              let args = List.map (parse_term loc) args in
-              let code = bind_item loc (wrap_code loc t.aname code) in
-                 StrFilter.declare_mlaxiom proc loc name args t.aterm (Some code) res
+              let proc = StrFilter.get_proc _loc in
+              let args = List.map (parse_term _loc) args in
+              let code = bind_item _loc (wrap_code _loc t.aname code) in
+                 StrFilter.declare_mlaxiom proc _loc name args t.aterm (Some code) res
            in
-              handle_exn f ("mlrule " ^ name) loc;
-              empty_str_item loc
+              handle_exn f ("mlrule " ^ name) _loc;
+              empty_str_item _loc
         | "let"; "resource"; "("; inp = ctyp; ","; outp = ctyp; ")"; name = LIDENT; "="; code = expr ->
            let f () =
-              StrFilter.define_resource (StrFilter.get_proc loc) loc name (**)
+              StrFilter.define_resource (StrFilter.get_proc _loc) _loc name (**)
                  { res_input = inp; res_output = outp; res_body = code }
            in
-              handle_exn f ("resource " ^ name) loc;
-              empty_str_item loc
+              handle_exn f ("resource " ^ name) _loc;
+              empty_str_item _loc
         | "let"; "resource"; name = LIDENT; "+=" ; code = expr ->
            let f () =
-              let proc = StrFilter.get_proc loc in
-                 StrFilter.improve_resource proc loc (**)
+              let proc = StrFilter.get_proc _loc in
+                 StrFilter.improve_resource proc _loc (**)
                     { improve_name = name;
-                      improve_expr = bind_item loc code;
+                      improve_expr = bind_item _loc code;
                     }
            in
-              handle_exn f (name ^ "resource improvement") loc;
-              empty_str_item loc
+              handle_exn f (name ^ "resource improvement") _loc;
+              empty_str_item _loc
         | "dform"; name = LIDENT; ":"; options = df_options; "="; form = xdform ->
            let f () =
               let options, t = options in
-              let options, redex, contractum = parse_dform loc options t form in
-                 StrFilter.define_dform (StrFilter.get_proc loc) loc name options redex contractum
+              let options, redex, contractum = parse_dform _loc options t form in
+                 StrFilter.define_dform (StrFilter.get_proc _loc) _loc name options redex contractum
            in
-              handle_exn f ("dform " ^ name) loc;
-              empty_str_item loc
+              handle_exn f ("dform " ^ name) _loc;
+              empty_str_item _loc
         | "ml_dform"; name = LIDENT; ":"; options = parsed_df_options; format = LIDENT; buf = LIDENT; "="; code = expr ->
            let f () =
               let options', t = options in
-              let proc = StrFilter.get_proc loc in
-                 StrFilter.define_ml_dform proc loc name options' t format buf (bind_item loc code)
+              let proc = StrFilter.get_proc _loc in
+                 StrFilter.define_ml_dform proc _loc name options' t format buf (bind_item _loc code)
            in
-              handle_exn f ("ml_dform " ^ name) loc;
-              empty_str_item loc
+              handle_exn f ("ml_dform " ^ name) _loc;
+              empty_str_item _loc
         | "infix"; name = ident ->
            let f () =
-              StrFilter.declare_gupd (StrFilter.get_proc loc) loc (Infix name)
+              StrFilter.declare_gupd (StrFilter.get_proc _loc) _loc (Infix name)
            in
-              handle_exn f ("infix " ^ name) loc;
-              empty_str_item loc
+              handle_exn f ("infix " ^ name) _loc;
+              empty_str_item _loc
         | "suffix"; name = ident ->
            let f () =
-              StrFilter.declare_gupd (StrFilter.get_proc loc) loc (Suffix name)
+              StrFilter.declare_gupd (StrFilter.get_proc _loc) _loc (Suffix name)
            in
-              handle_exn f ("suffix " ^ name) loc;
-              empty_str_item loc
+              handle_exn f ("suffix " ^ name) _loc;
+              empty_str_item _loc
         | "prec"; name = LIDENT ->
            let f () =
-              StrFilter.declare_prec (StrFilter.get_proc loc) loc name
+              StrFilter.declare_prec (StrFilter.get_proc _loc) _loc name
            in
-              handle_exn f ("prec " ^ name) loc;
-              empty_str_item loc
+              handle_exn f ("prec " ^ name) _loc;
+              empty_str_item _loc
         | "prec"; name1 = LIDENT; "<"; name2 = LIDENT ->
            let f () =
-              StrFilter.define_prec_rel (StrFilter.get_proc loc) loc name1 name2 LTRelation
+              StrFilter.define_prec_rel (StrFilter.get_proc _loc) _loc name1 name2 LTRelation
            in
-              handle_exn f "prec" loc;
-              empty_str_item loc
+              handle_exn f "prec" _loc;
+              empty_str_item _loc
         | "prec"; name1 = LIDENT; "="; name2 = LIDENT ->
            let f () =
-              StrFilter.define_prec_rel (StrFilter.get_proc loc) loc name1 name2 EQRelation
+              StrFilter.define_prec_rel (StrFilter.get_proc _loc) _loc name1 name2 EQRelation
            in
-              handle_exn f "prec" loc;
-              empty_str_item loc
+              handle_exn f "prec" _loc;
+              empty_str_item _loc
         | "prec"; name1 = LIDENT; ">"; name2 = LIDENT ->
            let f () =
-              StrFilter.define_prec_rel (StrFilter.get_proc loc) loc name1 name2 GTRelation
+              StrFilter.define_prec_rel (StrFilter.get_proc _loc) _loc name1 name2 GTRelation
            in
-              handle_exn f "prec" loc;
-              empty_str_item loc
+              handle_exn f "prec" _loc;
+              empty_str_item _loc
         | "magic_block"; name = LIDENT; "=";
           "struct"; st = LIST0 [ s = str_item; OPT ";;" -> s ]; "end" ->
            let f () =
-              StrFilter.define_magic_block (StrFilter.get_proc loc) loc name st
+              StrFilter.define_magic_block (StrFilter.get_proc _loc) _loc name st
            in
-              handle_exn f "magic_block" loc;
-              empty_str_item loc
+              handle_exn f "magic_block" _loc;
+              empty_str_item _loc
         | "doc"; doc_str ->
-           empty_str_item loc
+           empty_str_item _loc
 
           (* Grammar *)
         | "lex_token"; id = singleterm; ":"; regex = STRING; t = OPT token_expansion ->
           let f () =
-             StrFilter.add_token (StrFilter.get_proc loc) loc (opname_of_term (parse_term loc id.aterm)) regex t;
+             StrFilter.add_token (StrFilter.get_proc _loc) _loc (opname_of_term (parse_term _loc id.aterm)) regex t;
           in
-             handle_exn f "lex_token" loc;
-             empty_str_item loc
+             handle_exn f "lex_token" _loc;
+             empty_str_item _loc
 
         | "lex_token"; id = singleterm; ":"; regex1 = STRING; regex2 = STRING; t = OPT token_expansion ->
           let f () =
-             StrFilter.add_token_pair (StrFilter.get_proc loc) loc (opname_of_term (parse_term loc id.aterm)) regex1 regex2 t;
+             StrFilter.add_token_pair (StrFilter.get_proc _loc) _loc (opname_of_term (parse_term _loc id.aterm)) regex1 regex2 t;
           in
-             handle_exn f "lex_token pair" loc;
-             empty_str_item loc
+             handle_exn f "lex_token pair" _loc;
+             empty_str_item _loc
 
         | "production"; t = term; opt_prec = OPT prec_term; "<--"; args = LIST0 term SEP ";" ->
           let f () =
-             let args, t = parse_production loc args t in
-                StrFilter.add_production (StrFilter.get_proc loc) loc args opt_prec t
+             let args, t = parse_production _loc args t in
+                StrFilter.add_production (StrFilter.get_proc _loc) _loc args opt_prec t
           in
-             handle_exn f "production" loc;
-             empty_str_item loc
+             handle_exn f "production" _loc;
+             empty_str_item _loc
 
         | "lex_prec"; assoc = prec_declare; "["; args = LIST1 parsed_term SEP ";"; "]"; rel = prec_relation ->
           let f () =
-             StrFilter.input_prec (StrFilter.get_proc loc) loc assoc args rel;
+             StrFilter.input_prec (StrFilter.get_proc _loc) _loc assoc args rel;
           in
-             handle_exn f "lex_prec" loc;
-             empty_str_item loc
+             handle_exn f "lex_prec" _loc;
+             empty_str_item _loc
 
         | "parser"; t = term; ":"; id = parsed_term ->
           let f () =
-             let t = unchecked_term_of_parsed_term loc t in
-                StrFilter.add_parser (StrFilter.get_proc loc) loc t (opname_of_term id);
+             let t = unchecked_term_of_parsed_term _loc t in
+                StrFilter.add_parser (StrFilter.get_proc _loc) _loc t (opname_of_term id);
           in
-             handle_exn f "parser" loc;
-             empty_str_item loc
+             handle_exn f "parser" _loc;
+             empty_str_item _loc
 
         | "GENGRAMMAR" ->
           let f () =
-             StrFilter.compile_parser (StrFilter.get_proc loc) loc;
+             StrFilter.compile_parser (StrFilter.get_proc _loc) _loc;
           in
-             handle_exn f "GENGRAMMAR" loc;
-             empty_str_item loc
+             handle_exn f "GENGRAMMAR" _loc;
+             empty_str_item _loc
 
-        | "rule" -> sig_keyword "rule" loc
-        | "rewrite" -> sig_keyword "rewrite" loc
-        | "topval" -> sig_keyword "topval" loc
+        | "rule" -> sig_keyword "rule" _loc
+        | "rewrite" -> sig_keyword "rewrite" _loc
+        | "topval" -> sig_keyword "topval" _loc
        ]];
 
     declare_cases:
@@ -1988,9 +1988,9 @@ EXTEND
 
     typeclass_parent:
       [[ "->"; t = singleterm ->
-          ParentExtends (opname_of_term (parse_term loc t.aterm))
+          ParentExtends (opname_of_term (parse_term _loc t.aterm))
         | "<-"; t = singleterm ->
-          ParentInclude (opname_of_term (parse_term loc t.aterm))
+          ParentInclude (opname_of_term (parse_term _loc t.aterm))
        ]];
 
     doc_str:
@@ -1999,14 +1999,14 @@ EXTEND
                match dest_quot q with
                   (* XXX HACK: this makes sure parsing of top-level "doc" quotations is lazy *)
                   "doc", com ->
-                     StrFilter.declare_comment (StrFilter.get_proc loc) loc (mk_string_term comment_string_op com)
+                     StrFilter.declare_comment (StrFilter.get_proc _loc) _loc (mk_string_term comment_string_op com)
                 | (name, q) ->
-                     let q = unchecked_term_of_parsed_term loc (parse_quotation loc "doc" name q) in
-                        StrFilter.declare_comment (StrFilter.get_proc loc) loc q
+                     let q = unchecked_term_of_parsed_term _loc (parse_quotation _loc "doc" name q) in
+                        StrFilter.declare_comment (StrFilter.get_proc _loc) _loc q
            in
-              handle_exn f "comment" loc
+              handle_exn f "comment" _loc
         | t = parsed_term ->
-           StrFilter.declare_comment (StrFilter.get_proc loc) loc t
+           StrFilter.declare_comment (StrFilter.get_proc _loc) _loc t
        ]];
 
    mod_ident:
@@ -2037,12 +2037,12 @@ EXTEND
    updresources:
       [[ "{|"; e = expr; "|}" ->
            let f () =
-                let rec split_application loc tl expr =
+                let rec split_application _loc tl expr =
                    match expr with
                       <:expr< $e1$ $e2$ >> ->
-                         split_application loc (e2 :: tl) e1
+                         split_application _loc (e2 :: tl) e1
                     | <:expr< $lid:name$ >> ->
-                         loc, name, tl
+                         _loc, name, tl
                     | _ ->
                          Stdpp.raise_with_loc (MLast.loc_of_expr expr) (Failure "resource is not a sequence")
                 in
@@ -2056,7 +2056,7 @@ EXTEND
                   (* context in resource term quotations will get converted by parse_rule/rewrite *)
                   { item_item = e; item_bindings = get_unchecked_bindings () }
            in
-              handle_exn f "updresources" loc
+              handle_exn f "updresources" _loc
       ]];
 
    mlrule_keyword:
@@ -2067,10 +2067,10 @@ EXTEND
             mt, raw_input_term_of_parsed_term extract
        | mt = bmterm ->
             try
-               mt, mk_simple_term ((TermGrammarBefore.parsing_state loc).mk_opname_kind loc NormalKind ["default_extract"] [] []) []
+               mt, mk_simple_term ((TermGrammarBefore.parsing_state _loc).mk_opname_kind _loc NormalKind ["default_extract"] [] []) []
             with
                Stdpp.Exc_located (_, Failure _) ->
-                  Stdpp.raise_with_loc loc (Failure "No computational witness (\"extract\") specified for a prim rule and the default_extract{} opname is not declared")
+                  Stdpp.raise_with_loc _loc (Failure "No computational witness (\"extract\") specified for a prim rule and the default_extract{} opname is not declared")
       ]];
 
    (*
@@ -2100,7 +2100,7 @@ EXTEND
     *)
    parsed_df_options:
       [[ l = LIST1 singleterm SEP "::" ->
-          Lm_list_util.split_last (List.map (function { aterm = t } -> parse_term loc t) l)
+          Lm_list_util.split_last (List.map (function { aterm = t } -> parse_term _loc t) l)
        ]];
 
    df_options:

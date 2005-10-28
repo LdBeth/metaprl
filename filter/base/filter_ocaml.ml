@@ -308,7 +308,7 @@ struct
     * Conversion between pattern and expression identifiers.
     *)
    let rec expr_of_patt_ident p =
-      let loc = MLast.loc_of_patt p in
+      let _loc = MLast.loc_of_patt p in
          match p with
             <:patt< $p1$ . $p2$ >> ->
               <:expr< $expr_of_patt_ident p1$ . $expr_of_patt_ident p2$ >>
@@ -317,10 +317,10 @@ struct
           | <:patt< $lid: lid$ >> ->
               <:expr< $lid: lid$ >>
           | _ ->
-              Stdpp.raise_with_loc loc (Failure "Filter_ocaml.expr_of_patt_ident: not an identifier")
+              Stdpp.raise_with_loc _loc (Failure "Filter_ocaml.expr_of_patt_ident: not an identifier")
 
    let rec patt_of_expr_ident e =
-      let loc = MLast.loc_of_expr e in
+      let _loc = MLast.loc_of_expr e in
          match e with
           | <:expr< $e1$ . $e2$ >> ->
                <:patt< $patt_of_expr_ident e1$ . $patt_of_expr_ident e2$ >>
@@ -329,7 +329,7 @@ struct
           | <:expr< $lid: lid$ >> ->
                <:patt< $lid: lid$ >>
           | _ ->
-               Stdpp.raise_with_loc loc (Failure "Filter_ocaml.patt_of_expr_ident: not an identifier")
+               Stdpp.raise_with_loc _loc (Failure "Filter_ocaml.patt_of_expr_ident: not an identifier")
 
    (*
     * For looking up destructors in a hashtable.
@@ -530,13 +530,13 @@ struct
 
    let expr_string_op =
       let dest_string_expr t =
-         let loc, s = dest_loc_string "dest_string_expr" t in
+         let _loc, s = dest_loc_string "dest_string_expr" t in
             <:expr< $str:s$ >>
       in add_expr "string" dest_string_expr
 
    let expr_seq_op =
       let dest_seq_expr t =
-         let loc = dest_loc "dest_seq_expr" t in
+         let _loc = dest_loc "dest_seq_expr" t in
          let el = dest_olist (one_subterm "dest_seq_expr" t) in
             <:expr< do { $list:List.map dest_expr el$ } >>
       in add_expr "sequence" dest_seq_expr
@@ -679,17 +679,17 @@ struct
    let rec mk_expr =
       let expr_char_op =
          let dest_char_expr t =
-            let loc, s = dest_loc_string "dest_char_expr" t in
+            let _loc, s = dest_loc_string "dest_char_expr" t in
                <:expr< $chr:s$ >>
          in add_expr "char" dest_char_expr
       and expr_float_op =
          let dest_float_expr t =
-            let loc, s = dest_loc_string "dest_float_expr" t in
+            let _loc, s = dest_loc_string "dest_float_expr" t in
                <:expr< $flo:s$ >>
          in add_expr "float" dest_float_expr
       and expr_int_op =
          let dest_int_expr t =
-            let loc, i = dest_loc_int "dest_int_expr" t in
+            let _loc, i = dest_loc_int "dest_int_expr" t in
                <:expr< $int:i$ >>
          in add_expr "int" dest_int_expr
       and expr_native_int_op =
@@ -709,18 +709,18 @@ struct
          in add_expr "int64" dest_int64_expr
       and expr_asf_op =
          let dest_asf_expr t =
-            let loc = dest_loc "dest_asf_expr" t in
+            let _loc = dest_loc "dest_asf_expr" t in
                <:expr< assert False >>
          in add_expr "assert_false" dest_asf_expr
       and expr_asr_op =
          let dest_asr_expr t =
-            let loc = dest_loc "dest_asr_expr" t in
+            let _loc = dest_loc "dest_asr_expr" t in
             let e = one_subterm "dest_asr_expr" t in
                <:expr< assert $dest_expr e$ >>
          in add_expr "assert" dest_asr_expr
       and expr_lid_op =
          let dest_lid_expr t =
-            let loc = dest_loc "dest_lid_expr" t in
+            let _loc = dest_loc "dest_lid_expr" t in
                <:expr< $lid:dest_var t$ >>
          in add_expr "lid" dest_lid_expr
       and expr_local_module_op =
@@ -734,42 +734,42 @@ struct
          in add_expr "local_module" dest_local_module_expr
       and expr_uid_op =
          let dest_uid_expr t =
-            let loc = dest_loc "dest_uid_expr" t in
+            let _loc = dest_loc "dest_uid_expr" t in
                <:expr< $uid:dest_var t$ >>
          in add_expr "uid" dest_uid_expr
       and expr_proj_op =
          let dest_proj_expr t =
-            let loc = dest_loc "dest_proj_expr" t in
+            let _loc = dest_loc "dest_proj_expr" t in
             let e1, e2 = two_subterms t in
                <:expr< $dest_expr e1$ . $dest_expr e2$ >>
          in add_expr "proj" dest_proj_expr
       and expr_anti_op =
          let dest_anti_expr t =
-            let loc = dest_loc "dest_ant_expr" t in
+            let _loc = dest_loc "dest_ant_expr" t in
             let e = one_subterm "dest_anti_expr" t in
                <:expr< $anti: dest_expr e$ >>
          in add_expr "anti" dest_anti_expr
       and expr_apply_op =
          let dest_apply_expr t =
-            let loc = dest_loc "dest_apply_expr" t in
+            let _loc = dest_loc "dest_apply_expr" t in
             let e1, e2 = two_subterms t in
                <:expr< $dest_expr e1$ $dest_expr e2$ >>
          in add_expr "apply" dest_apply_expr
       and expr_array_subscript_op =
          let dest_array_subscript_expr t =
-            let loc = dest_loc "dest_array_subscript" t in
+            let _loc = dest_loc "dest_array_subscript" t in
             let e1, e2 = two_subterms t in
                <:expr< $dest_expr e1$ .( $dest_expr e2$ ) >>
          in add_expr "array_subscript" dest_array_subscript_expr
       and expr_array_op =
          let dest_array_expr t =
-            let loc = dest_loc "dest_array_expr" t in
+            let _loc = dest_loc "dest_array_expr" t in
             let el = List.map dest_expr (dest_olist (one_subterm "dest_array_expr" t)) in
                <:expr< [| $list:el$ |] >>
          in add_expr "array" dest_array_expr
       and expr_assign_op =
          let dest_assign_expr t =
-            let loc = dest_loc "dest_assign_expr" t in
+            let _loc = dest_loc "dest_assign_expr" t in
             let e1, e2 = two_subterms t in
                <:expr< $dest_expr e1$ := $dest_expr e2$ >>
          in add_expr "assign" dest_assign_expr
@@ -781,33 +781,33 @@ struct
          in add_expr "coerce_class" dest_coerce_class_expr
       and expr_upto_op =
          let dest_upto_expr t =
-            let loc = dest_loc "dest_upto_expr" t in
+            let _loc = dest_loc "dest_upto_expr" t in
             let e1, e2, v, e3 = dest_dep0_dep0_dep1_any_term t in
             let el = dest_olist e3 in
                <:expr< for $string_of_symbol v$ = $dest_expr e1$ $to:true$ $dest_expr e2$ do { $list: List.map dest_expr el$ } >>
          in add_expr "for_upto" dest_upto_expr
       and expr_downto_op =
          let dest_downto_expr t =
-            let loc = dest_loc "dest_downto_expr" t in
+            let _loc = dest_loc "dest_downto_expr" t in
             let e1, e2, v, e3 = dest_dep0_dep0_dep1_any_term t in
             let el = dest_olist e3 in
                <:expr< for $string_of_symbol v$ = $dest_expr e1$ $to:false$ $dest_expr e2$ do { $list: List.map dest_expr el$ } >>
          in add_expr "for_downto" dest_downto_expr
       and expr_if_op =
          let dest_if_expr t =
-            let loc = dest_loc "dest_if_expr" t in
+            let _loc = dest_loc "dest_if_expr" t in
             let e1, e2, e3 = three_subterms t in
                <:expr< if $dest_expr e1$ then $dest_expr e2$ else $dest_expr e3$ >>
          in add_expr "ifthenelse" dest_if_expr
       and expr_laz_op =
          let dest_laz_expr t =
-            let loc = dest_loc "dest_laz_expr" t in
+            let _loc = dest_loc "dest_laz_expr" t in
             let e = one_subterm "dest_laz_expr" t in
                <:expr< lazy $dest_expr e$ >>
          in add_expr "lazy" dest_laz_expr
       and expr_new_op =
          let dest_new_expr t =
-            let loc = dest_loc "dest_new_expr" t in
+            let _loc = dest_loc "dest_new_expr" t in
                <:expr< new $list:List.map dest_string (dest_olist t)$ >>
          in add_expr "new" dest_new_expr
       and expr_obj_op =
@@ -822,7 +822,7 @@ struct
             let s, e = two_subterms t in
                dest_string s, dest_expr e
          in let dest_stream_expr t =
-            let loc = dest_loc "dest_stream_expr" t in
+            let _loc = dest_loc "dest_stream_expr" t in
             let sel = dest_olist (one_subterm "dest_stream_expr" t) in
                <:expr< {< $list: List.map dest_se sel$ >} >>
          in add_expr "stream" dest_stream_expr
@@ -837,31 +837,31 @@ struct
          in add_expr "record" dest_record_expr
       and expr_select_op =
          let dest_select_expr t =
-            let loc = dest_loc "dest_select_expr" t in
+            let _loc = dest_loc "dest_select_expr" t in
             let e, s = two_subterms t in
                <:expr< $dest_expr e$ # $dest_string s$ >>
          in add_expr "select" dest_select_expr
       and expr_string_subscript_op =
          let dest_string_subscript_expr t =
-            let loc = dest_loc "dest_string_subscript_expr" t in
+            let _loc = dest_loc "dest_string_subscript_expr" t in
             let e1, e2 = two_subterms t in
                <:expr< $dest_expr e1$ .[ $dest_expr e2$ ] >>
          in add_expr "string_subscript" dest_string_subscript_expr
       and expr_tuple_op =
          let dest_tuple_expr t =
-            let loc = dest_loc "dest_tuple_expr" t in
+            let _loc = dest_loc "dest_tuple_expr" t in
             let el = dest_olist (one_subterm "dest_tuple_expr" t) in
                <:expr< ( $list: List.map dest_expr el$ ) >>
          in add_expr "tuple" dest_tuple_expr
       and expr_cast_op =
          let dest_cast_expr t =
-            let loc = dest_loc "dest_cast_expr" t in
+            let _loc = dest_loc "dest_cast_expr" t in
             let e, t = two_subterms t in
                <:expr< ( $dest_expr e$ : $dest_type t$ ) >>
          in add_expr "cast" dest_cast_expr
       and expr_while_op =
          let dest_while_expr t =
-            let loc = dest_loc "dest_while_expr" t in
+            let _loc = dest_loc "dest_while_expr" t in
             let e, el = two_subterms t in
                <:expr< while $dest_expr e$ do { $list: List.map dest_expr (dest_olist el)$ } >>
          in add_expr "while" dest_while_expr
@@ -998,7 +998,7 @@ struct
       and patt_apply_end_op 		= mk_ocaml_op "patt_apply_end"
       in let patt_int_op =
          let dest_int_patt t =
-            let loc, i = dest_loc_int "dest_int_patt" t in
+            let _loc, i = dest_loc_int "dest_int_patt" t in
                <:patt< $int:i$ >>, one_subterm "dest_int_patt" t
          in add_patt "patt_int" dest_int_patt
       and patt_native_int_op =
@@ -1018,22 +1018,22 @@ struct
          in add_patt "patt_int64" dest_int64_patt
       and patt_float_op =
          let dest_float_patt t =
-            let loc, s, t = dest_loc_string_term "dest_float_patt" t in
+            let _loc, s, t = dest_loc_string_term "dest_float_patt" t in
                <:patt< $flo:s$ >>, t
          in add_patt "patt_float" dest_float_patt
       and patt_string_op =
          let dest_string_patt t =
-            let loc, s, t = dest_loc_string_term "dest_string_patt" t in
+            let _loc, s, t = dest_loc_string_term "dest_string_patt" t in
                <:patt< $str:s$ >>, t
          in add_patt "patt_string" dest_string_patt
       and patt_char_op =
          let dest_char_patt t =
-            let loc, s, t = dest_loc_string_term "dest_char_patt" t in
+            let _loc, s, t = dest_loc_string_term "dest_char_patt" t in
                <:patt< $chr:s$ >>, t
          in add_patt "patt_char" dest_char_patt
       and patt_lid_op =
          let dest_lid_patt t =
-            let loc, t = dest_loc_term "dest_lid_patt" t in
+            let _loc, t = dest_loc_term "dest_lid_patt" t in
                <:patt< $lid:dest_var t$ >>, t
          in add_patt "patt_lid" dest_lid_patt
       and patt_uid_op =
@@ -1044,54 +1044,54 @@ struct
                dest_string_param t
          in
          let dest_uid_patt t =
-         let loc = dest_loc "dest_uid_patt" t in
+         let _loc = dest_loc "dest_uid_patt" t in
          let p, t = two_subterms t in
             <:patt< $uid:dest_patt_id p$ >>, t
          in add_patt "patt_uid" dest_uid_patt
       and patt_var_op =
          let dest_var_patt t =
-            let loc = dest_loc "dest_var_patt" t in
+            let _loc = dest_loc "dest_var_patt" t in
             let v, t = dest_dep1_term t in
                <:patt< $lid:string_of_symbol v$ >>, t
          in add_patt "patt_var" dest_var_patt
       and patt_proj_op =
          let dest_proj_patt t =
-            let loc = dest_loc "dest_proj_patt" t in
+            let _loc = dest_loc "dest_proj_patt" t in
             let p1, p2, t = dest_patt_triple t in
                <:patt< $p1$ . $p2$ >>, t
          in add_patt "patt_proj" dest_proj_patt
       and patt_as_op =
          let dest_as_patt t =
-            let loc = dest_loc "dest_as_patt" t in
+            let _loc = dest_loc "dest_as_patt" t in
             let p1, p2, t = dest_patt_triple t in
                <:patt< ( $p1$ as $p2$ ) >>, t
          in add_patt "patt_as" dest_as_patt
       and patt_wildcard_op =
          let dest_wildcard_patt t =
-            let loc, t = dest_loc_term "dest_wildcard_expr" t in
+            let _loc, t = dest_loc_term "dest_wildcard_expr" t in
                <:patt< _ >>, t
          in add_patt "patt_wildcard" dest_wildcard_patt
       and patt_apply_op =
          let dest_apply_patt t =
-            let loc = dest_loc "dest_apply_patt" t in
+            let _loc = dest_loc "dest_apply_patt" t in
             let p1, p2, t = dest_patt_triple t in
                <:patt< $p1$ $p2$ >>, t
          in add_patt "patt_apply" dest_apply_patt
       and patt_choice_op =
          let dest_choice_patt t =
-            let loc = dest_loc "dest_choice_patt" t in
+            let _loc = dest_loc "dest_choice_patt" t in
             let p1, p2, t = dest_patt_triple t in
                <:patt< $p1$ | $p2$ >>, t
          in add_patt "patt_choice" dest_choice_patt
       and patt_range_op =
          let dest_range_patt t =
-            let loc = dest_loc "dest_range_expr" t in
+            let _loc = dest_loc "dest_range_expr" t in
             let p1, p2, t = dest_patt_triple t in
                <:patt< $p1$ .. $p2$ >>, t
          in add_patt "patt_range" dest_range_patt
       and patt_tuple_op =
          let dest_tuple_patt t =
-            let loc = dest_loc "dest_tuple_patt" t in
+            let _loc = dest_loc "dest_tuple_patt" t in
             let rec dest_tuple t =
                if Opname.eq (opname_of_term t) patt_tuple_end_op then
                   [], one_subterm "dest_tuple_patt" t
@@ -1105,7 +1105,7 @@ struct
          in add_patt "patt_tuple" dest_tuple_patt
       and patt_array_op =
          let dest_array_patt t =
-            let loc = dest_loc "dest_array_patt" t in
+            let _loc = dest_loc "dest_array_patt" t in
             let rec dest_array t =
                if Opname.eq (opname_of_term t) patt_array_end_op then
                   [], one_subterm "dest_array_patt" t
@@ -1125,7 +1125,7 @@ struct
          in add_patt "patt_array" dest_array_patt
       and patt_cast_op =
          let dest_cast_patt t =
-            let loc = dest_loc "dest_cast_patt" t in
+            let _loc = dest_loc "dest_cast_patt" t in
             let p, t = two_subterms t in
             let p, t' = dest_patt p in
                <:patt< ( $p$ : $dest_type t$ ) >>, t'
@@ -1143,7 +1143,7 @@ struct
          in add_patt "patt_lab" dest_lab_patt
       and patt_olb_op =
          let dest_olb_patt t =
-            let loc, s = dest_loc_string "dest_olb_patt" t in
+            let _loc, s = dest_loc_string "dest_olb_patt" t in
             let p, oe = two_subterms t in
             let p, t = dest_patt p in
             let oe = dest_expr_opt oe in
@@ -1151,12 +1151,12 @@ struct
          in add_patt "patt_olb" dest_olb_patt
       and patt_olb_none_op =
          let dest_olb_none_patt t =
-            let loc, s = dest_loc_string "dest_olb_none_patt" t in
+            let _loc, s = dest_loc_string "dest_olb_none_patt" t in
                <:patt< ? $s$ >>, one_subterm "dest_olb_none_patt" t
          in add_patt "patt_olb_none" dest_olb_none_patt
       and patt_typ_op =
          let dest_typ_patt t =
-            let loc = dest_loc "dest_typ_patt" t in
+            let _loc = dest_loc "dest_typ_patt" t in
             let sl, t = two_subterms t in
             let sl = dest_sl sl in
                <:patt< # $sl$ >>, t
@@ -1234,7 +1234,7 @@ struct
       and patt_record_end_op = mk_ocaml_op "patt_record_end"
       in let patt_record_op =
          let dest_record_patt t =
-            let loc = dest_loc "dest_record_patt" t in
+            let _loc = dest_loc "dest_record_patt" t in
             let rec dest_record t =
                if Opname.eq (opname_of_term t) patt_record_end_op then
                   [], one_subterm "dest_record_patt" t
@@ -1284,68 +1284,68 @@ struct
    and mk_type =
       let type_lid_op =
          let dest_lid_type t =
-            let loc = dest_loc "dest_lid_type" t in
+            let _loc = dest_loc "dest_lid_type" t in
                <:ctyp< $lid:dest_var t$ >>
          in add_type "type_lid" dest_lid_type
       and type_uid_op =
          let dest_uid_type t =
-            let loc = dest_loc "dest_uid_type" t in
+            let _loc = dest_loc "dest_uid_type" t in
                <:ctyp< $uid:dest_var t$ >>
          in add_type "type_uid" dest_uid_type
       and type_proj_op =
          let dest_proj_type t =
-            let loc = dest_loc "dest_proj_type" t in
+            let _loc = dest_loc "dest_proj_type" t in
             let t1, t2 = two_subterms t in
                <:ctyp< $dest_type t1$ . $dest_type t2$ >>
          in add_type "type_proj" dest_proj_type
       and type_as_op =
          let dest_as_type t =
-            let loc = dest_loc "dest_as_type" t in
+            let _loc = dest_loc "dest_as_type" t in
             let t1, t2 = two_subterms t in
                <:ctyp< $dest_type t1$ as $dest_type t2$ >>
          in add_type "type_as" dest_as_type
       and type_wildcard_op =
          let dest_wildcard_type t =
-            let loc = dest_loc "dest_wildcard_type" t in
+            let _loc = dest_loc "dest_wildcard_type" t in
                <:ctyp< _ >>
          in add_type "type_wildcard" dest_wildcard_type
       and type_apply_op =
          let dest_apply_type t =
-            let loc = dest_loc "dest_apply_type" t in
+            let _loc = dest_loc "dest_apply_type" t in
             let t1, t2 = two_subterms t in
                <:ctyp< $dest_type t1$ $dest_type t2$ >>
          in add_type "type_apply" dest_apply_type
       and type_fun_op =
          let dest_fun_type t =
-            let loc = dest_loc "dest_fun_type" t in
+            let _loc = dest_loc "dest_fun_type" t in
             let t1, t2 = two_subterms t in
                <:ctyp< $dest_type t1$ -> $dest_type t2$ >>
          in add_type "type_fun" dest_fun_type
       and type_class_id_op =
          let dest_class_id_type t =
-            let loc = dest_loc "dest_class_id_type" t in
+            let _loc = dest_loc "dest_class_id_type" t in
                <:ctyp< # $list:List.map dest_string (dest_olist (one_subterm "dest_class_id_type" t))$ >>
          in add_type "type_class_id" dest_class_id_type
       and type_param_op =
          let dest_param_type t =
-            let loc, s = dest_loc_string "dest_param_type" t in
+            let _loc, s = dest_loc_string "dest_param_type" t in
                <:ctyp< '$s$ >>
          in add_type "type_param" dest_param_type
       and type_equal_op =
          let dest_equal_type t =
-            let loc = dest_loc "dest_equal_type" t in
+            let _loc = dest_loc "dest_equal_type" t in
             let t1, t2 = two_subterms t in
                <:ctyp< $dest_type t1$ == $dest_type t2$ >>
          in add_type "type_equal" dest_equal_type
       and type_object_tt_op =
          let dest_object_tt_type t =
-            let loc = dest_loc "dest_object_tt_type" t in
+            let _loc = dest_loc "dest_object_tt_type" t in
             let stl = dest_olist (one_subterm "dest_object_tt_type" t) in
                <:ctyp< < $list: List.map dest_st stl$ .. > >>
          in add_type "type_object_tt" dest_object_tt_type
       and type_object_ff_op =
          let dest_object_ff_type t =
-            let loc = dest_loc "dest_object_ff_type" t in
+            let _loc = dest_loc "dest_object_ff_type" t in
             let stl = dest_olist (one_subterm "dest_object_ff_type" t) in
                <:ctyp< < $list: List.map dest_st stl$ > >>
          in add_type "type_object_ff" dest_object_ff_type
@@ -1355,11 +1355,11 @@ struct
             let b, t = two_subterms t in
                l, s, dest_bool b, dest_type t
          in let dest_record_type t =
-            let loc = dest_loc "dest_record_type" t in
+            let _loc = dest_loc "dest_record_type" t in
             let sbtl = dest_olist (one_subterm "dest_record_type" t) in
                <:ctyp< { $list: List.map dest_sbt sbtl$ } >>
          in let dest_pvt_record_type t =
-            let loc = dest_loc "dest_pvt_record_type" t in
+            let _loc = dest_loc "dest_pvt_record_type" t in
             let sbtl = dest_olist (one_subterm "dest_pvt_record_type" t) in
                <:ctyp< private { $list: List.map dest_sbt sbtl$ } >>
          in add_type "type_record" dest_record_type, add_type "type_pvt_record" dest_pvt_record_type
@@ -1368,17 +1368,17 @@ struct
             let l, s, t = dest_loc_string_term "dest_stl" t in
                l, s, List.map dest_type (dest_olist t)
          in let dest_list_type t =
-            let loc = dest_loc "dest_list_type" t in
+            let _loc = dest_loc "dest_list_type" t in
             let stll = dest_olist (one_subterm "dest_list_type" t) in
                <:ctyp< [ $list: List.map dest_stl stll$ ] >>
          in let dest_pvt_list_type t =
-            let loc = dest_loc "dest_pvt_list_type" t in
+            let _loc = dest_loc "dest_pvt_list_type" t in
             let stll = dest_olist (one_subterm "dest_pvt_list_type" t) in
                <:ctyp< private [ $list: List.map dest_stl stll$ ] >>
          in add_type "type_list" dest_list_type, add_type "type_pvt_list" dest_pvt_list_type
       and type_prod_op =
          let dest_prod_type t =
-            let loc = dest_loc "dest_prod_type" t in
+            let _loc = dest_loc "dest_prod_type" t in
             let tl = dest_olist (one_subterm "dest_prod_type" t) in
                <:ctyp< ( $list: List.map dest_type tl$ ) >>
          in add_type "type_prod" dest_prod_type
@@ -1494,19 +1494,19 @@ struct
          in add_sig "sig_class_type" dest_class_sig_type
       and sig_subsig_op =
          let dest_subsig_sig t =
-            let loc = dest_loc "dest_subsig_sig" t in
+            let _loc = dest_loc "dest_subsig_sig" t in
             let sl = dest_olist (one_subterm "dest_subsig_sig" t) in
                <:sig_item< declare $list: List.map dest_sig sl$ end >>
          in add_sig "sig_subsig" dest_subsig_sig
       and sig_exception_op =
          let dest_exception_sig t =
-            let loc, s = dest_loc_string "dest_exception_sig" t in
+            let _loc, s = dest_loc_string "dest_exception_sig" t in
             let tl = dest_olist (one_subterm "dest_exception_sig" t) in
                <:sig_item< exception $s$ of $list: List.map dest_type tl$ >>
          in add_sig "sig_exception" dest_exception_sig
       and sig_external_op =
          let dest_external_sig t =
-            let loc, s = dest_loc_string "dest_external_sig" t in
+            let _loc, s = dest_loc_string "dest_external_sig" t in
                match dest_olist (one_subterm "dest_external_sig" t) with
                   t :: sl ->
                      <:sig_item< external $s$ : $dest_type t$ = $list: List.map dest_string sl$ >>
@@ -1521,31 +1521,31 @@ struct
          in add_sig "sig_inc" dest_inc_sig
       and sig_module_op =
          let dest_module_sig t =
-            let loc, s = dest_loc_string "dest_module_sig" t in
+            let _loc, s = dest_loc_string "dest_module_sig" t in
             let mt = one_subterm "dest_module_sig" t in
                <:sig_item< module $s$ : $dest_mt mt$ >>
          in add_sig "sig_module" dest_module_sig
       and sig_module_type_op =
          let dest_module_type_sig t =
-            let loc, s = dest_loc_string "dest_module_type_sig" t in
+            let _loc, s = dest_loc_string "dest_module_type_sig" t in
             let mt = one_subterm "dest_module_type_sig" t in
                <:sig_item< module type $s$ = $dest_mt mt$ >>
          in add_sig "sig_module_type" dest_module_type_sig
       and sig_open_op =
          let dest_open_sig t =
-            let loc = dest_loc "dest_open_sig" t in
+            let _loc = dest_loc "dest_open_sig" t in
             let sl = dest_olist (one_subterm "dest_open_sig" t) in
                <:sig_item< open $List.map dest_string sl$ >>
          in add_sig "sig_open" dest_open_sig
       and sig_type_op =
          let dest_type_sig t =
-            let loc = dest_loc "dest_type_sig" t in
+            let _loc = dest_loc "dest_type_sig" t in
             let tdl = dest_olist (one_subterm "dest_type_sig" t) in
                <:sig_item< type $list: List.map dest_tdl tdl$ >>
          in add_sig "sig_type" dest_type_sig
       and sig_value_op =
          let dest_value_sig t =
-            let loc, s = dest_loc_string "dest_value_sig" t in
+            let _loc, s = dest_loc_string "dest_value_sig" t in
             let t = one_subterm "dest_value_sig" t in
                <:sig_item< value $s$ : $dest_type t$ >>
          in add_sig "sig_value" dest_value_sig
@@ -1634,24 +1634,24 @@ struct
          in add_str "str_class_type" dest_class_str_type
       and str_substruct_op =
          let dest_substruct_str t =
-            let loc = dest_loc "dest_substruct_str" t in
+            let _loc = dest_loc "dest_substruct_str" t in
             let stl = subterms_of_term t in
                <:str_item< declare $list: List.map dest_str stl$ end >>
          in add_str "str_substruct" dest_substruct_str
       and str_exception_op =
          let dest_exception_str t =
-            let loc, s = dest_loc_string "dest_exception_str" t in
+            let _loc, s = dest_loc_string "dest_exception_str" t in
             let tl = dest_olist (one_subterm "dest_exception_str" t) in
                <:str_item< exception $s$ of $list: List.map dest_type tl$ >>
          in add_str "str_exception" dest_exception_str
       and str_expr_op =
          let dest_expr_str t =
-            let loc = dest_loc "dest_expr_str" t in
+            let _loc = dest_loc "dest_expr_str" t in
                <:str_item< $exp: dest_expr (one_subterm "dest_expr_str" t)$ >>
          in add_str "str_expr" dest_expr_str
       and str_external_op =
          let dest_external_str t =
-            let loc, s = dest_loc_string "dest_external_str" t in
+            let _loc, s = dest_loc_string "dest_external_str" t in
                match dest_olist (one_subterm "dest_external_str" t) with
                   t :: sl ->
                      <:str_item< external $s$ : $dest_type t$ = $list: List.map dest_string sl$ >>
@@ -1660,19 +1660,19 @@ struct
          in add_str "str_external" dest_external_str
       and str_module_op =
          let dest_module_str t =
-            let loc, s = dest_loc_string "dest_module_str" t in
+            let _loc, s = dest_loc_string "dest_module_str" t in
             let me = one_subterm "dest_module_str" t in
                <:str_item< module $s$ = $dest_me me$ >>
          in add_str "str_module" dest_module_str
       and str_module_type_op =
          let dest_module_type_str t =
-            let loc, s = dest_loc_string "dest_module_type_str" t in
+            let _loc, s = dest_loc_string "dest_module_type_str" t in
             let mt = one_subterm "dest_module_type_str" t in
                <:str_item< module type $s$ = $dest_mt mt$ >>
          in add_str "str_module_type" dest_module_type_str
       and str_open_op =
          let dest_open_str t =
-            let loc = dest_loc "dest_open_str" t in
+            let _loc = dest_loc "dest_open_str" t in
             let sl = dest_olist (one_subterm "dest_open_str" t) in
                <:str_item< open $List.map dest_string sl$ >>
          in add_str "str_open" dest_open_str
@@ -1685,7 +1685,7 @@ struct
          in add_str "str_inc" dest_inc_str
       and str_type_op =
          let dest_type_str t =
-            let loc = dest_loc "dest_type_str" t in
+            let _loc = dest_loc "dest_type_str" t in
             let tdl = dest_olist (one_subterm "dest_type_str" t) in
                <:str_item< type $list: List.map dest_tdl tdl$ >>
          in add_str "str_type" dest_type_str
@@ -1759,46 +1759,46 @@ struct
    and mk_module_type =
       let mt_lid_op =
          let dest_lid_mt t =
-            let loc = dest_loc "dest_lid_mt" t in
+            let _loc = dest_loc "dest_lid_mt" t in
                <:module_type< $lid:dest_var t$ >>
          in add_mt "mt_lid" dest_lid_mt
       and mt_uid_op =
          let dest_uid_mt t =
-            let loc = dest_loc "dest_uid_mt" t in
+            let _loc = dest_loc "dest_uid_mt" t in
                <:module_type< $uid:dest_var t$ >>
          in add_mt "mt_uid" dest_uid_mt
       and mt_proj_op =
          let dest_proj_mt t =
-            let loc = dest_loc "dest_proj_mt" t in
+            let _loc = dest_loc "dest_proj_mt" t in
             let mt1, mt2 = two_subterms t in
                <:module_type< $dest_mt mt1$ . $dest_mt mt2$ >>
          in add_mt "mt_proj" dest_proj_mt
       and mt_apply_op =
          let dest_apply_mt t =
-            let loc = dest_loc "dest_apply_mt" t in
+            let _loc = dest_loc "dest_apply_mt" t in
             let mt1, mt2 = two_subterms t in
                <:module_type< $dest_mt mt1$ $dest_mt mt2$ >>
          in add_mt "mt_apply" dest_apply_mt
       and mt_functor_op =
          let dest_functor_mt t =
-            let loc = dest_loc "dest_functor_mt" t in
+            let _loc = dest_loc "dest_functor_mt" t in
             let v, mt1, mt2 = dest_dep0_dep1_any_term t in
                <:module_type< functor ($string_of_symbol v$ : $dest_mt mt1$) -> $dest_mt mt2$ >>
          in add_mt "mt_functor" dest_functor_mt
       and mt_quot_op =
          let dest_quot_mt t =
-            let loc = dest_loc "dest_quot_mt" t in
+            let _loc = dest_loc "dest_quot_mt" t in
                <:module_type< ' $dest_var t$ >>
          in add_mt "mt_quot" dest_quot_mt
       and mt_sig_op =
          let dest_sig_mt t =
-            let loc = dest_loc "dest_sig_mt" t in
+            let _loc = dest_loc "dest_sig_mt" t in
             let sil = dest_olist (one_subterm "dest_sig_mt" t) in
                <:module_type< sig $list: List.map dest_sig sil$ end >>
          in add_mt "mt_sig" dest_sig_mt
       and mt_type_with_op =
          let dest_with_mt t =
-            let loc = dest_loc "dest_with_mt" t in
+            let _loc = dest_loc "dest_with_mt" t in
                let mt, wcl = two_subterms t in
                let wcl = dest_olist wcl in
                   <:module_type< $dest_mt mt$ with $list: List.map dest_wc wcl$ >>
@@ -1857,36 +1857,36 @@ struct
    and mk_module_expr =
       let me_uid_op =
          let dest_uid_me t =
-            let loc = dest_loc "dest_uid_me" t in
+            let _loc = dest_loc "dest_uid_me" t in
                <:module_expr< $uid:dest_var t$ >>
          in add_me "me_uid" dest_uid_me
       and me_proj_op =
          let dest_proj_me t =
-            let loc = dest_loc "dest_proj_me" t in
+            let _loc = dest_loc "dest_proj_me" t in
             let me1, me2 = two_subterms t in
                <:module_expr< $dest_me me1$ . $dest_me me2$ >>
          in add_me "me_proj" dest_proj_me
       and me_apply_op =
          let dest_apply_me t =
-            let loc = dest_loc "dest_apply_me" t in
+            let _loc = dest_loc "dest_apply_me" t in
             let me1, me2 = two_subterms t in
                <:module_expr< $dest_me me1$ $dest_me me2$ >>
          in add_me "me_apply" dest_apply_me
       and me_functor_op =
          let dest_functor_me t =
-            let loc = dest_loc "dest_functor_me" t in
+            let _loc = dest_loc "dest_functor_me" t in
             let v, mt, me = dest_dep0_dep1_any_term t in
                <:module_expr< functor ($string_of_symbol v$ : $dest_mt mt$ ) -> $dest_me me$ >>
          in add_me "me_functor" dest_functor_me
       and me_struct_op =
          let dest_struct_me t =
-            let loc = dest_loc "dest_struct_me" t in
+            let _loc = dest_loc "dest_struct_me" t in
             let stl = subterms_of_term t in
                <:module_expr< struct $list: List.map dest_str stl$ end >>
          in add_me "me_struct" dest_struct_me
       and me_cast_op =
          let dest_cast_me t =
-            let loc = dest_loc "dest_cast_me" t in
+            let _loc = dest_loc "dest_cast_me" t in
             let me, mt = two_subterms t in
                <:module_expr< ( $dest_me me$ : $dest_mt mt$) >>
          in add_me "me_cast" dest_cast_me
@@ -2201,7 +2201,7 @@ struct
    and mk_fix_tail =
       let expr_fix_op =
          let dest_fix_expr t =
-            let loc = dest_loc "dest_fix_expr" t in
+            let _loc = dest_loc "dest_fix_expr" t in
             let pel, e = dest_fix t in
                <:expr< let rec $list: pel$ in $dest_expr e$ >>
          in add_expr "fix" dest_fix_expr
@@ -2218,7 +2218,7 @@ struct
       let patt_and_op = mk_ocaml_op "patt_and"
       and expr_let_op =
          let dest_let_expr t =
-            let loc = dest_loc "dest_let_expr" t in
+            let _loc = dest_loc "dest_let_expr" t in
             let pel, e = dest_let t in
                <:expr< let $list: pel$ in $dest_expr e$ >>
          in add_expr "let" dest_let_expr
@@ -2250,7 +2250,7 @@ struct
       let patt_done_op = mk_ocaml_op "patt_done"
       in let str_fix_op =
          let dest_fix_str t =
-            let loc = dest_loc "dest_fix_str" t in
+            let _loc = dest_loc "dest_fix_str" t in
             let rec dest_exprs t =
                if Opname.eq (opname_of_term t) patt_done_op then
                   []
@@ -2271,7 +2271,7 @@ struct
          in add_str "str_fix" dest_fix_str
       and str_let_op =
          let dest_let_str t =
-            let loc = dest_loc "dest_let_str" t in
+            let _loc = dest_loc "dest_let_str" t in
             let dest t =
                let p, e = two_subterms t in
                let p, _ = dest_patt p in
@@ -2327,7 +2327,7 @@ struct
    and mk_fun =
       let expr_fun_op =
          let dest_fun_expr t =
-            let loc = dest_loc "dest_fun_expr" t in
+            let _loc = dest_loc "dest_fun_expr" t in
             let pwel = dest_fun_aux (one_subterm "dest_fun_expr" t) in
                <:expr< fun [ $list: pwel$ ] >>
          in add_expr "fun" dest_fun_expr
@@ -2337,7 +2337,7 @@ struct
    and mk_match =
       let expr_match_op =
          let dest_match_expr t =
-            let loc = dest_loc "dest_match_expr" t in
+            let _loc = dest_loc "dest_match_expr" t in
             let pwel, e = two_subterms t in
             let pwel = dest_fun_aux pwel in
                <:expr< match $dest_expr e$ with [ $list: pwel$ ] >>
@@ -2348,7 +2348,7 @@ struct
    and mk_try =
       let expr_try_op =
          let dest_try_expr t =
-            let loc = dest_loc "dest_try_expr" t in
+            let _loc = dest_loc "dest_try_expr" t in
             let pwel, e = two_subterms t in
             let pwel = dest_fun_aux pwel in
                <:expr< try $dest_expr e$ with [ $list: pwel$ ] >>
@@ -2454,8 +2454,8 @@ struct
    (*
     * Some default terms to return on error.
     *)
-   let loc = dummy_loc
-   let def_str_item = StDcl (loc, [])
+   let _loc = dummy_loc
+   let def_str_item = StDcl (_loc, [])
 
    (*
     * Terms to MLAst.

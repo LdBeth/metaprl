@@ -53,8 +53,8 @@ let hash_max x =
 (*
  * We will relocate everything to 0
  *)
-let loc = dummy_loc
-let reloc = fun _ -> loc
+let _loc = dummy_loc
+let reloc = fun _ -> dummy_loc
 
 (*
  * Compute a hash value from the struct.

@@ -31,6 +31,6 @@ PrlC(command) =
    # Put together the command
    # JYH: not sure if this should be hardcoded as CAMLP4N.
    #
-   COMMAND[] = prlcomp $(command) -I $(LIB) -pp $(quote-argv $(CAMLP4N))
+   COMMAND[] = prlcomp $(command) -I $(LIB) -pp $(quote-argv $(CAMLP4N) $(LOC))
 
    return($(COMMAND))

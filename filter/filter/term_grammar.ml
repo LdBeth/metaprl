@@ -738,7 +738,7 @@ struct
    let string_params =
       List.map (fun _ -> ShapeString)
 
-   let expr_of_arg loc s =
+   let expr_of_arg _loc s =
       <:expr< argv.( $int: s$ ) >>
 
    let expr_of_anti (loc, _) name s =
@@ -1244,17 +1244,17 @@ struct
 
       parsed_term:
          [[ t = term ->
-             parse_term loc t
+             parse_term _loc t
           ]];
 
       parsed_bound_term:
          [[ t = bound_term ->
-             parse_bound_term loc t
+             parse_bound_term _loc t
           ]];
 
       term:
          [[ x = aterm ->
-               get_aterm loc x
+               get_aterm _loc x
          ]];
 
       aterm:
@@ -1262,206 +1262,206 @@ struct
           [ x = noncommaterm ->
              make_aterm x
            | x = noncommaterm; ","; y = noncommaterm ->
-             { aname = None; aterm = mk_pair_term loc (make_term x) (make_term y) }
+             { aname = None; aterm = mk_pair_term _loc (make_term x) (make_term y) }
          ]];
 
       noncommaterm:
          [
            "ite" LEFTA
             [ "if"; e1 = SELF; "then"; e2 = SELF; "else"; e3 = SELF ->
-               wrap_term loc (mk_dep0_dep0_dep0_term (mk_dep0_dep0_dep0_opname loc "ifthenelse") (make_term e1) (make_term e2) (make_term e3))
+               wrap_term _loc (mk_dep0_dep0_dep0_term (mk_dep0_dep0_dep0_opname _loc "ifthenelse") (make_term e1) (make_term e2) (make_term e3))
             ]
 
           (* Logical operators *)
           | "implies" RIGHTA
             [ t1 = SELF; op = sl_implies; t2 = SELF ->
-               mk_arith_term loc op t1 t2
+               mk_arith_term _loc op t1 t2
             ]
           | "or" RIGHTA
             [ t1 = SELF; op = sl_or; t2 = SELF ->
-               mk_arith_term loc op t1 t2
+               mk_arith_term _loc op t1 t2
             ]
           | "and" RIGHTA
             [ t1 = SELF; op = sl_and; t2 = SELF ->
-               mk_arith_term loc op t1 t2
+               mk_arith_term _loc op t1 t2
             ]
           | "quantify" LEFTA
             [ (* all/exists*)
                op = sl_quantify; v = var; ":"; t1 = SELF; "."; t2 = SELF ->
-                  wrap_term loc (mk_dep0_dep1_term (mk_dep0_dep1_opname loc op) v (make_term t1) (make_term t2))
+                  wrap_term _loc (mk_dep0_dep1_term (mk_dep0_dep1_opname _loc op) v (make_term t1) (make_term t2))
             |(* dall/dexists*)
                op = sl_quantify; v = var; sl_set_in; t1 = SELF; "."; t2 = SELF ->
-                  wrap_term loc (mk_dep0_dep1_term (mk_dep0_dep1_opname loc  ("d"^op)) v (make_term t1) (make_term t2))
+                  wrap_term _loc (mk_dep0_dep1_term (mk_dep0_dep1_opname _loc  ("d"^op)) v (make_term t1) (make_term t2))
             |(* sall/sexists*)
               op = sl_quantify; v = var; "."; t2 = SELF ->
-                  wrap_term loc (mk_dep1_term (mk_dep1_opname loc ("s"^op)) v (make_term t2))
+                  wrap_term _loc (mk_dep1_term (mk_dep1_opname _loc ("s"^op)) v (make_term t2))
             |(* thereis/forall *)
               op = sl_open_quantify; t1 = SELF; "."; t2 = SELF ->
-                  wrap_term loc (mk_dep0_dep1_term (mk_dep0_dep1_opname loc op) (Lm_symbol.add "self") (make_term t1) (make_term t2))
+                  wrap_term _loc (mk_dep0_dep1_term (mk_dep0_dep1_opname _loc op) (Lm_symbol.add "self") (make_term t1) (make_term t2))
             ]
 
           (* Relations *)
           | "equal" NONA
             [ (* t1 = t2 in ty,   t1 <> t2 in ty -- (in)equality in type *)
               t1 = SELF; (op,_) = sl_equal_rel; t2 = NEXT; sl_in; ty = SELF ->
-               wrap_term loc (mk_dep0_dep0_dep0_term (mk_dep0_dep0_dep0_opname loc op) (make_term ty) (make_term t1) (make_term t2))
+               wrap_term _loc (mk_dep0_dep0_dep0_term (mk_dep0_dep0_dep0_opname _loc op) (make_term ty) (make_term t1) (make_term t2))
             | (* t1 in ty  *)
               t = SELF; op = sl_in; ty = NEXT ->
                (* XXX HACK - this is to support ad-hoc I/O form "member" - see TODO 2.14 -2.15 *)
                   let t =
                      let ty = make_term ty in let t = make_term t in
-                     try mk_dep0_dep0_dep0_term (mk_dep0_dep0_dep0_opname loc "equal") ty t t
+                     try mk_dep0_dep0_dep0_term (mk_dep0_dep0_dep0_opname _loc "equal") ty t t
                      with Failure _ | Not_found | Stdpp.Exc_located (_, Not_found) | Stdpp.Exc_located (_, Failure _) ->
-                        mk_dep0_dep0_term (mk_dep0_dep0_opname loc "member") t ty
+                        mk_dep0_dep0_term (mk_dep0_dep0_opname _loc "member") t ty
                   in
-                     wrap_term loc t
+                     wrap_term _loc t
             | (* t1 in t2 subset t3 *)
               t1 = SELF; sl_in; t2 = NEXT; sl_subset; t3 = SELF ->
-               wrap_term loc (mk_dep0_dep0_dep0_term (mk_dep0_dep0_dep0_opname loc "member") (make_term t1) (make_term t2) (make_term t3))
+               wrap_term _loc (mk_dep0_dep0_dep0_term (mk_dep0_dep0_dep0_opname _loc "member") (make_term t1) (make_term t2) (make_term t3))
             | (* t1 subset t2 *)
               t1 = SELF; op = sl_subset; t2 = SELF ->
-               mk_arith_term loc op t1 t2
+               mk_arith_term _loc op t1 t2
             | (* t1 = t2, t1 <> t2  *)
               t1 = SELF; (op,_) = sl_equal_rel; t2 = NEXT ->
-                mk_arith_term loc op t1 t2
+                mk_arith_term _loc op t1 t2
               (* t1 =[g] t2, t1 <>[g] t2  - algebraic relations for g *)
             | t1 = SELF; (_,op) = sl_equal_rel; "["; g = aterm; "]"; t2 = SELF ->
-               make_application loc [mk_field_term loc (get_aterm loc g) op; make_term t1; make_term t2]
+               make_application _loc [mk_field_term _loc (get_aterm _loc g) op; make_term t1; make_term t2]
             | (* t1 ~ t2 - squiggle equality  *)
               t1 = SELF; "~"; t2 = SELF ->
-               (* XXX: HACK - Perv!rewrite should be eventially replaced by mk_opname loc ["sqeq"] *)
-               (* wrap_term loc (mk_dep0_dep0_term (mk_dep0_dep0_opname loc "sqeq") (make_term t1) (make_term t2)) *)
-                  wrap_term loc (mk_xrewrite_term (make_term t1) (make_term t2))
+               (* XXX: HACK - Perv!rewrite should be eventially replaced by mk_opname _loc ["sqeq"] *)
+               (* wrap_term _loc (mk_dep0_dep0_term (mk_dep0_dep0_opname _loc "sqeq") (make_term t1) (make_term t2)) *)
+                  wrap_term _loc (mk_xrewrite_term (make_term t1) (make_term t2))
             | (* t1 In t2  - membership for set theory *)
               t1 = SELF; op = sl_set_in; t2 = SELF ->
-               wrap_term loc (mk_dep0_dep0_term (mk_dep0_dep0_opname loc op) (make_term t1) (make_term t2))
+               wrap_term _loc (mk_dep0_dep0_term (mk_dep0_dep0_opname _loc op) (make_term t1) (make_term t2))
             ]
           | "let" LEFTA
             [ "let"; x = var; "="; e1 = NEXT; "in"; e2 = SELF ->
-               wrap_term loc (mk_dep0_dep1_term (mk_dep0_dep1_opname loc "let") x (make_term e1) (make_term e2))
+               wrap_term _loc (mk_dep0_dep1_term (mk_dep0_dep1_opname _loc "let") x (make_term e1) (make_term e2))
             | e2 = SELF; "where"; x = var; "="; e1 = SELF ->
-               wrap_term loc (mk_dep0_dep1_term (mk_dep0_dep1_opname loc "let") x (make_term e1) (make_term e2))
+               wrap_term _loc (mk_dep0_dep1_term (mk_dep0_dep1_opname _loc "let") x (make_term e1) (make_term e2))
             | "open";  e1 = SELF; "in"; e2 = SELF ->
-               wrap_term loc (mk_dep0_dep1_term (mk_dep0_dep1_opname loc "let") (Lm_symbol.add "self") (make_term e1) (make_term e2))
+               wrap_term _loc (mk_dep0_dep1_term (mk_dep0_dep1_opname _loc "let") (Lm_symbol.add "self") (make_term e1) (make_term e2))
             ]
           | "compare" NONA
             [ (* t1 =@ t2, t1 <>@ t2, t1 <@ t2, t1 >@ t2, ...  - integer relations as booleans *)
                t1 = SELF; op = sl_arith_rel; t2 = SELF ->
-               mk_arith_term loc op t1 t2
+               mk_arith_term _loc op t1 t2
             | (* t1 < t2, t1 > t2, ...  - integer relations as propositions *)
                t1 = SELF; (op,_) = sl_rel;  t2 = SELF ->
-               mk_arith_term loc op t1 t2
+               mk_arith_term _loc op t1 t2
             | (* t1 ^= t2, t1 ^<> t2, t1 ^< t2, t1 ^> t2, ...  - algebraic relations for self *)
                t1 = SELF; op = sl_label_self_rel;  t2 = SELF ->
-               make_application loc [mk_field_self_term loc op; make_term t1; make_term t2]
+               make_application _loc [mk_field_self_term _loc op; make_term t1; make_term t2]
             | (* t1 <[g] t2, t1 >[g] t2, ...  - algebraic relations for g *)
                t1 = SELF; (_,op) = sl_rel; "["; g = aterm; "]"; t2 = SELF ->
-               make_application loc [mk_field_term loc (get_aterm loc g) op; make_term t1; make_term t2]
+               make_application _loc [mk_field_term _loc (get_aterm _loc g) op; make_term t1; make_term t2]
             ]
 
           (* Other operations *)
           | "cons" RIGHTA
             [ t1 = SELF; op = sl_double_colon; t2 = SELF ->
-               mk_arith_term loc op t1 t2
+               mk_arith_term _loc op t1 t2
             ]
           | "fun" RIGHTA
            [ t1 = SELF; op = sl_arrow; t2 = SELF ->
-              mk_type_term loc op t1 t2
+              mk_type_term _loc op t1 t2
            ]
           | "rev_fun" LEFTA
             [ t1 = SELF; op = sl_left_arrow; t2 = SELF ->
-               mk_arith_term loc op t2 t1
+               mk_arith_term _loc op t2 t1
             ]
           | "isect" RIGHTA
             [ (* Isect x: A. B[x], Union x:A. B[x]  - intersection, union of family of types *)
                op = sl_Isect; v = var; ":"; t1 = SELF; "."; t2 = SELF ->
-               wrap_term loc (mk_dep0_dep1_term (mk_dep0_dep1_opname loc op) v (make_term t1) (make_term t2))
+               wrap_term _loc (mk_dep0_dep1_term (mk_dep0_dep1_opname _loc op) v (make_term t1) (make_term t2))
              | (* A union B, A isect B, x: A isect B[x]  - binary union, intersection and dependent intersection *)
                t1 = SELF; op = sl_isect; t2 = SELF ->
-               mk_type_term loc op t1 t2
+               mk_type_term _loc op t1 t2
              |(* quot x,y: t1 // t2  - quotient type *)
                op = sl_quotient; x = var; ","; y = var; ":"; t1 = SELF; "//"; t2 = SELF ->
-               wrap_term loc (mk_dep0_dep2_term (mk_dep0_dep2_opname loc op) x y (make_term t1) (make_term t2))
+               wrap_term _loc (mk_dep0_dep2_term (mk_dep0_dep2_opname _loc op) x y (make_term t1) (make_term t2))
             ]
           | "plus" RIGHTA
             [  (* t1 +[g] t2  - algebraic plus *)
                t1 = SELF; sl_plus; "["; g = aterm;  "]"; t2 = SELF ->
-               make_application loc [mk_field_term loc (get_aterm loc g) "+"; make_term t1; make_term t2]
+               make_application _loc [mk_field_term _loc (get_aterm _loc g) "+"; make_term t1; make_term t2]
              | (* t1 + t2 - disjoint union *)
                t1 = SELF; op = sl_plus; t2 = SELF ->
-               mk_arith_term loc op t1 t2
+               mk_arith_term _loc op t1 t2
              | (* t1 ^+ t2   - algebraic plus for self *)
                t1 = SELF; op = sl_label_self_plus;  t2 = SELF ->
-               make_application loc [mk_field_self_term loc op; make_term t1; make_term t2]
+               make_application _loc [mk_field_self_term _loc op; make_term t1; make_term t2]
             ]
           | "add" LEFTA
             [ (* t1 +@ t2, t1 -@ t2 - integer plus, minus *)
                t1 = SELF; op = sl_arith_add; t2 = SELF ->
-               mk_arith_term loc op t1 t2
+               mk_arith_term _loc op t1 t2
             | (* t1 ^- t2   - algebraic minus for self *)
                t1 = SELF; op = sl_label_self_minus;  t2 = SELF ->
-               make_application loc [mk_field_self_term loc op; make_term t1; make_term t2]
+               make_application _loc [mk_field_self_term _loc op; make_term t1; make_term t2]
             | (* t1 -[g] t2   - algebraic minus for g *)
                t1 = SELF; op = sl_add; "["; g = aterm; "]"; t2 = SELF ->
-               make_application loc [mk_field_term loc (get_aterm loc g) op; make_term t1; make_term t2 ]
+               make_application _loc [mk_field_term _loc (get_aterm _loc g) op; make_term t1; make_term t2 ]
             ]
           | "uminus"
             [ op = sl_minus; x = SELF ->
-               wrap_term loc (mk_dep0_term (mk_dep0_opname loc op) (make_term x))
+               wrap_term _loc (mk_dep0_term (mk_dep0_opname _loc op) (make_term x))
             ]
           | "prod" RIGHTA
             [ (* t1 *[g] t2  - algebraic multiplication (e.g. group operation) *)
                t1 = SELF; sl_star; "["; g = aterm;  "]"; t2 = SELF ->
-               make_application loc [mk_field_term loc (get_aterm loc g) "*"; make_term t1; make_term t2]
+               make_application _loc [mk_field_term _loc (get_aterm _loc g) "*"; make_term t1; make_term t2]
              | (* t1 * t2 - type product *)
                t1 = SELF; op = sl_star; t2 = SELF ->
-               mk_type_term loc op t1 t2
+               mk_type_term _loc op t1 t2
              | (* t1 ^* t2   - algebraic multiplication for self *)
                t1 = SELF; op = sl_label_self_star;  t2 = SELF ->
-               make_application loc [mk_field_self_term loc op; make_term t1; make_term t2]
+               make_application _loc [mk_field_self_term _loc op; make_term t1; make_term t2]
             ]
           | "mul" LEFTA
             [ (* t1 *@ t2, t1 /@ t2, t1 %@ t2  - integer multiplication, division, reminder *)
                t1 = SELF; op = sl_arith_mul; t2 = SELF ->
-               mk_arith_term loc op t1 t2
+               mk_arith_term _loc op t1 t2
             | (* t1 ^/ t2   - algebraic division for self *)
                t1 = SELF; op = sl_label_self_div;  t2 = SELF ->
-               make_application loc [mk_field_self_term loc op; make_term t1; make_term t2]
+               make_application _loc [mk_field_self_term _loc op; make_term t1; make_term t2]
             | (* t1 /[g] t2   - algebraic right division for g *)
                t1 = SELF; op = sl_div; "["; g = aterm; "]"; t2 = SELF ->
-               make_application loc [mk_field_term loc (get_aterm loc g) op; make_term t1; make_term t2]
+               make_application _loc [mk_field_term _loc (get_aterm _loc g) op; make_term t1; make_term t2]
             ]
 
           | "apply" LEFTA
             [ t1 = SELF; t2 = SELF ->
-               make_application loc [make_term t1; make_term t2]
+               make_application _loc [make_term t1; make_term t2]
             ]
 
           | "power" RIGHTA
             [ (* t1 ^@ t2  - integer power *)
                t1 = SELF; op = sl_arith_power; t2 = SELF ->
-               mk_arith_term loc op t1 t2
+               mk_arith_term _loc op t1 t2
             | (* t1 ^^ t2   - algebraic power for self *)
                t1 = SELF; op = sl_label_self_power;  t2 = SELF ->
-               make_application loc [mk_field_self_term loc op; (make_term t1); (make_term t2)]
+               make_application _loc [mk_field_self_term _loc op; (make_term t1); (make_term t2)]
             | (* t1 ^[g] t2   - algebraic power for g *)
                t1 = SELF; op = sl_power; "["; g = aterm; "]"; t2 = SELF ->
-               make_application loc [mk_field_term loc (get_aterm loc g) op; (make_term t1); (make_term t2)]
+               make_application _loc [mk_field_term _loc (get_aterm _loc g) op; (make_term t1); (make_term t2)]
             | (* r ^ lab - field selection for records *)
               r = SELF; sl_power; lab = word_or_string  ->
-               wrap_term loc (mk_field_term loc (make_term r) lab)
+               wrap_term _loc (mk_field_term _loc (make_term r) lab)
             | (* r ^ lab := t - field update for records *)
                r = SELF; sl_power; lab = word_or_string; sl_assign; t = noncommaterm  ->
-               wrap_term loc (**)
-                  (mk_term (mk_op (mk_opname loc ["rcrd"] [ShapeToken] [0;0])
-                           [make_param (Token (mk_token_opname loc lab))])  [mk_simple_bterm (make_term t); mk_simple_bterm (make_term r)])
+               wrap_term _loc (**)
+                  (mk_term (mk_op (mk_opname _loc ["rcrd"] [ShapeToken] [0;0])
+                           [make_param (Token (mk_token_opname _loc lab))])  [mk_simple_bterm (make_term t); mk_simple_bterm (make_term r)])
             | (* ^ lab  - field selection for self *)
               sl_power; lab = word_or_string  ->
-               wrap_term loc (mk_field_self_term loc lab)
+               wrap_term _loc (mk_field_self_term _loc lab)
             | (* ^ lab - field update for records *)
                sl_power; lab = word_or_string; sl_assign; t = noncommaterm   ->
-               wrap_term loc (**)
-                  (mk_term (mk_op (mk_opname loc ["rcrd"] [ShapeToken] [0;0]) [make_param (Token (mk_token_opname loc lab))]) (**)
+               wrap_term _loc (**)
+                  (mk_term (mk_op (mk_opname _loc ["rcrd"] [ShapeToken] [0;0]) [make_param (Token (mk_token_opname _loc lab))]) (**)
                            [mk_simple_bterm (make_term t); mk_simple_bterm (mk_var_term (Lm_symbol.add "self"))])
            ]
 
@@ -1469,53 +1469,53 @@ struct
             [ op = opname_list ->
               begin match op with
                  [name] ->
-                    ST_String(name, loc)
+                    ST_String(name, _loc)
                | _ ->
-                    wrap_term loc (mk_term (mk_op (mk_opname loc op [] []) []) [])
+                    wrap_term _loc (mk_term (mk_op (mk_opname _loc op [] []) []) [])
               end
             | op = opname_list; (params, bterms) = termsuffix ->
-              wrap_term loc (mk_term (mk_op (mk_bopname loc op params bterms) params) bterms)
+              wrap_term _loc (mk_term (mk_op (mk_bopname _loc op params bterms) params) bterms)
             | op = opname_list; ":"; t = SELF ->
               match op with
                  [name] ->
-                    ST_Term({ aname = Some (mk_var_term (Lm_symbol.add name)); aterm = make_term t }, loc)
+                    ST_Term({ aname = Some (mk_var_term (Lm_symbol.add name)); aterm = make_term t }, _loc)
                | _ ->
-                    Stdpp.raise_with_loc loc (ParseError "illegal binding variable")
+                    Stdpp.raise_with_loc _loc (ParseError "illegal binding variable")
             ]
 
             (* type constraints *)
           | "constrain" NONA
             [ arg = SELF; ":>"; ty = SELF ->
-                 wrap_term loc (mk_ty_constrain_term (make_term arg) (make_term ty))
+                 wrap_term _loc (mk_ty_constrain_term (make_term arg) (make_term ty))
             ]
 
             (* short form for sequents *)
           | "sequent" NONA
             [ arg = SELF; "{|"; (hyps, concl) = sequent_body; "|}" ->
-               wrap_term loc (mk_sequent_term { sequent_args = make_term arg; sequent_hyps = hyps; sequent_concl = concl })
+               wrap_term _loc (mk_sequent_term { sequent_args = make_term arg; sequent_hyps = hyps; sequent_concl = concl })
             ]
 
           | "type" NONA
             [ t = SELF; op = sl_type ->
-               wrap_term loc (mk_dep0_term (mk_dep0_opname loc op) (make_term t))
+               wrap_term _loc (mk_dep0_term (mk_dep0_opname _loc op) (make_term t))
             ]
 
           | [ t = nonwordterm ->
-               wrap_term loc t
+               wrap_term _loc t
             ]
          ];
 
       (* Singleterm is a distinct term and no colons *)
       singleterm:
          [ [ op = opname_list ->
-              { aname = None; aterm = mk_term (mk_op (mk_opname loc op [] []) []) [] }
+              { aname = None; aterm = mk_term (mk_op (mk_opname _loc op [] []) []) [] }
             | op = opname_list; (params, bterms) = termsuffix ->
-              { aname = None; aterm = mk_term (mk_op (mk_bopname loc op params bterms) params) bterms }
+              { aname = None; aterm = mk_term (mk_op (mk_bopname _loc op params bterms) params) bterms }
            ]
           | "sequent" NONA
             [ arg = SELF; "{|"; (hyps, concl) = sequent_body; "|}" ->
                { aname = None; aterm = mk_sequent_term
-                   { sequent_args = get_aterm loc arg; sequent_hyps = hyps; sequent_concl = concl }}
+                   { sequent_args = get_aterm _loc arg; sequent_hyps = hyps; sequent_concl = concl }}
             ]
 
           | [ t = nonwordterm ->
@@ -1525,7 +1525,7 @@ struct
 
       bound_term:
          [ [ "("; v = varterm; ":"; t = aterm; ")" ->
-               { aname = Some v; aterm = (get_aterm loc t) }
+               { aname = Some v; aterm = (get_aterm _loc t) }
            ]
           | [ t = singleterm ->
               t
@@ -1560,67 +1560,68 @@ struct
 
              (* Abbreviations *)
            | i = sl_number ->
-             mk_term (mk_op (mk_opname loc ["number"] [ShapeNumber] [])
+             mk_term (mk_op (mk_opname _loc ["number"] [ShapeNumber] [])
                                [make_param (Number i)]) []
            | x = sequent ->
              x
 
              (* records {x1=a1;x2=a2;...} *)
            | "{"; lab = word_or_string; "="; t = aterm; rest = LIST0 rcrdterm; "}" ->
-                let r0 =   mk_term (mk_op (mk_opname loc ["rcrd"] [] []) []) [] in
+                let r0 =   mk_term (mk_op (mk_opname _loc ["rcrd"] [] []) []) [] in
                 let aux = fun r -> function (lab,t) ->
-                           mk_term (mk_op (mk_opname loc ["rcrd"] [ShapeToken] [0;0])
-                               [make_param (Token (mk_token_opname loc lab))])  [mk_simple_bterm (get_aterm loc t); mk_simple_bterm  r]
+                           mk_term (mk_op (mk_opname _loc ["rcrd"] [ShapeToken] [0;0])
+                               [make_param (Token (mk_token_opname _loc lab))])  [mk_simple_bterm (get_aterm _loc t); mk_simple_bterm  r]
                 in
                    List.fold_left aux r0 ((lab,t)::rest)
              (* record typess {x1:A1;x2:a2;...} *)
            | "{"; lab = word_or_string; ":"; t = aterm; ";"; r = LIST0 recordterm SEP ";"; "}" ->
-                let r0 =   mk_term (mk_op (mk_opname loc ["record"] [ShapeToken] [0])
-                               [make_param (Token (mk_token_opname loc lab))])  [mk_simple_bterm (get_aterm loc t)] in
+                let r0 =   mk_term (mk_op (mk_opname _loc ["record"] [ShapeToken] [0])
+                               [make_param (Token (mk_token_opname _loc lab))])  [mk_simple_bterm (get_aterm _loc t)] in
                 let aux = fun r -> function
                       (Some lab,t) ->
-                           mk_term (mk_op (mk_opname loc ["record"] [ShapeToken] [1;0])
-                               [make_param (Token (mk_token_opname loc lab))])  [mk_bterm [Lm_symbol.add "self"] (get_aterm loc t); mk_simple_bterm  r]
+                           mk_term (mk_op (mk_opname _loc ["record"] [ShapeToken] [1;0])
+                               [make_param (Token (mk_token_opname _loc lab))])  [mk_bterm [Lm_symbol.add "self"]
+                               (get_aterm _loc t); mk_simple_bterm  r]
                    |  (None,t) ->
-                           mk_dep0_dep1_term (mk_dep0_dep1_opname loc "set") (Lm_symbol.add "self") r (get_aterm loc t)
+                           mk_dep0_dep1_term (mk_dep0_dep1_opname _loc "set") (Lm_symbol.add "self") r (get_aterm _loc t)
                 in
                     List.fold_left aux r0 r
              (* single record types {x1:A1} *)
            | "{"; lab = word_or_string; ":"; t = aterm; "}" ->
-                mk_term (mk_op (mk_opname loc ["record"] [ShapeToken] [0])
-                        [make_param (Token (mk_token_opname loc lab))])  [mk_simple_bterm (get_aterm loc t)]
+                mk_term (mk_op (mk_opname _loc ["record"] [ShapeToken] [0])
+                        [make_param (Token (mk_token_opname _loc lab))])  [mk_simple_bterm (get_aterm _loc t)]
              (* sets {x:A | P[x]} *)
            | "{"; v = word_or_string; ":"; ty = aterm; "|"; b = aterm; "}" ->
-             mk_dep0_dep1_term (mk_dep0_dep1_opname loc "set") (Lm_symbol.add v) (get_aterm loc ty) (get_aterm loc b)
+             mk_dep0_dep1_term (mk_dep0_dep1_opname _loc "set") (Lm_symbol.add v) (get_aterm _loc ty) (get_aterm _loc b)
              (* very dependent functions {f | x:A -> B[x]} *)
            | "{"; f =  word_or_string; "|"; t = aterm; "}" ->
-             let t = get_aterm loc t in let f = Lm_symbol.add f in
-             let rfun_op = mk_dep0_dep2_opname loc "rfun" in
-                if is_dep0_dep1_term (mk_dep0_dep1_opname loc "fun") t then
+             let t = get_aterm _loc t in let f = Lm_symbol.add f in
+             let rfun_op = mk_dep0_dep2_opname _loc "rfun" in
+                if is_dep0_dep1_term (mk_dep0_dep1_opname _loc "fun") t then
                    let v, a, b = dest_dep0_dep1_any_term t in
                       mk_dep0_dep2_term rfun_op f v a b
-                else if is_dep0_dep0_term (mk_dep0_dep0_opname loc "fun") t then
+                else if is_dep0_dep0_term (mk_dep0_dep0_opname _loc "fun") t then
                    let a, b = two_subterms t in
                       mk_dep0_dep2_term rfun_op f (mk_gensym ()) a b
                 else
-                   Stdpp.raise_with_loc loc (ParseError "body of <rfun> is not a function")
+                   Stdpp.raise_with_loc _loc (ParseError "body of <rfun> is not a function")
             | "!"; v = var ->
                encode_free_var v
             | x = QUOTATION ->
                let name, s = dest_quot x in
-                  parse_quotation loc "term" name s
+                  parse_quotation _loc "term" name s
             | x = ANTIQUOT ->
                let name, s = dest_quot x in
-                  parse_quotation loc "term" name s
+                  parse_quotation _loc "term" name s
             | "("; t = aterm; ")" ->
-               get_aterm loc t
+               get_aterm _loc t
           ]];
 
       var: [[ v = word_or_string -> Lm_symbol.add v ]];
 
       varterm:
          [[ "'"; v = var ->
-             begin match mk_var_contexts loc v 0 with Some conts -> mk_so_var_term v conts [] | None -> mk_var_term v end
+             begin match mk_var_contexts _loc v 0 with Some conts -> mk_so_var_term v conts [] | None -> mk_var_term v end
            | "'"; v = var; sl_contexts_left; conts = LIST0 var SEP ";"; sl_contexts_right ->
                mk_so_var_term v conts []
            | "'"; v = var; sl_contexts_left; conts = LIST0 var SEP ";"; sl_contexts_right; "["; terms = termlist; "]" ->
@@ -1630,13 +1631,13 @@ struct
            | "'"; v = var; sl_contexts_empty; "["; terms = termlist; "]" ->
                mk_so_var_term v [] terms
            | "'"; v = var; "["; terms = termlist; "]" ->
-               mk_so_var_term v (get_var_contexts loc v terms) terms
+               mk_so_var_term v (get_var_contexts _loc v terms) terms
            | "'"; v = var; sl_contexts_left; conts = LIST0 var SEP ";"; sl_contexts_right; "["; "["; t = term; "]"; "]"; terms = optbrtermlist ->
                mk_context_term v t conts terms
            | "'"; v = var; sl_contexts_empty; "["; "["; t = term; "]"; "]"; terms = optbrtermlist ->
                mk_context_term v t [] terms
            | "'"; v = var; "["; "["; t = term; "]"; "]"; terms = optbrtermlist ->
-               mk_context_term v t (get_var_contexts loc v terms) terms
+               mk_context_term v t (get_var_contexts _loc v terms) terms
           ]];
 
       (* List of terms *)
@@ -1646,7 +1647,7 @@ struct
       (* Local opname *)
       opname_name:
          [[ s = word_or_string ->
-             Opname.mk_opname s (opname_prefix loc)
+             Opname.mk_opname s (opname_prefix _loc)
           ]];
 
       opname_list:
@@ -1661,7 +1662,7 @@ struct
 
       opname:
          [[ op = opname_list ->
-             mk_opname loc op [] []
+             mk_opname _loc op [] []
           ]];
 
       (* Parameters *)
@@ -1674,14 +1675,14 @@ struct
          [[ w = param_const ->
              w
            | w = param_const; ":"; t = opname_param ->
-             cast_param loc w t
+             cast_param _loc w t
            | "("; t = term; ")"; ":"; pt = opname_param ->
-             cast_param loc (make_param (Operator (opparam_of_term t))) pt
+             cast_param _loc (make_param (Operator (opparam_of_term t))) pt
           ]];
 
       param_const:
          [[  w = opname_param ->
-             make_param_opname loc w
+             make_param_opname _loc w
            | n = sl_number ->
              make_param (Number n)
            | "-"; n = sl_number ->
@@ -1704,7 +1705,7 @@ struct
 
       bterm:
          [[ h = bhead ->
-             [], tupelize loc h
+             [], tupelize _loc h
            | h = bhead; "."; t = term ->
              List.map make_bvar h, t
            | "."; t = term ->
@@ -1732,7 +1733,7 @@ struct
                ty_type   = ty
              }
            | "sequent"; (ty_hyp, ty_concl) = ty_sequent; ty_seq = ty_opt_constraint ->
-             let opname = Opname.mk_opname "sequent_arg" (opname_prefix loc) in
+             let opname = Opname.mk_opname "sequent_arg" (opname_prefix _loc) in
              let t = mk_term (mk_op opname []) [] in
                 { ty_term   = t;
                   ty_opname = opname;
@@ -1754,7 +1755,7 @@ struct
          [[ opname = word_or_string; params = ty_opt_params; bterms = ty_opt_bterms ->
              let params, ty_params = params in
              let bterms, ty_bterms = bterms in
-             let opname = Opname.mk_opname opname (opname_prefix loc) in
+             let opname = Opname.mk_opname opname (opname_prefix _loc) in
              let t = mk_term (mk_op opname params) bterms in
                 t, opname, ty_params, ty_bterms
           ]];
@@ -1778,11 +1779,11 @@ struct
 
       ty_hyp:
          [[ ty_var = singleterm; ":"; ty_hyp = singleterm ->
-             let ty_var = get_aterm loc ty_var in
-             let ty_hyp = get_aterm loc ty_hyp in
+             let ty_var = get_aterm _loc ty_var in
+             let ty_hyp = get_aterm _loc ty_hyp in
                 mk_ty_hyp_term ty_var ty_hyp
            | "exst"; v = var; ":"; ty_var = singleterm; "."; ty_hyp = SELF ->
-             let ty_var = get_aterm loc ty_var in
+             let ty_var = get_aterm _loc ty_var in
                 mk_ty_exists_term v ty_var ty_hyp
           ]];
 
@@ -1805,7 +1806,7 @@ struct
          [[ w = param_const ->
              w, ty_param_of_param w
            | w = param_const; ":"; t = noncommaterm ->
-             cast_ty_param loc w t
+             cast_ty_param _loc w t
           ]];
 
       (*
@@ -1830,7 +1831,7 @@ struct
 
       ty_bterm:
          [[ h = ty_bhead ->
-             let term, ty = make_ty_term loc h in
+             let term, ty = make_ty_term _loc h in
              let bterm = mk_bterm [] term in
              let ty_bterm = { ty_bvars = []; ty_bterm = ty } in
                 bterm, ty_bterm
@@ -1872,7 +1873,7 @@ struct
 
       ty_constraint:
          [[ ":"; ty = singleterm ->
-             get_aterm loc ty
+             get_aterm _loc ty
          ]];
 
       (************************************************************************
@@ -1881,7 +1882,7 @@ struct
       sequent:
          [[ sl_sequent; "{"; (hyps, concl) = sequent_body; "}" ->
                mk_sequent_term {
-                  sequent_args = mk_term (mk_op (mk_opname loc ["sequent_arg"] [] []) []) [];
+                  sequent_args = mk_term (mk_op (mk_opname _loc ["sequent_arg"] [] []) []) [];
                   sequent_hyps = hyps;
                   sequent_concl = concl;
                }
@@ -1896,7 +1897,7 @@ struct
             "{"; (hyps, concl) = sequent_body; "}" ->
                let arg = mk_simple_bterm arg in
                mk_sequent_term {
-                  sequent_args = mk_term (mk_op (mk_opname loc ["sequent_arg"] [] [0]) []) [arg];
+                  sequent_args = mk_term (mk_op (mk_opname _loc ["sequent_arg"] [] [0]) []) [arg];
                   sequent_hyps = hyps;
                   sequent_concl = concl
                }
@@ -1914,17 +1915,17 @@ struct
 
       hyp:
          [[ "<"; hash = OPT "#"; name = var; conts = OPT contslist; args=optbrtermlist; ">" ->
-             let conts = match conts with Some conts -> conts | None -> get_var_contexts loc name args in
+             let conts = match conts with Some conts -> conts | None -> get_var_contexts _loc name args in
              let conts = match hash with Some _ -> hash_sym :: conts | None -> conts in
                Context(name, conts, args)
           | v = LIDENT; ":"; t = aterm ->
-             Hypothesis(Lm_symbol.add v, get_aterm loc t)
+             Hypothesis(Lm_symbol.add v, get_aterm _loc t)
           | v = UIDENT; ":"; t = aterm ->
-             Hypothesis(Lm_symbol.add v, get_aterm loc t)
+             Hypothesis(Lm_symbol.add v, get_aterm _loc t)
           | v = STRING; ":"; t = aterm ->
-             Hypothesis(Lm_symbol.add (Token.eval_string loc v), get_aterm loc t)
+             Hypothesis(Lm_symbol.add (Token.eval_string _loc v), get_aterm _loc t)
           | t = aterm ->
-             Hypothesis(empty_var, get_aterm loc t)
+             Hypothesis(empty_var, get_aterm _loc t)
           ]];
 
       contslist:
@@ -1953,9 +1954,9 @@ struct
 
       df_item:
          [[ t = singleterm ->
-             get_aterm loc t
+             get_aterm _loc t
            | "`"; name = STRING ->
-             mk_xstring_term (Token.eval_string loc name)
+             mk_xstring_term (Token.eval_string _loc name)
           ]];
 
       (* Term constructor "programs" *)
@@ -1967,10 +1968,10 @@ struct
 
       con_term:
          [[ "!"; t = term; "!" -> ConTerm t
-          | e = ANTIQUOT "arg" -> ConExpr (expr_of_arg loc e)
-          | e = ANTIQUOT -> ConExpr (expr_of_anti loc "" e)
-          | "'"; v = ANTIQUOT "arg" -> ConVar (expr_of_arg loc v)
-          | "'"; v = ANTIQUOT -> ConVar (expr_of_anti loc "" v)
+          | e = ANTIQUOT "arg" -> ConExpr (expr_of_arg _loc e)
+          | e = ANTIQUOT -> ConExpr (expr_of_anti _loc "" e)
+          | "'"; v = ANTIQUOT "arg" -> ConVar (expr_of_arg _loc v)
+          | "'"; v = ANTIQUOT -> ConVar (expr_of_anti _loc "" v)
           | ophead = word_or_string; rest = con_term_after_word -> rest ophead
           | con = con_sequent -> con
          ]];
@@ -1983,11 +1984,11 @@ struct
 
       con_term_after_word:
          [[ op = con_opname_rest ->
-               (fun rest -> ConConstruct (mk_opname loc (rest :: op) [] [], [], []))
+               (fun rest -> ConConstruct (mk_opname _loc (rest :: op) [] [], [], []))
           | op = con_opname_rest; (params, bterms) = con_term_suffix ->
                let param_types = List.map snd params in
                let bterm_arities = List.map (fun (bvars, _) -> List.length bvars) bterms in
-                  (fun rest -> ConConstruct (mk_opname loc (rest :: op) param_types bterm_arities, params, bterms))
+                  (fun rest -> ConConstruct (mk_opname _loc (rest :: op) param_types bterm_arities, params, bterms))
          ]];
 
       con_term_suffix:
@@ -2005,11 +2006,11 @@ struct
           ]];
 
       con_param:
-         [[ s = opname_param -> make_con_param_opname loc s
-          | s = opname_param; ":"; shape = con_param_shape -> make_con_param_opname_shape loc s shape
+         [[ s = opname_param -> make_con_param_opname _loc s
+          | s = opname_param; ":"; shape = con_param_shape -> make_con_param_opname_shape _loc s shape
           | n = sl_number -> ConPNum n, ShapeNumber
-          | e = ANTIQUOT "int" -> ConPInt (expr_of_anti loc "int" e), ShapeNumber
-          | e = ANTIQUOT; ":"; shape = con_param_shape -> ConPExpr (expr_of_anti loc "" e), shape
+          | e = ANTIQUOT "int" -> ConPInt (expr_of_anti _loc "int" e), ShapeNumber
+          | e = ANTIQUOT; ":"; shape = con_param_shape -> ConPExpr (expr_of_anti _loc "" e), shape
           ]];
 
       con_param_shape:
@@ -2032,14 +2033,14 @@ struct
          [[ v = LIDENT; b = con_bterm_body_or_suffix ->
                b v
           | e = ANTIQUOT "arg"; suff = OPT con_bterm_suffix ->
-               let e = expr_of_arg loc e in
+               let e = expr_of_arg _loc e in
                   (match suff with
                       Some (bv, bt) ->
                          (ConBVarExpr e :: bv), bt
                     | None ->
                          [], ConExpr e)
           | e = ANTIQUOT; suff = OPT con_bterm_suffix ->
-               let e = expr_of_anti loc "" e in
+               let e = expr_of_anti _loc "" e in
                   (match suff with
                       Some (bv, bt) ->
                          (ConBVarExpr e :: bv), bt
@@ -2069,7 +2070,7 @@ struct
       (* Special forms *)
       con_sequent:
          [[ sl_sequent; "{"; hyps = con_hyps; concl = con_concl; "}" ->
-               let arg = ConTerm (mk_term (mk_op (mk_opname loc ["sequent_arg"] [] []) []) []) in
+               let arg = ConTerm (mk_term (mk_op (mk_opname _loc ["sequent_arg"] [] []) []) []) in
                   ConSequent (arg, hyps, concl)
           | sl_sequent; "["; arg = con_term; "]"; "{"; hyps = con_hyps; concl = con_concl; "}" ->
                   ConSequent (arg, hyps, concl)
@@ -2081,13 +2082,13 @@ struct
          [[ "<"; name = word_or_string; args = con_optbrtermlist; ">" ->
               ConContext (<:expr< $str:name$ >>, args)
           | expr = ANTIQUOT "list" ->
-              ConHypList (expr_of_anti loc "list" expr)
+              ConHypList (expr_of_anti _loc "list" expr)
           | v = word_or_string; rest = con_hyp_suffix ->
               rest v
           | v = ANTIQUOT "arg"; ":"; t = con_term ->
-              ConHypothesis (expr_of_arg loc v, t)
+              ConHypothesis (expr_of_arg _loc v, t)
           | v = ANTIQUOT; ":"; t = con_term ->
-              ConHypothesis (expr_of_anti loc "" v, t)
+              ConHypothesis (expr_of_anti _loc "" v, t)
           | t = con_term ->
               ConHypothesis (<:expr< Lm_symbol.empty_var >>, t)
           ]];
@@ -2099,9 +2100,9 @@ struct
                (fun op ->
                   let param_types = List.map snd params in
                   let bterm_arities = List.map (fun (bvars, _) -> List.length bvars) bterms in
-                     ConHypothesis (<:expr< Lm_symbol.empty_var >>, ConConstruct (mk_opname loc [op] param_types bterm_arities, params, bterms)))
+                     ConHypothesis (<:expr< Lm_symbol.empty_var >>, ConConstruct (mk_opname _loc [op] param_types bterm_arities, params, bterms)))
           | ->
-               fun op -> ConHypothesis (<:expr< Lm_symbol.empty_var >>, ConTerm (mk_term (mk_op (mk_opname loc [op] [] []) []) []))
+               fun op -> ConHypothesis (<:expr< Lm_symbol.empty_var >>, ConTerm (mk_term (mk_op (mk_opname _loc [op] [] []) []) []))
           ]];
 
       con_concl:
@@ -2299,7 +2300,7 @@ struct
            | name = LIDENT ->
              SW_Word name
            | name = STRING ->
-             SW_String (Token.eval_string loc name)
+             SW_String (Token.eval_string _loc name)
           ]];
 
       word_or_string:
@@ -2308,7 +2309,7 @@ struct
            | name = LIDENT ->
              name
            | name = STRING ->
-             Token.eval_string loc name
+             Token.eval_string _loc name
           ]];
    END
 end

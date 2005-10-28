@@ -217,7 +217,7 @@ let make_groupdsc_opts () =
  ************************************************************************)
 
 let add_binding, get_bindings =
-   let loc = dummy_loc in
+   let _loc = dummy_loc in
    let decls = ref [] in
    let decl_var = ref 0 in
    let add_binding d =

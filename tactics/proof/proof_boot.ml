@@ -1957,7 +1957,7 @@ struct
     * Kreitz the tree into a single node.
     * This only work on the outermost rule boxes.
     *)
-   let loc = Lexing.dummy_pos, Lexing.dummy_pos
+   let _loc = Lexing.dummy_pos, Lexing.dummy_pos
 
    let rec kreitz_ext =
       let rec concat_text = function
