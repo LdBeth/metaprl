@@ -927,10 +927,10 @@ let serve connect server info =
                eprintf "Http_simple: %s: accept failed%t" (Printexc.to_string exn) eflush;
                None
       in
-      let () =
+      let info =
          match client with
             None ->
-               ()
+               info
           | Some client ->
                let info =
                   (* Ignore errors when the connection is handled *)
@@ -950,11 +950,13 @@ let serve connect server info =
                      Failure _
                    | SigPipe as exn ->
                         eprintf "Http_simple: %s: shutdown failed%t" (Printexc.to_string exn) eflush
-               in
+               and () = 
                   try Lm_ssl.close client with
                       Failure _
                     | SigPipe as exn ->
                          eprintf "Http_simple: %s: close failed%t" (Printexc.to_string exn) eflush
+               in
+                  info
       in
          serve info
    in
@@ -990,8 +992,11 @@ let serve_http start connect info port =
          for _i = 2 to !http_threads do
             ignore (Thread.create (serve connect ssl) info)
          done;
-      serve connect ssl info;
-      close_http ssl
+      try
+         serve connect ssl info
+      with exn ->
+         close_http ssl;
+         raise exn
 
 (*
  * Get the string name of an addr.

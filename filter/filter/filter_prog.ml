@@ -579,7 +579,7 @@ let extract_sig_item (item, loc) =
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_sig_item: rewrite: %s%t" name eflush;
          declare_rewrite loc rw
-    | InputForm ({ iform_name = name } as rw) ->
+    | InputForm { iform_name = name } ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_sig_item: input form: %s%t" name eflush;
          []
@@ -1042,7 +1042,6 @@ let interactive_cond_rewrite proc _loc crw =
  *)
 let define_ml_rewrite proc _loc mlrw rewrite_expr =
    let name = mlrw.mlterm_name in
-   let rw_id = "_$" ^ name ^ "_rewrite" in
    let name_patt = <:patt< $lid:name$ >> in
    let lid_expr s = <:expr< $lid:s$ >> in
    let rewrite_id_expr = lid_expr rewrite_id in
@@ -1050,9 +1049,7 @@ let define_ml_rewrite proc _loc mlrw rewrite_expr =
    let nil_term = <:expr< Refiner.Refiner.TermMan.xnil_term >> in (* XXX HACK *)
 
    let params = mlrw.mlterm_params in
-   let ivars, avars, tparams = split_params params in
    let all_ids, ivar_ids, avar_ids, tparam_ids = name_params params in
-   let params_expr = list_expr _loc (expr_of_term proc _loc) tparams in
    let simple_flag = params = [] in
    let addrs_spec, addrs_val, create_ml_rewrite_expr =
       if simple_flag then
@@ -1060,9 +1057,13 @@ let define_ml_rewrite proc _loc mlrw rewrite_expr =
          empty_rw_args _loc,
          <:expr< $refiner_expr _loc$ . create_ml_rewrite >>
       else
-         raise(Invalid_argument("ML rewrites with parameters are not currently supported - the code is there, but needs to be cleaned up")),
-         <:expr< unknown >>,
-         <:expr< $refiner_expr _loc$ . create_ml_cond_rewrite >>
+         raise(Invalid_argument("ML rewrites with parameters are not currently supported - the code is there, but needs to be cleaned up"))
+         (*
+         let ivars, avars, tparams = split_params params in
+            list_expr _loc (expr_of_term proc _loc) tparams,
+            <:expr< unknown >>,
+            <:expr< $refiner_expr _loc$ . create_ml_cond_rewrite >>
+          *)
    in
    let rewrite_body' = <:expr< $rewrite_expr.item_item$ $lid:goal_id$ >> in
    let rewrite_body =
@@ -1144,7 +1145,6 @@ let define_rule prim_rule deffun proc _loc
     }
     extract =
    (* Check the specifications *)
-   let string_expr s = <:expr< $str:s$ >> in
    let lid_expr s = <:expr< $lid:s$ >> in
 
    (* Expressions *)
@@ -1201,14 +1201,9 @@ let define_ml_rule want_checkpoint proc _loc
       mlterm_params     = params;
       mlterm_term       = redex;
     } code =
-   raise(Invalid_argument("ML rules are not currently supported - the code is there, but needs to be cleaned up"));
    (* Names *)
    let name_rule_id = "_$" ^ name ^ "_rule" in
    let name_patt = <:patt< $lid:name$ >> in
-
-   let string_expr s = <:expr< $str:s$ >> in
-   let lid_patt s = <:patt< $lid:s$ >> in
-   let lid_patt_ s = <:patt< $lid: "_" ^ s$ >> in
    let lid_expr s = <:expr< $lid:s$ >> in
 
    let goal_id, rule_expr = beta_reduce_var goal_id code.item_item in
@@ -1216,7 +1211,6 @@ let define_ml_rule want_checkpoint proc _loc
    let ivars, avars, tparams = split_params params in
    let all_ids, ivar_ids, avar_ids, tparam_ids = name_params params in
    let params_expr = list_expr _loc (expr_of_term proc _loc) tparams in
-   let redex_expr = expr_of_term proc _loc redex in
 
    let rule_body = <:expr<
       let ($lid:msequent_goal_id$, $lid:msequent_hyps_id$) = $dest_msequent_expr _loc$ $lid:goal_id$ in
@@ -1247,6 +1241,9 @@ let define_ml_rule want_checkpoint proc _loc
          <:str_item< value $name_patt$ = $bindings_let proc _loc code rule_fun_expr$ >>;
          refiner_let _loc
       ]
+
+let define_ml_rule _ _ _ _ _ =
+   raise(Invalid_argument("ML rules are not currently supported - the code is there, but needs to be cleaned up"))
 
 let create_dform_expr _loc name modes options term expr =
    let string_expr s = <:expr< $str:s$ >> in
@@ -1465,9 +1462,8 @@ let wrap_toploop_item proc _loc ((patt, expr) as item) =
    match patt with
       <:patt< $lid:name$ >> when List.mem_assoc name proc.imp_toploop ->
          let ctyp = get_top_ctyp proc name in
-         let expr1 = wrap_toploop_item _loc name ctyp expr in
-         let expr = toploop_item_expr _loc name ctyp in
-            (patt, expr1), [add_toploop_item proc _loc name ctyp]
+         let expr = wrap_toploop_item _loc name ctyp expr in
+            (patt, expr), [add_toploop_item proc _loc name ctyp]
      | _ ->
          item, []
 
@@ -1563,7 +1559,7 @@ let extract_str_item proc (item, loc) =
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: rwinteractive: %s%t" name eflush;
          interactive_rewrite proc loc rw
-    | InputForm ({ iform_name = name } as rw) ->
+    | InputForm { iform_name = name } ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: primrw: %s%t" name eflush;
          []

@@ -183,7 +183,7 @@ struct
    let iter f (t1, _) =
       Table1.iter f t1
 
-	let fold_map f (a1,a2) (t1, t2) =
+	let fold_map _ _ _ =
 		raise (Invalid_argument "With current TableSig it seems impossible to implement fold_map in DebugTables")
 (*
 		let t1' = Table1.fold_map f a1 t1 in

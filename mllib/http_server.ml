@@ -83,7 +83,7 @@ type http_info =
 (*
  * string -> path commands
  *)
-let set_path doc var path =
+let set_path _ var path =
    let path' = Lm_string_util.split ":" path in
       var := path'
 

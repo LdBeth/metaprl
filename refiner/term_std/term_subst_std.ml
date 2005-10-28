@@ -358,7 +358,7 @@ struct
     * First order simultaneous substitution.
     *)
    let rec subst_term terms fv vars = function
-      { term_op = { op_name = opname; op_params = [Var(v)] }; term_terms = [] } as t
+      { term_op = { op_name = opname; op_params = [Var(v)] }; term_terms = [] }
       when Opname.eq opname var_opname && List.mem v vars ->
          (* Var case *)
          List.nth terms (Lm_list_util.find_index v vars)

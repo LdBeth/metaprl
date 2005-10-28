@@ -213,7 +213,7 @@ struct
    (*
     * Add a key to the queue.
     *)
-   let share queue _ x =
+   let share _queue _ x =
       { key_value = x;
         key_local = x
       }
@@ -241,7 +241,7 @@ struct
    (*
     * Create an empty queue.
     *)
-   let create upcalls =
+   let create _upcalls =
       { queue_chan = Lm_thread_event.new_channel ();
         queue_lock = Mutex.create ();
         queue_cond = Condition.create ();

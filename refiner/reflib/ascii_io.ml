@@ -778,14 +778,15 @@ struct
             print_out out_line printed data o nrest
        | (Old _ :: _), ((_, name, _) as item :: ((_, name', _) as item') :: orest)
             when name=name' && StringSet.mem data.io_names name ->
+            (* XXX: HACK: Version <= 1.0.6 compatibility *)
             out_line item;
             out_line item';
             print_out out_line (StringSet.add printed name) data orest n
        | (Old _ :: _), ((_, name, _) as item :: orest) when StringSet.mem data.io_names name ->
             out_line item;
             print_out out_line (StringSet.add printed name) data orest n
-       | (Old oname :: nrest), ((_, name, _) as item :: orest) when StringSet.mem data.new_names name && not (StringSet.mem printed name) ->
-            ignore(List.map out_line (Hashtbl.find_all data.old_items oname));
+       | (Old oname :: nrest), ((_, name, _) :: orest) when StringSet.mem data.new_names name && not (StringSet.mem printed name) ->
+            List.iter out_line (Hashtbl.find_all data.old_items oname);
             data.io_names <- StringSet.remove data.io_names oname;
             print_out out_line (StringSet.add printed oname) data o nrest
        | (Old _ :: _), _ :: orest ->
