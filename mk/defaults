@@ -1,13 +1,16 @@
 #
 # The version of the MetaPRL program.
 #
-MP_VERSION = 0.9.6.3.1+
+MP_VERSION = 0.9.6.4+
 
 #
 # Versions of Ocaml/Camlp4 that are compatible with MetaPRL
 # CAML_VERSIONS shoud be a space-separated list of versions
 #
-CAML_VERSIONS = 3.08.2 3.08.3 3.08.4
+# XXX: TODO: Once 3.08 compatibility is no longer desired, the appropriate TyPrv code
+# should be added to filter/base/filter_ocaml.ml
+#
+CAML_VERSIONS = 3.08.2 3.08.3 3.08.4 3.09.0
 CAMLP4_VERSIONS = $(CAML_VERSIONS)
 
 #
@@ -34,7 +37,7 @@ else
    CFLAGS += -O2 -Wall -Wno-unused-variable
    export
 
-OCAMLFLAGS = -warn-error Ae -w Ae
+OCAMLFLAGS = -warn-error Aez -w Aez
 
 #
 # Configure
