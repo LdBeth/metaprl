@@ -12,7 +12,7 @@ doc <:doc<
 
    Each @bf{rewrite} definition in a module defines a conversion.
    For example, the definition of beta reduction in the Type
-   Theory (Section @refmodule[Itt_rfun]), is defined as follows:
+   Theory (Section @refmodule[Itt_dfun]), is defined as follows:
 
    @begin[center]
    @bf{rewrite} unfold_beta : $(@lambda x. b[x])@space a @longleftrightarrow b[a]$
@@ -378,9 +378,9 @@ doc <:doc<
                   | @i[inr](v) @rightarrow c[v]) @longleftrightarrow b[a]$}
    @end[description]
 
-   Each of the modules for functions (Section @refmodule[Itt_rfun]),
+   Each of the modules for functions (Section @refmodule[Itt_dfun]),
    tuples (Section @refmodule[Itt_dprod]), and union (Section @refmodule[Itt_union]),
-   defines an addition to the @hrefresource[reduce] resource: the @hrefmodule[Itt_rfun] adds
+   defines an addition to the @hrefresource[reduce] resource: the @hrefmodule[Itt_dfun] adds
    the @hrefrewrite[reduce_beta] rewrite with redex $(@lambda v. b[v])@space a$@; the
    @hrefmodule[Itt_dprod] adds the @hrefrewrite[reduceSpread] rewrite with redex
    $(@bf{match}@space (a, b)@space @bf{with}@space u, v @rightarrow c[u, v])$@; and the

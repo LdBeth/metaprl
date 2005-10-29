@@ -42,8 +42,7 @@ open Conversionals
 open Typeinf
 open Dtactic
 open Auto_tactic
-open Itt_rfun
-open Itt_fun
+open Itt_dfun
 open Itt_int
 open Itt_logic
 open Itt_dprod

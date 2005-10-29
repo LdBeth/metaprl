@@ -31,7 +31,7 @@
  *)
 
 open Base_rewrite
-open Itt_rfun
+open Itt_dfun
 open Itt_int_base
 open Itt_equal
 open Itt_struct
