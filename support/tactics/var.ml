@@ -85,12 +85,14 @@ let new_var v vars =
 let maybe_new_var v vars =
    if List.mem v vars then
       new_var v vars
-   else v
+   else
+      v
 
 let maybe_new_var_set v vars =
    if SymbolSet.mem vars v then
       new_name v (SymbolSet.mem vars)
-   else v
+   else
+      v
 
 let maybe_new_vars vars vars' =
    let rec aux l l' = function

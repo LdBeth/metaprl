@@ -38,6 +38,7 @@ open Refiner.Refiner.TermType
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermOp
 open Refiner.Refiner.TermMan
+open Refiner.Refiner.TermMeta
 open Refiner.Refiner.TermShape
 open Refiner.Refiner.Rewrite
 open Refiner.Refiner.RefineError
@@ -761,38 +762,90 @@ module type ReflectSig =
 sig
    type t
 
-   val create           : parse_state -> t
-   val mk_bind_term     : t -> var -> term -> term
-   val mk_mk_bterm_term : t -> term -> term -> term -> term
-   val mk_operator_term : t -> param op_param -> term
-   val mk_nil_term      : t -> term
-   val mk_cons_term     : t -> term -> term -> term
-   val mk_list_term     : t -> term list -> term
+   val create              : parse_state -> t
+   val mk_bind_term        : t -> var -> term -> term
+   val mk_bind_vec_term    : t -> term -> var -> term -> term
+   val mk_rev_bind_terms   : t -> hypothesis list -> term -> term
+   val mk_mk_bterm_term    : t -> term -> term -> term -> term
+   val mk_operator_term    : t -> param op_param -> term
+   val mk_nil_term         : t -> term
+   val mk_cons_term        : t -> term -> term -> term
+   val mk_list_term        : t -> term list -> term
+   val mk_pair_term        : t -> term -> term -> term
+   val mk_length_term      : t -> term -> term
+   val mk_append_term      : t -> term -> term -> term
+   val mk_append_list_term : t -> term list -> term
+   val mk_sequent_term     : t -> term -> term -> term -> term
+   val mk_BTerm            : t -> term
+   val mk_ty_list_term     : t -> term -> term
+   val mk_exists_term      : t -> var -> term -> term -> term
+   val mk_equal_term       : t -> term -> term -> term -> term
+   val mk_ty_nat           : t -> term
 end;;
 
 module Reflect : ReflectSig =
 struct
    type t =
       { opname_bind      : opname;
+        opname_bind_vec  : opname;
         opname_mk_bterm  : opname;
         opname_operator  : opname;
         term_nil         : term;
-        opname_cons      : opname
+        opname_cons      : opname;
+        opname_pair      : opname;
+        opname_length    : opname;
+        opname_append    : opname;
+        opname_sequent   : opname;
+        term_BTerm       : term;
+        opname_list      : opname;
+        opname_exists    : opname;
+        opname_equal     : opname;
+        term_nat         : term
       }
 
    let mk_state_opname state op params arities =
       state.parse_opname NormalKind [op] params arities
 
    let create state =
-      { opname_bind      = mk_state_opname state "bind" [] [1];
+      { opname_bind      = mk_state_opname state "bind"     [] [1];
+        opname_bind_vec  = mk_state_opname state "bind"     [] [0; 1];
         opname_mk_bterm  = mk_state_opname state "mk_bterm" [] [0; 0; 0];
         opname_operator  = mk_state_opname state "operator" [ShapeOperator] [];
         term_nil         = mk_simple_term (mk_state_opname state "nil" [] []) [];
         opname_cons      = mk_state_opname state "cons"     [] [0; 0];
+        opname_pair      = mk_state_opname state "pair"     [] [0; 0];
+        opname_length    = mk_state_opname state "length"   [] [0];
+        opname_append    = mk_state_opname state "append"   [] [0; 0];
+        opname_sequent   = mk_state_opname state "sequent"  [] [0; 0; 0];
+        term_BTerm       = mk_simple_term (mk_state_opname state "BTerm" [] []) [];
+        opname_list      = mk_state_opname state "list"     [] [0];
+        opname_exists    = mk_state_opname state "exists"   [] [0; 1];
+        opname_equal     = mk_state_opname state "equal"    [] [0; 0; 0];
+        term_nat         = mk_simple_term (mk_state_opname state "nat" [] []) [];
       }
+
+   let mk_length_term info t =
+      mk_dep0_term info.opname_length t
 
    let mk_bind_term info v t =
       mk_dep1_term info.opname_bind v t
+
+   let mk_bind_vec_term info d v t =
+      mk_dep0_dep1_term info.opname_bind_vec v d t
+
+   let rec mk_rev_bind_terms info vars t =
+      match vars with
+         v :: vars ->
+            let t =
+               match v with
+                  Hypothesis (v, _) ->
+                     mk_bind_term info v t
+                | Context (v, _, _) ->
+                     mk_bind_vec_term info (mk_length_term info (mk_var_term v)) v t
+            in
+               mk_rev_bind_terms info vars t
+       | [] ->
+            t
 
    let mk_mk_bterm_term info depth op subterms =
       mk_simple_term info.opname_mk_bterm [depth; op; subterms]
@@ -812,6 +865,39 @@ struct
             mk_nil_term info
        | v :: l ->
             mk_cons_term info v (mk_list_term info l)
+
+   let mk_pair_term info t1 t2 =
+      mk_simple_term info.opname_pair [t1; t2]
+
+   let mk_append_term info t1 t2 =
+      mk_simple_term info.opname_append [t1; t2]
+
+   let rec mk_append_list_term info l =
+      match l with
+         [] ->
+            mk_nil_term info
+       | [t] ->
+            t
+       | t :: l ->
+            mk_append_term info t (mk_append_list_term info l)
+
+   let mk_sequent_term info arg hyps concl =
+      mk_simple_term info.opname_sequent [arg; hyps; concl]
+
+   let mk_BTerm info =
+      info.term_BTerm
+
+   let mk_ty_list_term info t =
+      mk_simple_term info.opname_list [t]
+
+   let mk_exists_term info v t1 t2 =
+      mk_dep0_dep1_term info.opname_exists v t1 t2
+
+   let mk_equal_term info t1 t2 t3 =
+      mk_simple_term info.opname_equal [t3; t1; t2]
+
+   let mk_ty_nat info =
+      info.term_nat
 end;;
 
 (*
@@ -819,6 +905,7 @@ end;;
  *)
 let xquote_opname = mk_opname "xquote" perv_opname
 let xunquote_opname = mk_opname "xunquote" perv_opname
+let xrulequote_opname = mk_opname "xrulequote" perv_opname
 
 let is_xunquote_term t =
    is_dep0_term xunquote_opname t
@@ -829,12 +916,21 @@ let dest_xunquote_term t =
 let is_xquote_term t =
    is_dep0_dep0_term xquote_opname t && not (is_var_term (snd (dest_dep0_dep0_term xquote_opname t)))
 
-let dest_xquote_term state t =
-   let info = Reflect.create state in
-   let depth, t = dest_dep0_dep0_term xquote_opname t in
+let flush_hyps info appends hyps =
+   match hyps with
+      [] ->
+         appends
+    | _ ->
+         Reflect.mk_list_term info (List.rev hyps) :: appends
+
+let sweep_quote_term info depth t =
    let rec sweepdn t =
       if is_var_term t || is_so_var_term t then
          t
+      else if is_context_term t then
+         raise (RefineError ("Filter_grammar.sweep_quote_term", StringTermError ("contexts cannot be quoted currently", t)))
+      else if is_sequent_term t then
+         raise (RefineError ("Filter_grammar.sweep_quote_term", StringTermError ("sequents cannot be quoted currently", t)))
       else if is_xunquote_term t then
          dest_xunquote_term t
       else
@@ -848,6 +944,111 @@ let dest_xquote_term state t =
          List.fold_left (fun bterm v -> Reflect.mk_bind_term info v bterm) (sweepdn bterm) (List.rev vars)
    in
       sweepdn t
+
+let dest_xquote_term state t =
+   let info = Reflect.create state in
+   let depth, t = dest_dep0_dep0_term xquote_opname t in
+      sweep_quote_term info depth t
+
+(*
+ * Rules get quoted differently.
+ *)
+let is_xrulequote_term t =
+   is_dep1_term xrulequote_opname t && is_meta_term (snd (dest_dep1_term xrulequote_opname t))
+
+let sweep_rulequote_term info sovars cvars depth t =
+   let rec sweepdn sovars cvars t =
+      if is_var_term t then
+         sovars, cvars, t
+      else if is_so_var_term t then
+         let x, _, _ = dest_so_var t in
+            SymbolSet.add sovars x, cvars, t
+      else if is_context_term t then
+         let x, _, _, _ = dest_context t in
+            sovars, SymbolSet.add cvars x, t
+      else if is_sequent_term t then
+         sweep_sequent_term sovars cvars t
+      else if is_xunquote_term t then
+         sovars, cvars, dest_xunquote_term t
+      else
+         let param = Reflect.mk_operator_term info (opparam_of_term t) in
+         let sovars, cvars, bterms = List.fold_left wrap_bterm (sovars, cvars, []) (dest_term t).term_terms in
+         let bterms = Reflect.mk_list_term info (List.rev bterms) in
+            sovars, cvars, Reflect.mk_mk_bterm_term info depth param bterms
+
+   and wrap_bterm (sovars, cvars, bterms) bterm =
+      let { bvars = vars; bterm = bterm } = dest_bterm bterm in
+      let sovars, cvars, bterm = sweepdn sovars cvars bterm in
+      let bterm = List.fold_left (fun bterm v -> Reflect.mk_bind_term info v bterm) bterm (List.rev vars) in
+         sovars, cvars, bterm :: bterms
+
+   and sweep_sequent_term sovars cvars t =
+      let { sequent_args = arg;
+            sequent_hyps = hyps;
+            sequent_concl = concl
+          } = explode_sequent t
+      in
+      let sovars, cvars, arg = sweepdn sovars cvars arg in
+      let sovars, cvars, vars, appends, hyps =
+         SeqHyp.fold (fun (sovars, cvars, vars, appends, hyps) _ h ->
+               match h with
+                  Hypothesis (x, t) ->
+                     let sovars, cvars, t = sweepdn sovars cvars t in
+                     let hyp = Reflect.mk_rev_bind_terms info vars t in
+                        sovars, cvars, h :: vars, appends, hyp :: hyps
+
+                  (* For now, we are ignoring the context's context arguments *)
+                | Context (v, _, args) ->
+                     let appends = flush_hyps info appends hyps in
+                     let appends = mk_var_term v :: appends in
+                        sovars, SymbolSet.add cvars v, h :: vars, appends, []) (sovars, cvars, [], [], []) hyps
+      in
+      let appends = flush_hyps info appends hyps in
+      let hyps = Reflect.mk_append_list_term info (List.rev appends) in
+      let sovars, cvars, concl = sweepdn sovars cvars concl in
+      let concl = Reflect.mk_rev_bind_terms info vars concl in
+      let t = Reflect.mk_sequent_term info arg hyps concl in
+         sovars, cvars, t
+   in
+      sweepdn sovars cvars t
+
+let dest_xrulequote_term state t =
+   let info = Reflect.create state in
+   let v_step, t = dest_dep1_term xrulequote_opname t in
+   let t = meta_term_of_term t in
+   let v_d = Lm_symbol.add "d" in
+   let d = mk_var_term v_d in
+   let premises, goal = unzip_mfunction t in
+   let sovars = free_vars_mterm t in
+   let cvars = SymbolSet.empty in
+   let sovars, cvars, premises =
+      List.fold_left (fun (sovars, cvars, premises) (_, _, t) ->
+            let sovars, cvars, t = sweep_rulequote_term info sovars cvars d t in
+            let premises = t :: premises in
+               sovars, cvars, premises) (sovars, cvars, []) premises
+   in
+   let sovars, cvars, goal = sweep_rulequote_term info sovars cvars d goal in
+   let premises = Reflect.mk_list_term info (List.rev premises) in
+   let t = Reflect.mk_pair_term info premises goal in
+   let _ =
+      eprintf "@[<v 3>Free vars";
+      SymbolSet.iter (fun v -> eprintf "@ SOVar: %a" pp_print_symbol v) sovars;
+      SymbolSet.iter (fun v -> eprintf "@ CVar: %a" pp_print_symbol v) cvars;
+      eprintf "@]@."
+   in
+   let ty_bterm = Reflect.mk_BTerm info in
+   let ty_bterm_list = Reflect.mk_ty_list_term info ty_bterm in
+   let t = Reflect.mk_equal_term info (mk_var_term v_step) t ty_bterm in
+   let t =
+      SymbolSet.fold (fun t v ->
+            Reflect.mk_exists_term info v ty_bterm_list t) t cvars
+   in
+   let t =
+      SymbolSet.fold (fun t v ->
+            Reflect.mk_exists_term info v ty_bterm t) t sovars
+   in
+   let ty_nat = Reflect.mk_ty_nat info in
+      Reflect.mk_exists_term info v_d ty_nat t
 
 (************************************************
  * Create the conversions.
@@ -863,6 +1064,8 @@ let apply_ml_pre_iforms state t =
 let apply_ml_post_iforms state t =
    if is_xquote_term t then
       dest_xquote_term state t
+   else if is_xrulequote_term t then
+      dest_xrulequote_term state t
    else
       raise refine_exn
 
