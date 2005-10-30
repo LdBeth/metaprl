@@ -30,6 +30,7 @@ open Lm_printf
 open Lm_lexer
 open Lm_parser
 open Lm_string_set
+open Lm_location
 
 open Opname
 open Term_sig
@@ -40,6 +41,7 @@ open Refiner.Refiner.TermOp
 open Refiner.Refiner.TermMan
 open Refiner.Refiner.TermMeta
 open Refiner.Refiner.TermShape
+open Refiner.Refiner.TermSubst
 open Refiner.Refiner.Rewrite
 open Refiner.Refiner.RefineError
 
@@ -763,6 +765,7 @@ sig
    type t
 
    val create              : parse_state -> t
+   val mk_lambda_term      : t -> var -> term -> term
    val mk_bind_term        : t -> var -> term -> term
    val mk_bind_vec_term    : t -> term -> var -> term -> term
    val mk_rev_bind_terms   : t -> hypothesis list -> term -> term
@@ -776,62 +779,90 @@ sig
    val mk_append_term      : t -> term -> term -> term
    val mk_append_list_term : t -> term list -> term
    val mk_sequent_term     : t -> term -> term -> term -> term
-   val mk_BTerm            : t -> term
    val mk_ty_list_term     : t -> term -> term
    val mk_exists_term      : t -> var -> term -> term -> term
    val mk_equal_term       : t -> term -> term -> term -> term
+   val mk_number_term      : t -> int -> term
    val mk_ty_nat           : t -> term
+   val mk_subst_term       : t -> term -> term -> term
+   val mk_soapply_term     : t -> term -> term list -> term
+   val mk_substl_term      : t -> term -> term -> term
+   val mk_capply_term      : t -> term -> var list -> term
+   val mk_map_term         : t -> var -> term -> term -> term
+   val mk_add_term         : t -> term -> term -> term
+   val mk_ty_sovar_term    : t -> term -> term
+   val mk_ty_cvar_term     : t -> term -> term
+   val mk_ty_step          : t -> term
 end;;
 
 module Reflect : ReflectSig =
 struct
    type t =
-      { opname_bind      : opname;
-        opname_bind_vec  : opname;
-        opname_mk_bterm  : opname;
-        opname_operator  : opname;
-        term_nil         : term;
-        opname_cons      : opname;
-        opname_pair      : opname;
-        opname_length    : opname;
-        opname_append    : opname;
-        opname_sequent   : opname;
-        term_BTerm       : term;
-        opname_list      : opname;
-        opname_exists    : opname;
-        opname_equal     : opname;
-        term_nat         : term
+      { opname_lambda    : opname Lazy.t;
+        opname_bind      : opname Lazy.t;
+        opname_bind_vec  : opname Lazy.t;
+        opname_mk_bterm  : opname Lazy.t;
+        opname_operator  : opname Lazy.t;
+        term_nil         : term Lazy.t;
+        opname_cons      : opname Lazy.t;
+        opname_pair      : opname Lazy.t;
+        opname_length    : opname Lazy.t;
+        opname_append    : opname Lazy.t;
+        opname_sequent   : opname Lazy.t;
+        opname_list      : opname Lazy.t;
+        opname_exists    : opname Lazy.t;
+        opname_equal     : opname Lazy.t;
+        opname_number    : opname Lazy.t;
+        term_nat         : term Lazy.t;
+        opname_subst     : opname Lazy.t;
+        opname_substl    : opname Lazy.t;
+        opname_map       : opname Lazy.t;
+        opname_add       : opname Lazy.t;
+        opname_sovar     : opname Lazy.t;
+        opname_cvar      : opname Lazy.t;
+        term_ty_step     : term Lazy.t;
       }
 
    let mk_state_opname state op params arities =
       state.parse_opname NormalKind [op] params arities
 
    let create state =
-      { opname_bind      = mk_state_opname state "bind"     [] [1];
-        opname_bind_vec  = mk_state_opname state "bind"     [] [0; 1];
-        opname_mk_bterm  = mk_state_opname state "mk_bterm" [] [0; 0; 0];
-        opname_operator  = mk_state_opname state "operator" [ShapeOperator] [];
-        term_nil         = mk_simple_term (mk_state_opname state "nil" [] []) [];
-        opname_cons      = mk_state_opname state "cons"     [] [0; 0];
-        opname_pair      = mk_state_opname state "pair"     [] [0; 0];
-        opname_length    = mk_state_opname state "length"   [] [0];
-        opname_append    = mk_state_opname state "append"   [] [0; 0];
-        opname_sequent   = mk_state_opname state "sequent"  [] [0; 0; 0];
-        term_BTerm       = mk_simple_term (mk_state_opname state "BTerm" [] []) [];
-        opname_list      = mk_state_opname state "list"     [] [0];
-        opname_exists    = mk_state_opname state "exists"   [] [0; 1];
-        opname_equal     = mk_state_opname state "equal"    [] [0; 0; 0];
-        term_nat         = mk_simple_term (mk_state_opname state "nat" [] []) [];
+      { opname_lambda    = Lazy.lazy_from_fun (fun () -> mk_state_opname state "lambda"   [] [1]);
+        opname_bind      = Lazy.lazy_from_fun (fun () -> mk_state_opname state "bind"     [] [1]);
+        opname_bind_vec  = Lazy.lazy_from_fun (fun () -> mk_state_opname state "bind"     [] [0; 1]);
+        opname_mk_bterm  = Lazy.lazy_from_fun (fun () -> mk_state_opname state "mk_bterm" [] [0; 0; 0]);
+        opname_operator  = Lazy.lazy_from_fun (fun () -> mk_state_opname state "operator" [ShapeOperator] []);
+        term_nil         = Lazy.lazy_from_fun (fun () -> mk_simple_term (mk_state_opname state "nil" [] []) []);
+        opname_cons      = Lazy.lazy_from_fun (fun () -> mk_state_opname state "cons"     [] [0; 0]);
+        opname_pair      = Lazy.lazy_from_fun (fun () -> mk_state_opname state "pair"     [] [0; 0]);
+        opname_length    = Lazy.lazy_from_fun (fun () -> mk_state_opname state "length"   [] [0]);
+        opname_append    = Lazy.lazy_from_fun (fun () -> mk_state_opname state "append"   [] [0; 0]);
+        opname_sequent   = Lazy.lazy_from_fun (fun () -> mk_state_opname state "sequent"  [] [0; 0; 0]);
+        opname_list      = Lazy.lazy_from_fun (fun () -> mk_state_opname state "list"     [] [0]);
+        opname_exists    = Lazy.lazy_from_fun (fun () -> mk_state_opname state "exists"   [] [0; 1]);
+        opname_equal     = Lazy.lazy_from_fun (fun () -> mk_state_opname state "equal"    [] [0; 0; 0]);
+        term_nat         = Lazy.lazy_from_fun (fun () -> mk_simple_term (mk_state_opname state "nat" [] []) []);
+        opname_number    = Lazy.lazy_from_fun (fun () -> mk_state_opname state "number" [ShapeNumber] []);
+        opname_subst     = Lazy.lazy_from_fun (fun () -> mk_state_opname state "subst"     [] [0; 0]);
+        opname_substl    = Lazy.lazy_from_fun (fun () -> mk_state_opname state "substl"    [] [0; 0]);
+        opname_map       = Lazy.lazy_from_fun (fun () -> mk_state_opname state "map"       [] [1; 0]);
+        opname_add       = Lazy.lazy_from_fun (fun () -> mk_state_opname state "add"       [] [0; 0]);
+        opname_sovar     = Lazy.lazy_from_fun (fun () -> mk_state_opname state "SOVar"     [] [0]);
+        opname_cvar      = Lazy.lazy_from_fun (fun () -> mk_state_opname state "CVar"      [] [0]);
+        term_ty_step     = Lazy.lazy_from_fun (fun () -> mk_simple_term (mk_state_opname state "ProofStep" [] []) []);
       }
 
    let mk_length_term info t =
-      mk_dep0_term info.opname_length t
+      mk_dep0_term (Lazy.force info.opname_length) t
+
+   let mk_lambda_term info v t =
+      mk_dep1_term (Lazy.force info.opname_lambda) v t
 
    let mk_bind_term info v t =
-      mk_dep1_term info.opname_bind v t
+      mk_dep1_term (Lazy.force info.opname_bind) v t
 
    let mk_bind_vec_term info d v t =
-      mk_dep0_dep1_term info.opname_bind_vec v d t
+      mk_dep0_dep1_term (Lazy.force info.opname_bind_vec) v d t
 
    let rec mk_rev_bind_terms info vars t =
       match vars with
@@ -848,16 +879,16 @@ struct
             t
 
    let mk_mk_bterm_term info depth op subterms =
-      mk_simple_term info.opname_mk_bterm [depth; op; subterms]
+      mk_simple_term (Lazy.force info.opname_mk_bterm) [depth; op; subterms]
 
    let mk_operator_term info op =
-      mk_term (mk_op info.opname_operator [make_param (Operator op)]) []
+      mk_term (mk_op (Lazy.force info.opname_operator) [make_param (Operator op)]) []
 
    let mk_nil_term info =
-      info.term_nil
+      Lazy.force info.term_nil
 
    let mk_cons_term info t1 t2 =
-      mk_simple_term info.opname_cons [t1; t2]
+      mk_simple_term (Lazy.force info.opname_cons) [t1; t2]
 
    let rec mk_list_term info l =
       match l with
@@ -867,10 +898,10 @@ struct
             mk_cons_term info v (mk_list_term info l)
 
    let mk_pair_term info t1 t2 =
-      mk_simple_term info.opname_pair [t1; t2]
+      mk_simple_term (Lazy.force info.opname_pair) [t1; t2]
 
    let mk_append_term info t1 t2 =
-      mk_simple_term info.opname_append [t1; t2]
+      mk_simple_term (Lazy.force info.opname_append) [t1; t2]
 
    let rec mk_append_list_term info l =
       match l with
@@ -882,22 +913,57 @@ struct
             mk_append_term info t (mk_append_list_term info l)
 
    let mk_sequent_term info arg hyps concl =
-      mk_simple_term info.opname_sequent [arg; hyps; concl]
-
-   let mk_BTerm info =
-      info.term_BTerm
+      mk_simple_term (Lazy.force info.opname_sequent) [arg; hyps; concl]
 
    let mk_ty_list_term info t =
-      mk_simple_term info.opname_list [t]
+      mk_simple_term (Lazy.force info.opname_list) [t]
 
    let mk_exists_term info v t1 t2 =
-      mk_dep0_dep1_term info.opname_exists v t1 t2
+      mk_dep0_dep1_term (Lazy.force info.opname_exists) v t1 t2
 
    let mk_equal_term info t1 t2 t3 =
-      mk_simple_term info.opname_equal [t3; t1; t2]
+      mk_simple_term (Lazy.force info.opname_equal) [t3; t1; t2]
 
    let mk_ty_nat info =
-      info.term_nat
+      Lazy.force info.term_nat
+
+   let mk_number_term info i =
+      mk_term (mk_op (Lazy.force info.opname_number) [make_param (Number (Lm_num.num_of_int i))]) []
+
+   let mk_subst_term info t1 t2 =
+      mk_simple_term (Lazy.force info.opname_subst) [t1; t2]
+
+   let rec mk_soapply_term info t args =
+      match args with
+         arg :: args ->
+            mk_soapply_term info (mk_subst_term info t arg) args
+       | [] ->
+            t
+
+   let mk_substl_term info t1 t2 =
+      mk_simple_term (Lazy.force info.opname_substl) [t1; t2]
+
+   let rec mk_capply_term info t cvars =
+      match cvars with
+         v :: cvars ->
+            mk_capply_term info (mk_substl_term info t (mk_var_term v)) cvars
+       | [] ->
+            t
+
+   let mk_map_term info v t1 t2 =
+      mk_dep1_dep0_term (Lazy.force info.opname_map) v t1 t2
+
+   let mk_add_term info t1 t2 =
+      mk_dep0_dep0_term (Lazy.force info.opname_add) t1 t2
+
+   let mk_ty_sovar_term info t =
+      mk_dep0_term (Lazy.force info.opname_sovar) t
+
+   let mk_ty_cvar_term info t =
+      mk_dep0_term (Lazy.force info.opname_cvar) t
+
+   let mk_ty_step info =
+      Lazy.force info.term_ty_step
 end;;
 
 (*
@@ -950,105 +1016,209 @@ let dest_xquote_term state t =
    let depth, t = dest_dep0_dep0_term xquote_opname t in
       sweep_quote_term info depth t
 
-(*
- * Rules get quoted differently.
+(************************************************************************
+ * Rule quoting.
  *)
-let is_xrulequote_term t =
-   is_dep1_term xrulequote_opname t && is_meta_term (snd (dest_dep1_term xrulequote_opname t))
+let maybe_new_var v vars =
+   if SymbolSet.mem vars v then
+      new_name v (SymbolSet.mem vars)
+   else
+      v
 
-let sweep_rulequote_term info sovars cvars depth t =
-   let rec sweepdn sovars cvars t =
+let var_z = Lm_symbol.add "z"
+
+let is_xrulequote_term t =
+   is_dep0_term xrulequote_opname t && is_meta_term (dest_dep0_term xrulequote_opname t)
+
+let sweep_rulequote_term info socvars depth t =
+   let rec sweepdn socvars t =
       if is_var_term t then
-         sovars, cvars, t
+         socvars, t
       else if is_so_var_term t then
-         let x, _, _ = dest_so_var t in
-            SymbolSet.add sovars x, cvars, t
+         sweep_sovar_term socvars t
       else if is_context_term t then
-         let x, _, _, _ = dest_context t in
-            sovars, SymbolSet.add cvars x, t
+         sweep_context_term socvars t
       else if is_sequent_term t then
-         sweep_sequent_term sovars cvars t
+         sweep_sequent_term socvars t
       else if is_xunquote_term t then
-         sovars, cvars, dest_xunquote_term t
+         socvars, dest_xunquote_term t
       else
          let param = Reflect.mk_operator_term info (opparam_of_term t) in
-         let sovars, cvars, bterms = List.fold_left wrap_bterm (sovars, cvars, []) (dest_term t).term_terms in
+         let socvars, bterms = List.fold_left wrap_bterm (socvars, []) (dest_term t).term_terms in
          let bterms = Reflect.mk_list_term info (List.rev bterms) in
-            sovars, cvars, Reflect.mk_mk_bterm_term info depth param bterms
+            socvars, Reflect.mk_mk_bterm_term info depth param bterms
 
-   and wrap_bterm (sovars, cvars, bterms) bterm =
+   and wrap_bterm (socvars, bterms) bterm =
       let { bvars = vars; bterm = bterm } = dest_bterm bterm in
-      let sovars, cvars, bterm = sweepdn sovars cvars bterm in
+      let socvars, bterm = sweepdn socvars bterm in
       let bterm = List.fold_left (fun bterm v -> Reflect.mk_bind_term info v bterm) bterm (List.rev vars) in
-         sovars, cvars, bterm :: bterms
+         socvars, bterm :: bterms
 
-   and sweep_sequent_term sovars cvars t =
+   and sweep_list socvars tl =
+      let socvars, tl =
+         List.fold_left (fun (socvars, tl) t ->
+               let socvars, t = sweepdn socvars t in
+                  socvars, t :: tl) (socvars, []) tl
+      in
+         socvars, List.rev tl
+
+   and sweep_sovar_term socvars t =
+      let x, cargs, args = dest_so_var t in
+      let arity = List.length args in
+      let socvars, args = sweep_list socvars args in
+      let socvars = SymbolTable.add socvars x (false, cargs, arity) in
+      let t = Reflect.mk_capply_term info (mk_var_term x) cargs in
+      let t = Reflect.mk_soapply_term info t args in
+         socvars, t
+
+   and sweep_sequent_context_term socvars vars x cargs args =
+      let arity = List.length args in
+      let socvars, args = sweep_list socvars args in
+      let socvars = SymbolTable.add socvars x (true, cargs, arity) in
+      let t =
+         match vars, cargs, args with
+            [], [], [] ->
+               mk_var_term x
+          | _ ->
+               let fv = List.fold_left SymbolSet.add (free_vars_terms args) cargs in
+               let v_z = maybe_new_var var_z fv in
+               let t = Reflect.mk_capply_term info (mk_var_term v_z) cargs in
+               let t = Reflect.mk_soapply_term info t args in
+               let t = Reflect.mk_rev_bind_terms info vars t in
+               let t = Reflect.mk_map_term info v_z t (mk_var_term x) in
+                  t
+      in
+         socvars, t
+
+   and sweep_context_term socvars t =
+      raise (RefineError ("sweep_rulequote_term", StringTermError ("contexts are not supported currently", t)))
+
+   and sweep_sequent_term socvars t =
       let { sequent_args = arg;
             sequent_hyps = hyps;
             sequent_concl = concl
           } = explode_sequent t
       in
-      let sovars, cvars, arg = sweepdn sovars cvars arg in
-      let sovars, cvars, vars, appends, hyps =
-         SeqHyp.fold (fun (sovars, cvars, vars, appends, hyps) _ h ->
+      let socvars, arg = sweepdn socvars arg in
+      let socvars, vars, appends, hyps =
+         SeqHyp.fold (fun (socvars, vars, appends, hyps) _ h ->
                match h with
                   Hypothesis (x, t) ->
-                     let sovars, cvars, t = sweepdn sovars cvars t in
+                     let socvars, t = sweepdn socvars t in
                      let hyp = Reflect.mk_rev_bind_terms info vars t in
-                        sovars, cvars, h :: vars, appends, hyp :: hyps
+                        socvars, h :: vars, appends, hyp :: hyps
 
-                  (* For now, we are ignoring the context's context arguments *)
-                | Context (v, _, args) ->
+                | Context (x, cargs, args) ->
+                     let socvars, t = sweep_sequent_context_term socvars vars x cargs args in
                      let appends = flush_hyps info appends hyps in
-                     let appends = mk_var_term v :: appends in
-                        sovars, SymbolSet.add cvars v, h :: vars, appends, []) (sovars, cvars, [], [], []) hyps
+                     let appends = t :: appends in
+                        socvars, h :: vars, appends, []) (socvars, [], [], []) hyps
       in
       let appends = flush_hyps info appends hyps in
       let hyps = Reflect.mk_append_list_term info (List.rev appends) in
-      let sovars, cvars, concl = sweepdn sovars cvars concl in
+      let socvars, concl = sweepdn socvars concl in
       let concl = Reflect.mk_rev_bind_terms info vars concl in
       let t = Reflect.mk_sequent_term info arg hyps concl in
-         sovars, cvars, t
+         socvars, t
    in
-      sweepdn sovars cvars t
+      sweepdn socvars t
 
+(*
+ * Sort the free second-order and context variables in order of dependencies.
+ *)
+let sort_socvars socvars =
+   let rec step socvars l v =
+      if SymbolTable.mem socvars v then
+         let b, cargs, arity = SymbolTable.find socvars v in
+         let socvars = SymbolTable.remove socvars v in
+         let socvars, l = step_list socvars l cargs in
+            socvars, (v, b, cargs, arity) :: l
+      else
+         socvars, l
+   and step_list socvars l vars =
+      match vars with
+         v :: vars ->
+            let socvars, l = step socvars l v in
+               step_list socvars l vars
+       | [] ->
+            socvars, l
+   in
+   let rec loop socvars l =
+      if SymbolTable.is_empty socvars then
+         l
+      else
+         let v, _ = SymbolTable.choose socvars in
+         let socvars, l = step socvars l v in
+            loop socvars l
+   in
+      loop socvars []
+
+(*
+ * Existentially quantify the free second-order and context variables.
+ *)
+let rec quantify_socvars info socvars t =
+   match socvars with
+      (v, b, cargs, arity) :: socvars ->
+         let len = Reflect.mk_number_term info arity in
+         let len =
+            List.fold_left (fun len v ->
+                  Reflect.mk_add_term info (Reflect.mk_length_term info (mk_var_term v)) len) len cargs
+         in
+         let ty =
+            if b then
+               Reflect.mk_ty_cvar_term info len
+            else
+               Reflect.mk_ty_sovar_term info len
+         in
+         let t = Reflect.mk_exists_term info v ty t in
+            quantify_socvars info socvars t
+    | [] ->
+         t
+
+(*
+ * Quote the rule.
+ *)
+let var_step = Lm_symbol.add "step"
 let dest_xrulequote_term state t =
    let info = Reflect.create state in
-   let v_step, t = dest_dep1_term xrulequote_opname t in
+   let t = dest_dep0_term xrulequote_opname t in
    let t = meta_term_of_term t in
-   let v_d = Lm_symbol.add "d" in
-   let d = mk_var_term v_d in
+   let t, _, _ = mterms_of_parsed_mterms (fun _ -> true) t [] in
+
+   (* New variables to work with *)
+   let v_step = maybe_new_var var_step (free_vars_mterm t) in
+
+   (* The depth is always 0 *)
+   let d = Reflect.mk_number_term info 0 in
+
+   (* Convert the terms in the rule *)
    let premises, goal = unzip_mfunction t in
-   let sovars = free_vars_mterm t in
-   let cvars = SymbolSet.empty in
-   let sovars, cvars, premises =
-      List.fold_left (fun (sovars, cvars, premises) (_, _, t) ->
-            let sovars, cvars, t = sweep_rulequote_term info sovars cvars d t in
+   let socvars, premises =
+      List.fold_left (fun (socvars, premises) (_, _, t) ->
+            let socvars, t = sweep_rulequote_term info socvars d t in
             let premises = t :: premises in
-               sovars, cvars, premises) (sovars, cvars, []) premises
+               socvars, premises) (SymbolTable.empty, []) premises
    in
-   let sovars, cvars, goal = sweep_rulequote_term info sovars cvars d goal in
+   let socvars, goal = sweep_rulequote_term info socvars d goal in
    let premises = Reflect.mk_list_term info (List.rev premises) in
+
+   (* The inner term is an equality *)
+   let ty_step = Reflect.mk_ty_step info in
    let t = Reflect.mk_pair_term info premises goal in
-   let _ =
-      eprintf "@[<v 3>Free vars";
-      SymbolSet.iter (fun v -> eprintf "@ SOVar: %a" pp_print_symbol v) sovars;
-      SymbolSet.iter (fun v -> eprintf "@ CVar: %a" pp_print_symbol v) cvars;
-      eprintf "@]@."
-   in
-   let ty_bterm = Reflect.mk_BTerm info in
-   let ty_bterm_list = Reflect.mk_ty_list_term info ty_bterm in
-   let t = Reflect.mk_equal_term info (mk_var_term v_step) t ty_bterm in
-   let t =
-      SymbolSet.fold (fun t v ->
-            Reflect.mk_exists_term info v ty_bterm_list t) t cvars
-   in
-   let t =
-      SymbolSet.fold (fun t v ->
-            Reflect.mk_exists_term info v ty_bterm t) t sovars
-   in
-   let ty_nat = Reflect.mk_ty_nat info in
-      Reflect.mk_exists_term info v_d ty_nat t
+   let t = Reflect.mk_equal_term info (mk_var_term v_step) t ty_step in
+
+   (* Quantify over the free context and second-order variables *)
+   let socvars = sort_socvars socvars in
+   let t = quantify_socvars info socvars t in
+
+   (* The entire thing is a function that takes a step, and checks it *)
+   let t = Reflect.mk_lambda_term info v_step t in
+      t
+
+let dest_xrulequote_term state t =
+   try dest_xrulequote_term state t with
+      RefineError (s, err) ->
+         raise (RefineForceError ("dest_xrulequote_term", s, err))
 
 (************************************************
  * Create the conversions.

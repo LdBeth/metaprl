@@ -67,14 +67,13 @@ sig
    val strip_mfunction : meta_term -> meta_term
    val unzip_mrewrite : meta_term -> term list * term * term
 
-   (* Mappins *)
+   (* Mappings *)
    val iter_mterm : (term -> unit) -> meta_term -> unit
    val map_mterm : (term -> term) -> meta_term -> meta_term
 
    (*
     * During parsing and display, the default contexts are "encoded"
     * as a singleton list containing just the variable itself
-    * 
     *)
    val term_of_parsed_term : allow_seq_bindings -> term -> term
    val term_of_parsed_term_with_vars : allow_seq_bindings -> term -> term
