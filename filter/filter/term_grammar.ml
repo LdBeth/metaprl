@@ -48,6 +48,7 @@ open Refiner.Refiner.TermMan
 open Refiner.Refiner.TermMeta
 open Refiner.Refiner.TermShape
 open Refiner.Refiner.Rewrite
+open Refiner.Refiner.RefineError
 
 open Lexing
 open Filter_type
@@ -580,7 +581,7 @@ struct
          let p2 = dest_xparam_exp loc t2 in
             make_param (MLevel (max_level_exp (cast_level p1) (cast_level p2) 0))
       else
-         Stdpp.raise_with_loc loc (Invalid_argument "not a parameter")
+         Stdpp.raise_with_loc loc (RefineError ("dest_xparam_exp", StringTermError ("not a parameter", t)))
 
    let dest_xparam loc t =
       if is_dep0_dep0_term xparam_opname t then
@@ -596,7 +597,7 @@ struct
          let t2 = dest_xparam_type loc t2 in
             cast_param loc (make_param (Operator (opparam_of_term t1))) t2
       else
-         Stdpp.raise_with_loc loc (Invalid_argument "not a parameter")
+         Stdpp.raise_with_loc loc (RefineError ("dest_xparam_exp", StringTermError ("not a parameter", t)))
 
    (*
     * Constructors.
