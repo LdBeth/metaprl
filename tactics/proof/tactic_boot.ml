@@ -281,14 +281,14 @@ struct
         attr_ints       = Lm_list_util.some_map (function (name, RawInt i)      -> Some (name, i) | _ -> None) attributes;
         attr_bools      = Lm_list_util.some_map (function (name, RawBool b)     -> Some (name, b) | _ -> None) attributes;
         attr_strings    = Lm_list_util.some_map (function (name, RawString s)   -> Some (name, s) | _ -> None) attributes;
-        attr_keys       = Lm_list_util.some_map (function (name, RawSentinal k)   -> Some (name, k) | _ -> None) attributes
+        attr_keys       = Lm_list_util.some_map (function (name, RawSentinal k) -> Some (name, k) | _ -> None) attributes
       }
 
    let squash_attributes attrs =
       { attrs with attr_keys = [] }
 
    let update_attributes attrs raws =
-      { attrs with attr_keys = Lm_list_util.some_map (function (name, RawSentinal k)   -> Some (name, k) | _ -> None) raws }
+      { attrs with attr_keys = Lm_list_util.some_map (function (name, RawSentinal k) -> Some (name, k) | _ -> None) raws }
 
    let create sentinal goal bookmark =
       { ref_goal = goal;
@@ -856,11 +856,11 @@ struct
                    | None ->
                         arg.ref_label
                in
-               let goal = {
-                  arg with
-                  ref_goal = goal;
-                  ref_label = label;
-               } in
+               let goal =
+                  { arg with ref_goal = goal;
+                             ref_label = label;
+                  }
+               in
                   goal :: collect lt gt
           | [], [] ->
                []
@@ -927,10 +927,9 @@ struct
       let rl = rwtactic i rw in
          match Refine.refine (get_sentinal arg.ref_sentinal) rl arg.ref_goal with
             [subgoal], ext ->
-               let subgoal = {
-                  arg with
-                  ref_goal = subgoal;
-               } in
+               let subgoal =
+                  { arg with ref_goal = subgoal }
+               in
                   ThreadRefinerTacticals.create_value [subgoal] (Extract (arg, [subgoal], ext))
           | [], _ ->
                raise tactic_of_rewrite_exn1
@@ -943,11 +942,11 @@ struct
    let tactic_of_cond_rewrite i crw arg =
       let rl = crwtactic i crw in
       let subgoals, ext = Refine.refine (get_sentinal arg.ref_sentinal) rl arg.ref_goal in
-      let make_subgoal label goal = {
-         arg with
-         ref_label = label;
-         ref_goal = goal;
-      } in
+      let make_subgoal label goal =
+         { arg with ref_label = label;
+                    ref_goal = goal;
+         }
+      in
       let subgoals =
          match subgoals with
             subgoal :: subgoals ->
@@ -1011,17 +1010,20 @@ struct
       else
          ThreadRefinerTacticals.compose1 tac1 tac2
 
-   let emptyLabel=""
+   let emptyLabel = ""
 
    let prefix_thenLocalLabelT tac1 tac2 p =
       let prefer l1 l2 =
-         if l2=emptyLabel then l1
-         else l2 in
+         if l2 = emptyLabel then
+            l1
+         else
+            l2
+      in
       let label = p.ref_label in
-      ThreadRefinerTacticals.wrap_terms
-      	(fun p' -> { p' with ref_label = prefer label p'.ref_label })
-			(fun p' -> prefix_thenT tac1 tac2 { p' with ref_label = emptyLabel })
-			p
+         ThreadRefinerTacticals.wrap_terms (**)
+            (fun p' -> { p' with ref_label = prefer label p'.ref_label })
+            (fun p' -> prefix_thenT tac1 tac2 { p' with ref_label = emptyLabel })
+            p
 (*      prefix_thenT
 	      (fun p' -> prefix_thenT tac1 tac2 { p' with ref_label = emptyLabel })
       	(fun p' -> idT { p' with ref_label = prefer label p'.ref_label })
@@ -1031,9 +1033,12 @@ struct
    let prefix_thenLT tac1 tacl =
       if tac1 == idT then
          match tacl with
-            [tac] -> tac
-          | _ -> raise (RefineError("thenLT", StringError "tactic list length is wrong"))
-      else ThreadRefinerTacticals.compose2 tac1 tacl
+            [tac] ->
+               tac
+          | _ ->
+               raise (RefineError("thenLT", StringError "tactic list length is wrong"))
+      else
+         ThreadRefinerTacticals.compose2 tac1 tacl
 
    let firstT =
       let non_id tac = (tac != idT) in
@@ -1067,7 +1072,8 @@ struct
                match tacf [p] with
                   [tac] -> tac p
                 | _ -> raise (RefineError("thenFLT", StringError "list length mismatch"))
-         else ThreadRefinerTacticals.composef tac (wrap tacf)
+         else
+            ThreadRefinerTacticals.composef tac (wrap tacf)
 
    (*
     * Modify the label.

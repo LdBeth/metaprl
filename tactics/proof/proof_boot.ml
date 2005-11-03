@@ -261,12 +261,12 @@ struct
          Goal _ | RuleBox _ | Pending _ ->
             raise (Invalid_argument "Proof_boot.replace_goal")
        | Unjustified (g,sgs) ->
-            if g==goal then node else Unjustified (goal,sgs)
+            if g == goal then node else Unjustified (goal,sgs)
        | Extract (g,sgs,ext) ->
-            if g==goal then node else Extract (goal,sgs,ext)
+            if g == goal then node else Extract (goal,sgs,ext)
        | Wrapped (args,ext) ->
             let res = replace_goal ext goal in
-            if res == ext then node else Wrapped (args,res)
+               if res == ext then node else Wrapped (args, res)
        | Compose ci ->
             let ext = ci.comp_goal in
             let res = replace_goal ext goal in
@@ -281,7 +281,7 @@ struct
             let res = replace_goal ext goal in
             if res == ext then node else Locked res
        | Identity g ->
-            if g==goal then node else Identity goal
+            if g == goal then node else Identity goal
 
    (* Replace subgoals with equivalent ones *)
 
@@ -305,17 +305,17 @@ struct
             raise (Invalid_argument "Proof_boot.replace_subg_aux")
        | Unjustified (g,sgs) ->
             let gs, res = replace_list gs sgs in
-            if res==sgs then gs,node else gs, Unjustified (g,res)
+            if res == sgs then gs,node else gs, Unjustified (g,res)
        | Extract (g,sgs,ext) ->
             let gs, res = replace_list gs sgs in
-            if res==sgs then gs,node else gs, Extract (g,res,ext)
+            if res == sgs then gs,node else gs, Extract (g,res,ext)
        | Wrapped (args,ext) ->
             let gs, res = replace_subg_aux gs ext in
-            if res==ext then gs, node else gs, Wrapped (args,res)
+            if res == ext then gs, node else gs, Wrapped (args,res)
        | Compose ci ->
             let exts = ci.comp_subgoals in
             let gs,res = replace_subg_list gs exts in
-            if res==exts then gs,node else
+            if res == exts then gs,node else
             gs, Compose {
                comp_status = ci.comp_status;
                comp_goal = ci.comp_goal;
@@ -328,7 +328,7 @@ struct
        | Identity g ->
             begin match gs with
                res::gs ->
-                  if g==res then gs, node else gs, Identity res
+                  if g == res then gs, node else gs, Identity res
              | _ -> raise (Invalid_argument "Proof_boot.replace_subg_aux")
             end
 
@@ -410,7 +410,8 @@ struct
             end;
             let res = normalize ri.rule_extract in
             if !debug_proof_normalize then begin
-               if res == ri.rule_extract then eprintf "Normalization left it unchanged!%t" eflush
+               if res == ri.rule_extract then
+                  eprintf "Normalization left it unchanged!%t" eflush
                else begin
                   eprintf "Normalized to:\n";
                   print_ext res
@@ -440,15 +441,17 @@ struct
             comp_leaves = LazyLeavesDelayed;
             comp_extras = []
          } in
-            (normalize c) :: (join_subgoals_aux sgtl tl)
+            normalize c :: join_subgoals_aux sgtl tl
 
    (* this is just a counting excersize *)
    and split_subgoals i l =
-      if i=0 then [],l else match l with
-       | hd'::tl' ->
-            let sghd,sgtl = split_subgoals (pred i) tl' in
-               (hd'::sghd),sgtl
-       | [] -> raise (Invalid_argument "Proof_boot.split_subgoals")
+      if i = 0 then [], l else
+         match l with
+          | hd'::tl' ->
+               let sghd, sgtl = split_subgoals (pred i) tl' in
+                  (hd' :: sghd), sgtl
+          | [] ->
+               raise (Invalid_argument "Proof_boot.split_subgoals")
 
    (************************************************************************
     * BASIC NAVIGATION AND DESTRUCTION                                     *
@@ -494,15 +497,18 @@ struct
        | Unjustified _ ->
             raise_select_error proof node raddr i
        | Compose { comp_goal = goal; comp_subgoals = subgoals; comp_extras = extras } ->
-            if i = 0 then select_child proof goal raddr 0
-            else select_subgoal proof node raddr goal subgoals extras i
+            if i = 0 then
+               select_child proof goal raddr 0
+            else
+               select_subgoal proof node raddr goal subgoals extras i
        | Wrapped (_, goal) ->
             if i = 0 then
                goal
             else
                raise_select_error proof node raddr i
        | RuleBox ri ->
-            if (i=0) && (not ri.rule_extract_normalized) then ignore(normalize node);
+            if (i=0) && (not ri.rule_extract_normalized) then
+               ignore(normalize node);
             select_subgoal proof node raddr ri.rule_extract ri.rule_subgoals ri.rule_extras i
        | Pending f ->
             select_child proof (f ()) raddr i
@@ -804,10 +810,10 @@ struct
          let e1 = explode_sequent g1 in
          let e2 = explode_sequent g2 in
          begin try
-            ignore(Match_seq.match_hyps e1 e2);
+            ignore (Match_seq.match_hyps e1 e2);
             true
          with RefineError _ ->
-            ignore(Match_seq.match_hyps e2 e1);
+            ignore (Match_seq.match_hyps e2 e1);
             true
          end
       with RefineError _ ->
@@ -1369,11 +1375,10 @@ struct
    let replace_step_subgoals step subgoals' extras' =
       let leaves = leaves_ext step.rule_extract in
       let subgoals, extras = match_subgoals leaves (step.rule_subgoals @ subgoals') (step.rule_extras @ extras') in
-         { step with
-           rule_status = LazyStatusDelayed;
-           rule_subgoals = subgoals;
-           rule_leaves = LazyLeavesDelayed;
-           rule_extras = extras
+         { step with rule_status = LazyStatusDelayed;
+                     rule_subgoals = subgoals;
+                     rule_leaves = LazyLeavesDelayed;
+                     rule_extras = extras
          }
 
    let rec replace_step_rule node step =
@@ -1479,7 +1484,9 @@ struct
          raise (Invalid_argument "Proof_boot.squash_ext: the proof is ill-formed: a RuleBox proof contains a RuleBox inside")
 
    let rec squash_kill_ext = function
-      (Goal _| Identity _ | Unjustified _) as node ->
+      Goal _
+    | Identity _
+    | Unjustified _ as node ->
          node
     | Extract (goal, subgoals, _) ->
          Unjustified (goal, subgoals)
@@ -1492,7 +1499,10 @@ struct
          Unjustified (goal_ext node, leaves_ext node)
 
    let rec squash_ext = function
-      (Goal _ | Identity _ | Unjustified _ | Extract _) as node ->
+      Goal _
+    | Identity _
+    | Unjustified _
+    | Extract _ as node ->
          squash_kill_ext node
     | Wrapped (label, node) ->
          Wrapped (label, squash_ext node)
@@ -1595,7 +1605,8 @@ struct
       fold_proof postf pf addr (expand_ext exn_wrapper (index pf addr))
 
    let rec refiner_extract_of_proof = function
-      Goal _ | Unjustified _ ->
+      Goal _
+    | Unjustified _ ->
          raise(RefineError("Proof_boot.refiner_extract_of_proof", StringError "The proof is incomplete or unexpanded"))
     | Wrapped(_,ext) | Locked ext -> refiner_extract_of_proof ext
     | Extract(_,_,re) -> re
@@ -1677,14 +1688,24 @@ struct
                      ref_attributes = attrs
                    } = arg
                in
+               let attr = squash_attributes attrs in
+(*
+ * JYH: this code was apparently added at some distant time in the
+ * past that we don't have CVS logs for.  I'm not sure what it
+ * is supposed to solve.
+ *
                let attr =
                   let attrs = squash_attributes attrs in
-                  if squash then begin
-                     if attrs <> empty_attribute then
-                        eprintf "Warning: Proof_boot.io_proof_of_proof: unexpected attribute list. If the .prla file is old, ignore this warning\n";
-                     empty_attribute
-                 end else attrs
-               in let arg' =
+                     if squash then begin
+                        if attrs <> empty_attribute then
+                           eprintf "Warning: Proof_boot.io_proof_of_proof: unexpected attribute list. If the .prla file is old, ignore this warning@.";
+                        empty_attribute
+                     end
+                     else
+                        attrs
+               in
+*)
+               let arg' =
                   { simp_goal = goal;
                     simp_label = label;
                     simp_attributes = attr
@@ -1692,12 +1713,14 @@ struct
                in
                   parents := (arg, arg') :: !parents;
                   arg'
-         and make_tactic_arg arg = make_tactic_arg_sq false arg
-         and make_tactic_arg_squash arg = make_tactic_arg_sq true arg
+      and make_tactic_arg arg =
+         make_tactic_arg_sq false arg
+      and make_tactic_arg_squash arg =
+         make_tactic_arg_sq true arg
       in
       let rec convert arg =
          if !debug_proof then begin
-            eprintf "IO convertion of:\n";
+            eprintf "IO conversion of:\n";
             print_ext arg
          end;
          let res = match arg with
@@ -1739,7 +1762,7 @@ struct
                IOIdentity (make_tactic_arg arg)
          in
             if !debug_proof then
-               eprintf "\\__ IO convertion done.\n%t" eflush;
+               eprintf "\\__ IO conversion done.\n%t" eflush;
             res
       in
          (* "Update" the proof by forcing computation of status and leaf nodes. *)
@@ -2019,7 +2042,6 @@ struct
          }
       in
          fold_proof postf pf addr (RuleBox info)
-
 end
 
 (*

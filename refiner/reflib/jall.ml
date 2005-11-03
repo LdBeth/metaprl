@@ -80,15 +80,11 @@ let debug_profile_tactics =
  * Compatibility layer for abstract vars.
  *)
 let free_vars_list t consts =
-   SymbolSet.fold
-		(fun acc v ->
-			if is_var (symbol_to_pos v) then
-				v::acc
-			else
-				acc
-		)
-		[]
-		(SymbolSet.diff (free_vars_set t) consts)
+   SymbolSet.fold (fun acc v ->
+         if is_var (symbol_to_pos v) then
+            v::acc
+         else
+            acc) [] (SymbolSet.diff (free_vars_set t) consts)
 
 let mk_symbol_term opname s =
    let p = make_param (Term_sig.Var s) in
@@ -3308,7 +3304,7 @@ let stringunify ext_atom try_one equations fo_pairs calculus orderingQ atom_rel 
          let ut = try_one.aposprefix in
          let ns = ext_atom.apos in
          let nt = try_one.apos in
-			let gamma, delta = qprefixes in
+         let gamma, delta = qprefixes in
          if PMap.is_empty gamma && PMap.is_empty delta then
             (* prop case *)
             (* prop unification only *)
