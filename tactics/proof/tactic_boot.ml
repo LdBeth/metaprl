@@ -760,6 +760,13 @@ struct
     | _ :: t -> assoc_option name t
     | [] -> None
 
+   let assoc_list name l =
+      List.fold_left (fun vals (name', h) ->
+            if name' = name then
+               h :: vals
+            else
+               vals) [] l
+
    let get_term arg name =
       assoc name arg.ref_attributes.attr_terms
 
@@ -778,8 +785,14 @@ struct
    let get_string arg name =
       assoc_option name arg.ref_attributes.attr_strings
 
+   let get_strings arg name =
+      assoc_list name arg.ref_attributes.attr_strings
+
    let get_resource arg get_res =
       get_res arg.ref_bookmark
+
+   let mem_string arg name s =
+      List.mem (name, s) arg.ref_attributes.attr_strings
 
    (*
     * Two args are equal if their goals are equal.
@@ -1063,7 +1076,36 @@ struct
       idT { p with ref_label = name }
 
    (*
-    * Add a term argument.
+    * Add a permanent argument.
+    *)
+   let addT f p =
+      let attributes = f p.ref_attributes in
+      let make_goal p =
+         let p' = { p with ref_attributes = attributes } in
+            ThreadRefinerTacticals.create_value [p'] (Identity p)
+      in
+         make_goal p
+
+   let addTermT name t =
+      addT (fun attr -> { attr with attr_terms = (name, t) :: attr.attr_terms })
+
+   let addTermListT name arg =
+      addT (fun attr -> { attr with attr_term_lists = (name, arg) :: attr.attr_term_lists })
+
+   let addTypeT name t =
+      addT (fun attr -> { attr with attr_types = (name, t) :: attr.attr_types })
+
+   let addIntT name i =
+      addT (fun attr -> { attr with attr_ints = (name, i) :: attr.attr_ints })
+
+   let addBoolT name flag =
+      addT (fun attr -> { attr with attr_bools = (name, flag) :: attr.attr_bools })
+
+   let addStringT name s =
+      addT (fun attr -> { attr with attr_strings = (name, s) :: attr.attr_strings })
+
+   (*
+    * Add a temporary argument.
     *)
    let withT f tac p =
       let attributes = p.ref_attributes in
@@ -1094,6 +1136,58 @@ struct
 
    let withStringT name s =
       withT (fun attr -> { attr with attr_strings = (name, s) :: attr.attr_strings })
+
+   (*
+    * Remove an argument permanently.
+    *)
+   let removeT = addT
+
+   let removeTermT name =
+      removeT (fun attr -> { attr with attr_terms = List.remove_assoc name attr.attr_terms })
+
+   let removeTermListT name =
+      removeT (fun attr -> { attr with attr_term_lists = List.remove_assoc name attr.attr_term_lists })
+
+   let removeTypeT name =
+      removeT (fun attr -> { attr with attr_types = List.remove_assoc name attr.attr_types })
+
+   let removeIntT name =
+      removeT (fun attr -> { attr with attr_ints = List.remove_assoc name attr.attr_ints })
+
+   let removeBoolT name =
+      removeT (fun attr -> { attr with attr_bools = List.remove_assoc name attr.attr_bools })
+
+   let removeStringT name =
+      removeT (fun attr -> { attr with attr_strings = List.remove_assoc name attr.attr_strings })
+
+   let removeStringValT name s =
+      removeT (fun attr -> { attr with attr_strings = Lm_list_util.remove (name, s) attr.attr_strings })
+
+   (*
+    * Remove an argument permanently.
+    *)
+   let withoutT = withT
+
+   let withoutTermT name =
+      withoutT (fun attr -> { attr with attr_terms = List.remove_assoc name attr.attr_terms })
+
+   let withoutTermListT name =
+      withoutT (fun attr -> { attr with attr_term_lists = List.remove_assoc name attr.attr_term_lists })
+
+   let withoutTypeT name =
+      withoutT (fun attr -> { attr with attr_types = List.remove_assoc name attr.attr_types })
+
+   let withoutIntT name =
+      withoutT (fun attr -> { attr with attr_ints = List.remove_assoc name attr.attr_ints })
+
+   let withoutBoolT name =
+      withoutT (fun attr -> { attr with attr_bools = List.remove_assoc name attr.attr_bools })
+
+   let withoutStringT name =
+      withoutT (fun attr -> { attr with attr_strings = List.remove_assoc name attr.attr_strings })
+
+   let withoutStringValT name s =
+      withoutT (fun attr -> { attr with attr_strings = Lm_list_util.remove (name, s) attr.attr_strings })
 
    (*
     * Time the tactic.

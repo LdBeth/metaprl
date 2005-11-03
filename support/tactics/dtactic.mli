@@ -42,6 +42,7 @@ open Auto_tactic
 
 type intro_option =
    SelectOption of int
+ | StringOption of string
  | IntroArgsOption of (tactic_arg -> term -> term list) * term option
  | AutoMustComplete
  | CondMustComplete of (tactic_arg -> bool)
@@ -50,13 +51,14 @@ type elim_option =
    ThinOption of (int -> tactic)  (* Thin the eliminated hyp, unless overridden *)
  | ElimArgsOption of (tactic_arg -> term -> term list) * term option
 
-type intro_item = string * int option * auto_type * tactic
+type intro_item = string * int option * string list * auto_type * tactic
 
 resource (term * (int -> tactic), int -> tactic) elim
 resource (term * intro_item, tactic) intro
 
 val process_elim_resource_annotation :
    (Tactic.pre_tactic * elim_option list, term * (int -> tactic)) annotation_processor
+
 val process_intro_resource_annotation :
    (Tactic.pre_tactic * intro_option list, term * intro_item) annotation_processor
 

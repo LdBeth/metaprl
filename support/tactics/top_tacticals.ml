@@ -56,6 +56,8 @@ doc <:doc<
 >>
 extends Perv
 
+open Lm_printf
+
 open Term_sig
 open Refiner.Refiner.TermType
 open Refiner.Refiner.Term
@@ -335,12 +337,36 @@ doc <:doc<
 
    @docoff
 >>
+let addTermT = Tacticals.addTermT
+let addTypeT = Tacticals.addTypeT
+let addBoolT = Tacticals.addBoolT
+let addIntT = Tacticals.addIntT
+let addT = Tacticals.addT
+let addOptionT = Tacticals.addOptionT
+let printOptionT s = funT (fun p ->
+   eprintf "Option: %s = %b@." s (Tacticals.get_option_arg p s);
+   idT)
+
 let withTermT = Tacticals.withTermT
 let withTypeT = Tacticals.withTypeT
 let withBoolT = Tacticals.withBoolT
 let withIntT = Tacticals.withIntT
 let withT = Tacticals.withT
 let withTermsT = Tacticals.withTermsT
+let withOptionT = Tacticals.withOptionT
+
+let removeTermT = Tacticals.removeTermT
+let removeTypeT = Tacticals.removeTypeT
+let removeBoolT = Tacticals.removeBoolT
+let removeIntT = Tacticals.removeIntT
+let removeOptionT = Tacticals.removeOptionT
+
+let withoutTermT = Tacticals.withoutTermT
+let withoutTypeT = Tacticals.withoutTypeT
+let withoutBoolT = Tacticals.withoutBoolT
+let withoutIntT = Tacticals.withoutIntT
+let withoutOptionT = Tacticals.withoutOptionT
+
 let atT = Tacticals.atT
 let selT = Tacticals.selT
 let altT = Tacticals.altT
@@ -523,7 +549,8 @@ let nameHypT i v =
                let goal = mk_sequent_term eseq in
                let a = Sequent.num_assums p + 1 in
                   tryT (cutT goal thenLT [removeHiddenLabelT; nthAssumT a])
-       | _ -> raise(RefineError("nameHypT",StringError "is a context")))
+       | Context _ ->
+            raise(RefineError("nameHypT", StringError "is a context")))
 
 let rec nameHypsT is vs =
    match is, vs with

@@ -44,6 +44,7 @@ doc <:doc<
    @begin[verbatim]
    type intro_option =
       SelectOption of int
+    | StringOption of string
     | IntroArgsOption of (tactic_arg -> term -> term list) * term option
     | AutoMustComplete
     | CondMustComplete of tactic_arg -> bool
@@ -72,6 +73,9 @@ doc <:doc<
 
    These options require @hreftactic[selT] arguments: the left rule is applied with
    @tt{selT 1 (dT 0)} and the right rule is applied with @tt{selT 2 (dT 0)}.
+
+   The @tt[StringOption] is like the @tt[SelectOption], but it takes a string
+   argument.
 
    The @tt[IntroArgsOption] is used to @emph{infer} arguments to the rule.
    The first argument is a function that should provide an argument list to be used in the
@@ -207,6 +211,7 @@ let debug_dtactic =
  *)
 type intro_option =
    SelectOption of int
+ | StringOption of string
  | IntroArgsOption of (tactic_arg -> term -> term list) * term option
  | AutoMustComplete
  | CondMustComplete of (tactic_arg -> bool)
@@ -215,7 +220,7 @@ type elim_option =
    ThinOption of (int -> tactic)
  | ElimArgsOption of (tactic_arg -> term -> term list) * term option
 
-type intro_item = string * int option * auto_type * tactic
+type intro_item = string * int option * string list * auto_type * tactic
 
 (************************************************************************
  * IMPLEMENTATION                                                       *
@@ -227,65 +232,92 @@ type intro_item = string * int option * auto_type * tactic
  *)
 let extract_elim_data =
    let rec firstiT i = function
-      [] -> raise (Invalid_argument "extract_elim_data: internal error")
-    | [tac] -> tac i
-    | tac :: tacs -> tac i orelseT firstiT i tacs
+      [] ->
+         raise (Invalid_argument "extract_elim_data: internal error")
+    | [tac] ->
+         tac i
+    | tac :: tacs ->
+         tac i orelseT firstiT i tacs
    in
-   (fun tbl ->
-   argfunT (fun i p ->
-      let t = Sequent.nth_hyp p i in
-      if !debug_dtactic then
-         eprintf "Dtactic: elim: lookup %s%t" (SimplePrint.short_string_of_term t) eflush;
-      let tacs =
-         try
-            lookup_bucket tbl select_all t
-         with
-            Not_found ->
-               raise (RefineError ("extract_elim_data", StringTermError ("D tactic doesn't know about", t)))
-      in firstiT i tacs))
+      (fun tbl ->
+            argfunT (fun i p ->
+                  let t = Sequent.nth_hyp p i in
+                  let () =
+                     if !debug_dtactic then
+                        eprintf "Dtactic: elim: lookup %s%t" (SimplePrint.short_string_of_term t) eflush
+                  in
+                  let tacs =
+                     try
+                        lookup_bucket tbl select_all t
+                     with
+                        Not_found ->
+                           raise (RefineError ("extract_elim_data", StringTermError ("D tactic doesn't know about", t)))
+                  in
+                     firstiT i tacs))
 
 let in_auto p =
    match Sequent.get_int_arg p "d_auto" with
-      Some 0 | Some 1 -> true
-    | _ -> false
+      Some 0
+    | Some 1 ->
+         true
+    | _ ->
+         false
 
 let extract_intro_data =
-   let select_intro sel in_auto_type (_, sel', auto_type, _) =
+   let select_intro p in_auto_type (_, sel, options, auto_type, _) =
       (match in_auto_type, auto_type with
-         Some 0, AutoTrivial
-       | Some 1, AutoNormal
-       | Some 2, AutoComplete
-       | None, _
-         -> true
-       | _
-         -> false)
+          Some 0, AutoTrivial
+        | Some 1, AutoNormal
+        | Some 2, AutoComplete
+        | None, _ ->
+             true
+        | _ ->
+             false)
       &&
-      (match sel, sel' with
-         _, None -> true
-       | Some i, Some i' when i = i' -> true
-       | _ -> false)
+      (match sel with
+          None ->
+             true
+        | Some i ->
+             match get_sel_arg p with
+                 Some i' ->
+                    i' = i
+               | None ->
+                    false)
+      &&
+      (match options with
+          [] ->
+             true
+        | _ ->
+             Lm_list_util.intersects options (get_option_args p))
    in
-   let extract (name, _, _, tac) =
+   let extract (name, _, _, _, tac) =
       if !debug_dtactic then
          eprintf "Dtactic: intro: found %s%t" name eflush; tac
    in
-   (fun tbl ->
-   funT (fun p ->
-      let t = Sequent.concl p in
-      if !debug_dtactic then
-         eprintf "Dtactic: intro: lookup %s%t" (SimplePrint.short_string_of_term t) eflush;
-      let sel_arg = get_sel_arg p in
-      let tacs =
-         try lookup_bucket tbl (select_intro sel_arg (Sequent.get_int_arg p "d_auto")) t with
-            Not_found ->
-               let sel_err =
-                  match sel_arg with
-                     Some _ -> "out of range"
-                   | None -> "required"
-               in
-                  raise (RefineError ("extract_intro_data", StringTermError ("D tactic doesn't know about or select argument is " ^ sel_err, t)))
-      in
-         firstT (List.map extract tacs)))
+      (fun tbl ->
+            funT (fun p ->
+                  let t = Sequent.concl p in
+                  let () =
+                     if !debug_dtactic then
+                        eprintf "Dtactic: intro: lookup %s%t" (SimplePrint.short_string_of_term t) eflush
+                  in
+                  let tacs =
+                     try lookup_bucket tbl (select_intro p (Sequent.get_int_arg p "d_auto")) t with
+                        Not_found ->
+                           let msg =
+                              match get_sel_arg p with
+                                 Some _ ->
+                                    "dT tactic failed: the select argument may be out of range"
+                               | None ->
+                                    match get_option_args p with
+                                       _ :: _ ->
+                                          "dT tactic failed: the option arguments may not be valid"
+                                     | [] ->
+                                          "dT tactic failed"
+                           in
+                              raise (RefineError ("extract_intro_data", StringTermError (msg, t)))
+                  in
+                     firstT (List.map extract tacs)))
 
 (*
  * Options for intro rule.
@@ -305,6 +337,14 @@ let rec get_sel_arg = function
       get_sel_arg t
  | [] ->
       None
+
+let rec get_option_args l = function
+   StringOption s :: t ->
+      get_option_args l t
+ | _ :: t ->
+      get_option_args l t
+ | [] ->
+      l
 
 let one_rw_arg i =
    { arg_ints = [| i |]; arg_addrs = [||] }
@@ -330,13 +370,13 @@ let process_intro_resource_annotation name args term_args statement (pre_tactic,
                         None ->
                            Sequent.concl
                       | Some arg ->
-                           begin match find_subterm t (fun t _ -> alpha_equal t arg) with
-                              addr :: _ ->
-                                 (fun p -> term_subterm (Sequent.concl p) addr)
-                            | [] ->
-                                 raise (RefineError("intro annotation",
-                                    StringTermError("term not found in the conclusion", arg)))
-                           end
+                        begin match find_subterm t (fun t _ -> alpha_equal t arg) with
+                                 addr :: _ ->
+                                    (fun p -> term_subterm (Sequent.concl p) addr)
+                               | [] ->
+                                    raise (RefineError("intro annotation",
+                                                       StringTermError("term not found in the conclusion", arg)))
+                        end
                   in
                      (fun p -> f p (get_arg p))
              | None ->
@@ -359,29 +399,29 @@ let process_intro_resource_annotation name args term_args statement (pre_tactic,
                Tactic_type.Tactic.tactic_of_rule pre_tactic empty_rw_args []
             else
                funT (fun p -> Tactic_type.Tactic.tactic_of_rule pre_tactic empty_rw_args (term_args_fun p))
-       | [|_|], [ Context _; Hypothesis _; Context _ ] when not (is_so_var_term t) ->
+       | [|_|], [Context _; Hypothesis _; Context _] when not (is_so_var_term t) ->
             onSomeHypT (argfunT (fun i p -> Tactic_type.Tactic.tactic_of_rule pre_tactic (one_rw_arg i) (term_args_fun p)))
        | _ ->
             raise (Invalid_argument (sprintf "Dtactic.intro: %s: not an introduction rule" name))
    in
-      let sel_opts = get_sel_arg options in
-      let rec auto_aux = function
-         [] ->
-            [t, (name, sel_opts, (if assums = [] then AutoTrivial else AutoNormal), tac)]
-       | AutoMustComplete :: _ ->
-            [t, (name, sel_opts, AutoComplete, tac)]
-       | CondMustComplete f :: _ ->
-            let auto_exn = RefineError("intro_annotation: " ^ name, StringError("not appropriate in weakAutoT")) in
-            let tac' =
-               funT (fun p -> if f p then raise auto_exn else tac)
-            in [
-               t, (name, sel_opts, AutoNormal, tac');
-               t, (name, sel_opts, AutoComplete, tac)
-            ]
-       | _ :: tl ->
-            auto_aux tl
-      in
-         auto_aux options
+   let sel_opts = get_sel_arg options in
+   let option_opts = get_option_args [] options in
+   let rec auto_aux = function
+      [] ->
+         [t, (name, sel_opts, option_opts, (if assums = [] then AutoTrivial else AutoNormal), tac)]
+    | AutoMustComplete :: _ ->
+         [t, (name, sel_opts, option_opts, AutoComplete, tac)]
+    | CondMustComplete f :: _ ->
+         let auto_exn = RefineError ("intro_annotation: " ^ name, StringError "not appropriate in weakAutoT") in
+         let tac' =
+            funT (fun p -> if f p then raise auto_exn else tac)
+         in
+            [t, (name, sel_opts, option_opts, AutoNormal, tac');
+             t, (name, sel_opts, option_opts, AutoComplete, tac)]
+    | _ :: tl ->
+         auto_aux tl
+   in
+      auto_aux options
 
 (*
  * Compile an elimination tactic.
@@ -495,13 +535,19 @@ let process_elim_resource_annotation name args term_args statement (pre_tactic, 
          raise (Invalid_argument (sprintf "Dtactic.improve_elim: %s: must be an elimination rule" name))
 
 let wrap_intro tac =
-   ("wrap_intro", None, AutoNormal, tac)
+   ("wrap_intro", None, [], AutoNormal, tac)
 
 let mustSelectT = funT (fun p ->
-   raise (RefineError("Dtactic.mustSelectT", StringTermError ("Select (selT) argument required", Sequent.concl p))))
+   raise (RefineError ("Dtactic.mustSelectT", StringTermError ("Select (selT) argument required", Sequent.concl p))))
 
 let intro_must_select =
-   ("mustSelectT", None, AutoNormal, mustSelectT)
+   ("mustSelectT", None, [], AutoNormal, mustSelectT)
+
+let mustOptionT = funT (fun p ->
+   raise (RefineError ("Dtactic.mustOptionT", StringTermError ("String option (optionT) argument required", Sequent.concl p))))
+
+let intro_must_option =
+   ("mustOptionT", None, [], AutoNormal, mustOptionT)
 
 (*
  * Resources
@@ -514,10 +560,10 @@ let resource (term * intro_item, tactic) intro =
 
 let dT =
    argfunT (fun i p ->
-   if i = 0 then
-      Sequent.get_resource_arg p get_intro_resource
-   else
-      Sequent.get_resource_arg p get_elim_resource (Sequent.get_pos_hyp_num p i))
+         if i = 0 then
+            Sequent.get_resource_arg p get_intro_resource
+         else
+            Sequent.get_resource_arg p get_elim_resource (Sequent.get_pos_hyp_num p i))
 
 let rec dForT i =
    if i <= 0 then

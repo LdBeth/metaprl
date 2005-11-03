@@ -361,6 +361,8 @@ sig
    val get_int       : tactic_arg -> string -> int option
    val get_bool      : tactic_arg -> string -> bool option
    val get_string    : tactic_arg -> string -> string option
+   val get_strings   : tactic_arg -> string -> string list
+   val mem_string    : tactic_arg -> string -> string -> bool
    val get_resource  : tactic_arg -> (global_resource -> 'a) -> 'a
 
    (*
@@ -387,13 +389,41 @@ sig
     * Argument management.
     *)
    val setLabelT : string -> tactic
+   val wrapT : arglist -> tactic -> tactic
+
+   val addTermT : string -> term -> tactic
+   val addTermListT : string -> term list -> tactic
+   val addTypeT : string -> term -> tactic
+   val addBoolT : string -> bool -> tactic
+   val addIntT : string -> int -> tactic
+   val addStringT : string -> string -> tactic
+
    val withTermT : string -> term -> tactic -> tactic
    val withTermListT : string -> term list -> tactic -> tactic
    val withTypeT : string -> term -> tactic -> tactic
    val withBoolT : string -> bool -> tactic -> tactic
    val withIntT : string -> int -> tactic -> tactic
    val withStringT : string -> string -> tactic -> tactic
-   val wrapT : arglist -> tactic -> tactic
+
+   val removeTermT : string -> tactic
+   val removeTermListT : string -> tactic
+   val removeTypeT : string -> tactic
+   val removeBoolT : string -> tactic
+   val removeIntT : string -> tactic
+   val removeStringT : string -> tactic
+   val removeStringValT : string -> string -> tactic
+
+   val withoutTermT : string -> tactic -> tactic
+   val withoutTermListT : string -> tactic -> tactic
+   val withoutTypeT : string -> tactic -> tactic
+   val withoutBoolT : string -> tactic -> tactic
+   val withoutIntT : string -> tactic -> tactic
+   val withoutStringT : string -> tactic -> tactic
+   val withoutStringValT : string -> string -> tactic -> tactic
+
+   (*
+    * Force an exception if the tactic fails.
+    *)
    val forceT : string -> tactic -> tactic
 
    (*
@@ -756,6 +786,8 @@ sig
    val get_bool_arg       : tactic_arg -> string -> bool option
    val get_string_arg     : tactic_arg -> string -> string option
    val get_resource_arg   : tactic_arg -> (global_resource -> 'a) -> 'a
+   val mem_string_arg     : tactic_arg -> string -> string -> bool
+   val get_string_args    : tactic_arg -> string -> string list
 end
 
 (*
@@ -892,12 +924,22 @@ sig
    val onSomeHypT : (int -> tactic) -> tactic
 
    (*
-    * Proof annotation.
+    * Temporarily use an argument list.
     *)
    val wrapT : arglist -> tactic -> tactic
 
    (*
-    * General argument functions.
+    * Argument functions that add a permanent annotation.
+    *)
+   val addTermT : string -> term -> tactic
+   val addTermListT : string -> term list -> tactic
+   val addTypeT : string -> term -> tactic
+   val addBoolT : string -> bool -> tactic
+   val addStringT : string -> string -> tactic
+   val addIntT : string -> int -> tactic
+
+   (*
+    * General argument functions that add a temporary annotation.
     *)
    val withTermT : string -> term -> tactic -> tactic
    val withTermListT : string -> term list -> tactic -> tactic
@@ -907,14 +949,40 @@ sig
    val withIntT : string -> int -> tactic -> tactic
 
    (*
+    * Argument functions that remove an annotation permanetly.
+    *)
+   val removeTermT : string -> tactic
+   val removeTermListT : string -> tactic
+   val removeTypeT : string -> tactic
+   val removeBoolT : string -> tactic
+   val removeStringT : string -> tactic
+   val removeIntT : string -> tactic
+
+   (*
+    * Argument functions that remove an annotation temporarily.
+    *)
+   val withoutTermT : string -> tactic -> tactic
+   val withoutTermListT : string -> tactic -> tactic
+   val withoutTypeT : string -> tactic -> tactic
+   val withoutBoolT : string -> tactic -> tactic
+   val withoutStringT : string -> tactic -> tactic
+   val withoutIntT : string -> tactic -> tactic
+
+   (*
     * Specific argument functions.
     *)
    val withT : term -> tactic -> tactic
    val withTermsT : term list -> tactic -> tactic
+   val addT : term -> tactic
    val atT : term -> tactic -> tactic
    val selT : int -> tactic -> tactic
    val altT : tactic -> tactic
    val thinningT : bool -> tactic -> tactic
+
+   val addOptionT : string -> tactic
+   val withOptionT : string -> tactic -> tactic
+   val removeOptionT : string -> tactic
+   val withoutOptionT : string -> tactic -> tactic
 
    val get_with_arg : tactic_arg -> term
    val get_with_args : tactic_arg -> term list
@@ -922,6 +990,8 @@ sig
    val get_sel_arg : tactic_arg -> int option
    val get_thinning_arg : tactic_arg -> bool
    val get_alt_arg : tactic_arg -> bool
+   val get_option_arg : tactic_arg -> string -> bool
+   val get_option_args : tactic_arg -> string list
 end
 
 module type RewriteInternalSig =

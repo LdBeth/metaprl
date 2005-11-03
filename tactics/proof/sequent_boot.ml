@@ -125,6 +125,8 @@ struct
    let get_bool_arg       = TacticInternal.get_bool
    let get_string_arg     = TacticInternal.get_string
    let get_resource_arg   = TacticInternal.get_resource
+   let mem_string_arg     = TacticInternal.mem_string
+   let get_string_args    = TacticInternal.get_strings
 end
 
 (*

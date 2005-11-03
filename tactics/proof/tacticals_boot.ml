@@ -680,16 +680,16 @@ struct
     * These tactics work with assumptions.
     *)
    let onAllAssumT tac =
-      let rec all i assums =
+      let rec do_all i assums =
          funT (fun p ->
             match assums with
                _ :: assums ->
-                  prefix_thenT (tac i) (all (succ i) assums)
+                  prefix_thenT (tac i) (do_all (succ i) assums)
              | [] ->
                   idT
          )
       in
-         funT (fun p -> all 1 (snd (dest_msequent (Sequent.msequent p))))
+         funT (fun p -> do_all 1 (snd (dest_msequent (Sequent.msequent p))))
 
    let onAllMClausesOfAssumT tac assum =
       funT (fun p ->
@@ -704,30 +704,32 @@ struct
     * Labeled form
     *)
    let onAllMAssumT tac =
-      let rec all i assums =
+      let rec do_all i assums =
          funT (fun p ->
             match assums with
                assum :: assums ->
-                  prefix_thenMT (tac i) (all (succ i) assums)
+                  prefix_thenMT (tac i) (do_all (succ i) assums)
              | [] ->
                   idT
          )
       in
-         funT (fun p -> all 1 (snd (dest_msequent (Sequent.msequent p))))
+         funT (fun p -> do_all 1 (snd (dest_msequent (Sequent.msequent p))))
 
    (*
     * These tactics are useful for trivial search.
     *)
    let onSomeAssumT tac =
       funT (fun p ->
-      let num = Sequent.num_assums p in
-      if (num<1) then
-         raise (RefineError ("onSomeAssumT", StringError "no assumptions"));
-      let rec some i =
-         if i = num then tac i
-         else prefix_orelseT (tac i) (some (succ i))
-      in
-         some 1)
+            let num = Sequent.num_assums p in
+               if num < 1 then
+                  raise (RefineError ("onSomeAssumT", StringError "no assumptions"));
+               let rec some i =
+                  if i = num then
+                     tac i
+                  else
+                     prefix_orelseT (tac i) (some (succ i))
+               in
+                  some 1)
 
    (*
     * Make sure one of the hyps works.
@@ -743,6 +745,13 @@ struct
 
    let forceT        = TacticInternal.forceT
 
+   let addTermT     = TacticInternal.addTermT
+   let addTermListT = TacticInternal.addTermListT
+   let addTypeT     = TacticInternal.addTypeT
+   let addBoolT     = TacticInternal.addBoolT
+   let addStringT   = TacticInternal.addStringT
+   let addIntT      = TacticInternal.addIntT
+
    let withTermT     = TacticInternal.withTermT
    let withTermListT = TacticInternal.withTermListT
    let withTypeT     = TacticInternal.withTypeT
@@ -750,19 +759,45 @@ struct
    let withStringT   = TacticInternal.withStringT
    let withIntT      = TacticInternal.withIntT
 
+   let removeTermT      = TacticInternal.removeTermT
+   let removeTermListT  = TacticInternal.removeTermListT
+   let removeTypeT      = TacticInternal.removeTypeT
+   let removeBoolT      = TacticInternal.removeBoolT
+   let removeStringT    = TacticInternal.removeStringT
+   let removeStringValT = TacticInternal.removeStringValT
+   let removeIntT       = TacticInternal.removeIntT
+
+   let withoutTermT      = TacticInternal.withoutTermT
+   let withoutTermListT  = TacticInternal.withoutTermListT
+   let withoutTypeT      = TacticInternal.withoutTypeT
+   let withoutBoolT      = TacticInternal.withoutBoolT
+   let withoutStringT    = TacticInternal.withoutStringT
+   let withoutStringValT = TacticInternal.withoutStringValT
+   let withoutIntT       = TacticInternal.withoutIntT
+
    (*
     * Term arguments.
     *)
    let withTermsT = withTermListT "with"
    let withT t = withTermsT [t]
+   let addT t = addTermListT "with" [t]
 
    (*
     * Other arguments.
     *)
-   let atT       = withTypeT "univ"
-   let selT      = withIntT  "sel"
-   let altT      = withBoolT "alt" true
-   let thinningT = withBoolT "thin"
+   let atT       = withTypeT   "univ"
+   let selT      = withIntT    "sel"
+   let altT      = withBoolT   "alt" true
+   let thinningT = withBoolT   "thin"
+
+   let withOptionT   = withStringT "option"
+   let addOptionT = addStringT "option"
+   let removeOptionT = removeStringValT "option"
+   let withoutOptionT = withoutStringValT "option"
+   let get_option_arg arg s =
+      Sequent.mem_string_arg arg "option" s
+   let get_option_args arg =
+      Sequent.get_string_args arg "option"
 
    let get_with_args p =
       Sequent.get_term_list_arg p "with"
@@ -844,7 +879,8 @@ struct
                end else
                   TacticInternal.wrapT args tac p
 
-   let wrapT = if !debug_profile_tactics then profileWrapT else TacticInternal.wrapT
+   let wrapT =
+if !debug_profile_tactics then profileWrapT else TacticInternal.wrapT
 
 end
 
