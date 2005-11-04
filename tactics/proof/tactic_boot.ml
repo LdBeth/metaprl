@@ -501,18 +501,21 @@ struct
                                        attr_types = types;
                                        attr_ints = ints;
                                        attr_bools = bools;
+                                       attr_strings = strings
                                      } } =
       (List.map (fun (name, t) -> name, TermArg t) terms)
       @ (List.map (fun (name, t) -> name, TermListArg t) term_lists)
       @ (List.map (fun (name, t) -> name, TypeArg t) types)
       @ (List.map (fun (name, i) -> name, IntArg i) ints)
       @ (List.map (fun (name, b) -> name, BoolArg b) bools)
+      @ (List.map (fun (name, s) -> name, StringArg s) strings)
 
    let raw_attributes { ref_attributes = { attr_terms = terms;
                                            attr_term_lists = term_lists;
                                            attr_types = types;
                                            attr_ints = ints;
                                            attr_bools = bools;
+                                           attr_strings = strings;
                                            attr_keys = keys
                                      } } =
       (List.map (fun (name, t) -> name, RawTerm t) terms)
@@ -520,6 +523,7 @@ struct
       @ (List.map (fun (name, t) -> name, RawType t) types)
       @ (List.map (fun (name, i) -> name, RawInt i) ints)
       @ (List.map (fun (name, b) -> name, RawBool b) bools)
+      @ (List.map (fun (name, s) -> name, RawString s) strings)
       @ (List.map (fun (name, t) -> name, RawSentinal t) keys)
 
    (************************************************************************

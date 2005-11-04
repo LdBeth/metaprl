@@ -806,18 +806,19 @@ struct
    let tactic_arg_match arg1 arg2 =
       let g1 = msequent_goal arg1.ref_goal in
       let g2 = msequent_goal arg2.ref_goal in
-      try
-         let e1 = explode_sequent g1 in
-         let e2 = explode_sequent g2 in
-         begin try
-            ignore (Match_seq.match_hyps e1 e2);
-            true
-         with RefineError _ ->
-            ignore (Match_seq.match_hyps e2 e1);
-            true
-         end
-      with RefineError _ ->
-         false
+         try
+            let e1 = explode_sequent g1 in
+            let e2 = explode_sequent g2 in
+               try
+                  ignore (Match_seq.match_hyps e1 e2);
+                  true
+               with
+                  RefineError _ ->
+                     ignore (Match_seq.match_hyps e2 e1);
+                     true
+         with
+            RefineError _ ->
+               false
 
    let find_leaf_guess leaf subgoals =
       match find_leaf tactic_arg_alpha_equal_with_attributes leaf subgoals with
@@ -829,7 +830,8 @@ struct
             with
                RuleBox _ as node , subgoals ->
                   replace_goal_ext (norm_goal leaf) node, subgoals
-             | answer -> answer
+             | answer ->
+                  answer
             end
        | answer ->
             answer
@@ -941,7 +943,7 @@ struct
                             rule_expr = expr;
                             rule_tactic = tac;
                             rule_string = text;
-                            rule_extract_normalized = normal && (goal==new_goal);
+                            rule_extract_normalized = normal && (goal == new_goal);
                             rule_extract = new_goal;
                             rule_subgoals = subgoals;
                             rule_leaves = LazyLeavesDelayed;
@@ -1029,7 +1031,7 @@ struct
                       rule_expr = expr;
                       rule_string = text;
                       rule_tactic = tac;
-                      rule_extract_normalized = normal && (new_goal==goal);
+                      rule_extract_normalized = normal && (new_goal == goal);
                       rule_extract = new_goal;
                       rule_subgoals = List.map (map_tactic_arg_ext f) subgoals;
                       rule_leaves = LazyLeavesDelayed;
@@ -1687,11 +1689,10 @@ struct
                      ref_attributes = attrs
                    } = arg
                in
-               let attr = squash_attributes attrs in
                let arg' =
                   { simp_goal = goal;
                     simp_label = label;
-                    simp_attributes = attr
+                    simp_attributes = squash_attributes attrs
                   }
                in
                   parents := (arg, arg') :: !parents;
