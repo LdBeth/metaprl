@@ -39,17 +39,21 @@ ExtractMagic(in, out) =
       print($(nth $(sub $(NF), 1), $*))
    close($(stdout))
 
+LMDIR = $(dir $(ROOT)/libmojave)
+REFDIR = $(dir $(ROOT)/refiner)
+
 #
 # Magic text for the grammars.
 #
 FILTER_MAGIC[] =
-    $(ROOT)/libmojave/util/lm_hash.ml
-    $(ROOT)/libmojave/util/lm_lexer.ml
-    $(ROOT)/libmojave/util/lm_parser.ml
-    $(ROOT)/refiner/rewrite/rewrite_types.ml
-    $(ROOT)/refiner/refsig/term_sig.ml
-    $(ROOT)/refiner/term_ds/term_ds_sig.ml
-    $(ROOT)/refiner/reflib/ascii_io.ml
+    $(LMDIR)/stdlib/lm_set.ml
+    $(LMDIR)/util/lm_hash.ml
+    $(LMDIR)/util/lm_lexer.ml
+    $(LMDIR)/util/lm_parser.ml
+    $(REFDIR)/rewrite/rewrite_types.ml
+    $(REFDIR)/refsig/term_sig.ml
+    $(REFDIR)/term_ds/term_ds_sig.ml
+    $(REFDIR)/reflib/ascii_io.ml
     filter_type.ml
     filter_grammar.ml
 
