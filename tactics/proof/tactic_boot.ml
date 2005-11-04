@@ -795,11 +795,59 @@ struct
       List.mem (name, s) arg.ref_attributes.attr_strings
 
    (*
+    * Compare all the relevant parts of the attribute lists.
+    *)
+   let alpha_equal_term_list tl1 tl2 =
+      List.length tl1 = List.length tl2 && List.for_all2 alpha_equal tl1 tl2
+
+   let assoc_equal (l1 : (string * 'a) list) (l2 : (string * 'a) list) (f : 'a -> 'a -> bool) =
+      (List.length l1 = List.length l2) && List.for_all2 (fun (s1, t1) (s2, t2) ->
+            s1 = s2 && f t1 t2) l1 l2
+
+   let attributes_alpha_equal arg1 arg2 =
+      let { attr_terms      = terms1;
+            attr_term_lists = term_lists1;
+            attr_types      = types1;
+            attr_ints       = ints1;
+            attr_bools      = bools1;
+            attr_strings    = strings1
+          } = arg1
+      in
+      let { attr_terms      = terms2;
+            attr_term_lists = term_lists2;
+            attr_types      = types2;
+            attr_ints       = ints2;
+            attr_bools      = bools2;
+            attr_strings    = strings2
+          } = arg2
+      in
+         assoc_equal terms1 terms2 alpha_equal
+         && assoc_equal term_lists1 term_lists1 alpha_equal_term_list
+         && assoc_equal types1 types2 alpha_equal
+         && assoc_equal ints1 ints2 (==)
+         && assoc_equal bools1 bools2 (==)
+         && assoc_equal strings1 strings2 (=)
+
+   (*
     * Two args are equal if their goals are equal.
     * Other arguments are ignored.
     *)
    let tactic_arg_alpha_equal arg1 arg2 =
       msequent_alpha_equal arg1.ref_goal arg2.ref_goal
+
+   (*
+    * Also compare the assumptions.
+    *)
+   let tactic_arg_alpha_equal_with_attributes arg1 arg2 =
+      let { ref_goal = goal1;
+            ref_attributes = attr1
+          } = arg1
+      in
+      let { ref_goal = goal2;
+            ref_attributes = attr2
+          } = arg2
+      in
+         msequent_alpha_equal goal1 goal2 && attributes_alpha_equal attr1 attr2
 
    (*
     * Match only the goals.

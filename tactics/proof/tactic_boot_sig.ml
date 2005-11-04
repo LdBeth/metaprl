@@ -324,6 +324,7 @@ sig
     *)
    val tactic_arg_alpha_equal : tactic_arg -> tactic_arg -> bool
    val tactic_arg_alpha_equal_concl : tactic_arg -> tactic_arg -> bool
+   val tactic_arg_alpha_equal_with_attributes : tactic_arg -> tactic_arg -> bool
 
    (*
     * Apply a tactic.

@@ -576,7 +576,7 @@ struct
     *)
    let rec search_arg arg = function
       hd :: tl ->
-         tactic_arg_alpha_equal hd arg || search_arg arg tl
+         tactic_arg_alpha_equal_with_attributes hd arg || search_arg arg tl
     | [] ->
          false
 
@@ -801,7 +801,7 @@ struct
     | [] ->
          make_goal leaf, []
 
-   let match_subgoals = match_subgoals_general (find_leaf tactic_arg_alpha_equal)
+   let match_subgoals = match_subgoals_general (find_leaf tactic_arg_alpha_equal_with_attributes)
 
    let tactic_arg_match arg1 arg2 =
       let g1 = msequent_goal arg1.ref_goal in
@@ -820,7 +820,7 @@ struct
          false
 
    let find_leaf_guess leaf subgoals =
-      match find_leaf tactic_arg_alpha_equal leaf subgoals with
+      match find_leaf tactic_arg_alpha_equal_with_attributes leaf subgoals with
          Goal _, _ ->
             begin match
                match find_leaf tactic_arg_match leaf subgoals with
@@ -1318,7 +1318,7 @@ struct
          info
 
    let rec find_subgoal_aux p addr node arg =
-      let test ext = tactic_arg_alpha_equal arg (goal_ext ext) in
+      let test ext = tactic_arg_alpha_equal_with_attributes arg (goal_ext ext) in
       if test node then
          if addr = [] then
             []
@@ -1326,7 +1326,7 @@ struct
             let addr = fst (Lm_list_util.split_last addr) in
                find_subgoal_aux p addr (index p addr) arg
       else
-         let test_subgoal ext = List.exists (tactic_arg_alpha_equal arg) (leaves_ext ext) in
+         let test_subgoal ext = List.exists (tactic_arg_alpha_equal_with_attributes arg) (leaves_ext ext) in
          let rec comp_aux rb addr goal subgoals =
             if List.exists test subgoals then
                aux (if rb then 0::addr else addr) goal
@@ -1590,7 +1590,7 @@ struct
                          rule_expr = expr;
                          rule_string = text;
                          rule_tactic = tac;
-                         rule_extract_normalized = normal && (goal==new_goal);
+                         rule_extract_normalized = normal && (goal == new_goal);
                          rule_extract = new_goal;
                          rule_subgoals = subgoals;
                          rule_leaves = LazyLeavesDelayed;
@@ -1672,13 +1672,12 @@ struct
 
    (*
     * Convert to an io proof.
-    * For speed, we marshal the full tactic arg.  But some of the
-    * raw attributes, and the sentinal will be invalid when we read it
-    * back in.
+    * Squash the attributes, so that only those that
+    * are marshalable make it to the output.
     *)
    let io_proof_of_proof squash _ _ proof =
       let parents = ref [] in
-      let rec make_tactic_arg_sq squash arg =
+      let rec make_tactic_arg arg =
          try
             List.assq arg !parents
          with
@@ -1689,22 +1688,6 @@ struct
                    } = arg
                in
                let attr = squash_attributes attrs in
-(*
- * JYH: this code was apparently added at some distant time in the
- * past that we don't have CVS logs for.  I'm not sure what it
- * is supposed to solve.
- *
-               let attr =
-                  let attrs = squash_attributes attrs in
-                     if squash then begin
-                        if attrs <> empty_attribute then
-                           eprintf "Warning: Proof_boot.io_proof_of_proof: unexpected attribute list. If the .prla file is old, ignore this warning@.";
-                        empty_attribute
-                     end
-                     else
-                        attrs
-               in
-*)
                let arg' =
                   { simp_goal = goal;
                     simp_label = label;
@@ -1713,10 +1696,6 @@ struct
                in
                   parents := (arg, arg') :: !parents;
                   arg'
-      and make_tactic_arg arg =
-         make_tactic_arg_sq false arg
-      and make_tactic_arg_squash arg =
-         make_tactic_arg_sq true arg
       in
       let rec convert arg =
          if !debug_proof then begin
@@ -1727,7 +1706,7 @@ struct
             Goal arg ->
                IOGoal (make_tactic_arg arg)
           | Unjustified (goal, subgoals) ->
-               IOUnjustified (make_tactic_arg_squash goal, List.map make_tactic_arg_squash subgoals)
+               IOUnjustified (make_tactic_arg goal, List.map make_tactic_arg subgoals)
           | Extract (goal, subgoals, _) ->
                IOUnjustified (make_tactic_arg goal, List.map make_tactic_arg subgoals)
           | Wrapped (args, node) ->
@@ -1753,7 +1732,8 @@ struct
                   io_rule_string = text;
                   io_rule_goal = convert goal;
                   io_rule_subgoals = List.map convert subgoals;
-                  io_rule_extras = List.map convert extras }
+                  io_rule_extras = List.map convert extras
+               }
           | Pending f ->
                convert (f ())
           | Locked node ->
