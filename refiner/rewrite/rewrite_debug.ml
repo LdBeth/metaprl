@@ -144,6 +144,8 @@ struct
          "FreeFOVarInstance " ^ string_of_symbol v
     | SOVarPattern (v, conts, i) ->
          sprintf "SOVarPattern %s<%s>[%d]" (string_of_symbol v) (string_of_conts conts) i
+    | SOVarMaybePattern (v, conts, i) ->
+         sprintf "SOVarMaybePattern %s<%s>[%d]" (string_of_symbol v) (string_of_conts conts) i
     | SOVarInstance (v, conts, i) ->
          sprintf "SOVarInstance %s<%s>[%d]" (string_of_symbol v) (string_of_conts conts) i
     | FOVar v ->

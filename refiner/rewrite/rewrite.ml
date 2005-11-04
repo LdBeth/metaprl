@@ -228,6 +228,7 @@ struct
     | PVar (s, ShapeOperator) -> RewriteOperatorType, s
     | PVar (s, ShapeLevel) -> RewriteLevelType, s
     | SOVarPattern (s , _, _)
+    | SOVarMaybePattern (s, _, _)
     | SOVarInstance (s , _, _)
     | CVar (s, _, _)
     | PVar (s, ShapeQuote) -> RewriteUnsupportedType, s
@@ -269,6 +270,7 @@ struct
              | _ -> REF_RAISE(extract_exn)
          end
     | FreeFOVarInstance _
+    | SOVarMaybePattern _
     | SOVarInstance _ ->
          raise (Invalid_argument "Rewrite.extract_redex_values: internal error: instance is not expected")
     | PVar (_, ShapeNumber) ->

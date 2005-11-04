@@ -151,11 +151,14 @@ struct
     * During redex compilation, we keep track of
     * second order variables and binding variables.
     * We keep the so conts and arg length for checking.
+    *
+    * SOVarMaybePattern means that we might have seen a pattern, but may be not.
     *)
    type rstack =
       FreeFOVarPattern of var
     | FreeFOVarInstance of var
     | SOVarPattern of var * var list * int
+    | SOVarMaybePattern of var * var list * int
     | SOVarInstance of var * var list * int
     | FOVar of var
     | CVar of var * var list * int

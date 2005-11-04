@@ -108,6 +108,8 @@ struct
    let rec rstack_upgrade v = function
       (SOVarInstance (v', conts, i))::t when Lm_symbol.eq v' v ->
          (SOVarPattern (v, conts, i))::t
+    | (SOVarMaybePattern (v', conts, i))::t when Lm_symbol.eq v' v ->
+         (SOVarPattern (v, conts, i))::t
     | FreeFOVarInstance v' :: t when Lm_symbol.eq v' v ->
          FreeFOVarPattern v :: t
     | (FreeFOVarPattern v' | SOVarPattern (v', _, _)) :: _ as l when Lm_symbol.eq v' v ->
@@ -117,11 +119,24 @@ struct
     | [] ->
          raise (Invalid_argument "Rewrite_util.rstack_upgrade: internal error")
 
+   let rec rstack_downgrade v = function
+      (SOVarMaybePattern (v', conts, i))::t when Lm_symbol.eq v' v ->
+         (SOVarInstance (v, conts, i))::t
+    | FreeFOVarInstance v' :: t when Lm_symbol.eq v' v ->
+         FreeFOVarPattern v :: t
+    | (FreeFOVarPattern v' | SOVarPattern (v', _, _) | SOVarInstance (v', _, _) ) :: _ as l when Lm_symbol.eq v' v ->
+         l
+    | h::t ->
+         h::(rstack_downgrade v t)
+    | [] ->
+         raise (Invalid_argument "Rewrite_util.rstack_upgrade: internal error")
+
    (*
     * Check the arity of a variable.
     *)
    let check_arity v conts arity = function
       SOVarPattern  (v', conts', i)
+    | SOVarMaybePattern (v', conts', i)
     | SOVarInstance (v', conts', i)
     | CVar (v', conts', i) when Lm_symbol.eq v v' ->
          if conts <> conts' then
@@ -134,7 +149,7 @@ struct
    let rec rstack_check_arity v conts arity = function
       [] ->
          raise (Invalid_argument "Rewrite_util.rstack_check_arity")
-    | ((FreeFOVarPattern v' | FreeFOVarInstance v' | SOVarPattern (v', _, _) | SOVarInstance (v', _, _) | FOVar v' | CVar (v', _, _) | PVar (v', _)) as h) :: t ->
+    | ((FreeFOVarPattern v' | FreeFOVarInstance v' | SOVarPattern (v', _, _) | SOVarMaybePattern (v', _, _) | SOVarInstance (v', _, _) | FOVar v' | CVar (v', _, _) | PVar (v', _)) as h) :: t ->
          if Lm_symbol.eq v' v then check_arity v conts arity h else rstack_check_arity v conts arity t
 
    (*
@@ -144,6 +159,7 @@ struct
       FreeFOVarPattern v
     | FreeFOVarInstance v
     | SOVarPattern (v, _, _)
+    | SOVarMaybePattern (v, _, _)
     | SOVarInstance (v, _, _)
     | FOVar v
     | CVar (v, _, _)
@@ -155,8 +171,20 @@ struct
 
    let rstack_so_mem_prop v = function
       SOVarPattern (v', _, _)
+    | SOVarMaybePattern (v', _, _)
     | SOVarInstance (v', _, _) ->
          Lm_symbol.eq v v'
+    | _ -> false
+
+   let rstack_so_pattern_mem_prop v = function
+      SOVarPattern (v', _, _) ->
+         Lm_symbol.eq v v'
+    | SOVarMaybePattern (v', _, _)
+    | SOVarInstance (v', _, _) ->
+         if Lm_symbol.eq v v' then
+            REF_RAISE(RefineError("Rewrite_util.rstack_so_pattern_mem_prop", RewriteAllSOInstances v))
+         else
+            false
     | _ -> false
 
    let rstack_freefo_mem_prop v = function
@@ -183,7 +211,7 @@ struct
    let rstack_c_mem v = List.exists (rstack_c_mem_prop v)
 
    let array_rstack_mem v = Lm_array_util.exists (rstack_mem_prop v)
-   let array_rstack_so_mem v = Lm_array_util.exists (rstack_so_mem_prop v)
+   let array_rstack_so_pattern_mem v = Lm_array_util.exists (rstack_so_pattern_mem_prop v)
    let array_rstack_freefo_mem v = Lm_array_util.exists (rstack_freefo_mem_prop v)
    let array_rstack_fo_mem v = Lm_array_util.exists (rstack_fo_mem_prop v)
    let array_rstack_c_mem v = Lm_array_util.exists (rstack_c_mem_prop v)

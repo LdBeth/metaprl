@@ -187,7 +187,7 @@ struct
       else if is_so_var_term term then
          let v, conts, subterms = dest_so_var term in
          let so_mem = rstack_so_mem v stack in
-            if st.st_patterns && are_bound_vars st.st_bvars subterms then
+            if are_bound_vars st.st_bvars subterms then
                (* This is a second order variable, all subterms are vars *
                 * and we do not have a pattern yet                       *)
                let () =
@@ -197,10 +197,11 @@ struct
                   end
                in
                let stack =
-                  if so_mem then
-                     rstack_upgrade v stack
-                  else
-                     stack @ [SOVarPattern (v, conts, List.length subterms)]
+                  match so_mem, st.st_patterns with
+                     true, true -> rstack_upgrade v stack
+                   | false, true -> stack @ [SOVarPattern (v, conts, List.length subterms)]
+                   | true, false -> stack
+                   | false, false -> stack @ [SOVarMaybePattern (v, conts, List.length subterms)]
                in
                let v' = rstack_so_index v stack in
                let args = if subterms = [] then [] else List.map (var_index st.st_bvars) subterms in
@@ -242,6 +243,7 @@ struct
                    * match the SO variable v may have no free occurences of this argument
                    * and this would prevent us from establishing an SO pattern.
                    *)
+                  let stack = rstack_downgrade v stack in
                   let stack, terms = compile_so_redex_terms { st with st_patterns = false } stack subterms in
                      stack, RWSOInstance(rstack_so_index v stack, terms)
                end

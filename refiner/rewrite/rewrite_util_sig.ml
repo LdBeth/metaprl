@@ -62,7 +62,7 @@ sig
    val rstack_c_mem : var -> rstack list -> bool
 
    val array_rstack_mem : var -> rstack array -> bool
-   val array_rstack_so_mem : var -> rstack array -> bool
+   val array_rstack_so_pattern_mem : var -> rstack array -> bool
    val array_rstack_freefo_mem : var -> rstack array -> bool
    val array_rstack_fo_mem : var -> rstack array -> bool
    val array_rstack_p_mem : shape_param -> var -> rstack array -> bool
@@ -95,6 +95,7 @@ sig
     * Stack operations.
     *)
    val rstack_upgrade : var -> rstack list -> rstack list
+   val rstack_downgrade : var -> rstack list -> rstack list
 
    (*
     * Assoc.
