@@ -41,6 +41,7 @@ ExtractMagic(in, out) =
 
 LMDIR = $(dir $(ROOT)/libmojave)
 REFDIR = $(dir $(ROOT)/refiner)
+PROOFDIR = $(dir $(ROOT)/tactics/proof)
 
 #
 # Magic text for the grammars.
@@ -54,6 +55,7 @@ FILTER_MAGIC[] =
     $(REFDIR)/refsig/term_sig.ml
     $(REFDIR)/term_ds/term_ds_sig.ml
     $(REFDIR)/reflib/ascii_io.ml
+    $(PROOFDIR)/proof_term_boot.ml
     filter_type.ml
     filter_grammar.ml
 

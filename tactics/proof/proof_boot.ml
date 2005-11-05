@@ -150,6 +150,7 @@ struct
     | ExprCompose of step_expr
     | ExprWrapped of arglist
     | ExprRule of string * MLast.expr
+    | ExprAnnotate
 
    (*
     * Info about a step of the proof.
@@ -237,7 +238,8 @@ struct
 
    let rec count_leaves = function
       Goal _
-    | Identity _ -> 1
+    | Identity _
+    | Annotate _ -> 1
     | Unjustified (_, leaves)
     | Extract (_, leaves, _) -> List.length leaves
     | Wrapped (_, goal) -> count_leaves goal
@@ -282,6 +284,8 @@ struct
             if res == ext then node else Locked res
        | Identity g ->
             if g == goal then node else Identity goal
+       | Annotate (g1, g2) ->
+            if g1 == goal then node else Annotate (goal, g2)
 
    (* Replace subgoals with equivalent ones *)
 
@@ -329,6 +333,12 @@ struct
             begin match gs with
                res::gs ->
                   if g == res then gs, node else gs, Identity res
+             | _ -> raise (Invalid_argument "Proof_boot.replace_subg_aux")
+            end
+       | Annotate (g1, g2) ->
+            begin match gs with
+               res::gs ->
+                  if g2 == res then gs, node else gs, Annotate (g1, res)
              | _ -> raise (Invalid_argument "Proof_boot.replace_subg_aux")
             end
 
@@ -494,6 +504,7 @@ struct
          Goal _
        | Extract _
        | Identity _
+       | Annotate _
        | Unjustified _ ->
             raise_select_error proof node raddr i
        | Compose { comp_goal = goal; comp_subgoals = subgoals; comp_extras = extras } ->
@@ -554,6 +565,7 @@ struct
    let rec goal_ext = function
       Goal t
     | Identity t
+    | Annotate (t, _)
     | Unjustified (t, _)
     | Extract (t, _, _) ->
          t
@@ -597,7 +609,8 @@ struct
       let leaves =
          match goal with
             Goal t
-          | Identity t ->
+          | Identity t
+          | Annotate (_, t) ->
                [t]
           | Unjustified (_, leaves)
           | Extract (_, leaves, _) ->
@@ -676,7 +689,8 @@ struct
       Goal _ ->
          LazyStatusPartial
     | Identity _
-    | Extract _ ->
+    | Extract _
+    | Annotate _ ->
          LazyStatusComplete
     | Unjustified _ ->
          LazyStatusIncomplete
@@ -883,7 +897,8 @@ struct
    let rec replace_child proof node raddr i (node' : extract) =
       match node with
          Goal _
-       | Identity _ ->
+       | Identity _
+       | Annotate _ ->
             raise_replace_error proof node raddr i
        | Extract (goal, subgoals, _)
        | Unjustified (goal, subgoals) ->
@@ -1005,6 +1020,8 @@ struct
             Goal (f arg)
        | Identity arg ->
             Identity (f arg)
+       | Annotate (arg1, arg2) ->
+            Annotate (f arg1, f arg2)
        | Unjustified (goal, subgoals)
        | Extract (goal, subgoals, _) ->
             Unjustified (f goal, List.map f subgoals)
@@ -1257,6 +1274,15 @@ struct
               step_subgoals = [proofs];
               step_extras = []
             }
+    | Annotate (goal1, goal2) ->
+         let proof1 = proof_goal false (Goal goal1) in
+         let proof2 = proof_goal false (Goal goal2) in
+            { step_goal = proof1;
+              step_status = StatusComplete;
+              step_expr = ExprAnnotate;
+              step_subgoals = [proof2];
+              step_extras = []
+            }
     | Unjustified (goal, subgoals) ->
          { step_goal = proof_goal false (Goal goal);
            step_status = StatusIncomplete;
@@ -1339,6 +1365,7 @@ struct
             Goal _
           | Extract _
           | Identity _
+          | Annotate _
           | Unjustified _ ->
                if addr = [] then [] else (List.rev (List.tl addr))
           | Wrapped (_, ext) ->
@@ -1387,6 +1414,7 @@ struct
       match node with
          Goal _
        | Identity _
+       | Annotate _
        | Unjustified _
        | Extract _ ->
             step
@@ -1431,6 +1459,7 @@ struct
       match node with
          Goal _
        | Identity _
+       | Annotate _
        | Unjustified _
        | Extract _ ->
             node
@@ -1470,6 +1499,7 @@ struct
    let rec squash_check_ext = function
       Goal _
     | Identity _
+    | Annotate _
     | Unjustified _
     | Extract _ ->
          ()
@@ -1488,6 +1518,7 @@ struct
    let rec squash_kill_ext = function
       Goal _
     | Identity _
+    | Annotate _
     | Unjustified _ as node ->
          node
     | Extract (goal, subgoals, _) ->
@@ -1503,6 +1534,7 @@ struct
    let rec squash_ext = function
       Goal _
     | Identity _
+    | Annotate _
     | Unjustified _
     | Extract _ as node ->
          squash_kill_ext node
@@ -1552,56 +1584,57 @@ struct
     * Re-expand all the rule boxes.
     *)
    let rec expand_ext exn_wrapper = function
-         Goal _
-       | Identity _
-       | Unjustified _
-       | Extract _ as node ->
-            node
-       | Compose { comp_goal = goal; comp_subgoals = subgoals; comp_extras = extras } ->
-            let goal = expand_ext exn_wrapper goal in
-            let subgoals = List.map (expand_ext exn_wrapper) subgoals in
-            let extras = List.map (expand_ext exn_wrapper) extras in
-            let subgoals, extras = match_subgoals (leaves_ext goal) subgoals extras in
-               Compose { comp_status = LazyStatusDelayed;
-                         comp_goal = goal;
-                         comp_subgoals = subgoals;
-                         comp_extras = extras;
-                         comp_leaves = LazyLeavesDelayed
-               }
-       | Wrapped (label, goal) ->
-            Wrapped (label, expand_ext exn_wrapper goal)
-       | RuleBox { rule_expr = expr;
-                   rule_string = text;
-                   rule_extract_normalized = normal;
-                   rule_extract = goal;
-                   rule_tactic = tac;
-                   rule_subgoals = subgoals;
-                   rule_extras = extras
-         } ->
-            let t = goal_ext goal in
-            let new_goal =
-               try exn_wrapper (fun () -> snd (TacticInternal.refine (tac ()) t)) ()
-               with RefineError _ -> goal
-            in
-            let leaves = leaves_ext new_goal in
-            let subgoals, extras = update_subgoals leaves subgoals extras in
-            let subgoals = List.map (expand_ext exn_wrapper) subgoals in
-            let extras = List.map (expand_ext exn_wrapper) extras in
-            let subgoals, extras = match_subgoals leaves subgoals extras in
-               RuleBox { rule_status = LazyStatusDelayed;
-                         rule_expr = expr;
-                         rule_string = text;
-                         rule_tactic = tac;
-                         rule_extract_normalized = normal && (goal == new_goal);
-                         rule_extract = new_goal;
-                         rule_subgoals = subgoals;
-                         rule_leaves = LazyLeavesDelayed;
-                         rule_extras = extras
-               }
-       | Pending f ->
-            expand_ext exn_wrapper (f ())
-       | Locked ext ->
-            expand_ext exn_wrapper ext
+      Goal _
+    | Identity _
+    | Annotate _
+    | Unjustified _
+    | Extract _ as node ->
+         node
+    | Compose { comp_goal = goal; comp_subgoals = subgoals; comp_extras = extras } ->
+         let goal = expand_ext exn_wrapper goal in
+         let subgoals = List.map (expand_ext exn_wrapper) subgoals in
+         let extras = List.map (expand_ext exn_wrapper) extras in
+         let subgoals, extras = match_subgoals (leaves_ext goal) subgoals extras in
+            Compose { comp_status = LazyStatusDelayed;
+                      comp_goal = goal;
+                      comp_subgoals = subgoals;
+                      comp_extras = extras;
+                      comp_leaves = LazyLeavesDelayed
+            }
+    | Wrapped (label, goal) ->
+         Wrapped (label, expand_ext exn_wrapper goal)
+    | RuleBox { rule_expr = expr;
+                rule_string = text;
+                rule_extract_normalized = normal;
+                rule_extract = goal;
+                rule_tactic = tac;
+                rule_subgoals = subgoals;
+                rule_extras = extras
+      } ->
+         let t = goal_ext goal in
+         let new_goal =
+            try exn_wrapper (fun () -> snd (TacticInternal.refine (tac ()) t)) ()
+            with RefineError _ -> goal
+         in
+         let leaves = leaves_ext new_goal in
+         let subgoals, extras = update_subgoals leaves subgoals extras in
+         let subgoals = List.map (expand_ext exn_wrapper) subgoals in
+         let extras = List.map (expand_ext exn_wrapper) extras in
+         let subgoals, extras = match_subgoals leaves subgoals extras in
+            RuleBox { rule_status = LazyStatusDelayed;
+                      rule_expr = expr;
+                      rule_string = text;
+                      rule_tactic = tac;
+                      rule_extract_normalized = normal && (goal == new_goal);
+                      rule_extract = new_goal;
+                      rule_subgoals = subgoals;
+                      rule_leaves = LazyLeavesDelayed;
+                      rule_extras = extras
+            }
+    | Pending f ->
+         expand_ext exn_wrapper (f ())
+    | Locked ext ->
+         expand_ext exn_wrapper ext
 
    let expand postf exn_wrapper pf addr =
       fold_proof postf pf addr (expand_ext exn_wrapper (index pf addr))
@@ -1622,7 +1655,8 @@ struct
             Refine.compose ext (List.map (find_mseq_extract subgoals) real_subgoals)
     | Pending f ->
          refiner_extract_of_proof (f ())
-    | Identity goal ->
+    | Identity goal
+    | Annotate (goal, _) ->
          TacticInternal.identity goal
 
    and find_mseq_extract subgoals mseq =
@@ -1656,6 +1690,7 @@ struct
     | IOCompose of io_compose_info
     | IORuleBox of io_rule_info
     | IOIdentity of simple_tactic_arg
+    | IOAnnotate of simple_tactic_arg * simple_tactic_arg
 
    and io_compose_info =
       { io_comp_status : lazy_status;
@@ -1741,6 +1776,8 @@ struct
                convert node
           | Identity arg ->
                IOIdentity (make_tactic_arg arg)
+          | Annotate (arg1, arg2) ->
+               IOAnnotate (make_tactic_arg arg1, make_tactic_arg arg2)
          in
             if !debug_proof then
                eprintf "\\__ IO conversion done.\n%t" eflush;
@@ -1827,6 +1864,8 @@ struct
                }
        | IOIdentity arg ->
             Identity (make_tactic_arg arg)
+       | IOAnnotate (arg1, arg2) ->
+            Annotate (make_tactic_arg arg1, make_tactic_arg arg2)
       in
          convert node
 
@@ -1836,7 +1875,8 @@ struct
    let rec status_of_io_proof = function
       IOGoal _
     | IOUnjustified _
-    | IOIdentity _ ->
+    | IOIdentity _
+    | IOAnnotate _ ->
          StatusPartial
     | IOWrapped (_, node) ->
          status_of_io_proof node
@@ -1850,7 +1890,8 @@ struct
    let rec node_count_of_io_proof_node rules nodes = function
       IOGoal _
     | IOUnjustified _
-    | IOIdentity _ ->
+    | IOIdentity _
+    | IOAnnotate _ ->
          rules, succ nodes
     | IOWrapped (_, node) ->
          node_count_of_io_proof_node rules (succ nodes) node
@@ -1934,6 +1975,7 @@ struct
    let rec node_count_ext (rcount, ncount) = function
       Goal _
     | Identity _
+    | Annotate _
     | Unjustified _
     | Extract _ ->
          rcount, succ ncount
@@ -1986,6 +2028,7 @@ struct
       in function
          Goal _
        | Identity _
+       | Annotate _
        | Unjustified _
        | Extract _
        | Wrapped _

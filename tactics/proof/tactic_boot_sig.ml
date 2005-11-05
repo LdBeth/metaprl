@@ -136,6 +136,7 @@ sig
     | Pending of pending_extract
     | Locked of extract
     | Identity of tactic_arg
+    | Annotate of tactic_arg * tactic_arg
 
    and pending_extract = unit -> extract
 
@@ -481,6 +482,7 @@ sig
     | ExprCompose of step_expr
     | ExprWrapped of arglist
     | ExprRule of string * MLast.expr
+    | ExprAnnotate
 
    (*
     * Info about a step of the proof.

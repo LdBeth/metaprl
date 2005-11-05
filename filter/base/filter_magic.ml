@@ -38,7 +38,7 @@ open File_type_base
  ************************************************************************
  *
  * Current MD5 hash of the summary-related types (as computed by OMake):
- * FILTER_MD5: bd32f9b153fe45b3d9d0af7da9f705d3
+ * FILTER_MD5: 72101f3e09ae532ab3b02c8966b5dabe
  *
  * The arguments for pack_version are:
  *    major version number, minor sub-version number, revision number
@@ -76,10 +76,11 @@ open File_type_base
  * Rev 23: changed the string comparison function, this affects how the string and
  *         variable sets are represented in binary format.
  * Rev 24: added "Operator" term parameters.
+ * Rev 25: added "Annotate" proof terms.
  *)
-let raw_versions = List.map (pack_version 1 0) [24]
+let raw_versions = List.map (pack_version 1 0) [25;24]
 
-let term_versions = List.map (pack_version 1 0) [24]
+let term_versions = List.map (pack_version 1 0) [25;24]
 
 (*
  * ASCII IO format revision history:
@@ -107,6 +108,7 @@ let term_versions = List.map (pack_version 1 0) [24]
  * Rev 20: added "shape" parameters
  * Rev 21: added iform/normal classification to opname declarations
  * Rev 22: added "Operator" term parameters.
+ * Rec 23: added "Annotate" proof terms.
  *
  * Ascii_io has a HACK needed to read some rev 0-5 files
  * Ascii_io has another set of HACKs to read sequents in rev 0-6 files
@@ -123,7 +125,7 @@ let term_versions = List.map (pack_version 1 0) [24]
  * Filter_summary has another HACK needed to read some rev 0-18 files.
  * Filter_summary has another HACK needed to read some rev 0-20 files.
  *)
-let ascii_versions = List.map (pack_version 1 0) [22;21;20;19;18;17;16;15;14;13;12;11;10;9;8;7;6;5;4;3;2;1;0]
+let ascii_versions = List.map (pack_version 1 0) [23;22;21;20;19;18;17;16;15;14;13;12;11;10;9;8;7;6;5;4;3;2;1;0]
 
 (************************************************************************
  * Magic numbers for interactive files                                  *

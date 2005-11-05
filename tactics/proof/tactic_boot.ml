@@ -77,6 +77,9 @@ let debug_tactic =
 
 let debug_refine = load_debug "refine"
 
+let eq = (==)
+let equal = (=)
+
 (*
  * This module implements:
  *   TacticType
@@ -175,6 +178,7 @@ struct
     | Pending of pending_extract
     | Locked of extract
     | Identity of tactic_arg
+    | Annotate of tactic_arg * tactic_arg
 
    and pending_extract = unit -> extract
 
@@ -616,6 +620,15 @@ struct
          format_arg db buf arg;
          format_popm buf
 
+    | Annotate (arg1, arg2) ->
+         format_pushm buf 2;
+         format_string buf "Annotate:";
+         format_hspace buf;
+         format_arg db buf arg1;
+         format_hspace buf;
+         format_arg db buf arg2;
+         format_popm buf
+
     | Unjustified (goal, subgoals) ->
          format_step buf db "Unjustified" goal subgoals
     | Extract (goal, subgoals, _) ->
@@ -828,9 +841,9 @@ struct
          assoc_equal terms1 terms2 alpha_equal
          && assoc_equal term_lists1 term_lists1 alpha_equal_term_list
          && assoc_equal types1 types2 alpha_equal
-         && assoc_equal ints1 ints2 (==)
-         && assoc_equal bools1 bools2 (==)
-         && assoc_equal strings1 strings2 (=)
+         && assoc_equal ints1 ints2 eq
+         && assoc_equal bools1 bools2 eq
+         && assoc_equal strings1 strings2 equal
 
    (*
     * Two args are equal if their goals are equal.
@@ -1136,13 +1149,9 @@ struct
    (*
     * Add a permanent argument.
     *)
-   let addT f p =
-      let attributes = f p.ref_attributes in
-      let make_goal p =
-         let p' = { p with ref_attributes = attributes } in
-            ThreadRefinerTacticals.create_value [p'] (Identity p)
-      in
-         make_goal p
+   let addT f p1 =
+      let p2 = { p1 with ref_attributes = f p1.ref_attributes } in
+         ThreadRefinerTacticals.create_value [p2] (Annotate (p1, p2))
 
    let addTermT name t =
       addT (fun attr -> { attr with attr_terms = (name, t) :: attr.attr_terms })

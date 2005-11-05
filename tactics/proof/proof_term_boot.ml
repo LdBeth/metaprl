@@ -85,6 +85,7 @@ struct
 
    let goal_op                = mk_opname "ext_goal"          summary_opname
    let identity_op            = mk_opname "ext_identity"      summary_opname
+   let annotate_op            = mk_opname "ext_annotate"      summary_opname
    let unjustified_op         = mk_opname "ext_unjustified"   summary_opname
    let wrapped_op             = mk_opname "ext_wrapped"       summary_opname
    let compose_op             = mk_opname "ext_compose"       summary_opname
@@ -189,6 +190,7 @@ struct
     *)
    module WeakMemo = TheWeakMemo
 
+   (* %%MAGICBEGIN%% *)
    type term_index = TermCopy2.term_index
    type msequent_index = TermCopy2.msequent_index
 
@@ -218,6 +220,7 @@ struct
     | HeadCompose of 'extract_index * 'extract_index list * 'extract_index list
     | HeadRule of lazy_status * string * 'extract_index * 'extract_index list * 'extract_index list
     | HeadIdentity of 'tactic_arg_index
+    | HeadAnnotate of 'tactic_arg_index * 'tactic_arg_index
 
    (*
     * Memo tables.
@@ -296,6 +299,7 @@ struct
                            (term_weak_index, 'term_arglist wd, 'term_tactic_arg wd, 'term_extract wd) extract_header,
                            'term_extract) WeakMemo.t
       }
+   (* %%MAGICEND%% *)
 
    (*
     * Build weak headers.
@@ -347,6 +351,8 @@ struct
                    List.map WeakMemo.weaken extras)
     | HeadIdentity goal ->
          HeadIdentity (WeakMemo.weaken goal)
+    | HeadAnnotate (goal1, goal2) ->
+         HeadAnnotate (WeakMemo.weaken goal1, WeakMemo.weaken goal2)
 
    (*
     * Comparison functions.
@@ -404,6 +410,8 @@ struct
             text1 = text2 && goal1 == goal2 && list_mem_eq subgoals1 subgoals2 && list_mem_eq extras1 extras2
        | HeadIdentity goal1, HeadIdentity goal2 ->
             goal1 == goal2
+       | HeadAnnotate (goal11, goal12), HeadAnnotate (goal21, goal22) ->
+            goal11 == goal21 && goal12 == goal22
        | _ ->
             false
 
@@ -489,6 +497,8 @@ struct
          ext_make_extract_header info ext
     | Identity goal ->
          HeadIdentity (ext_add_tactic_arg info goal)
+    | Annotate (goal1, goal2) ->
+         HeadAnnotate (ext_add_tactic_arg info goal1, ext_add_tactic_arg info goal2)
 
    (*
     * Build an extract from the header.
@@ -606,6 +616,8 @@ struct
             }
     | HeadIdentity goal ->
          Identity (ext_retrieve_tactic_arg info goal)
+    | HeadAnnotate (goal1, goal2) ->
+         Annotate (ext_retrieve_tactic_arg info goal1, ext_retrieve_tactic_arg info goal2)
 
    (*
     * Build a term from the header.
@@ -683,6 +695,8 @@ struct
                                              mk_xlist_term (List.map (term_retrieve_extract info) extras)]
     | HeadIdentity goal ->
          mk_simple_term identity_op [term_retrieve_tactic_arg info goal]
+    | HeadAnnotate (goal1, goal2) ->
+         mk_simple_term annotate_op [term_retrieve_tactic_arg info goal1; term_retrieve_tactic_arg info goal2]
 
    (*
     * Lookup values in the reverse direction.
@@ -775,6 +789,10 @@ struct
    and term_make_identity_header info t =
       HeadIdentity (term_add_tactic_arg info (one_subterm t))
 
+   and term_make_annotate_header info t =
+      let t1, t2 = two_subterms t in
+         HeadAnnotate (term_add_tactic_arg info t1, term_add_tactic_arg info t2)
+
    and term_make_unjustified_header info t =
       let goal, subgoals = two_subterms t in
       let subgoals = dest_xlist subgoals in
@@ -811,6 +829,8 @@ struct
             term_make_goal_header info t
          else if Opname.eq op identity_op then
             term_make_identity_header info t
+         else if Opname.eq op annotate_op then
+            term_make_annotate_header info t
          else if Opname.eq op unjustified_op then
             term_make_unjustified_header info t
          else if Opname.eq op wrapped_op then

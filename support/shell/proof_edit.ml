@@ -149,6 +149,8 @@ let rec rule_term_of_text = function
       mk_rule_box_string_term "<goal>"
  | Proof.ExprIdentity ->
       mk_rule_box_string_term "<identity>"
+ | Proof.ExprAnnotate ->
+      mk_rule_box_string_term "<annotate>"
  | Proof.ExprUnjustified ->
       mk_rule_box_string_term "<unjustified>"
  | Proof.ExprExtract args
@@ -311,6 +313,8 @@ let rec str_expr = function
       "<goal>"
  | Proof.ExprIdentity ->
       "<identity>"
+ | Proof.ExprAnnotate ->
+      "<annotate>"
  | Proof.ExprUnjustified ->
       "<unjustified>"
  | Proof.ExprExtract arg ->
