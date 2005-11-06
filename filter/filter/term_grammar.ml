@@ -158,6 +158,9 @@ let xparam_succ_opname   = Opname.mk_opname "xparam_string" perv_opname
 let xparam_max_opname    = Opname.mk_opname "xparam_max" perv_opname
 let xparam_term_opname   = Opname.mk_opname "xparam_term" perv_opname
 let xparam_opname        = Opname.mk_opname "xparam" perv_opname
+let xrulequote_opname    = Opname.mk_opname "xrulequote" perv_opname
+
+let mk_xrulequote_term = mk_dep0_term xrulequote_opname
 
 (*
  * Build the grammar.
@@ -881,9 +884,9 @@ struct
          build_term spell space items
 
    and mk_parse_state loc name =
-      { Filter_grammar.parse_quotation = parse_quotation loc name;
-        Filter_grammar.parse_opname = mk_opname_kind loc;
-        Filter_grammar.parse_param = dest_xparam loc
+      { Filter_reflection.parse_quotation = parse_quotation loc name;
+        Filter_reflection.parse_opname = mk_opname_kind loc;
+        Filter_reflection.parse_param = dest_xparam loc
       }
 
    let rec strip_white_lst = function
@@ -985,7 +988,7 @@ struct
          check_input_mterm loc mt;
          check_input_terms loc terms;
          check_rule loc mt terms;
-         mt, List.map erase_arg_term args, f
+         cvars, mt, List.map erase_arg_term args, f
 
    let parse_rewrite loc name mt args =
       let mt, args = apply_iforms_mterm loc mt args in
@@ -1012,6 +1015,7 @@ struct
 
          (* Check with the rewriter first *)
          Refine.check_definition name redex contractum;
+
          (* Check the types of both parts *)
          check_rewrite loc (MetaIff (MetaTheorem redex, MetaTheorem contractum)) [];
          redex, contractum
@@ -1069,6 +1073,15 @@ struct
    let mk_parsed_term t =
       t
 
+   let mk_parsed_meta_term mt =
+      mt
+
+   (*
+    * Allow conversion from meta-terms to terms.
+    *)
+   let parsed_xrulequote_of_parsed_meta_term mt =
+      mk_xrulequote_term (term_of_meta_term mt)
+
    (************************************************
     * !!! WARNING !!!
     * !!! The following functions bypass either the
@@ -1077,6 +1090,9 @@ struct
 
    (* For bypassing the type checker *)
    let raw_term_of_parsed_term t =
+      t
+
+   let raw_meta_term_of_parsed_meta_term t =
       t
 
    let raw_input_term_of_parsed_term t =

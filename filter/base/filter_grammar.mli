@@ -31,6 +31,7 @@ open Term_sig
 open Term_shape_sig
 open Refiner.Refiner.TermType
 open Refiner.Refiner.TermShape
+open Filter_reflection
 
 exception PrecNotFound of shape
 
@@ -61,15 +62,6 @@ type id = Lm_symbol.symbol
  * Lexers are identified by strings.
  *)
 type lexer_id = opname
-
-(*
- * For expanding quotations.
- *)
-type parse_state =
-   { parse_quotation : string -> string -> term;
-     parse_opname : op_kind -> string list -> shape_param list -> int list -> Opname.opname;
-     parse_param : term -> param
-   }
 
 (*
  * Add a lexer token.

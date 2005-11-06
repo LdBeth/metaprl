@@ -351,7 +351,7 @@ type ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item, 'module_info) s
  * The mk_var_contexts function should return the Some list when the SO variable bindings are known
  * from the proof context.
  *)
-type parse_state = Filter_grammar.parse_state
+type parse_state = Filter_reflection.parse_state
 
 type parsing_state =
    { opname_prefix      : MLast.loc -> opname;
@@ -398,6 +398,8 @@ end
 (*
  * Grammars to extend.
  *)
+type cvars = SymbolSet.t * SymbolSet.t
+
 module type ParsedTermGrammarSig =
 sig
    (* The results have abstract types *)
@@ -417,7 +419,7 @@ sig
    (* Term conversion *)
    val parse_term           : MLast.loc -> parsed_term -> term
    val parse_term_with_vars : MLast.loc -> parsed_term -> term
-   val parse_rule           : MLast.loc -> string -> parsed_meta_term -> parsed_term list -> meta_term * term list * (term -> term)
+   val parse_rule           : MLast.loc -> string -> parsed_meta_term -> parsed_term list -> cvars * meta_term * term list * (term -> term)
    val parse_rewrite        : MLast.loc -> string -> parsed_meta_term -> parsed_term list -> meta_term * term list * (term -> term)
    val parse_type_rewrite   : MLast.loc -> parsed_term -> parsed_term -> term * term
    val parse_iform          : MLast.loc -> string -> parsed_meta_term -> meta_term
@@ -426,7 +428,8 @@ sig
    val parse_define         : MLast.loc -> string -> parsed_term -> parsed_term -> term * term
 
    (* For input terms from other parsers *)
-   val mk_parsed_term    : term -> parsed_term
+   val mk_parsed_term      : term -> parsed_term
+   val mk_parsed_meta_term : meta_term -> parsed_meta_term
 
    (* Grammar *)
    val opname            : opname Grammar.Entry.e
@@ -444,6 +447,9 @@ sig
    val parsed_term       : term Grammar.Entry.e
    val parsed_bound_term : term poly_aterm Grammar.Entry.e
 
+   (* Reflection *)
+   val parsed_xrulequote_of_parsed_meta_term : parsed_meta_term -> parsed_term
+
    (************************************************
     * !!! WARNING, UNSAFE !!!
     * !!! The following functions bypass
@@ -452,6 +458,9 @@ sig
 
    (* Bypass everything: the iforms, the parser, and the type checker *)
    val raw_term_of_parsed_term : parsed_term -> term
+
+   (* Bypass everything: the iforms, the parser, and the type checker *)
+   val raw_meta_term_of_parsed_meta_term : parsed_meta_term -> meta_term
 
    (* Bypass both the parser and the type checker *)
    val raw_input_term_of_parsed_term : parsed_term -> term

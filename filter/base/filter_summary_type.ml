@@ -156,7 +156,7 @@ end
  * The sig_* types parameterize the signatures, and the str_* types
  * parameterize the module_info being constructed.
  *)
-type parse_state = Filter_grammar.parse_state
+type parse_state = Filter_reflection.parse_state
 
 type summary_mode =
    CompiledSummary

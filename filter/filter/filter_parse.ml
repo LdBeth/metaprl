@@ -41,7 +41,7 @@ open Pcaml
 
 open Opname
 open Precedence
-open Simple_print.SimplePrint
+open Simple_print
 open File_base_type
 open Term_shape_sig
 open Term_ty_sig
@@ -67,6 +67,7 @@ open Filter_util
 open Filter_summary
 open Filter_summary_type
 open Filter_summary_util
+open Filter_reflection
 open Filter_prog
 open Filter_magic
 open Proof_convert
@@ -107,17 +108,17 @@ let debug_dform =
 
 let rec print_terms out = function
    h::t ->
-      eprintf "\t%s\n" (string_of_term h);
+      eprintf "\t%s\n" (SimplePrint.string_of_term h);
       print_terms out t
  | [] ->
       flush stderr
 
 let rec print_vterms out = function
    (labels, Some v, h)::t ->
-      eprintf "\t%a %s. %s\n" print_string_list labels (string_of_term v) (string_of_term h);
+      eprintf "\t%a %s. %s\n" print_string_list labels (SimplePrint.string_of_term v) (SimplePrint.string_of_term h);
       print_vterms out t
  | (labels, None, h)::t ->
-      eprintf "\t%a %s\n" print_string_list labels (string_of_term h);
+      eprintf "\t%a %s\n" print_string_list labels (SimplePrint.string_of_term h);
       print_vterms out t
  | [] ->
       flush stderr
@@ -328,11 +329,11 @@ struct
     * the get_proc function needs to set the start symbols.
     *)
    let mk_parse_state loc id =
-      { Filter_grammar.parse_quotation =
+      { Filter_reflection.parse_quotation =
            (fun name s ->
-                 TermGrammar.raw_term_of_parsed_term (TermGrammar.parse_quotation dummy_loc id name s));
-        Filter_grammar.parse_opname = TermGrammar.mk_opname_kind dummy_loc;
-        Filter_grammar.parse_param = TermGrammar.dest_xparam dummy_loc
+                 TermGrammar.raw_term_of_parsed_term (TermGrammar.parse_quotation loc id name s));
+        Filter_reflection.parse_opname = TermGrammar.mk_opname_kind loc;
+        Filter_reflection.parse_param = TermGrammar.dest_xparam loc
       }
 
    let input_exp shape id s =
@@ -660,7 +661,7 @@ struct
                    | "except_mode" :: _ ->
                         modes, get_dfmode loc hd :: except_modes, options
                    | _ ->
-                        Stdpp.raise_with_loc loc (Failure("warning: unknown display form option " ^ (string_of_term hd)))
+                        Stdpp.raise_with_loc loc (Failure("warning: unknown display form option " ^ (SimplePrint.string_of_term hd)))
             end
        | [] ->
             [], [], []
@@ -1279,18 +1280,18 @@ let parse_iform = TermGrammar.parse_iform
 
 (* Convert contexts in meta-terms, terms args and resource term bindings *)
 let parse_rule loc name mt tl rs =
-   let mt, tl, f = TermGrammar.parse_rule loc name mt tl in
+   let cvars, mt, tl, f = TermGrammar.parse_rule loc name mt tl in
    let conv = function
       v, BindTerm t ->
          v, BindTerm (f t)
     | bnd ->
          bnd
    in
-      mt, tl, { rs with item_bindings = List.map conv rs.item_bindings }
+      cvars, mt, tl, { rs with item_bindings = List.map conv rs.item_bindings }
 
 (* Same as parse_rule, but with extract term as well *)
 let parse_rule_with_extract loc name mt tl rs extract =
-   let mt, tl, f = TermGrammar.parse_rule loc name mt tl in
+   let _, mt, tl, f = TermGrammar.parse_rule loc name mt tl in
    let conv = function
       v, BindTerm t ->
          v, BindTerm (f t)
@@ -1325,6 +1326,94 @@ let str_keyword kw loc =
 let sig_keyword kw loc =
    Stdpp.raise_with_loc loc (Invalid_argument
       ("Interface keyword encountered where an implementation one was expected: \"" ^ kw ^ "\""))
+
+(************************************************************************
+ * This is for reflection processing.
+ * Try to keep it separate in case we want to remove it later.
+ vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv*)
+module Reflect =
+struct
+   let opname_prefix loc = (TermGrammarBefore.parsing_state loc).opname_prefix loc
+
+   (* Add a definition for each of the terms *)
+   let add_define proc (loc, name, _, _, def) =
+      let opname = Opname.mk_opname name (opname_prefix loc) in
+      let t = TermGrammar.mk_parsed_term (mk_term (mk_op opname []) []) in
+      let quote =
+         { ty_term   = t;
+           ty_opname = opname;
+           ty_params = [];
+           ty_bterms = [];
+           ty_type   = term_type
+         }
+      in
+      let sc = ShapeNormal in
+      let def = parsed_xrulequote_of_parsed_meta_term def in
+      let () = StrFilter.declare_define_term proc sc (parse_define_redex loc quote) in
+      let quote, def = parse_define_term loc name sc quote def in
+         StrFilter.define_term proc loc sc ("unfold_" ^ name) quote def no_resources
+
+   (* Add a rule that says that the rule is well-formed *)
+   let add_wf proc (loc, name, _, _, _) =
+      let opname = Opname.mk_opname name (opname_prefix loc) in
+      let t = mk_term (mk_op opname []) [] in
+
+      (* The theorem is (<H> >- t IN ProofRule) *)
+      let state = StrFilter.mk_parse_state loc "term" in
+      let mt = TermGrammar.mk_parsed_meta_term (Filter_reflection.mk_rule_wf_thm state t) in
+      let name_wf = name ^ "_wf" in
+      let _, mt, params, res = parse_rule loc name_wf mt [] no_resources in
+         define_int_thm proc loc name_wf [] mt no_resources
+
+   (* Convert into an implication rule *)
+   let add_infer proc (loc, name, res, params, mt) =
+      let state = StrFilter.mk_parse_state loc "term" in
+      let cvars, mt, params, res = parse_rule loc name mt params res in
+      let mt = Filter_reflection.mk_infer_thm state mt in
+
+      (* For now, we have to filter out context arguments *)
+      let params =
+         let (cvars1, cvars2) = cvars in
+(*
+            eprintf "@[<hv 3>Cvars:";
+            SymbolSet.iter (fun v -> eprintf "@ CVars1: %a" pp_print_symbol v) cvars1;
+            SymbolSet.iter (fun v -> eprintf "@ CVars2: %a" pp_print_symbol v) cvars2;
+            eprintf "@.";
+*)
+            List.filter (fun t ->
+(*
+                  eprintf "Term: %s@." (SimplePrint.string_of_term t);
+*)
+                  if is_so_var_term t then
+                     let v, _, _ = dest_so_var t in
+                     let b = not (SymbolSet.mem cvars1 v || SymbolSet.mem cvars2 v) in
+(*
+                        eprintf "Filtering: %a = %b@." pp_print_symbol v b;
+ *)
+                        b
+                  else
+                     true) params
+      in
+         define_int_thm proc loc name params mt res
+
+   let process_item_exn proc item =
+      add_define proc item;
+      add_wf proc item;
+      add_infer proc item
+
+   let process_item proc ((loc, _, _, _, _) as item) =
+      let f () =
+         process_item_exn proc item
+      in
+         handle_exn f "implem" loc
+
+   let process_reflected_logic proc items =
+      List.iter (process_item proc) items
+end;;
+(*^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ * This is for reflection processing.
+ * Try to keep is separate in case we want to remove it later.
+ ************************************************************************)
 
 (************************************************************************
  * GRAMMAR EXTENSION                                                    *
@@ -1523,7 +1612,7 @@ EXTEND
         | "rule"; name = LIDENT; args = optarglist; ":"; mt = mterm ->
            let f () =
               let proc = SigFilter.get_proc _loc in
-              let t, args, _ = TermGrammar.parse_rule _loc name mt args in
+              let _, t, args, _ = TermGrammar.parse_rule _loc name mt args in
                  SigFilter.declare_rule proc _loc name args t () no_resources
            in
               handle_exn f ("rule " ^ name) _loc;
@@ -1785,7 +1874,7 @@ EXTEND
         | "thm"; name = LIDENT; res = optresources; params = optarglist; ":"; mt = bmterm; "="; tac = expr ->
            let f () =
               let proc = StrFilter.get_proc _loc in
-              let mt, params, res = parse_rule _loc name mt params res in
+              let _, mt, params, res = parse_rule _loc name mt params res in
                  define_thm proc _loc name params mt tac res
            in
               handle_exn f ("thm " ^ name) _loc;
@@ -1793,7 +1882,7 @@ EXTEND
         | "interactive"; name = LIDENT; res = optresources; params = optarglist; ":"; mt = bmterm ->
            let f () =
               let proc = StrFilter.get_proc _loc in
-              let mt, params, res = parse_rule _loc name mt params res in
+              let _, mt, params, res = parse_rule _loc name mt params res in
                  define_int_thm proc _loc name params mt res
            in
               handle_exn f ("interactive " ^ name) _loc;
@@ -1801,7 +1890,7 @@ EXTEND
         | "derived"; name = LIDENT; res = optresources; params = optarglist; ":"; mt = bmterm ->
            let f () =
               let proc = StrFilter.get_proc _loc in
-              let mt, params, res = parse_rule _loc name mt params res in
+              let _, mt, params, res = parse_rule _loc name mt params res in
                  define_int_thm proc _loc name params mt res
            in
               handle_exn f ("derived " ^ name) _loc;
@@ -1942,7 +2031,29 @@ EXTEND
         | "rule" -> sig_keyword "rule" _loc
         | "rewrite" -> sig_keyword "rewrite" _loc
         | "topval" -> sig_keyword "topval" _loc
+
+    (************************************************************************
+     * This is for reflection processing.
+     * Try to keep it separate in case we want to remove it later.
+     vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv*)
+        | "reflected_logic"; name = LIDENT; "="; items = logic_items ->
+             Reflect.process_reflected_logic (StrFilter.get_proc _loc) items;
+             empty_str_item _loc
        ]];
+
+    logic_items:
+      [[ "struct"; items = LIST0 logic_item; "end" ->
+            items
+      ]];
+
+    logic_item:
+      [[ "interactive"; name = LIDENT; res = optresources; params = optarglist; ":"; mt = bmterm ->
+           (_loc, name, res, params, mt)
+      ]];
+    (*^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     * This is for reflection processing.
+     * Try to keep is separate in case we want to remove it later.
+     ************************************************************************)
 
     declare_cases:
       [[ cases = LIST1 quote_term SEP "|" ->

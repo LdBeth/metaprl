@@ -32,6 +32,7 @@
  *)
 open Lm_debug
 open Lm_printf
+open Lm_location
 
 open Opname
 open Term_sig
@@ -97,7 +98,7 @@ let grammar_parse gram st =
          let items = Grammar.Entry.parse gram st in
             restore ();
             items
-      with exn -> 
+      with exn ->
          restore ();
          raise exn
 
@@ -235,6 +236,12 @@ let add_binding, get_bindings =
 let no_resources =
    { item_item = [];
      item_bindings = [];
+   }
+
+let debug_loc = (Lexing.dummy_pos, Lexing.dummy_pos)
+let intro_resources =
+   { item_item = [debug_loc, "intro", []];
+     item_bindings = []
    }
 
 (*
