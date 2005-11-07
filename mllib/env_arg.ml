@@ -20,6 +20,8 @@ type 'a env_set = string -> 'a ref -> string -> unit
 type 'a arg_set = string -> 'a ref -> Arg.spec
 type ('a, 'b) var_set = string -> 'a ref -> 'b -> unit
 
+type args_spec = (Arg.key * Arg.spec * Arg.doc) list
+
 (*
  * Master list of args.
  *)

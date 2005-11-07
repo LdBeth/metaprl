@@ -48,6 +48,8 @@ type 'a env_set = string -> 'a ref -> string -> unit
 type 'a arg_set = string -> 'a ref -> Arg.spec
 type ('a, 'b) var_set = string -> 'a ref -> 'b -> unit
 
+type args_spec = (Arg.key * Arg.spec * Arg.doc) list
+
 (*
  * Add an argument:
  *    1. name
@@ -57,14 +59,14 @@ type ('a, 'b) var_set = string -> 'a ref -> 'b -> unit
  *    5. function to call as command line option
  * Returns reference to the value.
  *)
-val general : string -> 'a -> string -> 'a env_set -> 'a arg_set -> 'a ref
+val general : Arg.key -> 'a -> Arg.doc -> 'a env_set -> 'a arg_set -> 'a ref
 
 (*
  * Special cases.
  *)
-val string : string -> 'a -> string -> ('a, string) var_set -> 'a ref
-val int : string -> 'a -> string -> ('a, int) var_set -> 'a ref
-val bool : string -> bool -> string -> (bool, bool) var_set -> bool ref
+val string : Arg.key -> 'a -> Arg.doc -> ('a, string) var_set -> 'a ref
+val int : Arg.key -> 'a -> Arg.doc -> ('a, int) var_set -> 'a ref
+val bool : Arg.key -> bool -> Arg.doc -> (bool, bool) var_set -> bool ref
 
 (*
  * Standard variable setting functions.
@@ -78,17 +80,17 @@ val set_bool_bool : (bool, bool) var_set
 (*
  * Return the args to be added to the command prompt.
  *)
-val args : unit -> (string * Arg.spec * string) list
+val args : unit -> args_spec
 
 (*
  * Print a usage message.
  *)
-val usage : (string * Arg.spec * string) list -> string -> unit
+val usage : args_spec -> Arg.usage_msg -> unit
 
 (*
  * Our parser saves the spec list.
  *)
-val parse : (string * Arg.spec * string) list -> (string -> unit) -> string -> unit
+val parse : args_spec -> Arg.anon_fun -> Arg.usage_msg -> unit
 
 (*
  * Set an environment variable.

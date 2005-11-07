@@ -96,7 +96,6 @@ sig
    (* Creation *)
    val create   : string list -> t
    val clear    : t -> unit
-   val set_path : t -> string list -> unit
 
    (* Loading and saving *)
    val find            : t -> arg -> file_name -> select -> alt_suffix -> info

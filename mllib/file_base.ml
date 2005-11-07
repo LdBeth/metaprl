@@ -85,7 +85,7 @@ struct
     *)
    type t =
       { mutable io_table : (file_name, info list ref) Hashtbl.t;
-        mutable io_path : string list
+        io_path : string list
       }
 
    (************************************************************************
@@ -102,9 +102,6 @@ struct
 
    let clear base =
       base.io_table <- Hashtbl.create 97
-
-   let set_path base path =
-      base.io_path <- path
 
    (************************************************************************
     * LOAD/STORE                                                           *

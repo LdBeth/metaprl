@@ -92,7 +92,6 @@ sig
    (* Creation *)
    val create          : string list -> t
    val clear           : t -> unit
-   val set_path        : t -> string list -> unit
    val set_magic       : t -> info -> int -> unit
    val create_info     : t -> select_type -> dir_name -> file_name -> info
    val remove_info     : t -> info -> unit
@@ -192,7 +191,6 @@ sig
    val create         : string list -> t
    val clear          : t -> unit
    val clear_info     : info -> unit
-   val set_path       : t -> string list -> unit
 
    (* Loading *)
    val create_cache   : t -> module_name -> select_type -> info

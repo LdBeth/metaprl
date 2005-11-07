@@ -411,9 +411,6 @@ struct
       in
          cache.str_summaries <- str_summaries
 
-   let set_path { lib = base } path =
-      Base.set_path base path
-
    (*
     * Take a partial pathname and expand it with all the intervening modules.
     * This function works within a summary.  Raises Not_found on failure.
