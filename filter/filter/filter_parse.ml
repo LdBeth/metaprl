@@ -1331,12 +1331,65 @@ let sig_keyword kw loc =
  * This is for reflection processing.
  * Try to keep it separate in case we want to remove it later.
  vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv*)
+type ref_rule =
+   { ref_rule_name      : string;
+     ref_rule_resources : (ProofCaches.StrFilterCache.str_expr, term) resource_def;
+     ref_rule_params    : TermGrammar.parsed_term list;
+     ref_rule_term      : TermGrammar.parsed_meta_term
+   }
+
+type ref_typeclass =
+   { ref_typeclass_name   : opname;
+     ref_typeclass_type   : opname;
+     ref_typeclass_parent : typeclass_parent
+   }
+
+type ref_type =
+   { ref_type_quote : (term, term) poly_ty_term;
+     ref_type_parent : opname
+   }
+
+type ref_rewrite =
+   { ref_rewrite_redex : term;
+     ref_rewrite_contractum : term
+   }
+
+type ref_item =
+   RefRule of ref_rule
+ | RefTypeClass of ref_typeclass
+ | RefType of ref_type
+ | RefRewrite of ref_rewrite
+ | RefDeclare of (term, term) poly_ty_term
+
 module Reflect =
 struct
    let opname_prefix loc = (TermGrammarBefore.parsing_state loc).opname_prefix loc
 
+   (************************************************************************
+    * Rules.
+    *)
+
+   (* Strip all binds and contexts from term arguments *)
+   let rec strip_param t =
+      if is_so_var_term t then
+         let v, _, _ = dest_so_var t in
+            v
+      else
+         let t =
+            match (dest_term t).term_terms with
+               [bterm] ->
+                  (dest_bterm bterm).bterm
+             | _ ->
+                  raise (RefineError ("Filter_parse.strip_param", StringTermError ("term does not have exactly one subterm", t)))
+         in
+            strip_param t
+
    (* Add a definition for each of the terms *)
-   let add_define proc (loc, name, _, _, def) =
+   let add_define proc loc item =
+      let { ref_rule_name = name;
+            ref_rule_term = def
+          } = item
+      in
       let opname = Opname.mk_opname name (opname_prefix loc) in
       let t = TermGrammar.mk_parsed_term (mk_term (mk_op opname []) []) in
       let quote =
@@ -1354,7 +1407,8 @@ struct
          StrFilter.define_term proc loc sc ("unfold_" ^ name) quote def no_resources
 
    (* Add a rule that says that the rule is well-formed *)
-   let add_wf proc (loc, name, _, _, _) =
+   let add_wf proc loc item =
+      let name = item.ref_rule_name in
       let opname = Opname.mk_opname name (opname_prefix loc) in
       let t = mk_term (mk_op opname []) [] in
 
@@ -1366,7 +1420,13 @@ struct
          define_int_thm proc loc name_wf [] mt no_resources
 
    (* Convert into an implication rule *)
-   let add_infer proc (loc, name, res, params, mt) =
+   let add_infer proc loc item =
+      let { ref_rule_name      = name;
+            ref_rule_params    = params;
+            ref_rule_resources = res;
+            ref_rule_term      = mt
+          } = item
+      in
       let state = StrFilter.mk_parse_state loc "term" in
       let cvars, mt, params, res = parse_rule loc name mt params res in
       let mt = Filter_reflection.mk_infer_thm state mt in
@@ -1374,41 +1434,159 @@ struct
       (* For now, we have to filter out context arguments *)
       let params =
          let (cvars1, cvars2) = cvars in
-(*
-            eprintf "@[<hv 3>Cvars:";
-            SymbolSet.iter (fun v -> eprintf "@ CVars1: %a" pp_print_symbol v) cvars1;
-            SymbolSet.iter (fun v -> eprintf "@ CVars2: %a" pp_print_symbol v) cvars2;
-            eprintf "@.";
-*)
-            List.filter (fun t ->
-(*
-                  eprintf "Term: %s@." (SimplePrint.string_of_term t);
-*)
-                  if is_so_var_term t then
-                     let v, _, _ = dest_so_var t in
-                     let b = not (SymbolSet.mem cvars1 v || SymbolSet.mem cvars2 v) in
-(*
-                        eprintf "Filtering: %a = %b@." pp_print_symbol v b;
- *)
-                        b
-                  else
-                     true) params
+         let params =
+            List.fold_left (fun params t ->
+                  let v = strip_param t in
+                     if SymbolSet.mem cvars1 v || SymbolSet.mem cvars2 v then
+                        params
+                     else
+                        mk_var_term v :: params) [] params
+         in
+            List.rev params
       in
+      let mt, params, _ = mterms_of_parsed_mterms (fun _ -> true) mt params in
          define_int_thm proc loc name params mt res
 
-   let process_item_exn proc item =
-      add_define proc item;
-      add_wf proc item;
-      add_infer proc item
+   let add_rule proc loc items item =
+      add_define proc loc item;
+      add_wf proc loc item;
+      (loc, item) :: items
 
-   let process_item proc ((loc, _, _, _, _) as item) =
+   (************************************************************************
+    * Typeclasses.
+    *)
+   let add_typeclass proc loc items item =
+      items
+
+   (************************************************************************
+    * Types.
+    *)
+   let add_type proc loc items item =
+      items
+
+   (************************************************************************
+    * Declarations.
+    *)
+   let add_declare proc loc items quote =
+      let state = StrFilter.mk_parse_state loc "term" in
+      let mt = Filter_reflection.mk_type_check_thm state quote in
+      let mt = TermGrammar.mk_parsed_meta_term mt in
+      let name, _ = Opname.dst_opname quote.ty_opname in
+      let item =
+         { ref_rule_name      = name ^ "_term";
+           ref_rule_resources = no_resources;
+           ref_rule_params    = [];
+           ref_rule_term      = mt
+         }
+      in
+         add_rule proc loc items item
+
+   (************************************************************************
+    * Rewrites.
+    *)
+   let add_rewrite proc loc items item =
+      items
+
+   (************************************************************************
+    * Postprocessing.
+    *)
+   let var_p = Lm_symbol.add "p"
+
+   let postprocess_items proc loc name items =
+      (* Collect all the names of the term, and build a logic *)
+      let rules =
+         List.fold_left (fun terms (loc, item) ->
+               let name = item.ref_rule_name in
+               let opname = Opname.mk_opname name (opname_prefix loc) in
+               let t = mk_term (mk_op opname []) [] in
+                  t :: terms) [] items
+      in
+      let rules = List.rev rules in
+
+      (* Define the Logic{} term *)
+      let state = StrFilter.mk_parse_state loc "term" in
+      let opname = Opname.mk_opname name (opname_prefix loc) in
+      let t_logic = mk_term (mk_op opname []) [] in
+
+      (* Make the Provable{'p} term *)
+      let opname = Opname.mk_opname "Provable" (opname_prefix loc) in
+      let t_provable = mk_term (mk_op opname []) [mk_bterm [] (mk_var_term var_p)] in
+
+      (* Get the definitions and rules *)
+      let t_p = mk_var_term var_p in
+      let logic, logic_wf, provable, provable_wf = Filter_reflection.mk_logic_info state t_logic rules t_p t_provable in
+
+      (* Define the logic *)
+      let quote =
+         { ty_term   = TermGrammar.mk_parsed_term t_logic;
+           ty_opname = opname;
+           ty_params = [];
+           ty_bterms = [];
+           ty_type   = term_type
+         }
+      in
+      let sc = ShapeNormal in
+      let () = StrFilter.declare_define_term proc sc (parse_define_redex loc quote) in
+      let logic = TermGrammar.mk_parsed_term logic in
+      let quote, def = parse_define_term loc name sc quote logic in
+      let () = StrFilter.define_term proc loc sc ("unfold_" ^ name) quote def no_resources in
+
+      (* State that it is a logic *)
+      let name_wf = name ^ "_wf" in
+      let logic_wf = TermGrammar.mk_parsed_meta_term logic_wf in
+      let _, logic_wf, _, _ = parse_rule loc name_wf logic_wf [] no_resources in
+      let () = define_int_thm proc loc name_wf [] logic_wf no_resources in
+
+      (* Define the Provable{'p} predicate *)
+      let quote =
+         { ty_term   = TermGrammar.mk_parsed_term t_provable;
+           ty_opname = opname;
+           ty_params = [];
+           ty_bterms = [{ ty_bvars = []; ty_bterm = term_type }];
+           ty_type   = term_type
+         }
+      in
+      let sc = ShapeNormal in
+      let () = StrFilter.declare_define_term proc sc (parse_define_redex loc quote) in
+      let provable = TermGrammar.mk_parsed_term provable in
+      let quote, def = parse_define_term loc name sc quote provable in
+      let () = StrFilter.define_term proc loc sc ("unfold_provable_" ^ name) quote def no_resources in
+
+      (* Give the wf rule *)
+      let name_wf = name ^ "_provable_wf" in
+      let provable_wf = TermGrammar.mk_parsed_meta_term provable_wf in
+      let _, provable_wf, _, _ = parse_rule loc name_wf provable_wf [] no_resources in
+      let () = define_int_thm proc loc name_wf [] provable_wf no_resources in
+
+         (* Add all of the reflected rules *)
+         List.iter (fun (loc, item) ->
+               add_infer proc loc item) items
+
+   (************************************************************************
+    * General handlers.
+    *)
+   let process_item_exn proc loc items item =
+      match item with
+         RefRule item ->
+            add_rule proc loc items item
+       | RefTypeClass item ->
+            add_typeclass proc loc items item
+       | RefType item ->
+            add_type proc loc items item
+       | RefRewrite item ->
+            add_rewrite proc loc items item
+       | RefDeclare quote ->
+            add_declare proc loc items quote
+
+   let process_item proc items (loc, item) =
       let f () =
-         process_item_exn proc item
+         process_item_exn proc loc items item
       in
          handle_exn f "implem" loc
 
-   let process_reflected_logic proc items =
-      List.iter (process_item proc) items
+   let process_reflected_logic proc loc name items =
+      let items = List.fold_left (process_item proc) [] items in
+         postprocess_items proc loc name (List.rev items)
 end;;
 (*^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
  * This is for reflection processing.
@@ -2037,7 +2215,7 @@ EXTEND
      * Try to keep it separate in case we want to remove it later.
      vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv*)
         | "reflected_logic"; name = LIDENT; "="; items = logic_items ->
-             Reflect.process_reflected_logic (StrFilter.get_proc _loc) items;
+             Reflect.process_reflected_logic (StrFilter.get_proc _loc) _loc name items;
              empty_str_item _loc
        ]];
 
@@ -2048,7 +2226,61 @@ EXTEND
 
     logic_item:
       [[ "interactive"; name = LIDENT; res = optresources; params = optarglist; ":"; mt = bmterm ->
-           (_loc, name, res, params, mt)
+          let item =
+             { ref_rule_name      = name;
+               ref_rule_resources = res;
+               ref_rule_params    = params;
+               ref_rule_term      = mt
+             }
+          in
+             _loc, RefRule item
+
+        | "declare"; "typeclass"; sc = shapeclass; name = opname_name; typeclass_type = opt_typeclass_type; typeclass_parent = opt_typeclass_parent ->
+          let f () =
+             StrFilter.declare_typeclass (StrFilter.get_proc _loc) _loc sc name typeclass_type typeclass_parent
+          in
+          let () = handle_exn f "declare-typeclass" _loc in
+          let item =
+             { ref_typeclass_name   = name;
+               ref_typeclass_type   = typeclass_type;
+               ref_typeclass_parent = typeclass_parent
+             }
+          in
+             _loc, RefTypeClass item
+
+        | "declare"; "type"; sc = shapeclass; quote = quote_term; ty_parent = opt_type_parent ->
+          let f () =
+             let quote = parse_declare_type _loc quote in
+             let () = StrFilter.declare_type (StrFilter.get_proc _loc) _loc sc quote ty_parent in
+             let item =
+                { ref_type_quote = quote;
+                  ref_type_parent = ty_parent
+                }
+             in
+                _loc, RefType item
+          in
+             handle_exn f "declare-type" _loc
+
+        | "declare"; sc = shapeclass; quote = quote_term ->
+          let f () =
+             let quote = parse_declare_term _loc quote in
+             let () = StrFilter.declare_term (StrFilter.get_proc _loc) _loc sc quote in
+                _loc, RefDeclare quote
+          in
+             handle_exn f "declare" _loc
+
+        | "declare"; "rewrite"; redex = term; "<-->"; contractum = term ->
+          let f () =
+             let redex, contractum = parse_type_rewrite _loc redex contractum in
+             let () = StrFilter.declare_type_rewrite (StrFilter.get_proc _loc) _loc redex contractum in
+             let item =
+                { ref_rewrite_redex = redex;
+                  ref_rewrite_contractum = contractum
+                }
+             in
+                _loc, RefRewrite item
+          in
+             handle_exn f "declare-rewrite" _loc
       ]];
     (*^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
      * This is for reflection processing.

@@ -1895,8 +1895,8 @@ let check_rewrite tenv mt args =
 let check_type_rewrite tenv redex contractum =
    let venv = venv_of_terms [redex; contractum] in
    let subst = new_subst Strict in
-   let subst = infer_term_type tenv venv subst redex ty_term in
-   let subst = infer_term_type tenv venv subst contractum ty_term in
+   let subst = infer_term_type tenv venv subst redex ty_type in
+   let subst = infer_term_type tenv venv subst contractum ty_type in
       ignore (solve_constraints tenv venv subst)
 
 (*

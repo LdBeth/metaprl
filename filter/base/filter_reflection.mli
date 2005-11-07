@@ -26,6 +26,7 @@
  *)
 open Opname
 open Term_sig
+open Term_ty_sig
 open Term_shape_sig
 open Refiner.Refiner.TermType
 open Refiner.Refiner.TermShape
@@ -57,6 +58,16 @@ val dest_xrulequote_term_raw : parse_state -> term -> term
  *)
 val mk_rule_wf_thm : parse_state -> term -> meta_term
 val mk_infer_thm : parse_state -> meta_term -> meta_term
+val mk_type_check_thm : parse_state -> (term, term) poly_ty_term -> meta_term
+
+val mk_logic_info : parse_state ->
+   term ->        (* The name that will be given to the logic *)
+   term list ->   (* The rules in the logic *)
+   term ->        (* The argument 'p to the Provable{'p} predicate *)
+   term ->        (* The Provable{'p} term *)
+
+   (* List of rules, logic_wf rule, Provable{Sequent; logic; p}, provable_wf *)
+   term * meta_term * term * meta_term
 
 (*!
  * @docoff

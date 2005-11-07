@@ -84,6 +84,7 @@ sig
    val is_dep1_term : opname -> term -> bool
    val mk_dep1_term : opname -> var -> term -> term
    val dest_dep1_term : opname -> term -> var * term
+   val dest_dep1_any_term : term -> var * term
 
    val is_dep2_term : opname -> term -> bool
    val mk_dep2_term : opname -> var -> var -> term -> term

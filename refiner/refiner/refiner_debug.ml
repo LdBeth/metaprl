@@ -1532,6 +1532,14 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          (merge_var "TermOp.dest_dep1_term - 0" res0_1 res0_2),
          (merge_term "TermOp.dest_dep1_term - 1" res1_1 res1_2)
 
+      let dest_dep1_any_term (p0 : term) =
+         let p0_1, p0_2 = p0 in
+         let res1 = wrap1 TermOp1.dest_dep1_any_term p0_1 in
+         let res2 = wrap1 TermOp2.dest_dep1_any_term p0_2 in
+         let (res0_1, res1_1), (res0_2, res1_2) = merge merge_triv "TermOp.dest_dep1_any_term" res1 res2 in
+         (merge_var "TermOp.dest_dep1_any_term - 0" res0_1 res0_2),
+         (merge_term "TermOp.dest_dep1_any_term - 1" res1_1 res1_2)
+
       let is_dep2_term (p0 : opname) (p1 : term) =
          let p1_1, p1_2 = p1 in
          merge merge_bool "TermOp.is_dep2_term" (wrap2 TermOp1.is_dep2_term p0 p1_1) (wrap2 TermOp2.is_dep2_term p0 p1_2)

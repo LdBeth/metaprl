@@ -98,7 +98,7 @@ declare typeclass Terminal -> Nonterminal
 declare ty_constrain{'e : Term; 'a : Ty} : 'a
 
 (* Sequents -- these are internal terms, and should not be used directly *)
-declare typeclass ty_sequent_arg -> Dform
+declare typeclass ty_sequent_arg -> Ty
 declare typeclass ty_hyp -> Ty
 declare type ty_sequent{'ty_hyp : ty_hyp; 'ty_concl : Ty; 'ty_seq : Ty} : ty_sequent_arg
 declare type ty_hyp{'ty_var : Ty; 'ty_hyp : Ty} : ty_hyp
