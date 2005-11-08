@@ -616,22 +616,6 @@ else
    %.ppo %.cmoz: $(CAMLP4N)
    export
 
-# These directories use prlc
-SUPPORT = $(dir support)
-SUPPORT_DIRS = $(dir $(addprefix $(SUPPORT)/, $(array display, shell, tactics, doc)))
-
-THEORIES = $(split ' ', $(THEORIES))
-THEORIES = $(if $(mem all, $(THEORIES)), $(THEORIES_ALL) $(filter-out all, $(THEORIES)), $(THEORIES))
-THEORY_DIRS = $(dir $(addprefix theories/, $(THEORIES)))
-MP_DIRS[] =
-   $(SUPPORT_DIRS)
-   $(THEORY_DIRS)
-
-Theory(files) =
-    OCamlLibrary(theory, $(files))
-    .DEFAULT: $(addsuffix .cmoz, $(files))
-    $(THEORIES_PATH): $(CWD)
-
 ########################################################################
 # LaTeX documentation
 #
@@ -694,19 +678,76 @@ CLEAN += $`(file *.log *.aux *.idx *.ilg *.ind *.pdf *.ps *.dvi *.blg *.bbl *.ou
 #
 .SUBDIRS: doc
 
+# These directories use prlc
+
+SUPPORT = $(dir support)
+SUPPORT_DIRS = $(dir $(addprefix $(SUPPORT)/, $(array display, shell, tactics, doc)))
+
+THEORIES[] = $(split ' ', $(THEORIES))
+THEORIES[] = $(if $(mem all, $(THEORIES)), $(THEORIES_ALL) $(filter-out all, $(THEORIES)), $(THEORIES))
+
+THEORY_DIR = $(dir theories)
+
+THEORY_DEPENCIES[] =
+
+Theory(files) =
+    OCAMLINCLUDES[] += $(addprefix $(THEORY_DIR)/, $(THEORY_DEPENCIES))
+    OCamlLibrary(theory, $(files))
+    .DEFAULT: $(addsuffix .cmoz, $(files))
+    $(THEORIES_PATH): $(CWD)
+    export
+
+section
+    # Default theory for those directories that do not override it
+    THEORYNAME = other
+    THEORYDESCR = Miscellaneous Theories
+
+    OCAMLINCLUDES[] += $(SUPPORT_DIRS)
+
+    # Theories that we need, including recursive theory dependencies.
+    COLLECTED_THEORIES[] =
+
+    PENDING_THEORIES[] =
+
+    # Always use -linkall on Theory libraries
+    OCAML_LIB_FLAGS += -linkall
+    TheorySubDir(theories) =
+        foreach (thy, $(theories))
+            if $(not $(mem $(thy), $(COLLECTED_THEORIES)))
+                PENDING_THEORIES[] += $(thy)
+                VirtualTheory(subdirs) =
+                    VIRTUAL_THEORY = true
+                    THEORY_DEPENCIES = $(addprefix $(thy)/, $(subdirs))
+                    export
+                # By default, every theory depends on the base theory.
+                THEORY_DEPENCIES = base
+                VIRTUAL_THEORY = false
+                .SUBDIRS: $(THEORY_DIR)/$(thy)
+                    include OMakefile
+                    if $(intersects $(PENDING_THEORIES), $(THEORY_DEPENCIES))
+                        eprintln($"!!! ERROR: in $(in $(ROOT), $(CWD)) :")
+                        eprintln($"!!!        theory dependency ``$(thy): $(intersection $(PENDING_THEORIES), $(THEORY_DEPENCIES))'' creates a dependency loop")
+                        exit(1)
+                    TheorySubDir($(THEORY_DEPENCIES))
+                    if $(not $(VIRTUAL_THEORY))
+                        COLLECTED_THEORIES += $(thy)
+                        export
+                    export COLLECTED_THEORIES
+                export COLLECTED_THEORIES
+            export COLLECTED_THEORIES
+        export COLLECTED_THEORIES
+
+    TheorySubDir($(THEORIES))
+    export COLLECTED_THEORIES
+
+MP_DIRS[] =
+   $(SUPPORT_DIRS)
+   $(dir $(addprefix $(THEORY_DIR)/, $(COLLECTED_THEORIES)))
+
 section
    THEORYNAME = support
    THEORYDESCR = MetaPRL Internal "Helper" Modules
    .SUBDIRS: $(SUPPORT_DIRS) editor/ml
-
-section
-   # Default theory for those directories that do not override it
-   THEORYNAME = other
-   THEORYDESCR = Miscellaneous Theories
-
-   # Always use -linkall on Theory libraries
-   OCAML_LIB_FLAGS += -linkall
-   .SUBDIRS: $(THEORY_DIRS)
 
 .PHONY: check-status core-incompletes
 

@@ -15,21 +15,23 @@ MakeConfig(name) =
 # If you want to change anything except for the variable values,
 # put it into mk/config.local or edit mk/make_config.
 
+# This is the list of theory directories theory/* that you want to compile. 
 #
-# This is the list of theory directories theory/*
-# that you want to compile.  You want to include at least
-#    THEORIES = base
 # Include itt/core if you want to use the Core of Constructive Type Theory, 
 # include itt if you want to use the complete Constructive Type Theory (core,
-# applications, extensions, etc). Add any additional theory directories after that.
+# applications, extensions, etc).
 #
 # Alternatively, use THEORIES = all to get all the theories,
 # or THEORIES = default, to include the usual set of theories.
 # To include your special theory, you would use the following
-# if you want the usual # directories and your own, use the following.
+# if you want the usual directories and your own, use the following.
 #    THEORIES = all mytheory
 # Or, if you just want your own, use the following.
-#    THEORIES = base mytheory
+#    THEORIES = mytheory
+#
+# If the OMakefile in the theory directory defines the THEORY_DEPENCIES variable,
+# the named dependencies will be picked up automatically and do not need to be listed
+# here explicitly.
 #
 THEORIES = $(THEORIES)
 

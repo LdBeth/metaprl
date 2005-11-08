@@ -51,7 +51,7 @@ TESTFILES[] =
 
 if $(TESTS_ENABLED)
    TESTFILES[] =
-   if $(mem itt, $(THEORIES))
+   if $(or $(mem itt/core, $(THEORIES)), $(mem itt, $(THEORIES)))
       TESTFILES[] +=
          $(file tests/test)
          $(file tests/prop-pigeon)
