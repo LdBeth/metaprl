@@ -186,10 +186,16 @@ if $(NATIVE_PROFILING_ENABLED)
 #
 # Check the configuration
 #
+CheckVar(name, val, valid) =
+    if $(not $(mem $(val), $(valid)))
+        valid = $(array $(valid))
+        valid = $(concat $', ', $(valid.map $(quote)))
+        eprintln($"""!!! ERROR: The $(name) variable is currently set to an invalid value "$(val)".""")
+        eprintln($"""!!!        Valid values for $(name) are: $(valid).""")
+        eprintln($"""!!!        Please fix it in the mk/config file.""")
+        exit(1)
 
-if $(not $(mem $(COMPILATION_MODE), native byte mixed both))
-    eprintln(ERROR: the COMPILATION_MODE variable is currently set to an invalid value "$(COMPILATION_MODE)"\, please fix it in the mk/config file)
-    exit(1)
+CheckVar(COMPILATION_MODE, $(COMPILATION_MODE), native byte mixed both)
 
 NATIVE_ENABLED = $(mem $(COMPILATION_MODE), native mixed both)
 BYTE_ENABLED = $(mem $(COMPILATION_MODE), byte mixed both)
@@ -230,17 +236,9 @@ if $(NATIVE_ENABLED)
       eprintln(!!!)
       exit(1)
 
-if $(not $(mem $(TERMS), std ds both))
-   eprintln(ERROR: the TERMS variable is currently set to an invalid value "$(TERMS)"\, please fix it in the mk/config file)
-   exit(1)
-
-if $(not $(mem $(REFINER), SIMPLE VERBOSE))
-   eprintln(ERROR: the REFINER variable is currently set to an invalid value "$(REFINER)"\, please fix it in the mk/config file)
-   exit(1)
-
-if $(not $(mem $(SEQ_SET), Lm_array Lm_splay))
-   eprintln(ERROR: the SEQ_SET variable is currently set to an invalid value "$(SEQ_SET)"\, please fix it in the mk/config file)
-   exit(1)
+CheckVar(TERMS, $(TERMS), std ds both)
+CheckVar(REFINER, $(REFINER), SIMPLE VERBOSE)
+CheckVar(SEQ_SET, $(SEQ_SET), Lm_array Lm_splay)
 
 if $(equal $(OSTYPE), Win32)
     if $(SSL_ENABLED)
