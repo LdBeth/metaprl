@@ -691,6 +691,15 @@ THEORY_DIR = $(dir theories)
 THEORY_DEPENCIES[] =
 
 Theory(files) =
+    # XXX: the bool expression is more complex than it has to be because of the Issue 545.
+    # if $(not $(and $(THEORYNAME), $(THEORYDESCR)))
+    if $(or $(not $(THEORYNAME)), $(not $(THEORYDESCR)))
+        eprintln($"!!! ERROR: in $(in $(ROOT), $(CWD)) :")
+        if $(not $(THEORYNAME))
+            eprintln($"!!!        The THEORYNAME variable is not defined")
+        if $(not $(THEORYDESCR))
+            eprintln($"!!!        The THEORYDESCR variable is not defined")
+        exit(1)
     OCAMLINCLUDES[] += $(addprefix $(THEORY_DIR)/, $(THEORY_DEPENCIES))
     OCamlLibrary(theory, $(files))
     .DEFAULT: $(addsuffix .cmoz, $(files))
@@ -698,10 +707,6 @@ Theory(files) =
     export
 
 section
-    # Default theory for those directories that do not override it
-    THEORYNAME = other
-    THEORYDESCR = Miscellaneous Theories
-
     OCAMLINCLUDES[] += $(SUPPORT_DIRS)
 
     # Theories that we need, including recursive theory dependencies.
@@ -719,9 +724,16 @@ section
                     VIRTUAL_THEORY = true
                     THEORY_DEPENCIES = $(addprefix $(thy)/, $(subdirs))
                     export
+
                 # By default, every theory depends on the base theory.
                 THEORY_DEPENCIES = base
                 VIRTUAL_THEORY = false
+
+                # Default theory for those directories that do not override it
+                # Set to empty to force each theory to define its own values.
+                THEORYNAME = misc
+                THEORYDESCR = Miscellaneous Theories
+
                 .SUBDIRS: $(THEORY_DIR)/$(thy)
                     include OMakefile
                     if $(intersects $(PENDING_THEORIES), $(THEORY_DEPENCIES))
