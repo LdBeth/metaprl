@@ -686,7 +686,7 @@ THEORIES[] = $(if $(mem all, $(THEORIES)), $(THEORIES_ALL) $(filter-out all, $(T
 
 THEORY_DIR = $(dir theories)
 
-THEORY_DEPENCIES[] =
+THEORY_DEPS[] =
 
 Theory(files) =
     # XXX: the bool expression is more complex than it has to be because of the Issue 545.
@@ -698,7 +698,7 @@ Theory(files) =
         if $(not $(THEORYDESCR))
             eprintln($"!!!        The THEORYDESCR variable is not defined")
         exit(1)
-    OCAMLINCLUDES[] += $(addprefix $(THEORY_DIR)/, $(THEORY_DEPENCIES))
+    OCAMLINCLUDES[] += $(addprefix $(THEORY_DIR)/, $(THEORY_DEPS))
     OCamlLibrary(theory, $(files))
     .DEFAULT: $(addsuffix .cmoz, $(files))
     $(THEORIES_PATH): $(CWD)
@@ -716,18 +716,18 @@ section
     OCAML_LIB_FLAGS += -linkall
 
     # Collect the theories that need to be built, paying attention
-    # to the value of the THEORY_DEPENCIES variable in each theory.
+    # to the value of the THEORY_DEPS variable in each theory.
     TheorySubDir(theories) =
         foreach (thy, $(theories))
             thydir = $(dir $(THEORY_DIR)/$(thy))
             if $(not $(mem $(thydir), $(COLLECTED_THEORIES)))
                 VirtualTheory(subdirs) =
                     VIRTUAL_THEORY = true
-                    THEORY_DEPENCIES = $(addprefix $(thy)/, $(subdirs))
+                    THEORY_DEPS = $(addprefix $(thy)/, $(subdirs))
                     export
 
                 # By default, every theory depends on the base theory.
-                THEORY_DEPENCIES = base
+                THEORY_DEPS = base
                 VIRTUAL_THEORY = false
 
                 # Default theory for those directories that do not override it
@@ -739,12 +739,12 @@ section
                 PENDING_THEORIES[] += $(thydir)
                 .SUBDIRS: $(thydir)
                     include OMakefile
-                    THEORY_DEPENCIES_DIRS = $(dir $(addprefix $(THEORY_DIR)/, $(THEORY_DEPENCIES)))
-                    if $(intersects $(PENDING_THEORIES), $(THEORY_DEPENCIES_DIRS))
+                    THEORY_DEPS_DIRS = $(dir $(addprefix $(THEORY_DIR)/, $(THEORY_DEPS)))
+                    if $(intersects $(PENDING_THEORIES), $(THEORY_DEPS_DIRS))
                         eprintln($"!!! ERROR: in $(in $(ROOT), $(thydir)) :")
-                        eprintln($"!!!        theory dependency ``$(thy): $(intersection $(PENDING_THEORIES), $(THEORY_DEPENCIES_DIRS))'' creates a dependency loop")
+                        eprintln($"!!!        theory dependency ``$(thy): $(intersection $(PENDING_THEORIES), $(THEORY_DEPS_DIRS))'' creates a dependency loop")
                         exit(1)
-                    TheorySubDir($(THEORY_DEPENCIES))
+                    TheorySubDir($(THEORY_DEPS))
                     if $(not $(VIRTUAL_THEORY))
                         COLLECTED_THEORIES += $(thydir)
                         export
