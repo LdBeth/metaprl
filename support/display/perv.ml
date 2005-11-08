@@ -185,6 +185,11 @@ let is_bind2_term = is_dep2_term bind_opname
 let mk_bind2_term = mk_dep2_term bind_opname
 let dest_bind2 = dest_dep2_term bind_opname
 
+let ty_bind1_opname = opname_of_term << bind{'ty; x. 'b} >>
+let is_ty_bind1_term = is_dep0_dep1_term ty_bind1_opname
+let mk_ty_bind1_term = mk_dep0_dep1_term ty_bind1_opname
+let dest_ty_bind1 = dest_dep0_dep1_term ty_bind1_opname
+
 let dform_term = << Dform >>
 
 let is_dform_bterm bt =

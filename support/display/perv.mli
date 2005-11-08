@@ -207,6 +207,11 @@ declare "bind"{a, b, c, d, e, f, g. 'z}
 declare xbinder{'e : 'a}
 
 (*
+ * A typed version of the bind.
+ *)
+declare bind{'ty; a. 'z}
+
+(*
  * The @tt{hyp} and @tt{concl} terms are used to represent
  * the parts of a sequent for the purposes of display.  Internally,
  * the @MetaPRL compiler uses an optimized representation of
@@ -268,6 +273,10 @@ val dest_bind1    : term -> var * term
 val mk_bind2_term : var -> var -> term -> term
 val is_bind2_term : term -> bool
 val dest_bind2    : term -> var * var * term
+
+val is_ty_bind1_term : term -> bool
+val mk_ty_bind1_term : var -> term -> term -> term
+val dest_ty_bind1    : term -> var * term * term
 
 (* Whether a term declaration mentions Dform *)
 val is_dform_type : ty_term -> bool
