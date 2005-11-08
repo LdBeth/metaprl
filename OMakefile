@@ -716,10 +716,13 @@ section
 
     # Always use -linkall on Theory libraries
     OCAML_LIB_FLAGS += -linkall
+
+    # Collect the theories that need to be built, paying attention
+    # to the value of the THEORY_DEPENCIES variable in each theory.
     TheorySubDir(theories) =
         foreach (thy, $(theories))
-            if $(not $(mem $(thy), $(COLLECTED_THEORIES)))
-                PENDING_THEORIES[] += $(thy)
+            thydir = $(dir $(THEORY_DIR)/$(thy))
+            if $(not $(mem $(thydir), $(COLLECTED_THEORIES)))
                 VirtualTheory(subdirs) =
                     VIRTUAL_THEORY = true
                     THEORY_DEPENCIES = $(addprefix $(thy)/, $(subdirs))
@@ -734,27 +737,31 @@ section
                 THEORYNAME = misc
                 THEORYDESCR = Miscellaneous Theories
 
-                .SUBDIRS: $(THEORY_DIR)/$(thy)
+                # Actually include the theory.
+                PENDING_THEORIES[] += $(thydir)
+                .SUBDIRS: $(thydir)
                     include OMakefile
-                    if $(intersects $(PENDING_THEORIES), $(THEORY_DEPENCIES))
-                        eprintln($"!!! ERROR: in $(in $(ROOT), $(CWD)) :")
-                        eprintln($"!!!        theory dependency ``$(thy): $(intersection $(PENDING_THEORIES), $(THEORY_DEPENCIES))'' creates a dependency loop")
+                    THEORY_DEPENCIES_DIRS = $(dir $(addprefix $(THEORY_DIR)/, $(THEORY_DEPENCIES)))
+                    if $(intersects $(PENDING_THEORIES), $(THEORY_DEPENCIES_DIRS))
+                        eprintln($"!!! ERROR: in $(in $(ROOT), $(thydir)) :")
+                        eprintln($"!!!        theory dependency ``$(thy): $(intersection $(PENDING_THEORIES), $(THEORY_DEPENCIES_DIRS))'' creates a dependency loop")
                         exit(1)
                     TheorySubDir($(THEORY_DEPENCIES))
                     if $(not $(VIRTUAL_THEORY))
-                        COLLECTED_THEORIES += $(thy)
+                        COLLECTED_THEORIES += $(thydir)
                         export
                     export COLLECTED_THEORIES
                 export COLLECTED_THEORIES
             export COLLECTED_THEORIES
         export COLLECTED_THEORIES
 
+    # Start the theory collection process with $(THEORIES)
     TheorySubDir($(THEORIES))
     export COLLECTED_THEORIES
 
 MP_DIRS[] =
    $(SUPPORT_DIRS)
-   $(dir $(addprefix $(THEORY_DIR)/, $(COLLECTED_THEORIES)))
+   $(COLLECTED_THEORIES)
 
 section
    THEORYNAME = support
