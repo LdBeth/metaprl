@@ -320,6 +320,8 @@ struct
        "basecase";
        "truecase";
        "falsecase";
+       "base";
+       "step";
        "subterm"]
 
    let predicate_labels =
