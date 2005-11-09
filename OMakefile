@@ -655,11 +655,13 @@ TheoryDocument(docname, theories) =
     CMOZFILES = $(file $(addsuffix .cmoz, $(theories)))
     THEORIES = $(basename $(theories))
 
+    CMDLINE = $"""set_tex_file "$(absname $(docname).tex)";;
+$(concat $(nl), $(add-wrapper $'print_theory "', $'";;', $(THEORIES)))"""
     #
     # Contents of the print.ml file
     #
     $(docname)_print.ml:
-        echo $(string set_tex_file "$(docname).tex";; $(add-wrapper print_theory \", \";;, $(THEORIES))) > $@
+        echo $(quote $(CMDLINE)) > $@
 
     #
     # Get MetaPRL to generate the .tex files
