@@ -118,6 +118,7 @@ sig
    val mk_meta_member_term   : t -> term -> term -> term
    val mk_Logic_term         : t -> term -> term
    val mk_type_term          : t -> term -> term
+   val mk_assert_term        : t -> term -> term
 end;;
 
 module Reflect : ReflectSig =
@@ -156,7 +157,8 @@ struct
         opname_meta_member   : opname Lazy.t;
         meta_type            : term Lazy.t;
         opname_Logic         : opname Lazy.t;
-        opname_type          : opname Lazy.t
+        opname_type          : opname Lazy.t;
+        opname_assert        : opname Lazy.t
       }
 
    let mk_state_opname state op params arities =
@@ -197,6 +199,7 @@ struct
         meta_type            = Lazy.lazy_from_fun (fun () -> mk_simple_term (mk_state_opname state "meta_type" [] []) []);
         opname_Logic         = Lazy.lazy_from_fun (fun () -> mk_state_opname state "Logic"  [] [0]);
         opname_type          = Lazy.lazy_from_fun (fun () -> mk_state_opname state "type"  [] [0]);
+        opname_assert        = Lazy.lazy_from_fun (fun () -> mk_state_opname state "assert" [] [0]);
       }
 
    let mk_length_term info t =
@@ -344,6 +347,9 @@ struct
 
    let mk_type_term info t =
       mk_dep0_term (Lazy.force info.opname_type) t
+
+   let mk_assert_term info t =
+      mk_dep0_term (Lazy.force info.opname_assert) t
 end;;
 
 (*
@@ -622,6 +628,7 @@ let dest_xrulequote_term_inner state t =
    (* The inner term is an equality *)
    let t = Reflect.mk_proof_step_term info premises goal in
    let t = Reflect.mk_beq_ProofStep_term info (mk_var_term v_step) t in
+   let t = Reflect.mk_assert_term info t in
 
    (* Quantify over the free context and second-order variables *)
    let socvars = sort_socvars socvars in
