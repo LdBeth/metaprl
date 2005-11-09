@@ -637,7 +637,15 @@ TEXDEPS += $(file $(INPUTSDIR)/rc.bib) $(file $(INPUTSDIR)/metaprl.tex)
 #
 # MetaPRL command
 #
-MP = $(file $(ROOT)/editor/ml/mp$(OBJ_SUFFIX))
+MP_SCRIPT = $(file editor/ml/mp$(if $(equal $(OSTYPE), Win32), .bat))
+MP_BIN = $(file editor/ml/mp.$(if $(NATIVE_ENABLED), opt, top))
+
+MP_PREREQS[] =
+    $(MP_SCRIPT)
+    $(MP_BIN)
+    $(file editor/ml/mpconfig)
+    $(THEORIES_PATH)
+    $(MLDEBUG_PATH)
 
 #
 # Build a theory document locally.
@@ -656,8 +664,8 @@ TheoryDocument(docname, theories) =
     #
     # Get MetaPRL to generate the .tex files
     #
-    $(docname).tex $(docname)-body.tex: $(MP) $(CMOZFILES) $(docname)_print.ml
-        $(WrapC $(MP)) $(PREFIXED_OCAMLINCLUDES) -batch $(docname)_print.ml
+    $(docname).tex $(docname)-body.tex: $(MP_PREREQS) $(CMOZFILES) $(docname)_print.ml
+        $(MP_SCRIPT) -batch $(absname $(docname)_print.ml)
 
 #
 # Format the document and copy it to the DOCDIR directory.
@@ -705,6 +713,11 @@ Theory(files) =
     export
 
 section
+    # Default theory for those directories that do not override it
+    # Set to empty to force each theory to define its own values.
+    THEORYNAME = misc
+    THEORYDESCR = Miscellaneous Theories
+
     OCAMLINCLUDES[] += $(SUPPORT_DIRS)
 
     # Theories that we need, including recursive theory dependencies.
@@ -730,24 +743,20 @@ section
                 THEORY_DEPS = base
                 VIRTUAL_THEORY = false
 
-                # Default theory for those directories that do not override it
-                # Set to empty to force each theory to define its own values.
-                THEORYNAME = misc
-                THEORYDESCR = Miscellaneous Theories
-
                 # Actually include the theory.
                 PENDING_THEORIES[] += $(thydir)
                 .SUBDIRS: $(thydir)
                     include OMakefile
-                    THEORY_DEPS_DIRS = $(dir $(addprefix $(THEORY_DIR)/, $(THEORY_DEPS)))
-                    if $(intersects $(PENDING_THEORIES), $(THEORY_DEPS_DIRS))
-                        eprintln($"!!! ERROR: in $(in $(ROOT), $(thydir)) :")
-                        eprintln($"!!!        theory dependency ``$(thy): $(intersection $(PENDING_THEORIES), $(THEORY_DEPS_DIRS))'' creates a dependency loop")
-                        exit(1)
-                    TheorySubDir($(THEORY_DEPS))
-                    if $(not $(VIRTUAL_THEORY))
-                        COLLECTED_THEORIES += $(thydir)
-                        export
+                    export THEORY_DEPS VIRTUAL_THEORY
+                        
+                THEORY_DEPS_DIRS = $(dir $(addprefix $(THEORY_DIR)/, $(THEORY_DEPS)))
+                if $(intersects $(PENDING_THEORIES), $(THEORY_DEPS_DIRS))
+                    eprintln($"!!! ERROR: in $(in $(ROOT), $(thydir)) :")
+                    eprintln($"!!!        theory dependency ``$(thy): $(intersection $(PENDING_THEORIES), $(THEORY_DEPS_DIRS))'' creates a dependency loop")
+                    exit(1)
+                TheorySubDir($(THEORY_DEPS))
+                if $(not $(VIRTUAL_THEORY))
+                    COLLECTED_THEORIES += $(thydir)
                     export COLLECTED_THEORIES
                 export COLLECTED_THEORIES
             export COLLECTED_THEORIES

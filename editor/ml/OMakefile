@@ -231,22 +231,17 @@ if $(BYTE_ENABLED)
     if $(MPRUN_ENABLED)
         .test-metaprl-startup: $(MP).run
 
-EXT = $(if $(NATIVE_ENABLED), opt, top)
-BIN = $(MP).$(EXT)
-BAT = $(if $(equal $(OSTYPE), Win32), .bat)
-CONFIGS = $(MP)$(BAT) $(MP)config $(THEORIES_PATH) $(MLDEBUG_PATH)
-
-$(MP)$(BAT): $(MP)$(EXT)$(BAT)
+$(MP_SCRIPT): $(MP)$(if $(NATIVE_ENABLED), opt, top)$(if $(equal $(OSTYPE), Win32), .bat)
     $(symlink $<, $@)
 
-run: $(BIN) $(CONFIGS)
-    ./mp$(BAT)
+run: $(MP_PREREQS)
+    ./$(MP_SCRIPT)
 
-run-cli: $(BIN) $(CONFIGS)
-    ./mp$(BAT) -cli
+run-cli: $(MP_PREREQS)
+    ./$(MP_SCRIPT) -cli
 
-.test-metaprl-startup: $(CONFIGS)
-    echo | ./$(MP)$(BAT) -batch
+.test-metaprl-startup: $(MP_PREREQS)
+    echo | ./$(MP_SCRIPT) -batch
     echo > $@
 
 done: .test-metaprl-startup
@@ -259,7 +254,7 @@ done: .test-metaprl-startup
     println($"
 ******
 ****** MetaPRL ($(if $(NATIVE_ENABLED), $"native code"$(if $(BYTE_ENABLED), $" and "))$(if $(BYTE_ENABLED), bytecode)) compiled successfully!
-****** Run editor/ml/mp$(BAT) to start the interactive prover.
+****** Run $(in $(ROOT), $(MP_SCRIPT)) to start the interactive prover.
 ******
 ")
 
@@ -267,7 +262,7 @@ done: .test-metaprl-startup
 # Clean up
 #
 clean:
-    $(CLEAN) mp$(BAT) $(MP).top mp_version.ml make_mp_version$(EXE) native_profile.txt .test-metaprl-startup
+    $(CLEAN) $(MP_SCRIPT) $(MP).top mp_version.ml make_mp_version$(EXE) native_profile.txt .test-metaprl-startup
 
 #
 # All defaults
