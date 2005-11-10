@@ -65,8 +65,9 @@ let perv_opname       = mk_opname "Perv" nil_opname
 (*
  * Variables.
  *)
-let var_H      = Lm_symbol.add "H"
-let var_step   = Lm_symbol.add "step"
+let var_H       = Lm_symbol.add "H"
+let var_step    = Lm_symbol.add "step"
+let var_witness = Lm_symbol.add "witness"
 
 (************************************************
  * Reflection quotations.  We don't explicitly
@@ -78,128 +79,137 @@ module type ReflectSig =
 sig
    type t
 
-   val create                : parse_state -> t
-   val mk_lambda_term        : t -> var -> term -> term
-   val mk_bind_term          : t -> var -> term -> term
-   val mk_bind_vec_term      : t -> term -> var -> term -> term
-   val mk_rev_bind_terms     : t -> hypothesis list -> term -> term
-   val mk_mk_bterm_term      : t -> term -> term -> term -> term
-   val mk_operator_term      : t -> param op_param -> term
-   val mk_nil_term           : t -> term
-   val mk_cons_term          : t -> term -> term -> term
-   val mk_list_term          : t -> term list -> term
-   val mk_pair_term          : t -> term -> term -> term
-   val mk_length_term        : t -> term -> term
-   val mk_append_term        : t -> term -> term -> term
-   val mk_append_list_term   : t -> term list -> term
-   val mk_sequent_term       : t -> term -> term -> term -> term
-   val mk_ty_list_term       : t -> term -> term
-   val mk_exists_term        : t -> var -> term -> term -> term
-   val mk_equal_term         : t -> term -> term -> term -> term
-   val mk_number_term        : t -> int -> term
-   val mk_ty_nat             : t -> term
-   val mk_subst_term         : t -> term -> term -> term
-   val mk_soapply_term       : t -> term -> term list -> term
-   val mk_substl_term        : t -> term -> term -> term
-   val mk_capply_term        : t -> term -> var list -> term
-   val mk_map_term           : t -> var -> term -> term -> term
-   val mk_add_term           : t -> term -> term -> term
-   val mk_ty_sovar_term      : t -> term -> term
-   val mk_ty_cvar_term       : t -> term -> term
-   val mk_ProofStep_term     : t -> term -> term
-   val mk_proof_step_term    : t -> term -> term -> term
-   val mk_beq_ProofStep_term : t -> term -> term -> term
-   val mk_ProofRule_term     : t -> term -> term
-   val mk_sequent_arg_term   : t -> term
-   val mk_provable_term      : t -> term -> term
-   val mk_Provable_term      : t -> term -> term -> term -> term
-   val mk_Sequent_term       : t -> term
-   val mk_meta_type_term     : t -> term
-   val mk_meta_member_term   : t -> term -> term -> term
-   val mk_Logic_term         : t -> term -> term
-   val mk_type_term          : t -> term -> term
-   val mk_assert_term        : t -> term -> term
+   val create                 : parse_state -> t
+   val mk_lambda_term         : t -> var -> term -> term
+   val mk_bind_term           : t -> var -> term -> term
+   val mk_bind_vec_term       : t -> term -> var -> term -> term
+   val mk_rev_bind_terms      : t -> hypothesis list -> term -> term
+   val mk_mk_bterm_term       : t -> term -> term -> term -> term
+   val mk_operator_term       : t -> param op_param -> term
+   val mk_nil_term            : t -> term
+   val mk_cons_term           : t -> term -> term -> term
+   val mk_list_term           : t -> term list -> term
+   val mk_pair_term           : t -> term -> term -> term
+   val mk_length_term         : t -> term -> term
+   val mk_append_term         : t -> term -> term -> term
+   val mk_append_list_term    : t -> term list -> term
+   val mk_sequent_term        : t -> term -> term -> term -> term
+   val mk_ty_list_term        : t -> term -> term
+   val mk_exists_term         : t -> var -> term -> term -> term
+   val mk_equal_term          : t -> term -> term -> term -> term
+   val mk_number_term         : t -> int -> term
+   val mk_ty_nat              : t -> term
+   val mk_subst_term          : t -> term -> term -> term
+   val mk_soapply_term        : t -> term -> term list -> term
+   val mk_substl_term         : t -> term -> term -> term
+   val mk_capply_term         : t -> term -> var list -> term
+   val mk_map_term            : t -> var -> term -> term -> term
+   val mk_add_term            : t -> term -> term -> term
+   val mk_SOVar_term          : t -> term -> term
+   val mk_CVar_term           : t -> term -> term
+   val mk_ProofStep_term      : t -> term -> term
+   val mk_proof_step_term     : t -> term -> term -> term
+   val mk_beq_proof_step_term : t -> term -> term -> term
+   val mk_ProofRule_term      : t -> term -> term
+   val mk_sequent_arg_term    : t -> term
+   val mk_provable_term       : t -> term -> term
+   val mk_Provable_term       : t -> term -> term -> term -> term
+   val mk_Sequent_term        : t -> term
+   val mk_meta_type_term      : t -> term
+   val mk_meta_member_term    : t -> term -> term -> term
+   val mk_Logic_term          : t -> term -> term
+   val mk_type_term           : t -> term -> term
+   val mk_assert_term         : t -> term -> term
+   val mk_let_cvar_term       : t -> var -> term -> term -> int -> term -> term
+   val mk_let_sovar_term      : t -> var -> term -> term -> int -> term -> term
+   val mk_spread_term         : t -> term -> var -> var -> term -> term
 end;;
 
 module Reflect : ReflectSig =
 struct
    type t =
-      { opname_lambda        : opname Lazy.t;
-        opname_bind          : opname Lazy.t;
-        opname_bind_vec      : opname Lazy.t;
-        opname_mk_bterm      : opname Lazy.t;
-        opname_operator      : opname Lazy.t;
-        term_nil             : term Lazy.t;
-        opname_cons          : opname Lazy.t;
-        opname_pair          : opname Lazy.t;
-        opname_length        : opname Lazy.t;
-        opname_append        : opname Lazy.t;
-        opname_sequent       : opname Lazy.t;
-        opname_list          : opname Lazy.t;
-        opname_exists        : opname Lazy.t;
-        opname_equal         : opname Lazy.t;
-        opname_number        : opname Lazy.t;
-        term_nat             : term Lazy.t;
-        opname_subst         : opname Lazy.t;
-        opname_substl        : opname Lazy.t;
-        opname_map           : opname Lazy.t;
-        opname_add           : opname Lazy.t;
-        opname_sovar         : opname Lazy.t;
-        opname_cvar          : opname Lazy.t;
-        opname_ProofStep     : opname Lazy.t;
-        opname_proof_step    : opname Lazy.t;
-        opname_beq_ProofStep : opname Lazy.t;
-        opname_ProofRule     : opname Lazy.t;
-        sequent_arg          : term Lazy.t;
-        opname_provable      : opname Lazy.t;
-        opname_Provable      : opname Lazy.t;
-        sequent_term         : term Lazy.t;
-        opname_meta_member   : opname Lazy.t;
-        meta_type            : term Lazy.t;
-        opname_Logic         : opname Lazy.t;
-        opname_type          : opname Lazy.t;
-        opname_assert        : opname Lazy.t
+      { opname_lambda         : opname Lazy.t;
+        opname_bind           : opname Lazy.t;
+        opname_bind_vec       : opname Lazy.t;
+        opname_mk_bterm       : opname Lazy.t;
+        opname_operator       : opname Lazy.t;
+        term_nil              : term Lazy.t;
+        opname_cons           : opname Lazy.t;
+        opname_pair           : opname Lazy.t;
+        opname_length         : opname Lazy.t;
+        opname_append         : opname Lazy.t;
+        opname_sequent        : opname Lazy.t;
+        opname_list           : opname Lazy.t;
+        opname_exists         : opname Lazy.t;
+        opname_equal          : opname Lazy.t;
+        opname_number         : opname Lazy.t;
+        term_nat              : term Lazy.t;
+        opname_subst          : opname Lazy.t;
+        opname_substl         : opname Lazy.t;
+        opname_map            : opname Lazy.t;
+        opname_add            : opname Lazy.t;
+        opname_sovar          : opname Lazy.t;
+        opname_cvar           : opname Lazy.t;
+        opname_ProofStep      : opname Lazy.t;
+        opname_proof_step     : opname Lazy.t;
+        opname_beq_proof_step : opname Lazy.t;
+        opname_ProofRule      : opname Lazy.t;
+        sequent_arg           : term Lazy.t;
+        opname_provable       : opname Lazy.t;
+        opname_Provable       : opname Lazy.t;
+        sequent_term          : term Lazy.t;
+        opname_meta_member    : opname Lazy.t;
+        meta_type             : term Lazy.t;
+        opname_Logic          : opname Lazy.t;
+        opname_type           : opname Lazy.t;
+        opname_assert         : opname Lazy.t;
+        opname_let_cvar       : opname Lazy.t;
+        opname_let_sovar      : opname Lazy.t;
+        opname_spread         : opname Lazy.t
       }
 
    let mk_state_opname state op params arities =
       state.parse_opname NormalKind [op] params arities
 
    let create state =
-      { opname_lambda        = Lazy.lazy_from_fun (fun () -> mk_state_opname state "lambda"   [] [1]);
-        opname_bind          = Lazy.lazy_from_fun (fun () -> mk_state_opname state "bind"     [] [1]);
-        opname_bind_vec      = Lazy.lazy_from_fun (fun () -> mk_state_opname state "bind"     [] [0; 1]);
-        opname_mk_bterm      = Lazy.lazy_from_fun (fun () -> mk_state_opname state "mk_bterm" [] [0; 0; 0]);
-        opname_operator      = Lazy.lazy_from_fun (fun () -> mk_state_opname state "operator" [ShapeOperator] []);
-        term_nil             = Lazy.lazy_from_fun (fun () -> mk_simple_term (mk_state_opname state "nil" [] []) []);
-        opname_cons          = Lazy.lazy_from_fun (fun () -> mk_state_opname state "cons"     [] [0; 0]);
-        opname_pair          = Lazy.lazy_from_fun (fun () -> mk_state_opname state "pair"     [] [0; 0]);
-        opname_length        = Lazy.lazy_from_fun (fun () -> mk_state_opname state "length"   [] [0]);
-        opname_append        = Lazy.lazy_from_fun (fun () -> mk_state_opname state "append"   [] [0; 0]);
-        opname_sequent       = Lazy.lazy_from_fun (fun () -> mk_state_opname state "sequent"  [] [0; 0; 0]);
-        opname_list          = Lazy.lazy_from_fun (fun () -> mk_state_opname state "list"     [] [0]);
-        opname_exists        = Lazy.lazy_from_fun (fun () -> mk_state_opname state "exists"   [] [0; 1]);
-        opname_equal         = Lazy.lazy_from_fun (fun () -> mk_state_opname state "equal"    [] [0; 0; 0]);
-        term_nat             = Lazy.lazy_from_fun (fun () -> mk_simple_term (mk_state_opname state "nat" [] []) []);
-        opname_number        = Lazy.lazy_from_fun (fun () -> mk_state_opname state "number" [ShapeNumber] []);
-        opname_subst         = Lazy.lazy_from_fun (fun () -> mk_state_opname state "subst"     [] [0; 0]);
-        opname_substl        = Lazy.lazy_from_fun (fun () -> mk_state_opname state "substl"    [] [0; 0]);
-        opname_map           = Lazy.lazy_from_fun (fun () -> mk_state_opname state "map"       [] [1; 0]);
-        opname_add           = Lazy.lazy_from_fun (fun () -> mk_state_opname state "add"       [] [0; 0]);
-        opname_sovar         = Lazy.lazy_from_fun (fun () -> mk_state_opname state "SOVar"     [] [0]);
-        opname_cvar          = Lazy.lazy_from_fun (fun () -> mk_state_opname state "CVar"      [] [0]);
-        opname_ProofStep     = Lazy.lazy_from_fun (fun () -> mk_state_opname state "ProofStep" [] [0]);
-        opname_proof_step    = Lazy.lazy_from_fun (fun () -> mk_state_opname state "proof_step" [] [0; 0]);
-        opname_beq_ProofStep = Lazy.lazy_from_fun (fun () -> mk_state_opname state "beq_ProofStep" [] [0; 0]);
-        opname_ProofRule     = Lazy.lazy_from_fun (fun () -> mk_state_opname state "ProofRule" [] [0]);
-        sequent_arg          = Lazy.lazy_from_fun (fun () -> mk_simple_term (mk_state_opname state "sequent_arg" [] []) []);
-        sequent_term         = Lazy.lazy_from_fun (fun () -> mk_simple_term (mk_state_opname state "Sequent" [] []) []);
-        opname_provable      = Lazy.lazy_from_fun (fun () -> mk_state_opname state "Provable"  [] [0]);
-        opname_Provable      = Lazy.lazy_from_fun (fun () -> mk_state_opname state "Provable"  [] [0; 0; 0]);
-        opname_meta_member   = Lazy.lazy_from_fun (fun () -> mk_state_opname state "meta_member"  [] [0; 0]);
-        meta_type            = Lazy.lazy_from_fun (fun () -> mk_simple_term (mk_state_opname state "meta_type" [] []) []);
-        opname_Logic         = Lazy.lazy_from_fun (fun () -> mk_state_opname state "Logic"  [] [0]);
-        opname_type          = Lazy.lazy_from_fun (fun () -> mk_state_opname state "type"  [] [0]);
-        opname_assert        = Lazy.lazy_from_fun (fun () -> mk_state_opname state "assert" [] [0]);
+      { opname_lambda         = Lazy.lazy_from_fun (fun () -> mk_state_opname state "lambda"   [] [1]);
+        opname_bind           = Lazy.lazy_from_fun (fun () -> mk_state_opname state "bind"     [] [1]);
+        opname_bind_vec       = Lazy.lazy_from_fun (fun () -> mk_state_opname state "bind"     [] [0; 1]);
+        opname_mk_bterm       = Lazy.lazy_from_fun (fun () -> mk_state_opname state "mk_bterm" [] [0; 0; 0]);
+        opname_operator       = Lazy.lazy_from_fun (fun () -> mk_state_opname state "operator" [ShapeOperator] []);
+        term_nil              = Lazy.lazy_from_fun (fun () -> mk_simple_term (mk_state_opname state "nil" [] []) []);
+        opname_cons           = Lazy.lazy_from_fun (fun () -> mk_state_opname state "cons"     [] [0; 0]);
+        opname_pair           = Lazy.lazy_from_fun (fun () -> mk_state_opname state "pair"     [] [0; 0]);
+        opname_length         = Lazy.lazy_from_fun (fun () -> mk_state_opname state "length"   [] [0]);
+        opname_append         = Lazy.lazy_from_fun (fun () -> mk_state_opname state "append"   [] [0; 0]);
+        opname_sequent        = Lazy.lazy_from_fun (fun () -> mk_state_opname state "sequent"  [] [0; 0; 0]);
+        opname_list           = Lazy.lazy_from_fun (fun () -> mk_state_opname state "list"     [] [0]);
+        opname_exists         = Lazy.lazy_from_fun (fun () -> mk_state_opname state "exists"   [] [0; 1]);
+        opname_equal          = Lazy.lazy_from_fun (fun () -> mk_state_opname state "equal"    [] [0; 0; 0]);
+        term_nat              = Lazy.lazy_from_fun (fun () -> mk_simple_term (mk_state_opname state "nat" [] []) []);
+        opname_number         = Lazy.lazy_from_fun (fun () -> mk_state_opname state "number" [ShapeNumber] []);
+        opname_subst          = Lazy.lazy_from_fun (fun () -> mk_state_opname state "subst"     [] [0; 0]);
+        opname_substl         = Lazy.lazy_from_fun (fun () -> mk_state_opname state "substl"    [] [0; 0]);
+        opname_map            = Lazy.lazy_from_fun (fun () -> mk_state_opname state "map"       [] [1; 0]);
+        opname_add            = Lazy.lazy_from_fun (fun () -> mk_state_opname state "add"       [] [0; 0]);
+        opname_sovar          = Lazy.lazy_from_fun (fun () -> mk_state_opname state "SOVar"     [] [0]);
+        opname_cvar           = Lazy.lazy_from_fun (fun () -> mk_state_opname state "CVar"      [] [0]);
+        opname_ProofStep      = Lazy.lazy_from_fun (fun () -> mk_state_opname state "ProofStep" [] [0]);
+        opname_proof_step     = Lazy.lazy_from_fun (fun () -> mk_state_opname state "proof_step" [] [0; 0]);
+        opname_beq_proof_step = Lazy.lazy_from_fun (fun () -> mk_state_opname state "beq_proof_step" [] [0; 0]);
+        opname_ProofRule      = Lazy.lazy_from_fun (fun () -> mk_state_opname state "ProofRule" [] [0]);
+        sequent_arg           = Lazy.lazy_from_fun (fun () -> mk_simple_term (mk_state_opname state "sequent_arg" [] []) []);
+        sequent_term          = Lazy.lazy_from_fun (fun () -> mk_simple_term (mk_state_opname state "Sequent" [] []) []);
+        opname_provable       = Lazy.lazy_from_fun (fun () -> mk_state_opname state "Provable"  [] [0]);
+        opname_Provable       = Lazy.lazy_from_fun (fun () -> mk_state_opname state "Provable"  [] [0; 0; 0]);
+        opname_meta_member    = Lazy.lazy_from_fun (fun () -> mk_state_opname state "meta_member"  [] [0; 0]);
+        meta_type             = Lazy.lazy_from_fun (fun () -> mk_simple_term (mk_state_opname state "meta_type" [] []) []);
+        opname_Logic          = Lazy.lazy_from_fun (fun () -> mk_state_opname state "Logic"  [] [0]);
+        opname_type           = Lazy.lazy_from_fun (fun () -> mk_state_opname state "type"  [] [0]);
+        opname_assert         = Lazy.lazy_from_fun (fun () -> mk_state_opname state "assert" [] [0]);
+        opname_let_cvar       = Lazy.lazy_from_fun (fun () -> mk_state_opname state "let_cvar" [] [0; 0; 0; 1]);
+        opname_let_sovar      = Lazy.lazy_from_fun (fun () -> mk_state_opname state "let_sovar" [] [0; 0; 0; 1]);
+        opname_spread         = Lazy.lazy_from_fun (fun () -> mk_state_opname state "spread" [] [0; 2]);
       }
 
    let mk_length_term info t =
@@ -306,10 +316,10 @@ struct
    let mk_add_term info t1 t2 =
       mk_dep0_dep0_term (Lazy.force info.opname_add) t1 t2
 
-   let mk_ty_sovar_term info t =
+   let mk_SOVar_term info t =
       mk_dep0_term (Lazy.force info.opname_sovar) t
 
-   let mk_ty_cvar_term info t =
+   let mk_CVar_term info t =
       mk_dep0_term (Lazy.force info.opname_cvar) t
 
    let mk_ProofStep_term info t =
@@ -318,8 +328,8 @@ struct
    let mk_proof_step_term info t1 t2 =
       mk_dep0_dep0_term (Lazy.force info.opname_proof_step) t1 t2
 
-   let mk_beq_ProofStep_term info t1 t2 =
-      mk_dep0_dep0_term (Lazy.force info.opname_beq_ProofStep) t1 t2
+   let mk_beq_proof_step_term info t1 t2 =
+      mk_dep0_dep0_term (Lazy.force info.opname_beq_proof_step) t1 t2
 
    let mk_ProofRule_term info t =
       mk_dep0_term (Lazy.force info.opname_ProofRule) t
@@ -350,6 +360,27 @@ struct
 
    let mk_assert_term info t =
       mk_dep0_term (Lazy.force info.opname_assert) t
+
+   let mk_dep0_dep0_dep0_dep1_term opname t1 t2 t3 v t4 =
+      let bterms =
+         [mk_simple_bterm t1;
+          mk_simple_bterm t2;
+          mk_simple_bterm t3;
+          mk_bterm [v] t4]
+      in
+      let op = mk_op opname [] in
+         mk_term op bterms
+
+   let mk_let_cvar_term info v t1 t2 t3 t4 =
+      let t3 = mk_number_term info t3 in
+         mk_dep0_dep0_dep0_dep1_term (Lazy.force info.opname_let_cvar) t1 t2 t3 v t4
+
+   let mk_let_sovar_term info v t1 t2 t3 t4 =
+      let t3 = mk_number_term info t3 in
+         mk_dep0_dep0_dep0_dep1_term (Lazy.force info.opname_let_sovar) t1 t2 t3 v t4
+
+   let mk_spread_term info t1 v1 v2 t2 =
+      mk_dep0_dep2_term (Lazy.force info.opname_spread) v1 v2 t1 t2
 end;;
 
 (*
@@ -521,58 +552,63 @@ let sweep_rulequote_term info socvars depth t =
  * Sort the free second-order and context variables in order of dependencies.
  *)
 let sort_socvars socvars =
-   let rec step socvars l v =
+   let rec step socvars soindex cindex l v =
       if SymbolTable.mem socvars v then
          let b, cargs, arity = SymbolTable.find socvars v in
          let socvars = SymbolTable.remove socvars v in
-         let socvars, l = step_list socvars l cargs in
-            socvars, (v, b, cargs, arity) :: l
+         let i, soindex, cindex =
+            if b then
+               cindex, soindex, succ cindex
+            else
+               soindex, succ soindex, cindex
+         in
+         let socvars, soindex, cindex, l = step_list socvars soindex cindex l cargs in
+            socvars, soindex, cindex, (v, i, b, cargs, arity) :: l
       else
-         socvars, l
-   and step_list socvars l vars =
+         socvars, soindex, cindex, l
+   and step_list socvars soindex cindex l vars =
       match vars with
          v :: vars ->
-            let socvars, l = step socvars l v in
-               step_list socvars l vars
+            let socvars, soindex, cindex, l = step socvars soindex cindex l v in
+               step_list socvars soindex cindex l vars
        | [] ->
-            socvars, l
+            socvars, soindex, cindex, l
    in
-   let rec loop socvars l =
+   let rec loop socvars soindex cindex l =
       if SymbolTable.is_empty socvars then
          l
       else
          let v, _ = SymbolTable.choose socvars in
-         let socvars, l = step socvars l v in
-            loop socvars l
+         let socvars, soindex, cindex, l = step socvars soindex cindex l v in
+            loop socvars soindex cindex l
    in
-      loop socvars []
+      loop socvars 0 0 []
 
 (*
  * Existentially quantify the free second-order and context variables.
  *)
-let rec quantify_socvars info socvars t =
+let rec quantify_socvars info t_witness socvars t =
    match socvars with
-      (v, b, cargs, arity) :: socvars ->
+      (v, i, b, cargs, arity) :: socvars ->
          let len = Reflect.mk_number_term info arity in
          let len =
             List.fold_left (fun len v ->
                   Reflect.mk_add_term info (Reflect.mk_length_term info (mk_var_term v)) len) len cargs
          in
-         let ty =
+         let t =
             if b then
-               Reflect.mk_ty_cvar_term info len
+               Reflect.mk_let_cvar_term info v len t_witness i t
             else
-               Reflect.mk_ty_sovar_term info len
+               Reflect.mk_let_sovar_term info v len t_witness i t
          in
-         let t = Reflect.mk_exists_term info v ty t in
-            quantify_socvars info socvars t
+            quantify_socvars info t_witness socvars t
     | [] ->
          t
 
 (*
  * Turn the socvars into wf subgoals.
  *)
-let mk_socvar_wf_assum info h_v (v, b, cargs, arity) =
+let mk_socvar_wf_assum info h_v (v, _, b, cargs, arity) =
    let len = Reflect.mk_number_term info arity in
    let len =
       List.fold_left (fun len v ->
@@ -580,9 +616,9 @@ let mk_socvar_wf_assum info h_v (v, b, cargs, arity) =
    in
    let ty =
       if b then
-         Reflect.mk_ty_cvar_term info len
+         Reflect.mk_CVar_term info len
       else
-         Reflect.mk_ty_sovar_term info len
+         Reflect.mk_SOVar_term info len
    in
    let v = mk_var_term v in
    let t = Reflect.mk_equal_term info v v ty in
@@ -609,7 +645,11 @@ let dest_xrulequote_term_inner state t =
    let t, _, _ = mterms_of_parsed_mterms (fun _ -> true) t [] in
 
    (* New variables to work with *)
-   let v_step = maybe_new_var var_step (free_vars_mterm t) in
+   let fv = free_vars_mterm t in
+   let v_step = maybe_new_var var_step fv in
+   let v_witness = maybe_new_var var_witness (SymbolSet.add fv v_step) in
+   let t_step = mk_var_term v_step in
+   let t_witness = mk_var_term v_witness in
 
    (* The depth is always 0 *)
    let d = Reflect.mk_number_term info 0 in
@@ -627,14 +667,14 @@ let dest_xrulequote_term_inner state t =
 
    (* The inner term is an equality *)
    let t = Reflect.mk_proof_step_term info premises goal in
-   let t = Reflect.mk_beq_ProofStep_term info (mk_var_term v_step) t in
-   let t = Reflect.mk_assert_term info t in
+   let t = Reflect.mk_beq_proof_step_term info (mk_var_term v_step) t in
 
    (* Quantify over the free context and second-order variables *)
    let socvars = sort_socvars socvars in
-   let t = quantify_socvars info socvars t in
+   let t = quantify_socvars info t_witness socvars t in
 
    (* The entire thing is a function that takes a step, and checks it *)
+   let t = Reflect.mk_spread_term info t_step v_step v_witness t in
    let t = Reflect.mk_lambda_term info v_step t in
       t
 

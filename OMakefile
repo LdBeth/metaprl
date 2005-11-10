@@ -736,7 +736,7 @@ section
         foreach (thy, $(theories))
             thydir = $(dir $(THEORY_DIR)/$(thy))
             if $(not $(mem $(thydir), $(COLLECTED_THEORIES)))
-                VirtualTheory(subdirs) =
+                public.VirtualTheory(subdirs) =
                     VIRTUAL_THEORY = true
                     THEORY_DEPS = $(addprefix $(thy)/, $(subdirs))
                     export
