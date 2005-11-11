@@ -285,6 +285,9 @@ let make_progressT goals tac =
       if List.exists (alpha_equal goal) goals then idT
       else tac (goal::goals))
 
+(*
+ * XXX: TODO: this is suboptimal. See http://bugzilla.metaprl.org/show_bug.cgi?id=549
+ *)
 let ifthenelseT tac1 tac2 tac3 =
    let thenelseT = argfunT (fun t p ->
       if alpha_equal (goal p) t then tac3 else tac2)
