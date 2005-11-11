@@ -285,6 +285,12 @@ let make_progressT goals tac =
       if List.exists (alpha_equal goal) goals then idT
       else tac (goal::goals))
 
+let ifthenelseT tac1 tac2 tac3 =
+   let thenelseT = argfunT (fun t p ->
+      if alpha_equal (goal p) t then tac3 else tac2)
+   in
+      funT (fun p -> tryT tac1 thenT thenelseT (goal p))
+
 let extract tactics =
    let tactics =
       if !debug_auto then List.map debugT tactics
@@ -304,18 +310,18 @@ let extract tactics =
             [] ->
                next goals
           | tac :: tacs ->
-               (tac.auto_tac thenT (make_progressT goals prog_reset)) orelseT
-                  (prog_first tacs goals)
+               ifthenelseT tac.auto_tac (make_progressT goals prog_reset) (prog_first tacs goals)
       and prog_reset goals = prog_first reset goals
       in
          prog_first
    in
    let next_idT _ = idT in
+   let next_failT _ = failT in
    let gen_trivT next = make_progress_first trivial next trivial [] in
    let trivT = gen_trivT next_idT in
    let gen_normT next = gen_trivT (make_progress_first (trivial @ normal) next normal) in
    let all_tacs = trivial @ normal @ complete in
-   let try_complete goals = tryT (completeT (make_progress_first all_tacs next_idT complete goals)) in
+   let try_complete goals = tryT (make_progress_first all_tacs next_failT complete goals) in
    let autoT = gen_normT try_complete in
    let strongAutoT = make_progress_first all_tacs next_idT all_tacs [] in
       (trivT, autoT, strongAutoT)
