@@ -676,7 +676,15 @@ struct
                         REF_RAISE(RefineError ("match_redex_sequent_hyps", RewriteBadMatch (HypMatch hyps)))
                else
                   let count = addrs.arg_ints.(addr) in
-                     if count > 0 then count - 1 else len - i + count
+                     if count > 0 then 
+                        count - 1 
+                     else 
+                        let count = len - i + count in
+                           if count >= 0 then
+                              count
+                           else
+                              REF_RAISE(RefineError ("match_redex_sequent_hyps",
+                                 StringIntError("not enough hypotheses for a negative index", addrs.arg_ints.(addr))))
             in
                IFDEF VERBOSE_EXN THEN
                   if !debug_rewrite then
