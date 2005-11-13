@@ -137,7 +137,8 @@ section
     #
     # File format conversion
     #
-    OCamlProgramInstall($(MPINSTALL), $(BIN), convert, filter_convert)
+    OCamlProgramInstall($(MPINSTALL), $(BIN), convert, filter/filter_convert)
+    OCamlProgramInstall($(MPINSTALL), $(BIN), merge_prla, filter/filter_merge_prla)
 
     #
     # Main program

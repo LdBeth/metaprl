@@ -308,13 +308,15 @@ struct
    let incomplete_op  = mk_opname "incomplete"  summary_opname
    let interactive_op = mk_opname "interactive" summary_opname
 
+   let incomplete_pf  = TTerm.mk_simple_term incomplete_op []
+
    let marshal_proof name to_term = function
       Primitive t ->
          TTerm.mk_simple_term prim_op [TTermCopy.convert t]
     | Derived expr ->
          TTerm.mk_simple_term derived_op [term_of_expr expr]
     | Incomplete ->
-         TTerm.mk_simple_term incomplete_op []
+         incomplete_pf
     | Interactive expr ->
          TTerm.mk_simple_term interactive_op [to_term name expr]
 
