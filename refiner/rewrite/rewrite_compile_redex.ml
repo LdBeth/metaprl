@@ -15,7 +15,8 @@
  * See the file doc/htmlman/default.html or visit http://metaprl.org/
  * for more information.
  *
- * Copyright (C) 1998 Jason Hickey, Cornell University
+ * Copyright (C) 1998-2005 MetaPRL Group, Cornell University
+ * and California Institute of Technology
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -96,8 +97,13 @@ struct
         st_bvars : (var * int) list;    (* All the bindings we are under, and their stack locations *)
         st_bconts : (var * int) list;   (* All the contexts we are in, and their stack locations  *)
         st_arg : bool;                  (* Whether we are compiling an argument ("semiformal") term *)
-        st_restricts : (int * var list) list ref
+        st_restricts : (int * var list) list ref;
                                         (* Output: additional restrictions: SO var location * SO conts locations *)
+        (* Handling of context instances (sequent contexts only for now) *)
+        st_all_contexts : int list ref; (* Temporaty output: contexts that should be wrapped if they are instances *)
+        st_will_wrap : int list;        (* Somebody outside promised to wrap this for us *)
+        st_context_instances : int list ref;
+                                        (* Output: "unwrapped" context instances in the current term *)
       }
 
    let bname i _ =
@@ -149,165 +155,192 @@ struct
     | v::vs ->
          collect_bvars (succ i) (stack @ [FOVar v]) (bnames @ [bname i v]) ((new_bvar_item i v) :: bvars) vs
 
-   let rec compile_so_redex_term st stack term =
-      (* Check for variables and contexts *)
-      if is_var_term term then
-         let v = dest_var term in
-            if List.mem_assoc v st.st_bvars then
-               stack, RWCheckVar(svar_index st.st_bvars v)
+   let rec wrap_context_instances all_contexts_before st stack_prog = function
+      [] -> 
+         stack_prog
+    | inst :: insts ->
+         let stack_prog =
+            if not (List.mem inst all_contexts_before) then
+               raise (Invalid_argument("Rewrite_compile_redex.wrap_context_instances: internal error: we found ourselves \"above\" the place where context was introduced"))
+            else if List.mem inst st.st_will_wrap then
+               (* Somebody else promised to do the wraping *)
+               stack_prog
+            else if Lm_list_util.assoc_in_range (=) inst st.st_bconts then
+               raise (Invalid_argument("Rewrite_compile_redex.wrap_context_instances: internal error: we found ourselves \"below\" the place where context was introduced"))
             else
-               let stack =
-                  let mem = rstack_freefo_mem v stack in
-                     if not mem && rstack_mem v stack then
-                        REF_RAISE(RefineError ("compile_so_redex_term", StringVarError("Free FO variable clashes with another variable ", v)));
-                     if st.st_patterns then
-                        if mem then
-                           rstack_upgrade v stack
-                        else
-                           stack @ [ FreeFOVarPattern v ]
-                     else if mem then
-                        stack
-                     else
-                        stack @ [ FreeFOVarInstance v ]
-               in
-               let index = rstack_freefo_index v stack in
-               let restrict_conts =
-                  if st.st_strict then
-                     if st.st_arg then begin
-                        st.st_restricts := (index, []) :: !(st.st_restricts);
-                        []
-                     end else
-                        List.map bvar_ind st.st_bconts
-                  else
-                     []
-               in
-               let restrict_vars = if st.st_strict then List.map bvar_ind st.st_bvars else [] in
-                  stack, RWMatchFreeFOVar (index, restrict_conts, restrict_vars)
-
-      else if is_so_var_term term then
-         let v, conts, subterms = dest_so_var term in
-         let so_mem = rstack_so_mem v stack in
-            if are_bound_vars st.st_bvars subterms then
-               (* This is a second order variable, all subterms are vars *
-                * and we do not have a pattern yet                       *)
-               let () =
-                  if so_mem then begin
-                     rstack_check_arity v conts (List.length subterms) stack;
-                     if not st.st_arg && st.st_strict then List.iter (check_cont v st.st_bconts) conts
-                  end
-               in
-               let stack =
-                  match so_mem, st.st_patterns with
-                     true, true -> rstack_upgrade v stack
-                   | false, true -> stack @ [SOVarPattern (v, conts, List.length subterms)]
-                   | true, false -> stack
-                   | false, false -> stack @ [SOVarMaybePattern (v, conts, List.length subterms)]
-               in
-               let v' = rstack_so_index v stack in
-               let args = if subterms = [] then [] else List.map (var_index st.st_bvars) subterms in
-               let restrict_free =
-                  if st.st_strict then
-                     let bvars = List.map bvar_ind st.st_bvars in
-                        if args = [] then
-                           bvars
-                        else
-                           Lm_list_util.subtract bvars args
-                  else
-                     []
-               in
-               let restrict_conts =
-                  if st.st_strict then
-                     if st.st_arg then begin
-                        st.st_restricts := (v', conts) :: !(st.st_restricts);
-                        []
-                     end else
-                        restricted_conts v st.st_bconts conts
-                  else
-                     []
-               in
-               let t =
-                  if restrict_free = [] && restrict_conts = [] then
-                     RWSOVar(v', args)
-                  else
-                     RWSOFreeVarsVar(restrict_conts, restrict_free, v', args)
-               in
-                  stack, t
-
-            (* This is a second order variable instance *)
-            else if so_mem then
-               begin
-                  rstack_check_arity v conts (List.length subterms) stack;
-                  if not st.st_arg && st.st_strict then List.iter (check_cont v st.st_bconts) conts;
-                  (*
-                   * we set st_patterns to false here since the term that is going to
-                   * match the SO variable v may have no free occurences of this argument
-                   * and this would prevent us from establishing an SO pattern.
-                   *)
-                  let stack = rstack_downgrade v stack in
-                  let stack, terms = compile_so_redex_terms { st with st_patterns = false } stack subterms in
-                     stack, RWSOInstance(rstack_so_index v stack, terms)
-               end
-            else
-               let index = List.length stack in
-               let stack = stack @ [SOVarInstance (v, conts, List.length subterms)] in
-               let stack, terms = compile_so_redex_terms { st with st_patterns = false } stack subterms in
-                  stack, RWSOInstance(index, terms)
-
-      else if is_context_term term then
-         let v, term, conts, vars = dest_context term in
-            if rstack_c_mem v stack then
-               (* XXX: TODO *)
-               raise (Invalid_argument "Matching non-sequent context intances is not supported yet")
-
-            else if Lm_array_util.mem v st.st_addrs then
-               (* All the vars should be free variables *)
-               let vars' = List.map (var_index st.st_bvars) vars in
-               let index = List.length stack in
-               let stack = stack @ [CVar (v, conts, List.length vars)] in
-               let stack, term = compile_so_redex_term { st with st_bconts = (v,index)::st.st_bconts } stack term in
-               let aindex = Lm_array_util.index v st.st_addrs in
-               let restrict_free = if st.st_strict then Lm_list_util.subtract (List.map bvar_ind st.st_bvars) vars' else [] in
-               let restrict_conts =
-                  if st.st_strict then
-                     if st.st_arg then begin
-                        st.st_restricts := (index, conts) :: !(st.st_restricts);
-                        []
-                     end else
-                        restricted_conts v st.st_bconts conts
-                  else
-                     []
-               in
-               let t =
-                  if restrict_free = [] && restrict_conts = [] then
-                     RWSOContext(aindex, index, term, vars')
-                  else
-                     RWSOFreeVarsContext(restrict_conts, restrict_free, aindex, index, term, vars')
-               in
-                  stack, t
-            else
-               (* No argument for this context *)
-               REF_RAISE(RefineError ("compile_so_redex_term", RewriteMissingContextArg v))
-
-      else if is_sequent_term term then
-         (* Sequents are handled specially *)
-         let { sequent_args = arg;
-               sequent_hyps = hyps;
-               sequent_concl = concl;
-             } = explode_sequent term
+               let stack, prog = stack_prog in
+                  st.st_context_instances := Lm_list_util.remove inst !(st.st_context_instances);
+                  stack, RWAvoidBindings (inst, prog)
          in
-         let stack, arg = compile_so_redex_term st stack arg in
-         let l = SeqHyp.length hyps in
-         let stack, hyps, concl =
-            compile_so_redex_sequent_inner st stack 0 l (lastcontext hyps l) hyps concl in
-            stack, RWSequent (arg, hyps, concl)
+            wrap_context_instances all_contexts_before st stack_prog insts
 
-      else
-         (* This is normal term--not a var *)
-         let { term_op = op; term_terms = bterms } = dest_term term in
-         let { op_name = name; op_params = params } = dest_op op in
-         let stack, params = compile_so_redex_params st stack params in
-         let stack, bterms = compile_so_redex_bterms st stack bterms in
-            stack, RWComposite { rw_op = { rw_name = name; rw_params = params }; rw_bterms = bterms }
+   let rec compile_so_redex_term orig_st stack term =
+      let all_contexts_before = !(orig_st.st_all_contexts) in
+      let st = {orig_st with st_will_wrap = all_contexts_before } in
+      let stack_prog =
+         (* Check for variables, contexts and sequents *)
+         if is_var_term term then
+            let v = dest_var term in
+               if List.mem_assoc v st.st_bvars then
+                  stack, RWCheckVar(svar_index st.st_bvars v)
+               else
+                  let stack =
+                     let mem = rstack_freefo_mem v stack in
+                        if not mem && rstack_mem v stack then
+                           REF_RAISE(RefineError ("compile_so_redex_term", StringVarError("Free FO variable clashes with another variable ", v)));
+                        if st.st_patterns then
+                           if mem then
+                              rstack_upgrade v stack
+                           else
+                              stack @ [ FreeFOVarPattern v ]
+                        else if mem then
+                           stack
+                        else
+                           stack @ [ FreeFOVarInstance v ]
+                  in
+                  let index = rstack_freefo_index v stack in
+                  let restrict_conts =
+                     if st.st_strict then
+                        if st.st_arg then begin
+                           st.st_restricts := (index, []) :: !(st.st_restricts);
+                           []
+                        end else
+                           List.map bvar_ind st.st_bconts
+                     else
+                        []
+                  in
+                  let restrict_vars = if st.st_strict then List.map bvar_ind st.st_bvars else [] in
+                     stack, RWMatchFreeFOVar (index, restrict_conts, restrict_vars)
+
+         else if is_so_var_term term then
+            let v, conts, subterms = dest_so_var term in
+            let so_mem = rstack_so_mem v stack in
+               if are_bound_vars st.st_bvars subterms then
+                  (* This is a second order variable, all subterms are vars *
+                   * and we do not have a pattern yet                       *)
+                  let () =
+                     if so_mem then begin
+                        rstack_check_arity v conts (List.length subterms) stack;
+                        if not st.st_arg && st.st_strict then List.iter (check_cont v st.st_bconts) conts
+                     end
+                  in
+                  let stack =
+                     match so_mem, st.st_patterns with
+                        true, true -> rstack_upgrade v stack
+                      | false, true -> stack @ [SOVarPattern (v, conts, List.length subterms)]
+                      | true, false -> stack
+                      | false, false -> stack @ [SOVarMaybePattern (v, conts, List.length subterms)]
+                  in
+                  let v' = rstack_so_index v stack in
+                  let args = if subterms = [] then [] else List.map (var_index st.st_bvars) subterms in
+                  let restrict_free =
+                     if st.st_strict then
+                        let bvars = List.map bvar_ind st.st_bvars in
+                           if args = [] then
+                              bvars
+                           else
+                              Lm_list_util.subtract bvars args
+                     else
+                        []
+                  in
+                  let restrict_conts =
+                     if st.st_strict then
+                        if st.st_arg then begin
+                           st.st_restricts := (v', conts) :: !(st.st_restricts);
+                           []
+                        end else
+                           restricted_conts v st.st_bconts conts
+                     else
+                        []
+                  in
+                  let t =
+                     if restrict_free = [] && restrict_conts = [] then
+                        RWSOVar(v', args)
+                     else
+                        RWSOFreeVarsVar(restrict_conts, restrict_free, v', args)
+                  in
+                     stack, t
+
+               (* This is a second order variable instance *)
+               else if so_mem then
+                  begin
+                     rstack_check_arity v conts (List.length subterms) stack;
+                     if not st.st_arg && st.st_strict then List.iter (check_cont v st.st_bconts) conts;
+                     (*
+                      * we set st_patterns to false here since the term that is going to
+                      * match the SO variable v may have no free occurences of this argument
+                      * and this would prevent us from establishing an SO pattern.
+                      *)
+                     let stack = rstack_downgrade v stack in
+                     let stack, terms = compile_so_redex_terms { st with st_patterns = false } stack subterms in
+                        stack, RWSOInstance(rstack_so_index v stack, terms)
+                  end
+               else
+                  let index = List.length stack in
+                  let stack = stack @ [SOVarInstance (v, conts, List.length subterms)] in
+                  let stack, terms = compile_so_redex_terms { st with st_patterns = false } stack subterms in
+                     stack, RWSOInstance(index, terms)
+
+         else if is_context_term term then
+            let v, term, conts, vars = dest_context term in
+               if rstack_c_mem v stack then
+                  (* XXX: TODO *)
+                  raise (Invalid_argument "Matching non-sequent context intances is not supported yet")
+
+               else if Lm_array_util.mem v st.st_addrs then
+                  (* All the vars should be free variables *)
+                  let vars' = List.map (var_index st.st_bvars) vars in
+                  let index = List.length stack in
+                  let stack = stack @ [CVar (v, conts, List.length vars)] in
+                  let stack, term = compile_so_redex_term { st with st_bconts = (v,index)::st.st_bconts } stack term in
+                  let aindex = Lm_array_util.index v st.st_addrs in
+                  let restrict_free = if st.st_strict then Lm_list_util.subtract (List.map bvar_ind st.st_bvars) vars' else [] in
+                  let restrict_conts =
+                     if st.st_strict then
+                        if st.st_arg then begin
+                           st.st_restricts := (index, conts) :: !(st.st_restricts);
+                           []
+                        end else
+                           restricted_conts v st.st_bconts conts
+                     else
+                        []
+                  in
+                  let t =
+                     if restrict_free = [] && restrict_conts = [] then
+                        RWSOContext(aindex, index, term, vars')
+                     else
+                        RWSOFreeVarsContext(restrict_conts, restrict_free, aindex, index, term, vars')
+                  in
+                     stack, t
+               else
+                  (* No argument for this context *)
+                  REF_RAISE(RefineError ("compile_so_redex_term", RewriteMissingContextArg v))
+
+         else if is_sequent_term term then
+            (* Sequents are handled specially *)
+            let { sequent_args = arg;
+                  sequent_hyps = hyps;
+                  sequent_concl = concl;
+                } = explode_sequent term
+            in
+            let stack, arg = compile_so_redex_term st stack arg in
+            let l = SeqHyp.length hyps in
+            let stack, hyps, concl =
+               compile_so_redex_sequent_inner st stack 0 l (lastcontext hyps l) hyps concl in
+               stack, RWSequent (arg, hyps, concl)
+
+         else
+            (* This is normal term--not a var *)
+            let { term_op = op; term_terms = bterms } = dest_term term in
+            let { op_name = name; op_params = params } = dest_op op in
+            let stack, params = compile_so_redex_params st stack params in
+            let stack, bterms = compile_so_redex_bterms st stack bterms in
+               stack, RWComposite { rw_op = { rw_name = name; rw_params = params }; rw_bterms = bterms }
+      in
+         if !(st.st_context_instances) <> [] then
+            wrap_context_instances all_contexts_before orig_st stack_prog !(st.st_context_instances)
+         else
+            stack_prog
 
    (*
     * We also compile parameters, and bind meta-variables.
@@ -409,6 +442,12 @@ struct
                         if not st.st_arg && st.st_strict then List.iter (check_cont v st.st_bconts) conts;
                         let stack, terms = compile_so_redex_terms { st with st_patterns = false } stack terms in
                         let ind = rstack_c_index v stack in
+                           if not (Lm_list_util.assoc_in_range (=) ind st.st_bconts) then begin
+                              if not (List.mem ind !(st.st_context_instances)) then
+                                 st.st_context_instances := ind :: !(st.st_context_instances);
+                              if not (List.mem ind st.st_will_wrap) then
+                                 raise (Invalid_argument "Rewrite_compile_redex.compile_so_redex_sequent_inner: internal error: found a bug in the context wrapping mechanism")
+                           end;
                            stack, RWSeqContextInstance (ind, terms), ind
                      end
                   else
@@ -444,6 +483,7 @@ struct
                         else
                            RWSeqFreeVarsContext (restrict_conts, restrict_free, index, stack_ind, vars')
                      in
+                        st.st_all_contexts := stack_ind :: !(st.st_all_contexts);
                         stack, term, stack_ind
                in
                let stack, hyps, concl =
@@ -525,6 +565,8 @@ struct
             RWMatchFreeFOVar (i, (List.assoc i restr) @ conts, vars)
          else
             t
+    | RWAvoidBindings(i, t) ->
+         RWAvoidBindings(i, map_restricts_term restr t)
     | RWStackVar _
     | RWSOContextSubst _ ->
          (* These are only used in contractum *)
@@ -585,7 +627,10 @@ struct
               st_bvars = [];
               st_bconts = [];
               st_arg = true;
-              st_restricts = ref []
+              st_restricts = ref [];
+              st_all_contexts = ref [];
+              st_will_wrap = [];
+              st_context_instances = ref [];
             }
          in
          let stack, args' = compile_so_redex_terms st [] args in

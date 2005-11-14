@@ -123,6 +123,15 @@ struct
          let vars = match SeqHyp.get hyps i with Context(v, _, _) | Hypothesis (v, _) -> SymbolSet.add vars v in
             bvars_of_cont hyps vars (i + 1) (count - 1)
 
+   let rec get_cont_bvars_hyps hyps vars i count =
+      if count > 0 then
+         match SeqHyp.get hyps i with
+            Context(v, _, _)
+          | Hypothesis (v, _) ->
+               get_cont_bvars_hyps hyps (SymbolSet.add vars v) (i+1) (count-1)
+      else
+         vars
+
    let rec check_cont_bvars_hyps hyps vars i count =
       if count > 0 then begin
          begin
@@ -146,7 +155,7 @@ struct
             check_cont_bvars_hyps hyps vars ind count
        | StackContext ( ivars, _, _, _) ->
             if SymbolSet.intersectp vars ivars then
-               REF_RAISE(RefineError ("check_cont_bvars_hyps",
+               REF_RAISE(RefineError ("restrict_context_vars",
                   StringVarError("Variable appears free where it is not allowed to",
                      SymbolSet.choose (SymbolSet.inter vars ivars))))
        | StackITerm _
@@ -197,21 +206,26 @@ struct
 
    let check_instance_term vars t =
       if SymbolSet.intersectp vars (free_vars_set t) then
-         REF_RAISE(RefineError("Rewrite_match_redex.check_instance_term", StringTermError("term in the inner sequent is bound by the outer context", t)))
+         REF_RAISE(RefineError("Rewrite_match_redex.check_instance_term",
+            StringWrapError("term in the inner sequent is bound by the outer context",
+               VarTermError(SymbolSet.choose (SymbolSet.inter vars (free_vars_set t)), t))))
 
    let rec check_instance_hyps concl vars hyps i len =
       if i = len then
          check_instance_term vars concl
       else
-         match SeqHyp.get hyps i with
-            Context(_, _, ts) ->
-               List.iter (check_instance_term vars) ts;
-               check_instance_hyps concl vars hyps (i+1) len
-          | Hypothesis (v,t) ->
-               check_instance_term vars t;
-               let vars = SymbolSet.remove vars v in
-                  if not (SymbolSet.is_empty vars) then
-                     check_instance_hyps concl vars hyps (i+1) len
+         let v =
+            match SeqHyp.get hyps i with
+               Context(v, _, ts) ->
+                  List.iter (check_instance_term vars) ts;
+                  v
+             | Hypothesis (v,t) ->
+                  check_instance_term vars t;
+                  v
+         in
+            let vars = SymbolSet.remove vars v in
+               if not (SymbolSet.is_empty vars) then
+                  check_instance_hyps concl vars hyps (i+1) len
 
    (*
     * Assign the bvars.
@@ -633,6 +647,18 @@ struct
                   stack.(i) <- StackContext (SymbolSet.diff new_bvars all_bvars', t'', addr, []);
                   match_redex_term addrs stack new_bvars term' term
 
+       | RWAvoidBindings (i, term') ->
+            let all_bvars =
+               match stack.(i) with  
+                 StackSeqContext (_, (ind, count, hyps)) ->
+                    get_cont_bvars_hyps hyps all_bvars ind count
+               | StackContext (ivars, _, _, _) ->
+                    SymbolSet.union all_bvars ivars
+               | _ ->
+                    raise(Invalid_argument "Rewrite_match_redex: RWAvoidBindings: internal error")
+            in
+               match_redex_term addrs stack all_bvars term' t
+
        | RWSOContext _
        | RWSOFreeVarsContext _ ->
             (* XXX: TODO *)
@@ -767,11 +793,8 @@ struct
     * sequent (e.g. t in the example above) does not have any variables bound by the _outer_ instance
     * (since that would not be a legal match).
     *
-    * XXX BUG: When the current instance is _not_ in scope of the original one, any errors reported by
-    * check_instance_hyps would be a result of an accidental variable name clash and thus a bug. This
-    * is _not_ an easy to fix bug - in case such a clash does happen we are pretty much stuck and the
-    * only reasonable solution is trying to prevent such a clash in the first place, but that can not
-    * be done in any straightforward way in the current rewriter framework.
+    * When the current instance is _not_ in scope of the original one, any errors reported by
+    * check_instance_hyps would be a bug - RWAvoidBindings should be preventing it from happening.
     *)
    and match_context_instance addrs stack all_bvars concl hyps i hyps' k bvars ts vars sub count =
       if count = 0 then
@@ -800,6 +823,7 @@ struct
                   match_context_instance addrs stack all_bvars concl hyps (i+1) hyps' (k+1) bvars ts (SymbolSet.remove vars v) sub (count-1)
           | _ ->
                REF_RAISE(RefineError ("Rewrite_match_redex.match_context_instance", StringError ("hypothesis/context mismatch")))
+
    let match_redex addrs stack vars t tl = function
       [] ->
          REF_RAISE(RefineError ("match_redex", StringError "progs list is empty"))

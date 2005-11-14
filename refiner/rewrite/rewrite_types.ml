@@ -94,6 +94,9 @@ struct
     *    RWMatchFreeFOVar is an instance of a free variables (with the list of
     *       context and the list of bvars enforcing that the variable is actually
     *       free - in the strict mode only)
+    *    RWAvoidBindings --- lookup the bindings introduced by the context in the specifies
+    *       stack position and make sure to avoid clashing with those bindings (needed to
+    *       make context instances work)
     * In free vars restrictions, the first list is the list of context stack indices
     *    and the second one is the list of bvars stack indices
     * In a contractum:
@@ -115,6 +118,7 @@ struct
     | RWCheckVar of int
     | RWStackVar of int
     | RWMatchFreeFOVar of int * int list * int list
+    | RWAvoidBindings of int * rwterm
 
    (* Match a specific term *)
    and rwcterm = { rw_op : rwoperator; rw_bterms : rw_bound_term list }
