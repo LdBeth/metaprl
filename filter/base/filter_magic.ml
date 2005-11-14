@@ -38,7 +38,7 @@ open File_type_base
  ************************************************************************
  *
  * Current MD5 hash of the summary-related types (as computed by OMake):
- * FILTER_MD5: 72101f3e09ae532ab3b02c8966b5dabe
+ * FILTER_MD5: aed1613c9ec04c2ef6709776d6b6cb4d
  *
  * The arguments for pack_version are:
  *    major version number, minor sub-version number, revision number
@@ -77,8 +77,9 @@ open File_type_base
  *         variable sets are represented in binary format.
  * Rev 24: added "Operator" term parameters.
  * Rev 25: added "Annotate" proof terms.
+ * Rev 26: added "RWAvoidBindings" to term rewrites (raw I/O only)
  *)
-let raw_versions = List.map (pack_version 1 0) [25;24]
+let raw_versions = List.map (pack_version 1 0) [26;25;24]
 
 let term_versions = List.map (pack_version 1 0) [25;24]
 
