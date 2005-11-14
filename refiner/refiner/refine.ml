@@ -40,7 +40,8 @@
  * See the file doc/htmlman/default.html or visit http://metaprl.org/
  * for more information.
  *
- * Copyright (C) 1998 Jason Hickey, Cornell University
+ * Copyright (C) 1998-2005 MetaPRL Group, Cornell University and
+ * California Institute of Technology.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -253,8 +254,8 @@ struct
    and ext_just =
       RuleJust of rule_just
     | MLJust of rule_just * term_extract * int
-    | RewriteJust of msequent * rewrite_just * msequent
-    | CondRewriteJust of msequent * cond_rewrite_just * msequent list
+    | RewriteJust of msequent * rewrite_just
+    | CondRewriteJust of msequent * cond_rewrite_just
     | ComposeJust of ext_just * ext_just list
     | NthHypJust of msequent * int
     | CutJust of cut_just
@@ -265,6 +266,7 @@ struct
         just_addrs : rw_args;
         just_params : term list;
         just_refiner : opname;
+        just_subgoals : msequent list;
       }
 
    and cut_just =
@@ -275,11 +277,11 @@ struct
       }
 
    and rewrite_just =
-      RewriteHere of term * opname * term
-    | RewriteML of term * opname * term
+      RewriteHere of term * opname
+    | RewriteML of term * opname
     | RewriteCompose of rewrite_just * rewrite_just
-    | RewriteAddress of term * address * rewrite_just * term
-    | RewriteHigher of term * rewrite_just list * term
+    | RewriteAddress of term * address * rewrite_just
+    | RewriteHigher of term * rewrite_just list
 
    and cond_rewrite_subgoals =
       CondRewriteSubgoalsAddr of address * cond_rewrite_subgoals
@@ -290,8 +292,8 @@ struct
       CondRewriteHere of cond_rewrite_here
     | CondRewriteML of cond_rewrite_here * term_extract * int
     | CondRewriteCompose of cond_rewrite_just * cond_rewrite_just
-    | CondRewriteAddress of term * address * cond_rewrite_just * term
-    | CondRewriteHigher of term * cond_rewrite_just list * term
+    | CondRewriteAddress of term * address * cond_rewrite_just
+    | CondRewriteHigher of term * cond_rewrite_just list
 
    and cond_rewrite_here =
       { cjust_goal : term;
@@ -595,14 +597,14 @@ struct
          else
             { mseq with mseq_assums = Lm_list_util.replace_nth (pred i) t' mseq.mseq_assums }
       in
-         [subgoal], RewriteJust (mseq, just, subgoal)
+         [subgoal], RewriteJust (mseq, just)
 
    (*
     * Apply a rewrite at an address.
     *)
    let rwaddr addr rw sent t =
       let t', just = apply_fun_arg_at_addr (rw sent) addr t in
-         t', RewriteAddress (t, addr, just, t')
+         t', RewriteAddress (t, addr, just)
 
    (*
     * Apply the rewrite to the outermost terms where it
@@ -610,7 +612,7 @@ struct
     *)
    let rwhigher rw sent t =
       let t', justs = apply_fun_higher (rw sent) t in
-         t', RewriteHigher (t, justs, t')
+         t', RewriteHigher (t, justs)
 
    (*
     * Composition is supplied for efficiency.
@@ -707,7 +709,7 @@ struct
             { seq with mseq_assums = Lm_list_util.replace_nth (pred i) t' assums }
       in
       let subgoals = subgoal :: replace_subgoals t' seq subgoals in
-         subgoals, CondRewriteJust (seq, just, subgoals)
+         subgoals, CondRewriteJust (seq, just)
 
    (*
     * Apply the rewrite to an addressed term.
@@ -721,7 +723,7 @@ struct
             in
                apply_var_fun_arg_at_addr f addr bvars t
          in
-            t', CondRewriteSubgoalsAddr (addr, subgoals), CondRewriteAddress (t, addr, just, t')
+            t', CondRewriteSubgoalsAddr (addr, subgoals), CondRewriteAddress (t, addr, just)
       IN
       IFDEF VERBOSE_EXN THEN
          try body
@@ -965,7 +967,7 @@ struct
          i
     | RewriteJust _ ->
          1
-    | CondRewriteJust (_, cond, _) ->
+    | CondRewriteJust (_, cond) ->
          cond_rewrite_just_subgoal_count find cond
     | ComposeJust (_, justl) ->
          List.fold_left (fun count just -> count + just_subgoal_count find just) 0 justl
@@ -983,58 +985,117 @@ struct
          i + 1
     | CondRewriteCompose (just1, just2) ->
          cond_rewrite_just_subgoal_count find just1 + cond_rewrite_just_subgoal_count find just2 - 1
-    | CondRewriteAddress (_, _, just, _) ->
+    | CondRewriteAddress (_, _, just) ->
          cond_rewrite_just_subgoal_count find just
-    | CondRewriteHigher (_, justs, _) ->
+    | CondRewriteHigher (_, justs) ->
          List.fold_left (fun count just -> count + cond_rewrite_just_subgoal_count find just - 1) 1 justs
 
    (*
     * Get the term from an extract.
     * This will fail if some of the rules are not justified.
     *)
-   let term_of_extract refiner ext (args : term list) =
-      if List.length ext.ext_goal.mseq_assums <> List.length args then
-         raise (Invalid_argument "Refine.term_of_extract: number of term arguments differs from the number of assumptions");
-      let find = find_of_refiner refiner in
-      (* XXX HACK: this approach of building a closure on-the-fly is probably too inefficient *)
-      let rec construct (rest : (term list -> term) list) = function
-         RuleJust just ->
-            fun args -> get_proof (find.find_rule just.just_refiner).rule_proof just.just_addrs just.just_params just.just_goal.mseq_goal (all_args args rest)
-       | ComposeJust (just, justl) ->
-            construct (partition_rest find rest justl) just
-       | MLJust (just, f, _) ->
-            fun args -> f just.just_addrs just.just_params just.just_goal.mseq_goal (all_args args rest)
-       | RewriteJust _ ->
-            List.hd rest
-       | Identity ->
-            List.hd rest
-       | NthHypJust (_, i) ->
-            fun args -> List.nth args i
-       | CondRewriteJust _ ->
-            List.hd rest
-       | CutJust _ ->
-            match rest with
-               [cut_lemma; cut_then] ->
+   let term_of_extract =
+      (*
+       * XXX: HACK (nogin 2005/11/13) This is here because of the weird way we do sequent extracts.
+       * In a way, this is a HACKish workaround
+       * for bug 175. The bug 175 is caused by the HACKish way we do extracts for sequents,
+       * so this is a hack to work around deficiencies of another hack :-(((
+       *
+       * The underlying problem (for which we do not yet have a good solution yet) is that
+       * it is not clear how to come up with a concise way of specifying extraction "in general".
+       *)
+      let rec upd_term subgoal ext =
+         IFDEF VERBOSE_EXN THEN
+            if !debug_refine then
+               eprintf "Updating extract %a based on subgoal %a@." print_term ext print_term subgoal
+         ENDIF;
+         let ext' =
+            if is_sequent_term subgoal && is_sequent_term ext then
+               let ext' = upd_term (concl subgoal) (concl ext) in
+               let subg = explode_sequent_and_rename subgoal (free_vars_set ext') in
+               let subgh = subg.sequent_hyps in
+               let exth = (explode_sequent ext).sequent_hyps in
+               let len = SeqHyp.length subgh in
+                  match
+                     if len <> SeqHyp.length exth then
+                        None
+                     else
+                        let rec merge ext i =
+                           let i = pred i in
+                              if i < 0 then
+                                 Some ext
+                              else
+                                 match SeqHyp.get subgh i, SeqHyp.get exth i with
+                                    Context(v1, _, _), Context(v2, _, _)
+                                  | Hypothesis(v1, _), Hypothesis(v2, _)
+                                       when Lm_symbol.eq v1 v2 ->
+                                          merge ext i
+                                  | Hypothesis(v1, _), Hypothesis(v2, _) ->
+                                       merge (subst1 ext v2 (mk_var_term v1)) i
+                                  | _ ->
+                                       None
+                        in
+                           merge ext' len
+                  with
+                     None -> ext
+                   | Some ext' -> mk_sequent_term { subg with sequent_concl = ext' }
+            else
+               ext
+         in
+            IFDEF VERBOSE_EXN THEN
+               if !debug_refine then
+                  if alpha_equal ext ext' then
+                     eprintf "Extract was unchanged@."
+                  else
+                     eprintf "Updated extract: %a@." print_term ext'
+            ENDIF;
+            ext'
+      in
+      let all_args subgoals args rest =
+         List.map2 (fun ms r -> upd_term ms.mseq_goal (r args)) subgoals rest
+      in
+      fun refiner ext (args : term list) ->
+         if List.length ext.ext_goal.mseq_assums <> List.length args then
+            raise (Invalid_argument "Refine.term_of_extract: number of term arguments differs from the number of assumptions");
+         let find = find_of_refiner refiner in
+         (* XXX HACK: this approach of building a closure on-the-fly is probably too inefficient *)
+         let rec construct (rest : (term list -> term) list) just =
+            match just, rest with
+               RuleJust just, _ ->
+                  let rule = (find.find_rule just.just_refiner).rule_proof in
+                     fun args ->
+                        get_proof rule just.just_addrs just.just_params just.just_goal.mseq_goal (all_args just.just_subgoals args rest)
+             | ComposeJust (just, justl), _ ->
+                  construct (partition_rest find rest justl) just
+             | MLJust (just, f, _), _ ->
+                  fun args ->
+                     f just.just_addrs just.just_params just.just_goal.mseq_goal (all_args just.just_subgoals args rest)
+             | RewriteJust _, [f] ->
+                  f
+             | Identity, [f] ->
+                  f
+             | NthHypJust (_, i), [] ->
+                  fun args -> List.nth args i
+             | CondRewriteJust _, f :: _ ->
+                  f
+             | CutJust _, [cut_lemma; cut_then] ->
                   fun args -> cut_then (args @ [cut_lemma args])
              | _ ->
-                  raise (Invalid_argument "Refine.term_of_extract: cut extract is ill-formed")
+                  raise (Invalid_argument "Refine.term_of_extract: internal error: ill-formed extract")
 
-      and all_args args rest =
-         List.map (fun r -> r args) rest
-
-      and partition_rest find rest = function
-         just :: justl ->
-            let count = just_subgoal_count find just in
-            let rest, restl = Lm_list_util.split_list count rest in
-               (construct rest just) :: partition_rest find restl justl
-       | [] ->
-            if rest <> [] then
-               raise (Invalid_argument "Refine.term_of_extract: combination extract is too long");
-            []
-      in
-         try construct [] ext.ext_just args
-         with Not_found | Failure _ ->
-            raise (Invalid_argument "Refine.term_of_extract: ill-formed extract (bug!)")
+         and partition_rest find rest = function
+            just :: justl ->
+               let count = just_subgoal_count find just in
+               let rest, restl = Lm_list_util.split_list count rest in
+                  (construct rest just) :: partition_rest find restl justl
+          | [] ->
+               if rest <> [] then
+                  raise (Invalid_argument "Refine.term_of_extract: internal error: combination extract is too long");
+               []
+         in
+            try construct [] ext.ext_just args
+            with Not_found | Failure _ ->
+               raise (Invalid_argument "Refine.term_of_extract: internal error: ill-formed extract")
 
    (*
     * An empty sentinal for trying refinements.
@@ -1202,9 +1263,10 @@ struct
          let subgoals = List.map make_subgoal subgoals in
          let just =
             RuleJust { just_goal = mseq;
-                         just_addrs = addrs;
-                         just_params = params;
-                         just_refiner = opname;
+                       just_addrs = addrs;
+                       just_params = params;
+                       just_refiner = opname;
+                       just_subgoals = subgoals;
             }
          in
             sent.sent_rule opname seq;
@@ -1249,9 +1311,9 @@ struct
    let rec compute_deps_ext find = function
       RuleJust just | MLJust (just, _, _) ->
          compute_deps_rule (find.find_rule just.just_refiner)
-    | RewriteJust (_, just, _) ->
+    | RewriteJust (_, just) ->
          compute_deps_rwjust find.find_rewrite just
-    | CondRewriteJust (_, just, _) ->
+    | CondRewriteJust (_, just) ->
          compute_deps_crwjust find.find_cond_rewrite just
     | ComposeJust (just, justl) ->
          List.fold_left (fun ds j -> DepSet.union ds (compute_deps_ext find j)) (compute_deps_ext find just) justl
@@ -1264,7 +1326,7 @@ struct
     | { rule_refiner = refiner; rule_proof = PDerived dp } ->
          compute_deps_pf compute_deps_ext refiner dp
     | { rule_proof = PDefined } ->
-         raise (Invalid_argument "Refine.compute_deps_rule")
+         defined_rule_err ()
 
    and compute_deps_rw = function
       { rw_name = name; rw_proof = PPrim _ } ->
@@ -1275,15 +1337,15 @@ struct
          compute_deps_pf compute_deps_ext refiner dp
 
    and compute_deps_rwjust find = function
-      RewriteHere (_, name, _) ->
+      RewriteHere (_, name) ->
          compute_deps_rw (find name)
-    | RewriteML (_, name, _) ->
+    | RewriteML (_, name) ->
          DepSet.singleton (DepRewrite, name)
     | RewriteCompose (just1, just2) ->
          DepSet.union (compute_deps_rwjust find just1) (compute_deps_rwjust find just2)
-    | RewriteAddress (_, _, just, _) ->
+    | RewriteAddress (_, _, just) ->
          compute_deps_rwjust find just
-    | RewriteHigher(_, justs, _) ->
+    | RewriteHigher(_, justs) ->
          List.fold_left (fun ds j -> DepSet.union ds (compute_deps_rwjust find j)) DepSet.empty justs
 
    and compute_deps_crw = function
@@ -1301,9 +1363,9 @@ struct
          DepSet.singleton (DepCondRewrite, chere.cjust_refiner)
     | CondRewriteCompose (just1, just2) ->
          DepSet.union (compute_deps_crwjust find just1) (compute_deps_crwjust find just2)
-    | CondRewriteAddress (_, _, just, _) ->
+    | CondRewriteAddress (_, _, just) ->
          compute_deps_crwjust find just
-    | CondRewriteHigher(_, justs, _) ->
+    | CondRewriteHigher(_, justs) ->
          List.fold_left (fun ds j -> DepSet.union ds (compute_deps_crwjust find j)) DepSet.empty justs
 
    let compute_deps_set refiner opname =
@@ -1327,166 +1389,13 @@ struct
       DepSet.elements (compute_deps_set refiner opname)
 
    (*
-    * We use a simple rewriter-like bytecode for bringing extraction args together.
-    *)
-   type ext_cmd =
-      ECBind
-    | ECRename of int
-    | ECRenameLast of int
-    | ECSkip of int
-    | ECSkipCont of int
-    | ECRestart
-
-   (*
-    * XXX: HACK (nogin 2004/09/02): The ProgDummy/dummy_ext is a HACKish workaround
-    * for bug 175. The bug 175 is caused by the HACKish way we do extracts for sequents,
-    * so this is a hack to work around deficiencies of another hack :-(((
-    *
-    * The underlying problem (for which we do not yet have a good solution yet) is that
-    * it is not clear how to come up with a concise way of pecifying extraction "in general".
-    *)
-   type ext_prog =
-      ProgReal of ext_cmd list
-    | ProgDummy
-
-   let dummy_ext =
-      mk_simple_term (make_opname ["dummy_ext"; "Refine"]) []
-
-   (*
     * Extract for a previous theorem or rule.
     * We once again use the rewriter to compute the
     * extract.
     *)
    let compute_rule_ext =
-      let rec only_hyps = function
-         Hypothesis _ :: rest -> only_hyps rest
-       | Context _ :: _ -> false
-       | [] -> true
-      in
-      let rec skip_hyps = function
-         Hypothesis _ :: rest ->
-            let i, rest = skip_hyps rest in i + 1, rest
-       | rest ->
-            1, rest
-      in
-      let rec prog_of_hyps addrs all_ghyps ghyps ahyps =
-         match ghyps, ahyps with
-            _, [] ->
-               []
-          | Hypothesis _ :: rest, _ ->
-               let i, rest = skip_hyps rest in
-                  ECSkip i :: (prog_of_hyps addrs all_ghyps rest ahyps)
-          | _, Hypothesis _ :: rest ->
-               ECBind :: prog_of_hyps addrs all_ghyps ghyps rest
-          | (Context(c,_,_)) :: rest, (Context(c',_,_) :: rest') when c = c' ->
-               let h =
-                  if Lm_array_util.mem c addrs then
-                     ECRename (Lm_array_util.index c addrs)
-                  else if only_hyps rest then
-                     ECRenameLast (List.length rest)
-                  else
-                     REF_RAISE(RefineError("compute_rule_ext", StringVarError("Free context variable", c)))
-               in
-                  h :: prog_of_hyps addrs all_ghyps rest rest'
-          | ([] | [Context _]), Context (c, _, _)::_ ->
-               if List.exists (function Context(c', _, _) -> c=c' | _ -> false) all_ghyps then
-                  ECRestart :: prog_of_hyps addrs all_ghyps all_ghyps ahyps
-               else
-                  REF_RAISE(RefineError("compute_rule_ext", StringVarError("Free context variable", c)))
-          | (Context(c,_,_)) :: rest, _ ->
-               let i =
-                  try Lm_array_util.index c addrs
-                  with Not_found ->
-                     REF_RAISE(RefineError("compute_rule_ext", StringVarError("Free context variable", c)))
-               in
-                  ECSkipCont i :: prog_of_hyps addrs all_ghyps rest ahyps
-      in
-      let get_hyps t =
-         SeqHyp.to_list (explode_sequent t).sequent_hyps
-      in
-      let mk_arg_prog addrs goal arg =
-         if alpha_equal arg dummy_ext then
-            ProgDummy
-         else
-            let ghyps = get_hyps goal in
-               ProgReal (prog_of_hyps addrs ghyps ghyps (get_hyps arg))
-      in
-      let simple_combine _ goal args =
-         mk_xlist_term (goal :: args)
-      in
-      (* Debugging output
-      let string_of_prog_item = function
-         ECBind -> "Bind"
-       | ECSkip i -> "Skip(" ^ (string_of_int i) ^ ")"
-       | ECSkipCont i -> "SkipCount(" ^ (string_of_int i) ^ ")"
-       | ECRename i -> "Rename(" ^ (string_of_int i) ^ ")"
-       | ECRenameLast i -> "RenameLast(" ^ (string_of_int i) ^ ")"
-       | ECRestart -> "Restart"
-      in
-      *)
-      let apply_arg_prog addrs goal arg = function
-         ProgDummy ->
-            dummy_ext
-       | ProgReal prog ->
-            let goalh = (explode_sequent goal).sequent_hyps in
-            let glen = SeqHyp.length goalh in
-            let argh = (explode_sequent arg).sequent_hyps in
-            let alen = SeqHyp.length argh in
-            let rec aux goal_ind t arg_ind = function
-               [] -> t
-             | ECBind :: rest ->
-                  if arg_ind >= alen then REF_RAISE(RefineError("compute_rule_ext", StringError("not enough hyps")));
-                  begin match SeqHyp.get argh arg_ind with
-                     Hypothesis(v, _) -> aux goal_ind (mk_xbind_term v t) (arg_ind + 1) rest
-                   | Context _ -> REF_RAISE(RefineError("compute_rule_ext", StringError("expected hyp, got context")))
-                  end
-             | ECSkip i :: rest ->
-                  aux (goal_ind + i) t arg_ind rest
-             | ECSkipCont i :: rest ->
-                  let count = addrs.(i) in
-                  let count = if (count > 0 ) then count - 1 else glen - goal_ind + count in
-                     aux (goal_ind + count) t arg_ind rest
-             | ECRename i :: rest ->
-                  let count = addrs.(i) in
-                  let count = if (count > 0 ) then count - 1 else glen - goal_ind + count in
-                     rename goal_ind t arg_ind rest count
-             | ECRenameLast i :: rest ->
-                  let count = glen - goal_ind - i in
-                     if count >= 0 then
-                        rename goal_ind t arg_ind rest count
-                     else
-                        REF_RAISE(RefineError("compute_rule_ext", StringError("not enough hyps")))
-             | ECRestart :: rest ->
-                  aux 0 t arg_ind rest
-            and rename goal_ind t arg_ind prog count =
-               if count = 0 then aux goal_ind t arg_ind prog else
-               let t =
-                  if arg_ind >= alen || goal_ind >= glen then
-                     REF_RAISE(RefineError("compute_rule_ext", StringError("not enough hyps")));
-                  match SeqHyp.get goalh goal_ind, SeqHyp.get argh arg_ind with
-                     Hypothesis(vh, _), Hypothesis(ah, _) ->
-                        subst1 t ah (mk_var_term vh)
-                   | Context(c1, _, _), Context(c2, _, _) when c1=c2 -> t
-                   | _ -> REF_RAISE(RefineError("compute_rule_ext", StringError("expected hyps, got something wrong")))
-               in
-                  rename (goal_ind + 1) t (arg_ind + 1) prog (count - 1)
-            in aux 0 (concl arg) 0 prog
-      in
-      let id_combine _ goal _ = goal in
       fun name (spec:rewrite_args_spec) params goal args result ->
-         let combine =
-            if args = [] then id_combine
-            else if is_sequent_term goal then
-               let arg_progs = List.map (mk_arg_prog spec.spec_ints goal) args in
-               let args_length = List.length args in
-               fun addrs goal args ->
-                  if List.length args <> args_length then
-                     REF_RAISE(RefineError("compute_rule_ext", StringError "wrong number of extract inputs"));
-                  let args = List.map2 (apply_arg_prog addrs goal) args arg_progs in
-                     replace_concl goal (simple_combine () (concl goal) args)
-            else simple_combine
-         in
-         let goal = combine (Array.create (Array.length spec.spec_ints) 2) goal args in
+         let goal = mk_xlist_term (goal :: args) in
          IFDEF VERBOSE_EXN THEN
             if !debug_refine then
                eprintf "Refiner.compute_rule_ext: %s: %a + [%s] [%a] -> %a%t" name print_term goal (String.concat ";" (List.map string_of_symbol (Array.to_list spec.spec_ints))) (print_any_list print_term) params print_term result eflush
@@ -1494,12 +1403,13 @@ struct
          let rw = Rewrite.term_rewrite Strict spec (goal :: params) [result] in
          if !debug_refine then eprintf "\nDone\n%t" eflush;
          fun addrs' params' goal' args' ->
-            DEFINE compute = List.hd (apply_rewrite rw (addrs', free_vars_terms args') (combine addrs'.arg_ints goal' args') params') IN
+            DEFINE compute = List.hd (apply_rewrite rw (addrs', free_vars_terms args') (mk_xlist_term (goal'::args')) params') IN
             IFDEF VERBOSE_EXN THEN
                if !debug_refine then
                   try compute with exn ->
-                     let arg = combine addrs'.arg_ints goal' args' in
-                     eprintf "Refiner.compute_rule_ext: rewrite failed: %s: %a + [%s] [%a] -> %a appplied to %a [%a]%t" name print_term goal (String.concat ";" (List.map string_of_symbol (Array.to_list spec.spec_ints))) (print_any_list print_term) params print_term result print_term arg (print_any_list print_term) params' eflush;
+                     let arg = mk_xlist_term (goal'::args') in
+                     eprintf "Refiner.compute_rule_ext: rewrite failed: %s: %a + [%s] [%a] -> %a" name print_term goal (String.concat ";" (List.map string_of_symbol (Array.to_list spec.spec_ints))) (print_any_list print_term) params print_term result;
+                     eprintf "appplied to %a [%s] [%a] (combined out of %a [%a])%t" print_term arg (String.concat ";" (List.map string_of_int (Array.to_list addrs'.arg_ints))) (print_any_list print_term) params' print_term goal' (print_any_list print_term) args' eflush;
                      raise exn
                else compute
             ELSE compute ENDIF
@@ -1535,9 +1445,7 @@ struct
                SymbolSet.mem vars v && check_vars (SymbolSet.remove vars v) ts
       in
       let rec aux conts vars sub arg =
-         if alpha_equal arg dummy_ext then
-            ()
-         else if is_so_var_term arg then begin
+         if is_so_var_term arg then begin
             let _, conts', ts = dest_so_var arg in
                if not (check_conts conts conts' && check_vars vars ts) then
                   raise (RefineError("Refine.check_subgoal_arg",
@@ -1663,6 +1571,7 @@ struct
                       just_addrs = addrs;
                       just_params = params;
                       just_refiner = opname;
+                      just_subgoals = subgoals;
                     }, ext, List.length subgoals)
          in
             sent.sent_ml_rule opname mlr;
@@ -1738,7 +1647,7 @@ struct
          with
             [t'] ->
                sent.sent_rewrite opname pre_rewrite;
-               t', RewriteHere (t, opname, t')
+               t', RewriteHere (t, opname)
           | [] ->
                raise (Failure "Refine.create_rewrite: no contracta")
           | _ ->
@@ -1769,7 +1678,7 @@ struct
          match apply_rewrite rw empty_args t [] with
             [t'] ->
                sent.sent_input_form opname ();
-               t', RewriteHere (t, opname, t')
+               t', RewriteHere (t, opname)
           | [] ->
                raise (Failure "Refine.create_input_form: no contracta")
           | _ ->
@@ -1905,7 +1814,7 @@ struct
       let mlrw (sent : sentinal) (t : term) =
          let t' = rw t in
             sent.sent_ml_rewrite opname rw;
-            t', RewriteML (t, opname, t')
+            t', RewriteML (t, opname)
       in
          build.build_refiner <-
             MLRewriteRefiner {

@@ -293,11 +293,6 @@ sig
    val compute_dependencies : refiner -> opname -> (dependency * opname) list
 
    (*
-    * Dummy extract for an assum for which we do not care about extract.
-    *)
-   val dummy_ext: term
-
-   (*
     * Get a checker from the refiner.
     *)
    val sentinal_of_refiner : refiner -> sentinal

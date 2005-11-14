@@ -3177,9 +3177,6 @@ end
          let p0_1, p0_2 = p0 in
          merge merge_dos "Refine.compute_dependencies" (wrap2 Refine1.compute_dependencies p0_1 p1) (wrap2 Refine2.compute_dependencies p0_2 p1)
 
-      let dummy_ext =
-         merge_term "Refine.dummy_ext" (Refine1.dummy_ext) (Refine2.dummy_ext)
-
       let sentinal_of_refiner (p0 : refiner) =
          let p0_1, p0_2 = p0 in
          merge merge_triv "Refine.sentinal_of_refiner" (wrap1 Refine1.sentinal_of_refiner p0_1) (wrap1 Refine2.sentinal_of_refiner p0_2)

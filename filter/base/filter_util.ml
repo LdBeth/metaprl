@@ -37,6 +37,7 @@ open Lm_location
 open Opname
 open Term_sig
 open Refiner.Refiner
+open Refiner.Refiner.TermMan
 open Refiner.Refiner.TermMeta
 open Filter_type
 open Lexing
@@ -121,15 +122,16 @@ let unzip_rewrite name =
  * Split the function into var names and a simple mterm.
  *)
 let split_mfunction =
-   let collect (labels', ext, t) (labels, exts, terms) =
+   let dummy = "__@@dummy_extract@@__" in
+   let collect (labels', ext, t) (labels, exts, terms, i) =
       let ext = match ext with
          Some ext -> ext
-       | None -> Refine.dummy_ext
+       | None -> mk_so_var_term (Lm_symbol.make dummy i) [] []
       in
-         labels' :: labels, ext :: exts, t :: terms
+         labels' :: labels, ext :: exts, t :: terms, succ i
    in fun mterm ->
       let subgoals, goal = unzip_mfunction mterm in
-      let labels, exts, terms = List.fold_right collect subgoals ([], [], []) in
+      let labels, exts, terms, _ = List.fold_right collect subgoals ([], [], [], 0) in
          labels, exts, zip_mimplies terms goal
 
 (************************************************************************

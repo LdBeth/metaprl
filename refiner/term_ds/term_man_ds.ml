@@ -283,8 +283,8 @@ struct
    let rec need_renaming hyps len vars i =
       (i < len) &&
       (match SeqHyp.get hyps i with
-         Context _ ->
-            need_renaming hyps len vars (succ i)
+         Context (c, _, _) ->
+            need_renaming hyps len (SymbolSet.add vars c) (succ i)
        | Hypothesis (v, _) ->
             SymbolSet.mem vars v || need_renaming hyps len (SymbolSet.add vars v) (succ i))
 
