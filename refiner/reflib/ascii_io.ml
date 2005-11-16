@@ -276,12 +276,26 @@ struct
     | _ ->
          fail "add_param"
 
-   let rec add_items_aux r = function
-      (long, _, _) as item :: items ->
-         add_items_aux r items;
-         begin match long.[0] with
+   let rec add_items_aux r ((long, _, _) as item) =
+      match long.[0] with
+         'T'|'t' -> ignore (add_term r item)
+       | 'G'|'g' -> ignore (add_goal r item)  (* XXX: HACK: Version <= 1.0.6 compatibility *)
+       | 'S'|'s' -> ignore (add_seq r item)
+       | 'V'|'v' -> ignore (add_var r item)
+       | 'B'|'b' -> add_bterm r item
+       | 'H'|'h' -> add_hyp r item
+       | 'C'|'c' -> add_context r item
+       | 'O'|'o' -> add_op r item
+       | 'N'|'n' -> add_name r item
+       | 'P'|'p' -> add_param r item
+       | _ -> fail ("add_items: " ^ long)
+
+   let add_items_debug r ((long, short, rest) as item) =
+      eprintf "%s %s %s%t" long short (String.concat "\\\\ " (List.map (String.concat " ") rest)) eflush;
+      try
+         match long.[0] with
             'T'|'t' -> ignore (add_term r item)
-          | 'G'|'g' -> ignore (add_goal r item)  (* XXX: HACK: Version <= 1.0.6 compatibility *)
+          | 'G'|'g' -> ignore (add_goal r item)
           | 'S'|'s' -> ignore (add_seq r item)
           | 'V'|'v' -> ignore (add_var r item)
           | 'B'|'b' -> add_bterm r item
@@ -291,38 +305,17 @@ struct
           | 'N'|'n' -> add_name r item
           | 'P'|'p' -> add_param r item
           | _ -> fail ("add_items: " ^ long)
-         end
-    | [] -> ()
-
-   let rec add_items_debug r = function
-      (long, short, rest) as item :: items ->
-         add_items_debug r items;
-         eprintf "%s %s %s%t" long short (String.concat "\\\\ " (List.map (String.concat " ") rest)) eflush;
-         begin try
-            match long.[0] with
-               'T'|'t' -> ignore (add_term r item)
-             | 'G'|'g' -> ignore (add_goal r item)
-             | 'S'|'s' -> ignore (add_seq r item)
-             | 'V'|'v' -> ignore (add_var r item)
-             | 'B'|'b' -> add_bterm r item
-             | 'H'|'h' -> add_hyp r item
-             | 'C'|'c' -> add_context r item
-             | 'O'|'o' -> add_op r item
-             | 'N'|'n' -> add_name r item
-             | 'P'|'p' -> add_param r item
-             | _ -> fail ("add_items: " ^ long)
-         with
-            Not_found -> fail ("add_items_debug: " ^ long ^ " " ^ short ^ " ...")
-         end
-    | [] -> ()
+      with
+         Not_found -> fail ("add_items_debug: " ^ long ^ " " ^ short ^ " ...")
 
    let add_items r items =
-      if !debug_ascii_io then
-         add_items_debug r items
-      else
-         try add_items_aux r items with
-            Not_found ->
-               fail "add_items"
+      let items = List.rev items in
+         if !debug_ascii_io then
+            List.iter (add_items_debug r) items
+         else
+            try List.iter (add_items_aux r) items with
+               Not_found ->
+                  fail "add_items"
 
    let get_term t =
       try begin match !t with
@@ -441,50 +434,47 @@ struct
           | name' :: _ ->
                name'
       in let smap_rename = Lm_list_util.smap (Lm_list_util.smap rename) in
-      let rec clean_inputs = function
-         [] -> []
-       | ((comment,name,record) as item :: tail) as original ->
-            let tail' = clean_inputs tail in
-            let c = Char.uppercase comment.[0] in
-            let record' = match c, record with
-               ('T' | 'O' | 'G' | 'S'), _ ->
-                  smap_rename record
-             | 'B', [term :: vars] ->
-                  let term' = rename term in if term == term' then record else [term'::vars]
-             | 'H', [[var;name]] ->
-                  let name' = rename name in if name == name' then record else [[var;name']]
-             | 'H', [[_]] -> (* XXX HACK: format versions <= 1.0.10 compatibility *)
-                  smap_rename record
-             | 'N', [[_;"NIL"]] ->
-                  record
-             | 'N', [var::rest] ->
-                  let rest' = Lm_list_util.smap rename rest in if rest == rest' then record else [var::rest']
-             | ('C' | 'V'), [var; conts; terms] ->
-                  let terms' = Lm_list_util.smap rename terms in if terms' == terms then record else [var; conts; terms']
-             | ('C' | 'V'), [var::rest] -> (* XXX HACK: format versions <= 1.0.7 compatibility *)
-                  let rest' = Lm_list_util.smap rename rest in if rest == rest' then record else [var::rest']
-             | 'P', [[("Token"|"Shape"|"Operator" as knd); s]] ->
-                  let s' = rename s in if s == s' then record else [[knd; s]]
-             | 'P', _ ->
-                  record
-             | _ ->
-                  raise (Invalid_argument ("ASCII IO: internal error: clean_inputs does not know what to do with "^comment))
-            in begin match Hashtbl.find_all h_reverse (c, record'), c with
-               [], _ | _, ('S'| 'G' ) -> (* XXX HACK: S/G exception only needed for format version <= 1.0.6??? *)
-                  begin match c with
-                     'S'| 'G' -> ()
-                   | _ -> Hashtbl.add h_reverse (c, record') name
-                  end;
-                  let item' =
-                     if record==record' then item else (comment,name,record')
-                  in
-                     if tail==tail' && item==item' then original else item'::tail'
-             | name'::_, _ ->
-                  Hashtbl.add h_rename name name';
-                  tail'
-            end
+      let rec clean_inputs tail ((comment,name,record) as item) =
+         let c = Char.uppercase comment.[0] in
+         let record' = match c, record with
+            ('T' | 'O' | 'G' | 'S'), _ ->
+               smap_rename record
+          | 'B', [term :: vars] ->
+               let term' = rename term in if term == term' then record else [term'::vars]
+          | 'H', [[var;name]] ->
+               let name' = rename name in if name == name' then record else [[var;name']]
+          | 'H', [[_]] -> (* XXX HACK: format versions <= 1.0.10 compatibility *)
+               smap_rename record
+          | 'N', [[_;"NIL"]] ->
+               record
+          | 'N', [var::rest] ->
+               let rest' = Lm_list_util.smap rename rest in if rest == rest' then record else [var::rest']
+          | ('C' | 'V'), [var; conts; terms] ->
+               let terms' = Lm_list_util.smap rename terms in if terms' == terms then record else [var; conts; terms']
+          | ('C' | 'V'), [var::rest] -> (* XXX HACK: format versions <= 1.0.7 compatibility *)
+               let rest' = Lm_list_util.smap rename rest in if rest == rest' then record else [var::rest']
+          | 'P', [[("Token"|"Shape"|"Operator" as knd); s]] ->
+               let s' = rename s in if s == s' then record else [[knd; s]]
+          | 'P', _ ->
+               record
+          | _ ->
+               raise (Invalid_argument ("ASCII IO: internal error: clean_inputs does not know what to do with "^comment))
+         in
+         match Hashtbl.find_all h_reverse (c, record'), c with
+            [], _ | _, ('S'| 'G' ) -> (* XXX HACK: S/G exception only needed for format version <= 1.0.6??? *)
+               begin match c with
+                  'S'| 'G' -> ()
+                | _ -> Hashtbl.add h_reverse (c, record') name
+               end;
+               let item' =
+                  if record==record' then item else (comment,name,record')
+               in
+                  item'::tail
+          | name'::_, _ ->
+               Hashtbl.add h_rename name name';
+               tail
       in
-      inputs := clean_inputs !inputs;
+      inputs := List.fold_left clean_inputs [] (List.rev !inputs);
       let r = new_record () in
       add_items r !inputs;
       let data = new_out_data () in
