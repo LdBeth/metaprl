@@ -1422,9 +1422,12 @@ struct
                t1 = SELF; op = sl_add; "["; g = aterm; "]"; t2 = SELF ->
                make_application _loc [mk_field_term _loc (get_aterm _loc g) op; make_term t1; make_term t2 ]
             ]
-          | "uminus"
-            [ op = sl_minus; x = SELF ->
-               wrap_term _loc (mk_dep0_term (mk_dep0_opname _loc op) (make_term x))
+          | "minus"
+            [ "-"; n = INT ->
+                let n = Lm_num.neg_num (Lm_num.num_of_string n) in
+                    wrap_term _loc (mk_term (mk_op (mk_opname _loc ["number"] [ShapeNumber] []) [make_param (Number n)]) [])
+            | "-"; x = SELF ->
+                wrap_term _loc (mk_dep0_term (mk_dep0_opname _loc "minus") (make_term x))
             ]
           | "prod" RIGHTA
             [ (* t1 *[g] t2  - algebraic multiplication (e.g. group operation) *)
@@ -2212,9 +2215,6 @@ struct
 
       sl_add: (* other operations with addition prioruty *)
          [[ "-" -> "-" ]];
-
-      sl_minus: (* unary minus *)
-         [[ "-" -> "minus" ]];
 
       sl_arith_add:
          [[ "+@" -> "add"
