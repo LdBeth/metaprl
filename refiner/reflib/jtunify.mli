@@ -52,6 +52,7 @@ sig
 		Set.t PMap.t ->
 		Set.t ->
 		tracelist ->
+		int ->
 		(int * (position * position list) list) * (* unifier *)
 		(equation list) *
       (* applied new eqlist *)
@@ -74,6 +75,7 @@ sig
       Set.t PMap.t ->
       Set.t ->
 		tracelist ->
+		int ->
       (int * (position * position list) list) * (* unifier *)
       (equation list) *
       (* applied new eqlist *)

@@ -52,8 +52,15 @@ let debug_s4prover =
         debug_value = false
       }
 
+let debug_jtunify =
+   create_debug (**)
+      { debug_name = "jtunify";
+        debug_description = "Display J-Prover T-unification operations";
+        debug_value = false
+      }
+
 exception Not_unifiable
-exception Failed
+exception Failed of int
 
 let rec kind_to_string = function
  | Root ->
@@ -418,7 +425,7 @@ struct
             add_substJ calculus r replace_string ordering atom_set
        | v::r, Intuit _ (* no reduction ordering at atoms *)
             when Set.mem atom_set v ->
-               if !debug_s4prover then
+               if !debug_jtunify then
                   print_endline ("no reduction ordering at atoms: "^(pos_to_string v));
                add_substJ calculus r replace_string ordering atom_set
        | v::r, _ ->
@@ -491,14 +498,14 @@ struct
                ((v,dterms)::rest_pairs),rest_ordering
             end
 
-   let build_orderingQ consts new_elements ordering =
+   let build_orderingQ consts new_elements ordering counter =
 (* new_elements is of type (string * term list) list, since one variable can receive more than *)
 (* a single term due to substitution multiplication *)
       try
 (*   print_endline "build orderingQ in"; *)
          add_sigmaQ consts new_elements ordering;
       with Reflexive ->
-         raise Failed                (* new connection, please *)
+         raise (Failed(counter))                (* new connection, please *)
 
 (* ************* quantifier ordering  END ********************************************** *)
 

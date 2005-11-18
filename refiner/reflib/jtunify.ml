@@ -636,6 +636,19 @@ let apply_subst_list atom_names (n,sigma) new_eql =
 
 let rec tunify atom_set calculus = function
    (eq, state, new_eql, rule_index::rules_rest)::trace ->
+		let _, left, _, right = eq in
+		if List.length left > 0 && List.length right > 0 &&
+			(
+				let ll = Lm_list_util.last left in
+				let lr = Lm_list_util.last right in
+				is_const ll && is_const lr && not (position_eq ll lr)
+			) then
+				begin
+					if !debug_jtunify then
+						eprintf "incompatible tails@.";
+					tunify atom_set calculus trace
+				end
+		else
 		let condition, action, preferred_rules = t_rules.(rule_index) in
       if condition eq then
          try
@@ -695,14 +708,19 @@ let rec add_new_equations eql acc = function
  | [] ->
 		acc
 
-let do_stringunify calculus us ut ns nt equations fo_eqlist orderingQ atom_set tracelist =
-    if !debug_s4prover then
-		 begin
-	       print_endline "do_stringunify:";
-			 print_flush ()
-		 end;
-    let short_us, short_ut = shorten us ut in (* apply intial rule R3 to eliminate common beginning *)
-	let atomnames = [ns;nt] in
+let do_stringunify calculus us ut ns nt equations fo_eqlist orderingQ atom_set tracelist counter =
+	if !debug_s4prover then
+		begin
+	      print_endline "do_stringunify:";
+			print_flush ()
+		end;
+   let short_us, short_ut = shorten us ut in (* apply intial rule R3 to eliminate common beginning *)
+	let atomnames =
+		match calculus with
+			S4 -> []
+		 | Intuit _ -> [ns;nt]
+		 | Classical -> raise (Invalid_argument "No prefix unification for classical logic")
+	in
    let new_element = atomnames, (short_us,short_ut) in
 	let original_eqlist = add_fo_eqlist equations fo_eqlist in
    let full_eqlist = new_element::original_eqlist in
@@ -728,7 +746,7 @@ let do_stringunify calculus us ut ns nt equations fo_eqlist orderingQ atom_set t
 			 | None ->
 					if !debug_jtunify then
 						print_endline "failed";
-   		   	raise Failed (* new connection please *)
+   		   	raise (Failed(counter)) (* new connection please *)
 			end
 	 | [] ->
 	 		raise (Invalid_argument "Jtunify.do_stringunify: Non-empty list expected")
