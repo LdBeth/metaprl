@@ -637,22 +637,21 @@ let apply_subst_list atom_names (n,sigma) new_eql =
 let rec tunify atom_set calculus = function
    (eq, state, new_eql, rule_index::rules_rest)::trace ->
 		let _, left, _, right = eq in
-		if List.length left > 0 && List.length right > 0 &&
-			(
-				let ll = Lm_list_util.last left in
-				let lr = Lm_list_util.last right in
-				is_const ll && is_const lr && not (position_eq ll lr)
-			) then
-				begin
-					if !debug_jtunify then
-						eprintf "incompatible tails@.";
-					tunify atom_set calculus trace
-				end
-		else
+		if
+         left <> []
+            && right <> []
+            && let ll = Lm_list_util.last left in is_const ll
+            && let lr = Lm_list_util.last right in is_const lr
+            && not (position_eq ll lr)
+      then begin
+			if !debug_jtunify then
+			   eprintf "incompatible tails@.";
+				tunify atom_set calculus trace
+		end else
 		let condition, action, preferred_rules = t_rules.(rule_index) in
       if condition eq then
          try
-				let (old_eql, sigma, ordering) = state in
+				let old_eql, sigma, ordering = state in
 				let atomnames, _, _, _ = eq in
 				let full_eql =
 					List.rev_append (apply_subst_list atomnames sigma new_eql) old_eql
