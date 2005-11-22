@@ -286,15 +286,6 @@ let rec term_of_ty ty =
          mk_ty_sequent_term (term_of_ty ty_hyp) (term_of_ty ty_concl) (term_of_ty ty_seq)
 
 (*
- * Raise an exception if the bool is false.
- *)
-let check test v =
-   if test then
-      v
-   else
-      raise (RefineError ("Term_ty_infer.check", StringError "type check"))
-
-(*
  * Shapes of the noncanonical terms.
  *)
 let v_sym = Lm_symbol.add "v"
@@ -1177,13 +1168,25 @@ and unify_equal_params info subst p1 p2 =
       eprintf "unify_equal_params@.";
    match dest_param p1, dest_param p2 with
       Number i1, Number i2 ->
-         check (Lm_num.eq_num i1 i2) subst
+         if Lm_num.eq_num i1 i2 then
+            subst
+         else
+            raise_param2_error subst info p1 p2
     | String s1, String s2 ->
-         check (s1 = s2) subst
+         if s1 = s2 then
+            subst
+         else
+            raise_param2_error subst info p1 p2
     | Var v1, Var v2 ->
-         check (Lm_symbol.eq v1 v2) subst
+         if Lm_symbol.eq v1 v2 then
+            subst
+         else
+            raise_param2_error subst info p1 p2
     | Token op1, Token op2 ->
-         check (Opname.eq op1 op2) subst
+         if Opname.eq op1 op2 then
+            subst
+         else
+            raise_param2_error subst info p1 p2
     | Number _, MNumber _
     | MNumber _, Number _
     | MNumber _, MNumber _

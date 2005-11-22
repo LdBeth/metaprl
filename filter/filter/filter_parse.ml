@@ -1415,7 +1415,7 @@ struct
       (* The theorem is (<H> >- t IN ProofRule) *)
       let state = StrFilter.mk_parse_state loc "term" in
       let mt = TermGrammar.mk_parsed_meta_term (Filter_reflection.mk_rule_wf_thm state t) in
-      let name_wf = name ^ "_wf" in
+      let name_wf = "wf_" ^ name in
       let _, mt, params, res = parse_rule loc name_wf mt [] no_resources in
          define_int_thm proc loc name_wf [] mt no_resources
 
@@ -1473,7 +1473,7 @@ struct
       let mt = TermGrammar.mk_parsed_meta_term mt in
       let name, _ = Opname.dst_opname quote.ty_opname in
       let item =
-         { ref_rule_name      = name ^ "_term";
+         { ref_rule_name      = "term_" ^ name;
            ref_rule_resources = no_resources;
            ref_rule_params    = [];
            ref_rule_term      = mt

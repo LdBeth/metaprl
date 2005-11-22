@@ -442,6 +442,10 @@ let dest_xquote_term state t =
    let depth, t = dest_dep0_dep0_term xquote_opname t in
       sweep_quote_term info depth t
 
+let quote_term info depth t =
+   let depth = Reflect.mk_number_term info depth in
+      sweep_quote_term info depth t
+
 (************************************************************************
  * Rule quoting.
  *)
@@ -789,6 +793,7 @@ let mk_type_check_thm state quote =
 
    (* Sequent arg *)
    let arg = Reflect.mk_meta_type_term info in
+   let q_arg = quote_term info 0 arg in
 
    (* Capture won't happen because we are constructing the terms *)
    let h_v = var_H in
@@ -813,7 +818,7 @@ let mk_type_check_thm state quote =
             let t = mk_so_var_term (Lm_symbol.make "b" index) [] bvars in
             let concl = Reflect.mk_meta_member_term info t ty in
             let seq_info =
-               { sequent_args = arg;
+               { sequent_args = q_arg;
                  sequent_hyps = SeqHyp.of_list (List.rev hyps);
                  sequent_concl = concl
                }
@@ -830,7 +835,7 @@ let mk_type_check_thm state quote =
    let t = Reflect.mk_meta_member_term info t ty in
    let h = Context (h_v, [], []) in
    let seq_info =
-      { sequent_args = arg;
+      { sequent_args = q_arg;
         sequent_hyps = SeqHyp.singleton h;
         sequent_concl = t
       }
