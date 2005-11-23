@@ -99,7 +99,7 @@ sig
       address rw_args_poly ->                  (* sequent context addresses *)
       msequent ->                              (* goal *)
       term list ->                             (* params *)
-      msequent list *  term_extract            (* subgoals, new variable names *)
+      msequent list * term_extract             (* subgoals and extract *)
 
    (************************************************************************
     * SENTINALS                                                            *

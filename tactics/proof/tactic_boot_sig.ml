@@ -280,7 +280,6 @@ sig
     *)
    val tactic_of_rewrite : int -> rw -> tactic
    val tactic_of_cond_rewrite : int -> cond_rewrite -> tactic
-
 end
 
 (*
@@ -759,6 +758,7 @@ sig
    val hyp_count : tactic_arg -> int
    val assum_hyp_count : tactic_arg -> int -> int
    val get_pos_hyp_num : tactic_arg -> int -> int
+   val get_pos_assum_num : tactic_arg -> int -> int
 
    (*
     * Get the parts of the argument.

@@ -2077,7 +2077,7 @@ EXTEND
            let f () =
               let proc = StrFilter.get_proc _loc in
               let args = List.map (parse_term _loc) args in
-              let code = bind_item _loc (wrap_code _loc t.aname code) in
+              let code = bind_item _loc code in
                  StrFilter.declare_mlaxiom proc _loc name args t.aterm (Some code) res
            in
               handle_exn f ("mlrule " ^ name) _loc;

@@ -663,18 +663,19 @@ let extract_sig _ info resources _ _ _ =
  (*
   * Eta-reduction
   *)
- let beta_reduce_var var f =
-    let _loc = MLast.loc_of_expr f in
-    match f with
-       <:expr< fun $lid:v$ -> $e$ >> ->
-          v, e
-     | _ ->
-        var, <:expr< $f$ $lid:var$ >>
+let beta_reduce_var var f =
+   let _loc = MLast.loc_of_expr f in
+      match f with
+         <:expr< fun $lid:v$ -> $e$ >> ->
+            v, e
+       | _ ->
+            var, <:expr< $f$ $lid:var$ >>
 
- let checkpoint_resources want_checkpoint _loc rule_name rest =
+let checkpoint_resources want_checkpoint _loc rule_name rest =
    if want_checkpoint then
       <:str_item< (Mp_resource.bookmark $str:rule_name$) >> :: rest
-   else rest
+   else
+      rest
 
 let find_res proc loc name =
    try
@@ -1170,18 +1171,20 @@ let define_rule prim_rule deffun proc _loc
       in
       let $lid:name_rule_id$ =
          $tactic_type_expr _loc$.compile_rule $lid:local_refiner_id$ ($list_expr _loc (expr_of_label _loc) labels$) $lid:rule_id$
-      in let _ = do {
+      in
+      let _ = do {
          $refiner_expr _loc$.$lid:deffun$ $lid:local_refiner_id$ $str:name$ $lid:args_id$ $lid:params_id$ $lid:assums_id$ $extract_args$ $extract$;
          $define_rule_resources proc _loc name args_id params_id assums_id resources name_rule_expr$
       }
-         in $name_rule_expr$
-   >> in
-      checkpoint_resources (not prim_rule) _loc name [
-         <:str_item< value $lid:name_rule_id$ = $wrap_exn proc _loc name rule_expr$ >>;
+      in
+         $name_rule_expr$
+      >>
+   in
+      checkpoint_resources (not prim_rule) _loc name (**)
+        [<:str_item< value $lid:name_rule_id$ = $wrap_exn proc _loc name rule_expr$ >>;
          <:str_item< value $lid:name$ = $name_value$ >>;
          refiner_let _loc;
-         toploop_rule proc _loc name params
-      ]
+         toploop_rule proc _loc name params]
 
 let prim_rule proc _loc ax extract =
    let extract_expr = expr_of_term proc _loc extract in
@@ -1208,8 +1211,6 @@ let define_ml_rule want_checkpoint proc _loc
    let name_patt = <:patt< $lid:name$ >> in
    let lid_expr s = <:expr< $lid:s$ >> in
 
-   let goal_id, rule_expr = beta_reduce_var goal_id code.item_item in
-
    let ivars, avars, tparams = split_params params in
    let all_ids, ivar_ids, avar_ids, tparam_ids = name_params params in
    let params_expr = list_expr _loc (expr_of_term proc _loc) tparams in
@@ -1217,35 +1218,35 @@ let define_ml_rule want_checkpoint proc _loc
    let rule_body = <:expr<
       let ($lid:msequent_goal_id$, $lid:msequent_hyps_id$) = $dest_msequent_expr _loc$ $lid:goal_id$ in
       let $lid:stack_id$ = $apply_redex_expr _loc$ $lid:redex_id$ $lid:addrs_id$ $lid:msequent_goal_id$ $lid:params_id$ in
-      let ($lid:subgoals_id$, $lid:extract_id$) = code.item_item in
-         ( $lid:subgoals_id$ , $lid:stack_id$ , $lid:extract_id$ )
-
-   >> in
+      let ($lid:subgoals_id$, $lid:extract_id$) =
+         ($code.item_item$ $lid:addrs_id$ $lid:params_id$ $lid:msequent_goal_id$ $lid:msequent_hyps_id$)
+      in
+         ($lid:subgoals_id$, $lid:extract_id$)
+      >>
+   in
    let rule_let  = <:expr<
-      let $lid:rule_id$ = $fun_expr _loc [addrs_id; names_id; goal_id; params_id] rule_body$ in
+      let $lid:rule_id$ = $fun_expr _loc [addrs_id; goal_id; params_id] rule_body$ in
          $tactic_type_expr _loc$.compile_ml_rule $lid:local_refiner_id$ (**)
             ($create_ml_rule_expr _loc$ $lid:local_refiner_id$ $str:name$ $lid:rule_id$)
-   >> in
+      >>
+   in
    let body = <:expr<
       let $lid:redex_id$ =
          Refiner.Refiner.Rewrite.compile_redices Rewrite_sig.Strict $args_spec_expr _loc ivars avars$
             [ $expr_of_term proc _loc redex$ :: $params_expr$ ]
       in
          $bindings_let proc _loc code rule_let$
-   >> in
-   let rule_fun_expr =
-      let body = <:expr< $tactic_of_rule_expr _loc$ $lid:name_rule_id$ $args_val_expr _loc ivar_ids avar_ids$ $list_expr _loc lid_expr tparam_ids$>>
-      in
-         fun_expr _loc all_ids body
+      >>
    in
-      checkpoint_resources want_checkpoint _loc name [
-         <:str_item< value $lid:name_rule_id$ = $wrap_exn proc _loc name body$ >>;
-         <:str_item< value $name_patt$ = $bindings_let proc _loc code rule_fun_expr$ >>;
-         refiner_let _loc
-      ]
-
-let define_ml_rule _ _ _ _ _ =
-   raise(Invalid_argument("ML rules are not currently supported - the code is there, but needs to be cleaned up"))
+   let rule_fun_expr =
+      fun_expr _loc all_ids <:expr<
+         $tactic_of_rule_expr _loc$ $lid:name_rule_id$ $args_val_expr _loc ivar_ids avar_ids$ $list_expr _loc lid_expr tparam_ids$
+      >>
+   in
+      checkpoint_resources want_checkpoint _loc name (**)
+         [<:str_item< value $lid:name_rule_id$ = $wrap_exn proc _loc name body$ >>;
+          <:str_item< value $name_patt$ = $bindings_let proc _loc code rule_fun_expr$ >>;
+          refiner_let _loc]
 
 let create_dform_expr _loc name modes options term expr =
    let string_expr s = <:expr< $str:s$ >> in

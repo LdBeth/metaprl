@@ -75,6 +75,12 @@ struct
    let num_assums = TacticInternal.num_assums
    let nth_assum = TacticInternal.nth_assum
 
+   let get_pos_assum_num arg i =
+      if i < 0 then
+         num_assums arg + i + 1
+      else
+         i
+
    (*
     * Sequent parts.
     *)
