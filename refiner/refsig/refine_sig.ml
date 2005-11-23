@@ -79,12 +79,21 @@ sig
 
    (*
     * An ML rewrite replaces a term with another.
-    * inputs: rule parameters (addrs, terms), goal, subgoal extracts
+    * The extraction function takes the following arguments,
+    * and produces an extract term.
+    *    addresses
+    *    term parameters
+    *    the goal term
+    *    the subgoal extracts
     *)
    type term_extract = address rw_args_poly -> term list -> term -> term list -> term
 
    type ml_rewrite = term -> term
 
+   (*
+    * A conditional rewrite replaces an goal with a list of subgoals,
+    * and it provides a function to compute the extract.
+    *)
    type ml_cond_rewrite =
       SymbolSet.t ->                           (* Free vars in the msequent *)
       term list ->                             (* Params *)
@@ -92,14 +101,24 @@ sig
       term * term list * term_extract          (* Extractor is returned *)
 
    (*
-    * A condition relaces an goal with a list of subgoals,
-    * and it provides a function to compute the extract.
+    * An ML rule computes the subgoals using ML code.
+    * From the refiner's perspective, the rule might produce
+    * arbitrary subgoals.
     *)
+   type ml_extract =
+      address rw_args_poly ->                  (* Addresses *)
+      term list ->                             (* Term parameters *)
+      msequent ->                              (* The goal meta-sequent *)
+      msequent list ->                         (* The subgoal meta-sequents *)
+      term list ->                             (* The arguments to the goal clause *)
+      (term list -> term) list ->              (* The extraction functions for the subgoals *)
+      term                                     (* The extract term *)
+
    type ml_rule =
       address rw_args_poly ->                  (* sequent context addresses *)
       msequent ->                              (* goal *)
       term list ->                             (* params *)
-      msequent list * term_extract             (* subgoals and extract *)
+      msequent list * ml_extract               (* subgoals and extract *)
 
    (************************************************************************
     * SENTINALS                                                            *

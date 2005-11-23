@@ -163,12 +163,20 @@ struct
 
    (*
     * Term extract computation.
-    * inputs: rule parameters (addrs, terms), goal, subgoal extracts
+    * inputs:
+    *    addresses
+    *    term arguments
+    *    actual goal term
+    *    actual subgoal terms
     *)
    type term_extract = rw_args -> term list -> term -> term list -> term
 
    type ml_rewrite = term -> term
 
+   (*
+    * A conditional rewrite relaces an goal with a list of subgoals,
+    * and it provides a function to compute the extract.
+    *)
    type ml_cond_rewrite =
       SymbolSet.t ->                                 (* Meta-vars in the msequent *)
       term list ->                                   (* Params *)
@@ -176,27 +184,37 @@ struct
       term * term list * term_extract                (* Extractor is returned *)
 
    (*
-    * A condition relaces an goal with a list of subgoals,
-    * and it provides a function to compute the extract.
+    * An ML rule computes the subgoals using ML code.
+    * From the refiner's perspective, the rule might produce
+    * arbitrary subgoals.
     *)
+   type ml_extract =
+      address rw_args_poly ->                        (* Addresses *)
+      term list ->                                   (* Term parameters *)
+      msequent ->                                    (* The goal meta-sequent *)
+      msequent list ->                               (* The subgoal meta-sequents *)
+      term list ->                                   (* The arguments to the goal clause *)
+      (term list -> term) list ->                    (* The extraction functions for the subgoals *)
+      term                                           (* The extract term *)
+
    type ml_rule =
-      rw_args ->                                   (* sequent context addresses *)
+      rw_args ->                                     (* sequent context addresses *)
       msequent ->                                    (* goal *)
       term list ->                                   (* params *)
-      msequent list * term_extract                   (* subgoals, extractor *)
+      msequent list * ml_extract                     (* subgoals, extractor *)
 
    type pre_rule = msequent
 
-   type pre_rewrite = {
-      pre_rw_redex : term;
-      pre_rw_contractum : term;
-   }
+   type pre_rewrite =
+      { pre_rw_redex : term;
+        pre_rw_contractum : term
+      }
 
-   type pre_cond_rewrite = {
-      pre_crw_redex : term;
-      pre_crw_contractum : term;
-      pre_crw_assums : term list;
-   }
+   type pre_cond_rewrite =
+      { pre_crw_redex : term;
+        pre_crw_contractum : term;
+        pre_crw_assums : term list
+      }
 
    (************************************************************************
     * TYPES                                                                *
@@ -253,7 +271,7 @@ struct
 
    and ext_just =
       RuleJust of rule_just
-    | MLJust of rule_just * term_extract * int
+    | MLJust of rule_just * ml_extract * int
     | RewriteJust of msequent * rewrite_just
     | CondRewriteJust of msequent * cond_rewrite_just
     | ComposeJust of ext_just * ext_just list
@@ -266,7 +284,7 @@ struct
         just_addrs : rw_args;
         just_params : term list;
         just_refiner : opname;
-        just_subgoals : msequent list;
+        just_subgoals : msequent list
       }
 
    and cut_just =
@@ -474,9 +492,9 @@ struct
         mseq_so_vars = ref SOVarsDelayed
       }
 
-    (*
-     * Check that all the assums in the list are equal.
-     *)
+   (*
+    * Check that all the assums in the list are equal.
+    *)
    let equal_assums assums t =
       let check assums' =
          List.for_all2 alpha_equal assums' assums
@@ -537,11 +555,12 @@ struct
 
    let nth_hyp i _ seq =
       let { mseq_goal = goal; mseq_assums = assums } = seq in
-         if i<0 then REF_RAISE(RefineError ("nth_hyp", IntError i)) else
-            if alpha_equal (get_nth assums i) goal then
-               [], NthHypJust (seq, i)
-            else
-               REF_RAISE(RefineError ("nth_hyp", StringError "hyp mismatch"))
+         if i < 0 then
+            REF_RAISE(RefineError ("nth_hyp", IntError i))
+         else if alpha_equal (get_nth assums i) goal then
+            [], NthHypJust (seq, i)
+         else
+            REF_RAISE(RefineError ("nth_hyp", StringError "hyp mismatch"))
 
    (*
     * Cut rule.
@@ -569,9 +588,8 @@ struct
          if not (List.for_all (sent_match ext.ext_sentinal) extl) then
             raise(Invalid_argument "Refine.compose - sentinals mismatch");
          {
-            ext with
-            ext_just = ComposeJust (ext.ext_just, List.map (fun ext -> ext.ext_just) extl);
-            ext_subgoals = Lm_list_util.flat_map subgoals_of_extract extl
+            ext with ext_just = ComposeJust (ext.ext_just, List.map (fun ext -> ext.ext_just) extl);
+                     ext_subgoals = Lm_list_util.flat_map subgoals_of_extract extl
          }
 
    (************************************************************************
@@ -662,7 +680,8 @@ struct
             if SymbolSet.intersectp bvars (free_vars_set t') then
                REF_RAISE(RefineError ("Refine.replace_subgoals",
                   StringWrapError("Invalid context for conditional rewrite application",AddressError(addr,tst))))
-            else t
+            else
+               t
          in
          ignore(TermAddr.apply_var_fun_at_addr f addr2 SymbolSet.empty tt);
          (* Now we can replace the goal without fear *)
@@ -1068,8 +1087,12 @@ struct
              | ComposeJust (just, justl), _ ->
                   construct (partition_rest find rest justl) just
              | MLJust (just, f, _), _ ->
+                  (* JYH: we used to assume that the assumptions are not
+                   * changed by the ML rule.  This is no longer the case, so
+                   * we pass the rest directly.
+                   *)
                   fun args ->
-                     f just.just_addrs just.just_params just.just_goal.mseq_goal (all_args just.just_subgoals args rest)
+                     f just.just_addrs just.just_params just.just_goal just.just_subgoals args rest
              | RewriteJust _, [f] ->
                   f
              | Identity, [f] ->
