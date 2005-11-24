@@ -36,6 +36,13 @@
  *)
 open Lm_symbol
 
+type var_info =
+   ParamVar
+ | FirstOrderVar
+ | SecondOrderVar of int * int
+ | ContextVar of int * int
+ | SequentContextVar of int * int
+
 module type TermManSig =
 sig
    module ManTypes : Term_sig.TermSig
@@ -84,6 +91,9 @@ sig
    val all_contexts : term -> SymbolSet.t
    val all_meta_variables : term -> SymbolSet.t (* returns both free contexts and all SO variables *)
    val context_vars : term -> SymbolSet.t * SymbolSet.t (* sequent conts, normal conts *)
+
+   (* All vars in the term, even the bound ones *)
+   val all_vars_info : var_info SymbolTable.t -> term -> var_info SymbolTable.t
 
    (*
     * Destruct a term for easy pattern-matching.

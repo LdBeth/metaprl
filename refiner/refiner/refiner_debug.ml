@@ -2585,6 +2585,8 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          let p2_1, p2_2 = split p2 in
          merge merge_term "TermMan.construct_redex" (wrap3 TermMan1.construct_redex p0 p1_1 p2_1) (wrap3 TermMan2.construct_redex p0 p1_2 p2_2)
 
+      let all_vars_info _ _ =
+         raise (Invalid_argument "all_vars: not implemented")
    end
 
    module TermSubst = struct

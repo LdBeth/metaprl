@@ -38,6 +38,7 @@ open Term_sig
 open Term_ds_sig
 open Term_ds
 open Term_op_sig
+open Term_man_sig
 open Term_subst_sig
 
 (*
@@ -807,6 +808,73 @@ struct
 
    let param_vars_info = param_vars_term
    let param_vars_info_list = param_vars_term_list
+
+   (*
+    * Collect all the parameter vars.
+    *)
+   let rec all_vars_term vars t =
+      match get_core t with
+         Sequent seq ->
+            let vars =
+               SeqHyp.fold (fun vars _ hyp ->
+                     match hyp with
+                        Hypothesis (v, h) ->
+                           let vars = SymbolTable.add vars v FirstOrderVar in
+                              all_vars_term vars h
+                      | Context (v, cs, ts) ->
+                           let vars = SymbolTable.add vars v (SequentContextVar (List.length cs, List.length ts)) in
+                              all_vars_term_list vars ts) vars seq.sequent_hyps
+            in
+               all_vars_term (all_vars_term vars seq.sequent_args) seq.sequent_concl
+       | Term { term_op = { op_params = params }; term_terms = bts } ->
+            all_vars_bterm_list (all_vars_param_list vars params) bts
+       | FOVar v ->
+            SymbolTable.add vars v FirstOrderVar
+       | SOVar(v, cs, ts) ->
+            let vars = SymbolTable.add vars v (SecondOrderVar (List.length cs, List.length ts)) in
+               all_vars_term_list vars ts
+       | SOContext (v, t, cs, ts) ->
+            let vars = SymbolTable.add vars v (ContextVar (List.length cs, List.length ts)) in
+               all_vars_term_list vars (t :: ts)
+       | Hashed _
+       | Subst _ ->
+            fail_core "all_vars"
+
+   and all_vars_term_list vars tl =
+      List.fold_left all_vars_term vars tl
+
+   and all_vars_param vars param =
+      match param with
+         Number _
+       | String _
+       | Token _
+       | MLevel _
+       | Shape _
+       | Operator _
+       | Quote ->
+            vars
+       | Var v
+       | MNumber v
+       | MString v
+       | MShape v
+       | MOperator v
+       | MToken v ->
+            SymbolTable.add vars v ParamVar
+       | ObId params
+       | ParamList params ->
+            all_vars_param_list vars params
+
+   and all_vars_param_list vars params =
+      List.fold_left all_vars_param vars params
+
+   and all_vars_bterm vars bt =
+      all_vars_term vars bt.bterm
+
+   and all_vars_bterm_list vars l =
+      List.fold_left all_vars_bterm vars l
+
+   let all_vars_info = all_vars_term
+   let all_vars_info_list = all_vars_term_list
 
    (*
     * Meta term.

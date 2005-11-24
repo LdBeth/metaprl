@@ -39,6 +39,7 @@ open Opname
 open Refine_error_sig
 open Term_sig
 open Term_base_sig
+open Term_man_sig
 open Term_op_sig
 open Term_subst_sig
 
@@ -993,6 +994,86 @@ struct
 
    let so_vars_info = so_vars_term
    let so_vars_info_list = so_vars_term_list
+
+   (************************************************************************
+    * All variables.
+    *)
+
+   (*
+    * Collect the info about all the vars.
+    *)
+   let rec all_vars_term info t =
+      if is_var_term t then
+         SymbolTable.add info (dest_var t) FirstOrderVar
+      else if is_so_var_term t then
+         let v, cs, ts = dest_so_var t in
+         let info = SymbolTable.add info v (SecondOrderVar (List.length cs, List.length ts)) in
+            all_vars_term_list info ts
+      else if is_context_term t then
+         let v, term, cs, ts = dest_context t in
+         let info = SymbolTable.add info v (ContextVar (List.length cs, List.length ts)) in
+            all_vars_term (all_vars_term_list info ts) term
+      else if is_sequent_term t then
+         let { sequent_args = args;
+               sequent_hyps = hyps;
+               sequent_concl = concl
+             } = explode_sequent t
+         in
+         let info = all_vars_term info args in
+         let info =
+            SeqHyp.fold (fun info _ h ->
+               match h with
+                  Hypothesis (v, h) ->
+                     let info = SymbolTable.add info v FirstOrderVar in
+                        all_vars_term info h
+                | Context (v, cs, ts) ->
+                     let info = SymbolTable.add info v (SequentContextVar (List.length cs, List.length ts)) in
+                        all_vars_term_list info ts) info hyps
+         in
+            all_vars_term info concl
+      else
+         let { term_op = op; term_terms = bterms } = dest_term t in
+         let params = (dest_op op).op_params in
+         let info = all_vars_param_list info params in
+            all_vars_bterm_list info bterms
+
+   and all_vars_term_list info l =
+      List.fold_left all_vars_term info l
+
+   and all_vars_bterm info bt =
+      let { bvars = bvars; bterm = t } = dest_bterm bt in
+      let info = List.fold_left (fun info v -> SymbolTable.add info v FirstOrderVar) info bvars in
+         all_vars_term info t
+
+   and all_vars_bterm_list info btl =
+      List.fold_left all_vars_bterm info btl
+
+   and all_vars_param pvars param =
+      match dest_param param with
+         Number _
+       | String _
+       | Token _
+       | MLevel _
+       | Shape _
+       | Operator _
+       | Quote ->
+            pvars
+       | Var v
+       | MNumber v
+       | MString v
+       | MShape v
+       | MOperator v
+       | MToken v ->
+            SymbolTable.add pvars v ParamVar
+       | ObId params
+       | ParamList params ->
+            all_vars_param_list pvars params
+
+   and all_vars_param_list pvars params =
+      List.fold_left all_vars_param pvars params
+
+   let all_vars_info = all_vars_term
+   let all_vars_info_list = all_vars_term_list
 
    (************************************************************************
     * General term destruction.
