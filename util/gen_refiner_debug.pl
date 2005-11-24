@@ -43,7 +43,7 @@ $merges{"rewrite_args"} = "merge_rewrite_args";
 $merges{"Lm_num.num"} = "merge_num";
 $merges{"SymbolSet.t"} = "merge_ss";
 $merges{"param op_param"} = "merge_opparam";
-$merges{"(int * int) SymbolTable.t"} = $merges{"(bool * int * int) SymbolTable.t"} = "merge_stables";
+$merges{"var_info SymbolTable.t"} = $merges{"(int * int) SymbolTable.t"} = $merges{"(bool * int * int) SymbolTable.t"} = "merge_stables";
 $merges{"(int * bool) list"} = "merge_ibl";
 $merges{"string list * term option * term"} = "merge_sltot";
 $merges{"(rewrite_type * var) list"} = "merge_rwtvl";
@@ -69,7 +69,7 @@ $merges{"object_id"} = $merges{"param list"};
 #
 
 # Non-refiner types
-foreach my $ty ("bool", "int", "var", "opname", "out_channel", "formatter", "string", "Lm_num.num", "SymbolSet.t", "'a", "shape", "unit", "strict", "rewrite_args_spec", "addr_item", "(int * int) SymbolTable.t", "(bool * int * int) SymbolTable.t") {
+foreach my $ty ("bool", "int", "var", "opname", "out_channel", "formatter", "string", "Lm_num.num", "SymbolSet.t", "'a", "shape", "unit", "strict", "rewrite_args_spec", "addr_item", "(int * int) SymbolTable.t", "(bool * int * int) SymbolTable.t", "var_info SymbolTable.t") {
     $splits{$ty} = $splits{"$ty list"} = $splits{"$ty array"} = "";
 };
 # Fully abstract types

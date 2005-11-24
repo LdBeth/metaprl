@@ -32,6 +32,7 @@
 open Term_sig
 open Term_addr_sig
 open Term_shape_sig
+open Term_man_sig
 open Refiner_sig
 open Termmod_sig
 open Rewrite_sig
@@ -2427,6 +2428,10 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          (merge_ss "TermMan.context_vars - 0" res0_1 res0_2),
          (merge_ss "TermMan.context_vars - 1" res1_1 res1_2)
 
+      let all_vars_info (p0 : var_info SymbolTable.t) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         merge merge_stables "TermMan.all_vars_info" (wrap2 TermMan1.all_vars_info p0 p1_1) (wrap2 TermMan2.all_vars_info p0 p1_2)
+
       let explode_term (p0 : term) =
          let p0_1, p0_2 = p0 in
          merge merge_match_term "TermMan.explode_term" (wrap1 TermMan1.explode_term p0_1) (wrap1 TermMan2.explode_term p0_2)
@@ -2451,6 +2456,10 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          let p0_1, p0_2 = p0 in
          merge merge_term "TermMan.nth_hyp" (wrap2 TermMan1.nth_hyp p0_1 p1) (wrap2 TermMan2.nth_hyp p0_2 p1)
 
+      let nth_binding (p0 : term) (p1 : int) =
+         let p0_1, p0_2 = p0 in
+         merge merge_var "TermMan.nth_binding" (wrap2 TermMan1.nth_binding p0_1 p1) (wrap2 TermMan2.nth_binding p0_2 p1)
+
       let args (p0 : term) =
          let p0_1, p0_2 = p0 in
          merge merge_term "TermMan.args" (wrap1 TermMan1.args p0_1) (wrap1 TermMan2.args p0_2)
@@ -2458,10 +2467,6 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
       let hyps (p0 : term) =
          let p0_1, p0_2 = p0 in
          merge merge_terms "TermMan.hyps" (wrap1 TermMan1.hyps p0_1) (wrap1 TermMan2.hyps p0_2)
-
-      let nth_binding (p0 : term) (p1 : int) =
-         let p0_1, p0_2 = p0 in
-         merge merge_var "TermMan.nth_binding" (wrap2 TermMan1.nth_binding p0_1 p1) (wrap2 TermMan2.nth_binding p0_2 p1)
 
       let concl (p0 : term) =
          let p0_1, p0_2 = p0 in
@@ -2585,8 +2590,6 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          let p2_1, p2_2 = split p2 in
          merge merge_term "TermMan.construct_redex" (wrap3 TermMan1.construct_redex p0 p1_1 p2_1) (wrap3 TermMan2.construct_redex p0 p1_2 p2_2)
 
-      let all_vars_info _ _ =
-         raise (Invalid_argument "all_vars: not implemented")
    end
 
    module TermSubst = struct
