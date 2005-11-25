@@ -742,7 +742,7 @@ section
                     export
 
                 # By default, every theory depends on the base theory.
-                THEORY_DEPS = base
+                THEORY_DEPS = meta/base
                 VIRTUAL_THEORY = false
 
                 # Actually include the theory.
