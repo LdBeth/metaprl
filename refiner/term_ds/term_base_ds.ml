@@ -399,7 +399,7 @@ struct
                raise(Invalid_argument "Term_base_ds.get_core: free variable got captured by a context");
             let ts' = Lm_list_util.smap (do_term_subst sub) ts in
             let sub = subst_remove v sub in
-            let hyp = if ts == ts' then hyp else Context (v, conts, ts) in
+            let hyp = if ts == ts' then hyp else Context (v, conts, ts') in
                hyps_subst hyps len sub all_vars sub_vars (hyp :: new_hyps) (i + 1)
 
    let mk_op name params = { op_name = name; op_params = params }
