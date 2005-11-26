@@ -175,7 +175,7 @@ dform ty_sequent_context_var_df : ty_sequent_context_var{'cvars; 'args; 'e} =
 (************************************************************************
  * Term operations.
  *)
-let bind_opname = opname_of_term <<"bind"{x. 'b}>>
+let bind_opname = opname_of_term << "bind"{x. 'b} >>
 
 let is_bind1_term = is_dep1_term bind_opname
 let mk_bind1_term = mk_dep1_term bind_opname
@@ -197,6 +197,13 @@ let is_dform_bterm bt =
 
 let is_dform_type t =
    alpha_equal t.ty_type dform_term || List.exists is_dform_bterm t.ty_bterms
+
+(*
+ * Rewrite terms.
+ *)
+let rewrite_opname = opname_of_term << "rewrite"{'t1; 't2} >>
+let mk_rewrite_term = mk_dep0_dep0_term rewrite_opname
+let dest_rewrite_term = dest_dep0_dep0_term rewrite_opname
 
 (*
  * -*-

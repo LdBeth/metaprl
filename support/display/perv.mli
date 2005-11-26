@@ -278,6 +278,9 @@ val is_ty_bind1_term : term -> bool
 val mk_ty_bind1_term : var -> term -> term -> term
 val dest_ty_bind1    : term -> var * term * term
 
+val mk_rewrite_term  : term -> term -> term
+val dest_rewrite_term : term -> term * term
+
 (* Whether a term declaration mentions Dform *)
 val is_dform_type : ty_term -> bool
 
