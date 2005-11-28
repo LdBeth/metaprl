@@ -760,6 +760,8 @@ let apply_ml_pre_iforms state t =
 let apply_ml_post_iforms state t =
    if is_xquote_term t then
       dest_xquote_term state t
+   else if is_xquote0_term t then
+      dest_xquote0_term state t
    else if is_xrulequote_term t then
       dest_xrulequote_term state t
    else

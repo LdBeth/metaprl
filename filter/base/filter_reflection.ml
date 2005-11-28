@@ -85,6 +85,7 @@ sig
    val mk_bind_vec_term       : t -> term -> var -> term -> term
    val mk_rev_bind_terms      : t -> hypothesis list -> term -> term
    val mk_mk_bterm_term       : t -> term -> term -> term -> term
+   val mk_mk_term_term        : t -> term -> term -> term
    val mk_operator_term       : t -> param op_param -> term
    val mk_nil_term            : t -> term
    val mk_cons_term           : t -> term -> term -> term
@@ -132,6 +133,7 @@ struct
         opname_bind           : opname Lazy.t;
         opname_bind_vec       : opname Lazy.t;
         opname_mk_bterm       : opname Lazy.t;
+        opname_mk_term        : opname Lazy.t;
         opname_operator       : opname Lazy.t;
         term_nil              : term Lazy.t;
         opname_cons           : opname Lazy.t;
@@ -176,6 +178,7 @@ struct
         opname_bind           = Lazy.lazy_from_fun (fun () -> mk_state_opname state "bind"     [] [1]);
         opname_bind_vec       = Lazy.lazy_from_fun (fun () -> mk_state_opname state "bind"     [] [0; 1]);
         opname_mk_bterm       = Lazy.lazy_from_fun (fun () -> mk_state_opname state "mk_bterm" [] [0; 0; 0]);
+        opname_mk_term        = Lazy.lazy_from_fun (fun () -> mk_state_opname state "mk_term"  [] [0; 0]);
         opname_operator       = Lazy.lazy_from_fun (fun () -> mk_state_opname state "operator" [ShapeOperator] []);
         term_nil              = Lazy.lazy_from_fun (fun () -> mk_simple_term (mk_state_opname state "nil" [] []) []);
         opname_cons           = Lazy.lazy_from_fun (fun () -> mk_state_opname state "cons"     [] [0; 0]);
@@ -240,6 +243,9 @@ struct
 
    let mk_mk_bterm_term info depth op subterms =
       mk_simple_term (Lazy.force info.opname_mk_bterm) [depth; op; subterms]
+
+   let mk_mk_term_term info op subterms =
+      mk_simple_term (Lazy.force info.opname_mk_term) [op; subterms]
 
    let mk_operator_term info op =
       mk_term (mk_op (Lazy.force info.opname_operator) [make_param (Operator op)]) []
@@ -398,6 +404,61 @@ let dest_xunquote_term t =
 
 let is_xquote_term t =
    is_dep0_dep0_term xquote_opname t && not (is_var_term (snd (dest_dep0_dep0_term xquote_opname t)))
+
+let is_xquote0_term t =
+   is_dep0_term xquote_opname t && not (is_var_term (dest_dep0_term xquote_opname t))
+
+let sweep_quote0_term info t =
+   let rec sweepdn t =
+      if is_var_term t || is_so_var_term t then
+         t
+      else if is_context_term t then
+         raise (RefineError ("Filter_grammar.sweep_quote_term", StringTermError ("contexts cannot be quoted currently", t)))
+      else if is_sequent_term t then
+         sweep_sequent_term t
+      else if is_xunquote_term t then
+         dest_xunquote_term t
+      else
+         let param = Reflect.mk_operator_term info (opparam_of_term t) in
+         let bterms = List.map wrap_bterm (dest_term t).term_terms in
+         let bterms = Reflect.mk_list_term info bterms in
+            Reflect.mk_mk_term_term info param bterms
+
+   and wrap_bterm bterm =
+      let { bvars = vars; bterm = bterm } = dest_bterm bterm in
+         List.fold_left (fun bterm v -> Reflect.mk_bind_term info v bterm) (sweepdn bterm) (List.rev vars)
+
+   and sweep_sequent_term t =
+      let { sequent_args = arg;
+            sequent_hyps = hyps;
+            sequent_concl = concl
+          } = explode_sequent t
+      in
+      let () =
+         if SeqHyp.length hyps <> 0 then
+            raise (RefineError ("sweep_quote_term", StringError "hypotheses not supported yet"))
+      in
+      let nil = Reflect.mk_nil_term info in
+      let arg = sweepdn arg in
+      let concl = sweepdn concl in
+      let t = Reflect.mk_sequent_term info arg nil concl in
+         t
+   in
+      sweepdn t
+
+let dest_xquote0_term state t =
+   let info = Reflect.create state in
+   let t = dest_dep0_term xquote_opname t in
+      sweep_quote0_term info t
+
+(*
+ * When a term is quoted, quote all its subparts.
+ *)
+let is_xunquote_term t =
+   is_dep0_term xunquote_opname t
+
+let dest_xunquote_term t =
+   dest_dep0_term xunquote_opname t
 
 let sweep_quote_term info depth t =
    let rec sweepdn t =
