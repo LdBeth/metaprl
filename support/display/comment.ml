@@ -1,5 +1,5 @@
 doc <:doc<
-   @spelling{typeset verbatim subparagraph italicizes}
+   @spelling{typeset verbatim subparagraph italicizes hypertext}
    @module[Comment]
 
    The @tt{Comment} module defines @emph{structured} comments.
@@ -2093,7 +2093,7 @@ dform hrefco_sp : slot["decl"]{hrefconv[name:s]} = special
 (*
  * -*-
  * Local Variables:
- * Caml-master: "compile"
+ * fill-column: 100
  * End:
  * -*-
  *)
