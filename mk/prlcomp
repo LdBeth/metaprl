@@ -10,7 +10,11 @@ Shell. +=
       setenv (MP_GROUP, $(THEORYNAME))
       setenv (MP_DESCR, $(THEORYDESCR))
       setenv (MP_INCLUDE, $(concat :, $(OCAMLINCLUDES)))
-      $(argv)
+      code=$(shell-code $(argv))
+      if $(eq $(code), 0)
+         return 1
+      else
+         exit $(code)
 
 #
 # Command without a preprocessor
