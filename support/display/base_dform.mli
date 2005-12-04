@@ -62,7 +62,7 @@ declare df_down{'l : Dform} : Dform                     (* Prints l's length, cd
 declare df_last{'l : Dform} : Dform                     (* Prints l's last element *)
 declare df_concat{'sep : Dform; 'l : Dform} : Dform     (* Prints l's elements separated by sep *)
 declare df_rev_concat{'sep : Dform; 'l : Dform} : Dform (* Same as df_concat, but prints l in reverse order *)
-declare df_context_var[name:v] : Dform
+declare df_context_var[name] : Dform
 
 (*
  * Before a term is passed to the display form mechanism, each sequent context <H...>

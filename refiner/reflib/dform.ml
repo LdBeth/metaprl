@@ -337,7 +337,7 @@ let dfvar_opname  = mk_opname "df_free_fo_var" base_opname
 let dcont_opname =  mk_opname "df_context"     base_opname
 let dcontv_opname = mk_opname "df_context_var" base_opname
 
-let make_cont v = mk_term (mk_op dcontv_opname [make_param (Var v)]) []
+let make_cont v = mk_term (mk_op dcontv_opname [make_param (String (dstring_of_var v))]) []
 
 (* List of params *)
 (*

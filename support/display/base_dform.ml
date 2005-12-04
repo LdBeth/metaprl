@@ -17,7 +17,8 @@
  * See the file doc/htmlman/default.html or visit http://metaprl.org/
  * for more information.
  *
- * Copyright (C) 1998 Jason Hickey, Cornell University
+ * Copyright (C) 1998-2005 MetaPRL Group, Cornell University and
+ * California Institute of Technology
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -92,7 +93,7 @@ declare "sequent"{'arg; 'seq} : Dform
 declare var_list{'t : Dform} : Dform
 declare df_bconts{'conts : Dform} : Dform
 
-dform simple_var_df : mode[src] :: mode[prl] :: mode[html] :: mode[tex] :: df_so_var[v:v]{xcons{df_context_var[v:v]; xnil}; xnil} =
+dform simple_var_df : mode[src] :: mode[prl] :: mode[html] :: mode[tex] :: df_so_var[v:v]{xcons{df_context_var["!!"]; xnil}; xnil} =
    df_var[v:v]
 
 dform var_prl_df : mode[prl] :: df_var[v:v] =
@@ -107,13 +108,10 @@ dform free_var_src_df : mode[src] :: df_free_fo_var[v:v] =
 dform free_var_df : except_mode[src] :: df_free_fo_var[v:v] =
    `"!" df_var[v:v]
 
-dform so_var1 : mode[src] :: mode[prl] :: mode[html] :: mode[tex] :: df_so_var[v:v]{xcons{df_context_var[v:v]; xnil}; 't} =
-   szone df_var[v:v] `"[" pushm[0] var_list{'t} popm `"]" ezone
-
-dform so_var2 : mode[src] :: mode[prl] :: mode[html] :: mode[tex] :: df_so_var[v:v]{'conts; xnil} =
+dform so_var1 : mode[src] :: mode[prl] :: mode[html] :: mode[tex] :: df_so_var[v:v]{'conts; xnil} =
    szone df_var[v:v] df_bconts{'conts} `"[]" ezone
 
-dform so_var3 : mode[src] :: mode[prl] :: mode[html] :: mode[tex] :: df_so_var[v:v]{'conts; 't} =
+dform so_var2 : mode[src] :: mode[prl] :: mode[html] :: mode[tex] :: df_so_var[v:v]{'conts; 't} =
    szone df_var[v:v] df_bconts{'conts} `"[" pushm[0] var_list{'t} popm `"]" ezone
 
 dform so_conts1 : mode[src] :: mode[prl] :: mode[html] :: mode[tex] :: df_context[v:v]{'t; 'conts; 'ts} =
@@ -122,15 +120,6 @@ dform so_conts1 : mode[src] :: mode[prl] :: mode[html] :: mode[tex] :: df_contex
 
 dform so_conts2 : mode[src] :: mode[prl] :: mode[html] :: mode[tex] :: df_context[v:v]{'t; 'conts; xnil} =
    pushm[3] szone df_var[v:v] df_bconts{'conts} `"[[" pushm[0] slot{'t} popm `"]]" ezone popm
-
-dform so_conts3 : mode[src] :: mode[prl] :: mode[html] :: mode[tex] ::
-      df_context[v:v]{'t; xcons{df_context_var[v:v]; xnil}; 'ts} =
-   pushm[3] szone df_var[v:v] `"[[" pushm[0] slot{'t} popm `"]]"
-   `"[" pushm[0] var_list{'ts} popm `"]" ezone popm
-
-dform so_conts4 : mode[src] :: mode[prl] :: mode[html] :: mode[tex] ::
-      df_context[v:v]{'t; xcons{df_context_var[v:v]; xnil}; xnil} =
-   pushm[3] szone df_var[v:v] `"[[" pushm[0] slot{'t} popm `"]]" ezone popm
 
 dform conts_left_df : mode[src] :: mode[prl] :: df_bconts{'conts} =
    `"<|" df_concat{slot[";"]; 'conts} `"|>"
@@ -142,6 +131,9 @@ dform conts_left_df : mode[tex] :: df_bconts{'conts} =
    izone `"{}_{" ezone
    <<mathmacro["left<"]>> `"|" df_concat{slot[";"]; 'conts} `"|" <<mathmacro["right>"]>>
    izone `"}" ezone
+
+dform conts_default : mode[src] :: mode[prl] :: mode[html] :: mode[tex] :: df_bconts{xcons{df_context_var["!!"]; xnil}} =
+   `""
 
 dform var_list_df1 : mode[src] :: mode[prl] :: mode[html] :: mode[tex] :: var_list{xcons{'a;'b}} =
    slot{'a} `";" hspace var_list{'b}
@@ -227,12 +219,12 @@ ml_dform var_html_df : mode[html] :: df_var[v:v] format_term buf = fun _ ->
 ml_dform var_tex_df : mode[tex] :: df_var[v:v] format_term buf = fun _ ->
    print_tex_var format_term buf mk_mathit (dstring_of_var v)
 
-dform cvar_src_df : mode[src] :: df_context_var[v:v] =
-   slot[v:v]
+dform cvar_src_df : mode[src] :: df_context_var[v] =
+   slot[v]
 
-ml_dform cvar_prl_df : mode[prl] :: df_context_var[v:v] format_term buf = fun
+ml_dform cvar_prl_df : mode[prl] :: df_context_var[v] format_term buf = fun
    term ->
-      let v = dstring_of_var v in
+      let v = string_of_param v in
       if v = "" then raise (Invalid_argument "var_prl_df");
       begin match v.[0] with
          'H' -> format_term buf NOParens <<Gamma>>
@@ -248,13 +240,13 @@ let context_term = function
  | "K" -> <<Sigma>>
  |  v  -> mk_mathit v
 
-ml_dform cvar_html_df : mode[html] :: df_context_var[v:v] format_term buf = fun
+ml_dform cvar_html_df : mode[html] :: df_context_var[v] format_term buf = fun
    term ->
-      print_html_var format_term buf context_term (dstring_of_var v)
+      print_html_var format_term buf context_term (string_of_param v)
 
-ml_dform cvar_tex_df : mode[tex] :: df_context_var[v:v] format_term buf = fun
+ml_dform cvar_tex_df : mode[tex] :: df_context_var[v] format_term buf = fun
    term ->
-      print_tex_var format_term buf context_term (dstring_of_var v)
+      print_tex_var format_term buf context_term (string_of_param v)
 
 ml_dform bvar_df : mode[src] :: bvar{'v} format_term buf = fun
    term ->
@@ -292,11 +284,7 @@ let format_term_list format_term buf = function
       format_string buf "]";
       format_ezone buf
 
-let make_cont v = <:con< df_context_var[$v$:v] >>
-
-let format_bconts format_term buf v = function
-   [v'] when Lm_symbol.eq v v' -> ()
- | conts -> format_term buf NOParens <:con< df_bconts{$mk_xlist_term (List.map make_cont conts)$} >>
+let make_cont v = <:con< df_context_var[$dstring_of_var v$:s] >>
 
 dform context_src : mode[src] :: df_context{'t} =
    `"<" 't `">"
@@ -361,8 +349,8 @@ declare inner_df_context{'t : Dform} : Dform
 ml_dform inner_df_context_df : inner_df_context{'t} format_term buf =
    fun _ ->
       let v, conts, values = dest_so_var t in
-         format_term buf NOParens <:con< df_context_var[$v$:v] >>;
-         format_bconts format_term buf v conts;
+         format_term buf NOParens (make_cont v);
+         format_term buf NOParens <:con< df_bconts{$mk_xlist_term (List.map make_cont conts)$} >>;
          format_term_list format_term buf values
 
 dform df_context_prl : mode[prl] :: mode[html] :: df_context{'t} =

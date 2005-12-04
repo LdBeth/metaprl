@@ -466,7 +466,7 @@ let () = ();;
       let bconts', conts = parse_contexts allow_bindings bconts v conts in
       let conts =
          match conts with
-            [v'] when Lm_symbol.eq v v' ->
+            [v'] when Lm_symbol.eq v' default_contexts ->
                bconts
           | _ ->
                conts
@@ -476,7 +476,7 @@ let () = ();;
    let display_context_of_contexts _ bconts v conts =
       let conts =
          if bconts = conts then
-            [v]
+            [default_contexts]
          else
             conts
       in
@@ -499,7 +499,7 @@ let () = ();;
          let bconts', conts = parse_contexts allow_bindings bconts v conts in
          let conts =
             match conts with
-               [v'] when Lm_symbol.eq v v' ->
+               [v'] when Lm_symbol.eq v' default_contexts ->
                   if SymbolTable.mem !map v then
                      SymbolTable.find !map v
                   else begin

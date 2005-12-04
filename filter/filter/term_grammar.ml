@@ -714,7 +714,7 @@ struct
    let get_var_contexts loc v terms =
       match mk_var_contexts loc v (List.length terms) with
          Some conts -> conts
-       | None -> [v]
+       | None -> [default_contexts]
 
    (************************************************************************
     * QUOTATIONS                                                           *

@@ -445,13 +445,13 @@ dform fake_mlrw_df : fake_mlrw[name]{'redex; 'contractum} =
    rewrite_like[name, "ml_rewrite"]{'redex; 'contractum; status_primitive{xnil}; xnil}
 
 dform int_param_df : except_mode[src] :: "int_param"[name:v] =
-   df_context_var[name:v]
+   df_context_var[name]
 
 dform int_param_df2 : mode[src] :: "int_param"[name:v] =
    `"'" slot[name:v]
 
 dform addr_param_df : except_mode[src] :: "addr_param"[name:v] =
-   df_context_var[name:v]
+   df_context_var[name]
 
 dform addr_param_df2 : mode[src] :: "addr_param"[name:v] =
    `"'" slot[name:v]
