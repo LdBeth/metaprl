@@ -404,9 +404,9 @@ struct
                let term = var_subst t' fv v (apply_subst sub term) in
                let hlist = Hypothesis(var, term) :: hlist in
                   var_subst_hyps hyps concl len (i+1) hlist sub t' fv v
-          | Context(v, conts, ts) ->
+          | Context(v', conts, ts) ->
                let ts = List.map (fun term -> var_subst t' fv v (apply_subst sub term)) ts in
-               let hlist = Context(v, conts, ts) :: hlist in
+               let hlist = Context(v', conts, ts) :: hlist in
                   var_subst_hyps hyps concl len (i+1) hlist sub t' fv v
 
    let var_subst t t' v =
