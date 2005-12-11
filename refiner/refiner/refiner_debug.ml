@@ -1100,6 +1100,9 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          let hl1, hl2 = split_hyps hl in
             merge_SeqHyp "SeqHyp.of_list" (SeqHyp1.of_list hl1) (SeqHyp2.of_list hl2)
 
+      let concat (t1, t2) (tt1, tt2) =
+         merge_SeqHyp "SeqHyp.concat" (SeqHyp1.concat t1 tt1) (SeqHyp2.concat t2 tt2)
+
       let append (t1, t2) h (tt1, tt2) =
          let h1, h2 = split_hyp h in
             merge_SeqHyp "SeqHyp.append" (SeqHyp1.append t1 h1 tt1) (SeqHyp2.append t2 h2 tt2)
