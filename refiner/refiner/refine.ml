@@ -1332,8 +1332,10 @@ struct
                deps
 
    let rec compute_deps_ext find = function
-      RuleJust just | MLJust (just, _, _) ->
+      RuleJust just ->
          compute_deps_rule (find.find_rule just.just_refiner)
+    | MLJust (just, _, _) ->
+         DepSet.singleton (DepRule, just.just_refiner)
     | RewriteJust (_, just) ->
          compute_deps_rwjust find.find_rewrite just
     | CondRewriteJust (_, just) ->
