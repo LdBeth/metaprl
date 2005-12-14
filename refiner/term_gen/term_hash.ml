@@ -204,30 +204,31 @@ struct
    let list_compare = Lm_list_util.compare_cmp
 
    let compare_bterm_header { bvars_weak=bvars1; bterm_weak=bterm1 } { bvars_weak=bvars2; bterm_weak=bterm2 } =
-      bvars1 = bvars2 & bterm1 == bterm2
+      list_compare Lm_symbol.eq bvars1 bvars2 & bterm1 == bterm2
 
    let compare_hyp_header hyp1 hyp2 =
       match hyp1, hyp2 with
-         Hypothesis_weak (v1,t1),  Hypothesis_weak (v2,t2)   -> Lm_symbol.eq v1 v2 && t1 == t2
-       | Context_weak    (v1,conts1,ts1), Context_weak    (v2,conts2,ts2)  -> Lm_symbol.eq v1 v2 && conts1 = conts2 && list_mem_eq ts1 ts2
+         Hypothesis_weak (v1,t1),  Hypothesis_weak (v2,t2) ->
+            Lm_symbol.eq v1 v2 && t1 == t2
+       | Context_weak (v1,conts1,ts1), Context_weak (v2,conts2,ts2) ->
+            Lm_symbol.eq v1 v2 && list_compare Lm_symbol.eq conts1 conts2 && list_mem_eq ts1 ts2
        | _ -> false
-
-   let compare_tterm_header
-       { op_name_weak = opn1; op_params_weak = ops1; term_terms_weak = bterms1 }
-       { op_name_weak = opn2; op_params_weak = ops2; term_terms_weak = bterms2 } =
-      Opname.eq opn1 opn2 & list_mem_eq ops1 ops2 & list_compare (compare_bterm_header) bterms1 bterms2
 
    let compare_term_header t1 t2 =
       match (t1,t2) with
          Term_weak t1, Term_weak t2 ->
-            compare_tterm_header t1 t2
+            Opname.eq t1.op_name_weak t2.op_name_weak
+            && list_mem_eq t1.op_params_weak t2.op_params_weak
+            && list_compare (compare_bterm_header) t1.term_terms_weak t2.term_terms_weak
        | Seq_weak { seq_arg_weak = arg1; seq_hyps_weak = hyp1; seq_concl_weak = concl1 },
          Seq_weak { seq_arg_weak = arg2; seq_hyps_weak = hyp2; seq_concl_weak = concl2 } ->
             (arg1 == arg2)
             && (concl1 == concl2)
             && list_compare (compare_hyp_header) hyp1 hyp2
-       | FOVar_weak v1, FOVar_weak v2 -> Lm_symbol.eq v1 v2
-       | SOVar_weak (v1,conts1,ts1), SOVar_weak (v2,conts2,ts2)  -> Lm_symbol.eq v1 v2 && conts1 = conts2 && list_mem_eq ts1 ts2
+       | FOVar_weak v1, FOVar_weak v2 ->
+            Lm_symbol.eq v1 v2
+       | SOVar_weak (v1,conts1,ts1), SOVar_weak (v2,conts2,ts2) ->
+            Lm_symbol.eq v1 v2 && conts1 = conts2 && list_mem_eq ts1 ts2
        | _ -> false
 
    let compare_meta_term_header mt_a mt_b =
