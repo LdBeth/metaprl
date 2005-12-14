@@ -1532,7 +1532,7 @@ struct
       let () = StrFilter.define_term proc loc sc ("unfold_" ^ name) quote def no_resources in
 
       (* State that it is a logic *)
-      let name_wf = name ^ "_wf" in
+      let name_wf = "wf_" ^ name in
       let logic_wf = TermGrammar.mk_parsed_meta_term logic_wf in
       let _, logic_wf, _, _ = parse_rule loc name_wf logic_wf [] no_resources in
       let () = define_int_thm proc loc name_wf [] logic_wf no_resources in
@@ -2214,7 +2214,7 @@ EXTEND
      * This is for reflection processing.
      * Try to keep it separate in case we want to remove it later.
      vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv*)
-        | "reflected_logic"; name = LIDENT; "="; items = logic_items ->
+        | "reflected_logic"; name = ident; "="; items = logic_items ->
              Reflect.process_reflected_logic (StrFilter.get_proc _loc) _loc name items;
              empty_str_item _loc
        ]];

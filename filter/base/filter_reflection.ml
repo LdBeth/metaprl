@@ -36,6 +36,7 @@ open Opname
 open Term_sig
 open Simple_print
 open Term_ty_sig
+open Refiner.Refiner
 open Refiner.Refiner.TermType
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermOp
@@ -68,6 +69,7 @@ let perv_opname       = mk_opname "Perv" nil_opname
 let var_H       = Lm_symbol.add "H"
 let var_step    = Lm_symbol.add "step"
 let var_witness = Lm_symbol.add "witness"
+let var_none    = Lm_symbol.add "_"
 
 (************************************************
  * Reflection quotations.  We don't explicitly
@@ -124,6 +126,7 @@ sig
    val mk_let_cvar_term       : t -> var -> term -> term -> int -> term -> term
    val mk_let_sovar_term      : t -> var -> term -> term -> int -> term -> term
    val mk_spread_term         : t -> term -> var -> var -> term -> term
+   val mk_vsequent_term       : t -> term -> term list -> term -> term
 end;;
 
 module Reflect : ReflectSig =
@@ -167,7 +170,8 @@ struct
         opname_assert         : opname Lazy.t;
         opname_let_cvar       : opname Lazy.t;
         opname_let_sovar      : opname Lazy.t;
-        opname_spread         : opname Lazy.t
+        opname_spread         : opname Lazy.t;
+        opname_vsequent       : opname Lazy.t;
       }
 
    let mk_state_opname state op params arities =
@@ -213,6 +217,7 @@ struct
         opname_let_cvar       = Lazy.lazy_from_fun (fun () -> mk_state_opname state "let_cvar" [] [0; 0; 0; 1]);
         opname_let_sovar      = Lazy.lazy_from_fun (fun () -> mk_state_opname state "let_sovar" [] [0; 0; 0; 1]);
         opname_spread         = Lazy.lazy_from_fun (fun () -> mk_state_opname state "spread" [] [0; 2]);
+        opname_vsequent       = Lazy.lazy_from_fun (fun () -> mk_state_opname state "vsequent" [] [0]);
       }
 
    let mk_length_term info t =
@@ -241,11 +246,11 @@ struct
        | [] ->
             t
 
-   let mk_mk_bterm_term info depth op subterms =
-      mk_simple_term (Lazy.force info.opname_mk_bterm) [depth; op; subterms]
-
    let mk_mk_term_term info op subterms =
       mk_simple_term (Lazy.force info.opname_mk_term) [op; subterms]
+
+   let mk_mk_bterm_term info depth op subterms =
+      mk_simple_term (Lazy.force info.opname_mk_bterm) [depth; op; subterms]
 
    let mk_operator_term info op =
       mk_term (mk_op (Lazy.force info.opname_operator) [make_param (Operator op)]) []
@@ -387,6 +392,15 @@ struct
 
    let mk_spread_term info t1 v1 v2 t2 =
       mk_dep0_dep2_term (Lazy.force info.opname_spread) v1 v2 t1 t2
+
+   let mk_vsequent_term info arg hyps concl =
+      let seq =
+         { sequent_args = mk_dep0_term (Lazy.force info.opname_vsequent) arg;
+           sequent_hyps = SeqHyp.of_list (List.map (fun t -> Hypothesis (var_none, t)) hyps);
+           sequent_concl = concl
+         }
+      in
+         TermMan.mk_sequent_term seq
 end;;
 
 (*
@@ -521,7 +535,7 @@ let var_z = Lm_symbol.add "z"
 let is_xrulequote_term t =
    is_dep0_term xrulequote_opname t && is_meta_term (dest_dep0_term xrulequote_opname t)
 
-let sweep_rulequote_term info socvars depth t =
+let sweep_rulequote_term info socvars t =
    let rec sweepdn socvars t =
       if is_var_term t then
          socvars, t
@@ -537,7 +551,7 @@ let sweep_rulequote_term info socvars depth t =
          let param = Reflect.mk_operator_term info (opparam_of_term t) in
          let socvars, bterms = List.fold_left wrap_bterm (socvars, []) (dest_term t).term_terms in
          let bterms = Reflect.mk_list_term info (List.rev bterms) in
-            socvars, Reflect.mk_mk_bterm_term info depth param bterms
+            socvars, Reflect.mk_mk_term_term info param bterms
 
    and wrap_bterm (socvars, bterms) bterm =
       let { bvars = vars; bterm = bterm } = dest_bterm bterm in
@@ -605,10 +619,9 @@ let sweep_rulequote_term info socvars depth t =
                      let socvars, t = sweep_sequent_context_term socvars vars x cargs args in
                         socvars, h :: vars, t :: hyps) (socvars, [], []) hyps
       in
-      let hyps = Reflect.mk_append_list_term info (List.rev hyps) in
       let socvars, concl = sweepdn socvars concl in
       let concl = Reflect.mk_rev_bind_terms info vars concl in
-      let t = Reflect.mk_sequent_term info arg hyps concl in
+      let t = Reflect.mk_vsequent_term info arg (List.rev hyps) concl in
          socvars, t
    in
       sweepdn socvars t
@@ -716,18 +729,15 @@ let dest_xrulequote_term_inner state t =
    let t_step = mk_var_term v_step in
    let t_witness = mk_var_term v_witness in
 
-   (* The depth is always 0 *)
-   let d = Reflect.mk_number_term info 0 in
-
    (* Convert the terms in the rule *)
    let premises, goal = unzip_mfunction t in
    let socvars, premises =
       List.fold_left (fun (socvars, premises) (_, _, t) ->
-            let socvars, t = sweep_rulequote_term info socvars d t in
+            let socvars, t = sweep_rulequote_term info socvars t in
             let premises = t :: premises in
                socvars, premises) (SymbolTable.empty, []) premises
    in
-   let socvars, goal = sweep_rulequote_term info socvars d goal in
+   let socvars, goal = sweep_rulequote_term info socvars goal in
    let premises = Reflect.mk_list_term info (List.rev premises) in
 
    (* The inner term is an equality *)
@@ -804,18 +814,15 @@ let mk_provable_sequent_term info h_v t =
 let mk_infer_thm state t =
    let info = Reflect.create state in
 
-   (* The depth is always 0 *)
-   let d = Reflect.mk_number_term info 0 in
-
    (* Convert the terms in the rule *)
    let premises, goal = unzip_mfunction t in
    let socvars, premises =
       List.fold_left (fun (socvars, premises) (_, _, t) ->
-            let socvars, t = sweep_rulequote_term info socvars d t in
+            let socvars, t = sweep_rulequote_term info socvars t in
             let premises = t :: premises in
                socvars, premises) (SymbolTable.empty, []) premises
    in
-   let socvars, goal = sweep_rulequote_term info socvars d goal in
+   let socvars, goal = sweep_rulequote_term info socvars goal in
 
    (* Choose a new context variable *)
    let fv = free_vars_terms (goal :: premises) in
@@ -853,8 +860,10 @@ let mk_type_check_thm state quote =
    in
 
    (* Sequent arg *)
-   let arg = Reflect.mk_meta_type_term info in
+   let q_arg = Reflect.mk_meta_type_term info in
+(*
    let q_arg = quote_term info 0 arg in
+*)
 
    (* Capture won't happen because we are constructing the terms *)
    let h_v = var_H in
