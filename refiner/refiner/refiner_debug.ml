@@ -701,11 +701,11 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
 
    let merge_int x (i1: int) i2 =
       if i1 <> i2 then
-         report_error x "Integers mismatch";
+         report_error x (sprintf "Integers mismatch: %i vs %i" i1 i2);
       i1
 
    let merge_var x v1 v2 =
-      if v1 <> v2 then
+      if not (Lm_symbol.eq v1 v2) then
          report_error x ("Variable mismatch: \"" ^ (string_of_symbol v1) ^ "\" vs \"" ^ (string_of_symbol v2) ^ "\"");
       v1
 
@@ -836,12 +836,26 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
       (* XXX: TODO: need some consistency checks *)
       op1, op2
 
-   let merge_term x t1 t2 =
-      if not (Opname.eq (Term1.opname_of_term t1) (Term2.opname_of_term t2)) then begin
-         eprintf "Term opname mismatch:\n\t%a%t" print_term (t1, t2) eflush;
-         report_error x "term opname mismatch"
-      end else
-         (t1, t2)
+   let merge_term =
+      let rec compare_terms t1 t2 =
+         if TermShape1.shape_of_term t1 = TermShape2.shape_of_term t2 then
+            (*
+             * Much more precise, but very expensive:
+            Lm_list_util.for_all2 compare_terms (Term1.subterms_of_term t1) (Term2.subterms_of_term t2)
+             *)
+            true
+         else begin
+            eprintf "[sub]term shape mismatch:\n\t%a%t" print_term (t1, t2) eflush;
+            false
+         end
+      in
+         fun x t1 t2 ->
+            if compare_terms t1 t2 then
+               (t1, t2)
+            else begin
+               eprintf "Term mismatch:\n\t%a%t" print_term (t1, t2) eflush;
+               report_error x "terms mismatch"
+            end
 
    let merge_ttf x f1 f2 =
       fun (t1, t2) -> merge_term x (f1 t1) (f2 t2)
@@ -2813,7 +2827,7 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
 
    end
 
-   module TermMeta = struct
+   module TermMetaExt = struct
       module MetaTypes = TermType
 
       type allow_seq_bindings = term -> bool
@@ -3352,17 +3366,21 @@ end
 
    end
 
+   module TermMetaInt = 
+      Term_meta_gen.TermMeta (TermType) (Term) (TermSubst) (TermOp) (TermMan) (RefineError)
    module RewriteInt =
       Rewrite.Rewrite (TermType) (Term) (TermOp) (TermMan) (TermAddr) (TermSubst) (TermShape) (RefineError)
    module RefineInt =
-      Refine.Refine (TermType) (Term) (TermOp) (TermMan) (TermSubst) (TermAddr) (TermMeta) (TermShape) (RewriteInt) (RefineError)
+      Refine.Refine (TermType) (Term) (TermOp) (TermMan) (TermSubst) (TermAddr) (TermMetaInt) (TermShape) (RewriteInt) (RefineError)
 
    (* Debug internal interfaces *)
+   module TermMeta = TermMetaInt
    module Rewrite = RewriteInt
    module Refine = RefineInt
 
 (*
    (* Debug external interfaces *)
+   module TermMeta = TermMetaExt
    module Rewrite = RewriteExt
    module Refine = RefineExt
 *)
@@ -3373,7 +3391,7 @@ end
       module Term = Term
       module TermSubst = TermSubst
       module TermMan = TermMan
-      module TermMeta = TermMeta (* XXX HACK: TermMan is here only for ASCII IO format versions <= 1.0.7 support *)
+      module TermMeta = TermMeta
       module TermShape = TermShape
       module Refine = Refine
    end
