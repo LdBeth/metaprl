@@ -120,7 +120,7 @@ struct
 
    (* Actual function *)
    let free_vars_list = free_vars_term [] []
-   let free_vars_set t = SymbolSet.of_sorted_list (free_vars_list t)
+   let free_vars_set t = SymbolSet.of_list (free_vars_list t)
 
    (* Collect over a list of terms *)
    let free_vars_terms =
