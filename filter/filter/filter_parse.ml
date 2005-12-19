@@ -71,6 +71,7 @@ open Filter_reflection
 open Filter_prog
 open Filter_magic
 open Proof_convert
+open Simple_print
 
 (************************************************************************
  * TYPES                                                                *
@@ -1469,9 +1470,14 @@ struct
     *)
    let add_declare proc loc items quote =
       let state = StrFilter.mk_parse_state loc "term" in
-      let mt = Filter_reflection.mk_type_check_thm state quote in
-      let mt = TermGrammar.mk_parsed_meta_term mt in
       let name, _ = Opname.dst_opname quote.ty_opname in
+      let mt = Filter_reflection.mk_type_check_thm state quote in
+      let () =
+         eprintf "@[<hv 3>Type check thm: %s@ %s@]@." (**)
+            name
+            (SimplePrint.string_of_mterm mt)
+      in
+      let mt = TermGrammar.mk_parsed_meta_term mt in
       let item =
          { ref_rule_name      = "term_" ^ name;
            ref_rule_resources = no_resources;

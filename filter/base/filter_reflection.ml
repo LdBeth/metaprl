@@ -34,8 +34,9 @@ open Lm_location
 
 open Opname
 open Term_sig
-open Simple_print
 open Term_ty_sig
+open Term_meta_sig
+open Simple_print
 open Refiner.Refiner
 open Refiner.Refiner.TermType
 open Refiner.Refiner.Term
@@ -108,7 +109,7 @@ sig
    val mk_capply_term         : t -> term -> var list -> term
    val mk_map_term            : t -> var -> term -> term -> term
    val mk_add_term            : t -> term -> term -> term
-   val mk_SOVar_term          : t -> term -> term
+   val mk_BTerm2_term         : t -> term -> term
    val mk_CVar_term           : t -> term -> term
    val mk_ProofStep_term      : t -> term -> term
    val mk_proof_step_term     : t -> term -> term -> term
@@ -153,7 +154,7 @@ struct
         opname_substl         : opname Lazy.t;
         opname_map            : opname Lazy.t;
         opname_add            : opname Lazy.t;
-        opname_sovar          : opname Lazy.t;
+        opname_bterm2         : opname Lazy.t;
         opname_cvar           : opname Lazy.t;
         opname_ProofStep      : opname Lazy.t;
         opname_proof_step     : opname Lazy.t;
@@ -199,7 +200,7 @@ struct
         opname_substl         = Lazy.lazy_from_fun (fun () -> mk_state_opname state "substl"    [] [0; 0]);
         opname_map            = Lazy.lazy_from_fun (fun () -> mk_state_opname state "map"       [] [1; 0]);
         opname_add            = Lazy.lazy_from_fun (fun () -> mk_state_opname state "add"       [] [0; 0]);
-        opname_sovar          = Lazy.lazy_from_fun (fun () -> mk_state_opname state "SOVar"     [] [0]);
+        opname_bterm2         = Lazy.lazy_from_fun (fun () -> mk_state_opname state "BTerm"     [] [0]);
         opname_cvar           = Lazy.lazy_from_fun (fun () -> mk_state_opname state "CVar"      [] [0]);
         opname_ProofStep      = Lazy.lazy_from_fun (fun () -> mk_state_opname state "ProofStep" [] [0]);
         opname_proof_step     = Lazy.lazy_from_fun (fun () -> mk_state_opname state "proof_step" [] [0; 0]);
@@ -327,8 +328,8 @@ struct
    let mk_add_term info t1 t2 =
       mk_dep0_dep0_term (Lazy.force info.opname_add) t1 t2
 
-   let mk_SOVar_term info t =
-      mk_dep0_term (Lazy.force info.opname_sovar) t
+   let mk_BTerm2_term info t =
+      mk_dep0_term (Lazy.force info.opname_bterm2) t
 
    let mk_CVar_term info t =
       mk_dep0_term (Lazy.force info.opname_cvar) t
@@ -696,7 +697,7 @@ let mk_socvar_wf_assum info h_v (v, _, b, cargs, arity) =
       if b then
          Reflect.mk_CVar_term info len
       else
-         Reflect.mk_SOVar_term info len
+         Reflect.mk_BTerm2_term info len
    in
    let v = mk_var_term v in
    let t = Reflect.mk_equal_term info v v ty in
@@ -885,7 +886,7 @@ let mk_type_check_thm state quote =
                         hyps, vars, succ index) ([Context (h_v, [], [])], [], 1) bvars
             in
             let bvars = List.fold_left (fun bvars v -> mk_var_term v :: bvars) [] vars in
-            let t = mk_so_var_term (Lm_symbol.make "b" index) [] bvars in
+            let t = mk_so_var_term (Lm_symbol.make "b" index) [default_contexts] bvars in
             let concl = Reflect.mk_meta_member_term info t ty in
             let seq_info =
                { sequent_args = q_arg;
