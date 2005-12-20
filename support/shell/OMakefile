@@ -63,6 +63,11 @@ FILES[] =
     shell_browser
     shell_theory
 
+if $(equal $(DEFAULT_UI), browser)
+    CAMLP4FLAGS[] += -D BROWSER_DEFAULT
+    shell_state.ppo shell_state.cmoz:
+    shell_state.p4:
+
 #
 # Some of these files should use the normal OCaml compiler
 #

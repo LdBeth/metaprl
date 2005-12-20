@@ -7,4 +7,4 @@ fi
 if [ "x$MPBOLD" = "x" ]; then
     MPBOLD=brown
 fi
-xterm -fn $MPFONT -fb $MPFONT +bdc -xrm "*VT100.colorBD: $MPBOLD" -sb -sl 1000 -e ./mpopt -cli
+xterm -fn $MPFONT -fb $MPFONT +bdc -xrm "*VT100.colorBD: $MPBOLD" -sb -sl 1000 -e ./mp -cli

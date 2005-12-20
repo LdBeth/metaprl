@@ -239,6 +239,7 @@ if $(NATIVE_ENABLED)
 CheckVar(TERMS, $(TERMS), std ds both)
 CheckVar(REFINER, $(REFINER), SIMPLE VERBOSE)
 CheckVar(SEQ_SET, $(SEQ_SET), Lm_array Lm_splay)
+CheckVar(DEFAULT_UI, $(DEFAULT_UI), browser cli)
 
 if $(equal $(OSTYPE), Win32)
     if $(SSL_ENABLED)
@@ -535,9 +536,8 @@ if $(NATIVE_PROFILING_ENABLED)
 CAMLP4N = $(file $(LIB)/camlp4n$(EXE))
 CAMLP4O = $(file $(LIB)/camlp4o$(EXE))
 CONVERT = $(file $(BIN)/convert$(EXE))
-CAMLP4NFLAGS = $`(PREFIXED_OCAMLINCLUDES)
-CAMLP4OFLAGS = $`(PREFIXED_OCAMLINCLUDES)
 MPTIME =
+CAMLP4FLAGS[] =
 
 #
 # Other helper files
@@ -563,8 +563,8 @@ OCAMLDEPFLAGS += -prl
 #
 # For theory files, generate intermediate .ppo files
 #
-%.ppo %.cmoz: %.ml %.cmiz :optional: %.prla :effects: %.prlb :scanner: scan-ocaml-%.ml
-   $(WrapC $(CAMLP4N)) $(CAMLP4NFLAGS) -o $*.ppo $*.ml
+%.ppo %.cmoz: %.ml %.cmiz :optional: %.prla :effects: %.prlb :scanner: scan-ocaml-%.ml :value: $(prlc-deps)
+   $(WrapC $(CAMLP4N)) $(CAMLP4FLAGS) -o $*.ppo $*.ml
 
 %.cmi %.cmiz: %.mli :scanner: scan-ocaml-%.mli
    $(PrlC $(OCAMLC)) $(OCAMLFLAGS) $(OCAMLCFLAGS) $(OCAMLPPFLAGS) $(PREFIXED_OCAMLINCLUDES) -c $<
@@ -583,11 +583,11 @@ else
    %.cmi %.cmiz: $(CAMLP4N)
    %.ppo %.cmoz: $(CAMLP4N)
 
-%.p4i: %.mli $(CAMLP4O)
-   $(WrapC $(CAMLP4O)) $(PREFIXED_OCAMLINCLUDES) $*.mli > $@
+%.p4i: %.mli $(CAMLP4O) :value: $(prlc-deps)
+   $(WrapC $(CAMLP4O)) $(CAMLP4FLAGS) $*.mli > $@
 
-%.p4: %.ml $(CAMLP4O)
-   $(WrapC $(CAMLP4O)) $(PREFIXED_OCAMLINCLUDES) $*.ml > $@
+%.p4: %.ml $(CAMLP4O) :value: $(prlc-deps)
+   $(WrapC $(CAMLP4O)) $(CAMLP4FLAGS) $*.ml > $@
 
 if $(mem spell, $(split :, $(MP_DEBUG)))
     LIBWORDS = $(file lib/words)

@@ -16,6 +16,15 @@ Shell. +=
       else
          exit $(code)
 
+prlc-deps() =
+   DEPS[] =
+      $(ROOT)
+      $(LIB)
+      $(THEORYNAME)
+      $(THEORYDESCR)
+      $(OCAMLINCLUDES)
+   return $(DEPS)
+
 #
 # Command without a preprocessor
 #
@@ -23,7 +32,7 @@ WrapC(command) =
    #
    # Put together the command
    #
-   COMMAND = prlcomp $(command) -I $(LIB)
+   COMMAND = prlcomp $(command)
 
    return($(COMMAND))
 
@@ -35,6 +44,6 @@ PrlC(command) =
    # Put together the command
    # JYH: not sure if this should be hardcoded as CAMLP4N.
    #
-   COMMAND[] = prlcomp $(command) -I $(LIB) -pp $(quote-argv $(CAMLP4N) $(LOC))
+   COMMAND[] = prlcomp $(command) -pp $(quote-argv $(CAMLP4N) $(LOC))
 
    return($(COMMAND))

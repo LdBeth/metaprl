@@ -74,9 +74,26 @@ let protocol_name =
    else
       "http"
 
-let cli_flag = Env_arg.bool "cli" false "use command-line interface instead of the browser one" Env_arg.set_bool_bool
+let cli_comment =
+   "use command-line interface instead of the browser one" ^ (**)
+      IFDEF BROWSER_DEFAULT THEN "" ELSE " (default)" ENDIF
+
+let cli_flag =
+   Env_arg.bool "cli" false cli_comment Env_arg.set_bool_bool
+
+let browser_comment =
+   "use browser interface instead of the command-line one" ^ (**)
+      IFDEF BROWSER_DEFAULT THEN " (default)" ELSE "" ENDIF
+
+let browser_flag =
+   Env_arg.bool "browser" false browser_comment Env_arg.set_bool_bool
+
 let batch_flag = Env_arg.bool "batch" false "supress interactive prompting and auto-backups (implies -cli)" Env_arg.set_bool_bool
-let cli_flag () = !cli_flag or !batch_flag
+let cli_flag () =
+   if !cli_flag && !browser_flag then
+      raise (Invalid_argument "Both -cli and -browser options are given, but they are exclusive!")
+   else
+      IFDEF BROWSER_DEFAULT THEN !cli_flag ELSE not (!browser_flag) ENDIF or !batch_flag
 
 let browser_port_name = "port"
 let browser_port      = Env_arg.int "port" 0 "start browser services on this port" Env_arg.set_int_int

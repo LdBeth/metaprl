@@ -91,6 +91,7 @@ section
 
     CAMLP4N_FILES[] =
         $(CAMLP4LIB)/pa_o
+        $(ROOT)/util/pa_macro
         $(CAMLP4LIB)/pr_dump
         $(CAMLP4LIB)/pa_extend
         $(CAMLP4LIB)/q_MLast
@@ -98,6 +99,7 @@ section
 
     CAMLP4O_FILES[] =
         $(CAMLP4LIB)/pa_o
+        $(ROOT)/util/pa_macro
         $(CAMLP4LIB)/pr_o
         $(CAMLP4LIB)/pa_extend
         $(CAMLP4LIB)/q_MLast
