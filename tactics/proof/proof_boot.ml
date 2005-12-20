@@ -824,11 +824,11 @@ struct
             let e1 = explode_sequent g1 in
             let e2 = explode_sequent g2 in
                try
-                  ignore (Match_seq.match_hyps e1 e2);
+                  ignore (Match_seq.match_hyps TermSubst.alpha_equal e1 e2);
                   true
                with
                   RefineError _ ->
-                     ignore (Match_seq.match_hyps e2 e1);
+                     ignore (Match_seq.match_hyps TermSubst.alpha_equal e2 e1);
                      true
          with
             RefineError _ ->

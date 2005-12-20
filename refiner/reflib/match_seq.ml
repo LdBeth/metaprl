@@ -46,7 +46,7 @@ let fail_match _ = raise cant_match_hyp
 
 let aev v1 v2 t1 t2 = alpha_equal_vars t1 v1 t2 v2
 
-let try_match_hyps relaxed big small =
+let try_match_hyps relaxed eq big small =
    let big_hyp = big.sequent_hyps in
    let small_hyp = small.sequent_hyps in
    let small_length = SeqHyp.length small_hyp in
@@ -63,7 +63,7 @@ let try_match_hyps relaxed big small =
       else fail_match in
    let rec aux big_skip small_skip big_vars small_vars =
       if small_skip = small_length then
-         relaxed || alpha_equal_vars big.sequent_concl big_vars small.sequent_concl small_vars
+         relaxed || eq big.sequent_concl (subst small.sequent_concl small_vars (List.map mk_var_term big_vars))
       else if big_skip = big_length then relaxed && all_hyps small_skip
       else if (not relaxed) && (big_skip - small_skip) > may_skip then false
       else
@@ -91,7 +91,7 @@ let try_match_hyps relaxed big small =
 let match_hyps = try_match_hyps false
 
 let match_some_hyps big small =
-   let index = try_match_hyps true big small in
+   let index = try_match_hyps true alpha_equal big small in
    let rec aux i =
       let i = pred i in
       if i<0 then 0 else match index.(i) with

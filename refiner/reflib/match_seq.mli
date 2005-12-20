@@ -39,13 +39,15 @@ open TermType
  *   agains hypotheses of the big one. If succeeds, will return
  *   an option array telling which hyp of small matches each hyp of
  *   large (numbering starts with 0).
+ * The first argument is used for matching the conclusions (hypotheses are
+ * always compared using alpha equality).
  *
  * match_some_hyps is simplar, but does not insist on matching all the hyps
  * or the goal (does insist on matching all Contexts, though). If succeeds,
  * will return the nimber of the hyps in the "small" sequent that were
  * succesfully matched.
  *
- * These functions raise RefineError, when fail.
+ * These functions raise RefineError, when they fail.
  *)
-val match_hyps: esequent -> esequent -> int option array
+val match_hyps: (term -> term -> bool) -> esequent -> esequent -> int option array
 val match_some_hyps: esequent -> esequent -> int

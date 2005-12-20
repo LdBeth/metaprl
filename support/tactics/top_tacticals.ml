@@ -507,12 +507,14 @@ infix thenWT
 infix thenET
 infix thenPT
 
-let thinMatchT thin_many assum =
+let thinMatchT thin_many eq assum =
    funT (fun p ->
    let goal = Sequent.goal p in
    let index = Match_seq.match_hyps
+      eq 
       (explode_sequent goal)
-      (explode_sequent assum) in
+      (explode_sequent assum) 
+   in
    let rec tac i j =
       if i = 0 then if j > 1 then thin_many 1 j else idT else
          match index.(pred i) with

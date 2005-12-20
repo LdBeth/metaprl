@@ -47,12 +47,13 @@ open Tactic_type.Tactic
  * fails, or succeeds right away.
  *)
 topval nthHypT : int -> tactic
+val nth_hyp_mem : tactic_arg -> term -> term -> bool
 
 (*
  * The input for the nth_hyp resource is the hypothesis term, conclusion term
  * and the tactic nthHypT should use when applying
  *)
-resource (term * term * (int -> tactic), int -> tactic) nth_hyp
+resource (term * term * (int -> tactic), (int -> tactic) * (term -> term -> bool)) nth_hyp
 
 val process_nth_hyp_resource_annotation :
    (pre_tactic, term * term * (int -> tactic)) annotation_processor

@@ -158,7 +158,7 @@ infix thenWT
 infix thenET
 infix thenPT
 
-val thinMatchT : (int -> int -> tactic) -> term -> tactic
+val thinMatchT : (int -> int -> tactic) -> (term -> term -> bool) -> term -> tactic
 
 (*
  * -*-
