@@ -94,7 +94,7 @@ ENDIF
       d.descriptor
 
    (*
-    * Descriptors remain static and anchored,
+    * Descriptors remain static and anchored, and they are positive,
     * so this comparison is always valid.
     * NOTE: if desciptor becomes mutable, fix this.
     *)
