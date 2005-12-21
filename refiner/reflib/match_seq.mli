@@ -40,7 +40,8 @@ open TermType
  *   an option array telling which hyp of small matches each hyp of
  *   large (numbering starts with 0).
  * The first argument is used for matching the conclusions (hypotheses are
- * always compared using alpha equality).
+ * always compared using alpha equality). It is applied to the conclusion of the
+ * small sequent ("assumption") first.
  *
  * match_some_hyps is simplar, but does not insist on matching all the hyps
  * or the goal (does insist on matching all Contexts, though). If succeeds,

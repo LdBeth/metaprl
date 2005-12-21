@@ -63,7 +63,7 @@ let try_match_hyps relaxed eq big small =
       else fail_match in
    let rec aux big_skip small_skip big_vars small_vars =
       if small_skip = small_length then
-         relaxed || eq big.sequent_concl (subst small.sequent_concl small_vars (List.map mk_var_term big_vars))
+         relaxed || eq (subst small.sequent_concl small_vars (List.map mk_var_term big_vars)) big.sequent_concl
       else if big_skip = big_length then relaxed && all_hyps small_skip
       else if (not relaxed) && (big_skip - small_skip) > may_skip then false
       else
