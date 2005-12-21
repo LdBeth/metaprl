@@ -34,6 +34,8 @@ FILES[] =
     mp_term
     line_buffer
 
+# MACROPPOPTS = -D DEBUG_WEAK_MEMO
+
 OCamlLibraryInstall($(MPINSTALL), $(LIB), util, $(FILES))
 
 #

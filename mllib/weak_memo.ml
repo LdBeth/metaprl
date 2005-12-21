@@ -36,12 +36,15 @@ struct
 
    type 'a weak_descriptor = int * int
 
-IFDEF VERBOSE_EXN THEN
+IFDEF DEBUG_WEAK_MEMO THEN
    type 'a descriptor =
       { descriptor : 'a weak_descriptor;
         desc_name : string;
         anchor : 'a
       }
+
+   exception Inconsistency of string
+
 ELSE
    type 'a descriptor =
       { descriptor : 'a weak_descriptor;
@@ -50,7 +53,6 @@ ELSE
 ENDIF
 
    exception Cell_is_full
-   exception Inconsistency of string
 
    type ('param, 'arg, 'header, 'weak_header, 'image) t =
       { make_header : 'param -> 'arg -> 'header;
@@ -133,7 +135,7 @@ ENDIF
          create 17 17 name fail weaken compare make
 
    let make_descriptor _info i item =
-IFDEF VERBOSE_EXN THEN
+IFDEF DEBUG_WEAK_MEMO THEN
       { descriptor = i;
         desc_name = _info.name;
         anchor = item
@@ -161,13 +163,20 @@ ENDIF
     * For debugging, check that the entry does not exist.
     *)
    let set info index item =
-      match Weak.get info.image_array index with
-         Some _ -> invalid_arg "WeakMemo.set: entry is not empty"
-       | None ->
-            Weak.set info.image_array index (Some item);
-            let count = info.global_count in
-               info.global_count <- count + 1;
-               make_descriptor info (index, count) item
+      DEFINE body =
+         Weak.set info.image_array index (Some item);
+         let count = info.global_count in
+            info.global_count <- count + 1;
+            make_descriptor info (index, count) item
+      IN
+      IFDEF DEBUG_WEAK_MEMO THEN
+         match Weak.get info.image_array index with
+            Some _ -> invalid_arg "WeakMemo.set: entry is not empty"
+          | None ->
+                body
+      ELSE
+         body
+      ENDIF
 
    let insert info hash weak_header index item =
       let item = set info index item in
@@ -200,8 +209,10 @@ ENDIF
                   if info.gc_on then
                      begin
                         (* GC is only triggered when the weak table gets full *)
-                        if Weak.length info.image_array <> info.count then
-                           raise (Inconsistency "weak table length does not match expected value");
+                        IFDEF DEBUG_WEAK_MEMO THEN
+                           if Weak.length info.image_array <> info.count then
+                              raise (Inconsistency "weak table length does not match expected value")
+                        ENDIF;
 
                         (* Search for a free location in the hash table *)
                         match Hash.gc_iter (gc_tst info.image_array) info.index_table with
@@ -238,23 +249,26 @@ ENDIF
     * For debugging, check that the value saved in the table
     * still exists and matches the value passed in the index.
     *)
-   let retrieve info _ dsc =
-      let index = fst (dsc.descriptor) in
-      if Weak.length info.image_array <= index then
-         invalid_arg "WeakMemo.retrieve: out of range";
-      (IFDEF VERBOSE_EXN THEN (**)
-          if index.desc_name <> info.name then
-             invalid_arg (Lm_printf.sprintf "WeakMemo.retrieve: try to retrieve from wrong table: %s from %s" index.desc_name info.name)
-       ENDIF);
-      match Weak.get info.image_array index with
-         Some item ->
-            if dsc.anchor == item then
-               item
-            else
-               raise (Inconsistency "descriptor does not match item")
-       | None ->
-            raise (Inconsistency "item was lost")
-
+   IFDEF DEBUG_WEAK_MEMO THEN
+      let retrieve info _ dsc =
+         let index = fst (dsc.descriptor) in
+         if Weak.length info.image_array <= index then
+            invalid_arg "WeakMemo.retrieve: out of range";
+         if dsc.desc_name <> info.name then
+             invalid_arg (Lm_printf.sprintf "WeakMemo.retrieve: try to retrieve from wrong table: %s from %s" dsc.desc_name info.name);
+         match Weak.get info.image_array index with
+            Some item ->
+               if dsc.anchor == item then
+                  item
+               else
+                  raise (Inconsistency "descriptor does not match item")
+          | None ->
+               raise (Inconsistency "item was lost") 
+   ELSE
+      let retrieve _ _ d =
+         d.anchor
+   ENDIF
+   
    let retrieve_hack d =
       d.anchor
 
