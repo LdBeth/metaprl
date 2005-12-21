@@ -326,19 +326,13 @@ struct
 
    let p_lookup info th = WM.lookup info.term_hash info th
 
-   let p_unsafe_lookup info th = WM.unsafe_lookup info.term_hash info th
-
    let p_retrieve info ti = WM.retrieve info.term_hash info ti
 
    let p_lookup_meta info mth = WM.lookup info.meta_term_hash info mth
 
-   let p_unsafe_lookup_meta info mth = WM.unsafe_lookup info.meta_term_hash info mth
-
    let p_retrieve_meta info mti = WM.retrieve info.meta_term_hash info mti
 
    let p_lookup_msequent info mseq = WM.lookup info.msequent_hash info mseq
-
-   let p_unsafe_lookup_msequent info mseq = WM.unsafe_lookup info.msequent_hash info mseq
 
    let p_retrieve_msequent info mseq = WM.retrieve info.msequent_hash info mseq
 
@@ -346,13 +340,10 @@ struct
 
    let constr_param p = p_constr_param global_hash p
    let lookup th = p_lookup global_hash th
-   let unsafe_lookup th = p_unsafe_lookup global_hash th
    let retrieve ti = p_retrieve global_hash ti
    let lookup_meta mth = p_lookup_meta global_hash mth
-   let unsafe_lookup_meta mth = p_unsafe_lookup_meta global_hash mth
    let retrieve_meta mti = p_retrieve_meta global_hash mti
    let lookup_msequent mseq = p_lookup_msequent global_hash mseq
-   let unsafe_lookup_msequent mseq = p_unsafe_lookup_msequent global_hash mseq
    let retrieve_msequent mseq = p_retrieve_msequent global_hash mseq
 
    let lookup_term make_term_header t =

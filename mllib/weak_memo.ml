@@ -231,26 +231,6 @@ ENDIF
                         insert info hash weak_header count result
 
    (*
-    * Lookup a value that was previously stored in the table.
-    * Raises Invalid_argument if the value is in the process of
-    * being collected by GC.  Raises Not_found if the value
-    * was never stored, or if we have completely cleaned up
-    * after the value was collected.
-    *)
-   let rec unsafe_lookup info param header =
-      let weak_header = info.header_weaken param header in
-      let hash = Hash.hash info.index_table weak_header in
-      let table = info.index_table in
-         match Hash.seek table hash weak_header with
-            None ->
-               raise Not_found
-          | Some weak_index -> begin
-               match Weak.get info.image_array weak_index with
-                  Some item -> make_descriptor info weak_index item
-                | None -> raise Not_found
-            end
-
-   (*
     * Get the value associated with a descriptor.
     * For debugging, check that the value saved in the table
     * still exists and matches the value passed in the index.

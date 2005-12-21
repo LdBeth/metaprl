@@ -128,15 +128,12 @@ sig
     * Functions for storing and accessing objects to hashing structure
     *)
    val p_lookup : t -> term_header -> term_index
-   val p_unsafe_lookup : t -> term_header -> term_index
    val p_retrieve : t -> term_index -> term
 
    val p_lookup_meta : t -> meta_term_header -> meta_term_index
-   val p_unsafe_lookup_meta : t -> meta_term_header -> meta_term_index
    val p_retrieve_meta : t -> meta_term_index -> meta_term
 
    val p_lookup_msequent : t -> msequent_header -> msequent_index
-   val p_unsafe_lookup_msequent : t -> msequent_header -> msequent_index
    val p_retrieve_msequent : t -> msequent_index -> msequent
 
    (*
@@ -150,15 +147,12 @@ sig
    val constr_param : param' -> hashed_param
 
    val lookup : term_header -> term_index
-   val unsafe_lookup : term_header -> term_index
    val retrieve : term_index -> term
 
    val lookup_meta : meta_term_header -> meta_term_index
-   val unsafe_lookup_meta : meta_term_header -> meta_term_index
    val retrieve_meta : meta_term_index -> meta_term
 
    val lookup_msequent : msequent_header -> msequent_index
-   val unsafe_lookup_msequent : msequent_header -> msequent_index
    val retrieve_msequent : msequent_index -> msequent
 
    (*

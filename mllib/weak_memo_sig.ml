@@ -106,12 +106,6 @@ sig
    val lookup : ('param, 'arg, 'header, 'weak_header, 'image) t -> 'param -> 'header -> 'image descriptor
 
    (*
-    * As previous but assume result has not been collected by GC
-    * (if not, an exception is raised).
-    *)
-   val unsafe_lookup : ('param, 'arg, 'header, 'weak_header, 'image) t -> 'param -> 'header -> 'image descriptor
-
-   (*
     * Return the value represented by the descriptor.
     *)
    val retrieve : ('param, 'arg, 'header, 'weak_header, 'image) t -> 'param -> 'image descriptor -> 'image
