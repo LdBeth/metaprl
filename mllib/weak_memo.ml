@@ -34,7 +34,7 @@ struct
     * TYPES                                                                *
     ************************************************************************)
 
-   type 'a weak_descriptor = int
+   type 'a weak_descriptor = int * int
 
 IFDEF VERBOSE_EXN THEN
    type 'a descriptor =
@@ -64,6 +64,7 @@ ENDIF
          * All entries image_array.(count) or after are guaranteed to be free.
          *)
         mutable count : int;
+        mutable global_count : int;
 
         (*
          * Keep track of GC status.
@@ -84,8 +85,7 @@ ENDIF
    (*
     * Hash code for the descriptor.
     *)
-   let wd_hash i =
-      i
+   let wd_hash = fst
 
    (*
     * Release the anchor for possible GC.
@@ -99,13 +99,13 @@ ENDIF
     * NOTE: if desciptor becomes mutable, fix this.
     *)
    let compare d1 d2 =
-      d1.descriptor - d2.descriptor
+      (fst d1.descriptor) - (fst d2.descriptor)
 
    (*
     * Has the value been collected by GC?
     *)
-   let gc_tst image_array (_, weak_descriptor) =
-      match Weak.get image_array weak_descriptor with
+   let gc_tst image_array (_, (index, _)) =
+      match Weak.get image_array index with
           Some _ -> false
         | None -> true
 
@@ -123,6 +123,7 @@ ENDIF
            count = 0;
            gc_on = false;
            name = name;
+           global_count = 0;
          }
 
    let create_default name weaken compare make =
@@ -159,16 +160,18 @@ ENDIF
     * Store a new value in the weak array.
     * For debugging, check that the entry does not exist.
     *)
-   let set info wd item =
-      match Weak.get info.image_array wd with
+   let set info index item =
+      match Weak.get info.image_array index with
          Some _ -> invalid_arg "WeakMemo.set: entry is not empty"
        | None ->
-            Weak.set info.image_array wd (Some item);
-            make_descriptor info wd item
+            Weak.set info.image_array index (Some item);
+            let count = info.global_count in
+               info.global_count <- count + 1;
+               make_descriptor info (index, count) item
 
    let insert info hash weak_header index item =
       let item = set info index item in
-         Hash.insert info.index_table hash weak_header index;
+         Hash.insert info.index_table hash weak_header item.descriptor;
          item
 
    (*
@@ -179,17 +182,17 @@ ENDIF
       let table = info.index_table in
       let hash = Hash.hash table weak_header in
          match Hash.seek table hash weak_header with
-            Some weak_index ->
+            Some ((index, _) as wd) ->
                begin
                   (* The result was previously stored in the table *)
-                  match Weak.get info.image_array weak_index with
+                  match Weak.get info.image_array index with
                      Some item ->
                         (* It has not been collected, so return the value *)
-                        make_descriptor info weak_index item
+                        make_descriptor info wd item
                    | None ->
                         (* It has been collected, so create a new value *)
                         let item = info.make_result param header in
-                           set info weak_index item
+                           set info index item
                end
           | None ->
                (* This is a new call to the function *)
@@ -202,9 +205,9 @@ ENDIF
 
                         (* Search for a free location in the hash table *)
                         match Hash.gc_iter (gc_tst info.image_array) info.index_table with
-                           Some (_, weak_index) ->
+                           Some (_, (index, _)) ->
                               (* Found a free entry in the hash table *)
-                              insert info hash weak_header weak_index result
+                              insert info hash weak_header index result
                          | None ->
                               (*
                                * The weak array is totally full.
@@ -235,16 +238,17 @@ ENDIF
     * For debugging, check that the value saved in the table
     * still exists and matches the value passed in the index.
     *)
-   let retrieve info _ index =
-      if Weak.length info.image_array <= index.descriptor then
+   let retrieve info _ dsc =
+      let index = fst (dsc.descriptor) in
+      if Weak.length info.image_array <= index then
          invalid_arg "WeakMemo.retrieve: out of range";
       (IFDEF VERBOSE_EXN THEN (**)
           if index.desc_name <> info.name then
              invalid_arg (Lm_printf.sprintf "WeakMemo.retrieve: try to retrieve from wrong table: %s from %s" index.desc_name info.name)
        ENDIF);
-      match Weak.get info.image_array index.descriptor with
+      match Weak.get info.image_array index with
          Some item ->
-            if index.anchor == item then
+            if dsc.anchor == item then
                item
             else
                raise (Inconsistency "descriptor does not match item")
@@ -258,7 +262,7 @@ ENDIF
     * Check that the descriptor is valid in this table.
     *)
    let retrieve_check info index =
-      match Weak.get info.image_array index.descriptor with
+      match Weak.get info.image_array (fst index.descriptor) with
          Some item ->
             item == index.anchor
        | None ->
