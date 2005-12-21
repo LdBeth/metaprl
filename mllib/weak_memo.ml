@@ -166,6 +166,11 @@ ENDIF
             Weak.set info.image_array wd (Some item);
             make_descriptor info wd item
 
+   let insert info hash weak_header index item =
+      let item = set info index item in
+         Hash.insert info.index_table hash weak_header index;
+         item
+
    (*
     * Find a value in the table.
     *)
@@ -199,8 +204,7 @@ ENDIF
                         match Hash.gc_iter (gc_tst info.image_array) info.index_table with
                            Some (_, weak_index) ->
                               (* Found a free entry in the hash table *)
-                              Hash.insert info.index_table hash weak_header weak_index;
-                              set info weak_index result
+                              insert info hash weak_header weak_index result
                          | None ->
                               (*
                                * The weak array is totally full.
@@ -209,10 +213,9 @@ ENDIF
                                *)
                               let length = Weak.length info.image_array in
                                  info.gc_on <- false;
-                                 Hash.insert info.index_table hash weak_header length;
                                  info.image_array <- expand_weak_array info.image_array ((length * 2) + 1);
                                  info.count <- succ length;
-                                 set info length result
+                                 insert info hash weak_header length result
                      end
                   else
                      (* Store the entry in the next free position in the array *)
@@ -225,8 +228,7 @@ ENDIF
                               Hash.gc_start table;
                               info.gc_on <- true
                            end;
-                        Hash.insert info.index_table hash weak_header count;
-                        set info count result
+                        insert info hash weak_header count result
 
    (*
     * Lookup a value that was previously stored in the table.
