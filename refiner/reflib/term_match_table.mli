@@ -59,7 +59,7 @@ val debug_term_table : bool ref
  * Table management.  Most recently added items will be preferred in lookups.
  *)
 val empty_table : 'a term_table
-val empty_map_table : 'a term_table
+val empty_map_table : 'a term_map_table
 
 (*
  * Standard interface.
