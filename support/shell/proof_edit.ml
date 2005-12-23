@@ -227,13 +227,6 @@ let term_of_incomplete proof =
    in
       mk_proof_term goal (mk_goal_list_term [goal]) (term_of_proof_status status) text xnil_term
 
-(*
- * Display the error.
- *)
-let print_exn get_dfm f x =
-   let dfm = get_dfm () in
-      Filter_exn.print_exn dfm.df_base None f x
-
 (************************************************************************
  * OPERATIONS                                                           *
  ************************************************************************)
@@ -416,8 +409,23 @@ let is_enabled_ped ped addr = function
  * When the proof is expanded, we make a dulicate.
  * Expansion never fails, but it may change the status of the proof.
  *)
+let handle_exn get_dfm =
+   let dfm = (get_dfm ()).df_base in
+      if Refine_exn.backtrace then
+         fun f -> Some (f ())
+      else
+         fun f ->
+            try Some (f ())
+            with exn ->
+               let buf = Lm_rformat.new_buffer () in
+                  Filter_exn.format_exn dfm buf exn;
+                  Lm_rformat.format_newline buf;
+                  Lm_rprintf.output_rbuffer Lm_rprintf.stderr buf;
+                  flush stderr;
+                  None
+
 let expand_ped window ped addr =
-   push_proof ped (Proof.expand (update_fun ped addr) (print_exn window) (proof_of_ped ped) addr) addr
+   push_proof ped (Proof.expand (update_fun ped addr) (handle_exn window) (proof_of_ped ped) addr) addr
 
 (*
  * Check a proof.

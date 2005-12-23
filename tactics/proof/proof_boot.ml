@@ -1613,8 +1613,9 @@ struct
       } ->
          let t = goal_ext goal in
          let new_goal =
-            try exn_wrapper (fun () -> snd (TacticInternal.refine (tac ()) t)) ()
-            with RefineError _ -> goal
+            match exn_wrapper (fun () -> snd (TacticInternal.refine (tac ()) t)) with
+               Some goal -> goal
+             | None -> goal
          in
          let leaves = leaves_ext new_goal in
          let subgoals, extras = update_subgoals leaves subgoals extras in

@@ -655,7 +655,7 @@ sig
     * The second argument should be Refine_exn.print or a
     * similar wrapper.
     *)
-   val expand : update_fun -> ((unit -> extract) -> unit -> extract) -> proof -> address -> proof
+   val expand : update_fun -> ((unit -> extract) -> extract option) -> proof -> address -> proof
 
    (*
     * Get the low-level Refiner format of the proof

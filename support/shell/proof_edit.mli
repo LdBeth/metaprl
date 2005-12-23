@@ -114,7 +114,6 @@ val interpret : display_fun -> ped -> Proof.address -> proof_command -> was_modi
  *)
 val check_ped              : display_fun -> Refine.refiner -> opname -> ped -> was_modified * ref_status
 val refiner_extract_of_ped : display_fun -> ped -> was_modified * Refine.extract
-val print_exn              : display_fun -> ('a -> 'b) -> 'a -> 'b
 
 (*
  * Display utilities
