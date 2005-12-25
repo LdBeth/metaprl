@@ -236,7 +236,7 @@ let rec compute_aux name top_includes = function
       empty_bookmark, Table.empty, top_includes
  | DatInclude name' :: _ when StringSet.mem top_includes name' ->
       raise (Invalid_argument("Mp_resource: theory " ^ name ^ " extends " ^ name' ^ " twice"))
- | [ DatInclude name' ] ->
+ | [DatInclude name'] ->
       if not (Hashtbl.mem state.theory_includes name') then compute_data name';
       let includes = Hashtbl.find state.theory_includes name' in
       let top_includes' = StringSet.add top_includes name' in
