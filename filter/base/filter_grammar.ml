@@ -709,17 +709,23 @@ let get_start gram =
 (*
  * Terms.
  *)
+let xvar_opname          = mk_opname "xvar" perv_opname
 let xterm_opname         = mk_opname "xterm" perv_opname
 let xbterm_opname        = mk_opname "xbterm" perv_opname
 let xopname_opname       = mk_opname "xopname" perv_opname
 let xparam_opname        = mk_opname "xparam" perv_opname
 let xparam_term_opname   = mk_opname "xparam_term" perv_opname
 
+let is_xvar_term = is_string_term xvar_opname
+
 let is_xterm_term t =
    is_dep0_dep0_dep0_term xterm_opname t
 
 let is_xbterm_term t =
    is_sequent_term t && is_no_subterms_term xbterm_opname (args t)
+
+let dest_xvar_term =
+   dest_string_term xvar_opname
 
 let dest_xbterm_term t =
    if is_xbterm_term t then
@@ -746,6 +752,23 @@ let unfold_xterm_term state t =
    let op = mk_op opname params in
       mk_term op bterms
 
+(*
+ * Raw identifiers correspond to terms if the term has been declared.
+ * Otherwise it is a variable.
+ *)
+let unfold_xvar_term state t =
+   let s = dest_xvar_term t in
+      try
+         let opname = state.parse_opname NormalKind [s] [] [] in
+            eprintf "Found opname %s@." s;
+            mk_term (mk_op opname []) []
+      with
+         Stdpp.Exc_located _
+       | RefineError _
+       | Failure _
+       | Not_found ->
+            mk_var_term (Lm_symbol.add s)
+
 (************************************************
  * Create the conversions.
  *)
@@ -754,6 +777,8 @@ let refine_exn = RefineError ("Filter_grammar", GenericError)
 let apply_ml_pre_iforms state t =
    if is_xterm_term t then
       unfold_xterm_term state t
+   else if is_xvar_term t then
+      unfold_xvar_term state t
    else
       raise refine_exn
 
