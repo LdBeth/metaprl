@@ -760,7 +760,6 @@ let unfold_xvar_term state t =
    let s = dest_xvar_term t in
       try
          let opname = state.parse_opname NormalKind [s] [] [] in
-            eprintf "Found opname %s@." s;
             mk_term (mk_op opname []) []
       with
          Stdpp.Exc_located _
