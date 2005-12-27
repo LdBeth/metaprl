@@ -810,7 +810,7 @@ struct
    let param_vars_info_list = param_vars_term_list
 
    (*
-    * Collect all the parameter vars.
+    * Collect all ther vars.
     *)
    let rec all_vars_term vars t =
       match get_core t with
@@ -819,31 +819,70 @@ struct
                SeqHyp.fold (fun vars _ hyp ->
                      match hyp with
                         Hypothesis (v, h) ->
-                           let vars = SymbolTable.add vars v FirstOrderVar in
+                           let vars = SymbolSet.add vars v in
                               all_vars_term vars h
                       | Context (v, cs, ts) ->
-                           let vars = SymbolTable.add vars v (SequentContextVar (List.length cs, List.length ts)) in
+                           let vars = SymbolSet.add_list (SymbolSet.add vars v) cs in
                               all_vars_term_list vars ts) vars seq.sequent_hyps
             in
                all_vars_term (all_vars_term vars seq.sequent_args) seq.sequent_concl
        | Term { term_op = { op_params = params }; term_terms = bts } ->
-            all_vars_bterm_list (all_vars_param_list vars params) bts
+            all_vars_term_bterm_list (param_vars_param_list vars params) bts
        | FOVar v ->
-            SymbolTable.add vars v FirstOrderVar
+            SymbolSet.add vars v
        | SOVar(v, cs, ts) ->
-            let vars = SymbolTable.add vars v (SecondOrderVar (List.length cs, List.length ts)) in
+             let vars = SymbolSet.add_list (SymbolSet.add vars v) cs in
                all_vars_term_list vars ts
        | SOContext (v, t, cs, ts) ->
-            let vars = SymbolTable.add vars v (ContextVar (List.length cs, List.length ts)) in
+             let vars = SymbolSet.add_list (SymbolSet.add vars v) cs in
                all_vars_term_list vars (t :: ts)
        | Hashed _
        | Subst _ ->
-            fail_core "all_vars"
+            fail_core "all_vars_term"
 
    and all_vars_term_list vars tl =
       List.fold_left all_vars_term vars tl
 
-   and all_vars_param vars param =
+   and all_vars_term_bterm vars bt =
+      all_vars_term vars bt.bterm
+
+   and all_vars_term_bterm_list vars l =
+      List.fold_left all_vars_term_bterm vars l
+
+   let all_vars = all_vars_term SymbolSet.empty
+
+   let rec all_vars_info vars t =
+      match get_core t with
+         Sequent seq ->
+            let vars =
+               SeqHyp.fold (fun vars _ hyp ->
+                     match hyp with
+                        Hypothesis (v, h) ->
+                           let vars = SymbolTable.add vars v FirstOrderVar in
+                              all_vars_info vars h
+                      | Context (v, cs, ts) ->
+                           let vars = SymbolTable.add vars v (SequentContextVar (List.length cs, List.length ts)) in
+                              all_vars_info_list vars ts) vars seq.sequent_hyps
+            in
+               all_vars_info (all_vars_info vars seq.sequent_args) seq.sequent_concl
+       | Term { term_op = { op_params = params }; term_terms = bts } ->
+            all_vars_info_bterm_list (all_vars_info_param_list vars params) bts
+       | FOVar v ->
+            SymbolTable.add vars v FirstOrderVar
+       | SOVar(v, cs, ts) ->
+            let vars = SymbolTable.add vars v (SecondOrderVar (List.length cs, List.length ts)) in
+               all_vars_info_list vars ts
+       | SOContext (v, t, cs, ts) ->
+            let vars = SymbolTable.add vars v (ContextVar (List.length cs, List.length ts)) in
+               all_vars_info_list vars (t :: ts)
+       | Hashed _
+       | Subst _ ->
+            fail_core "all_vars_info"
+
+   and all_vars_info_list vars tl =
+      List.fold_left all_vars_info vars tl
+
+   and all_vars_info_param vars param =
       match param with
          Number _
        | String _
@@ -862,19 +901,16 @@ struct
             SymbolTable.add vars v ParamVar
        | ObId params
        | ParamList params ->
-            all_vars_param_list vars params
+            all_vars_info_param_list vars params
 
-   and all_vars_param_list vars params =
-      List.fold_left all_vars_param vars params
+   and all_vars_info_param_list vars params =
+      List.fold_left all_vars_info_param vars params
 
-   and all_vars_bterm vars bt =
-      all_vars_term vars bt.bterm
+   and all_vars_info_bterm vars bt =
+      all_vars_info vars bt.bterm
 
-   and all_vars_bterm_list vars l =
-      List.fold_left all_vars_bterm vars l
-
-   let all_vars_info = all_vars_term
-   let all_vars_info_list = all_vars_term_list
+   and all_vars_info_bterm_list vars l =
+      List.fold_left all_vars_info_bterm vars l
 
    (*
     * Meta term.
