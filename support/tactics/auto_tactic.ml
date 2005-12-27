@@ -286,10 +286,10 @@ let completeP tac = (tac.auto_type == AutoComplete)
  * A list of tactics to try is constructed.
  * The earlier tactics should be tried first.
  *)
-let make_progressT goals tac =
+let make_progressT goals tac tacelse =
    funT (fun p ->
       let goal = Sequent.goal p in
-      if List.exists (alpha_equal goal) goals then idT
+      if List.exists (alpha_equal goal) goals then tacelse
       else tac (goal::goals))
 
 (*
@@ -314,34 +314,34 @@ let extract tactics =
       eprintf "Auto tactics:\n\tTrivial: %s\n\tNormal: %s\n\tComplete: %s%t"
          (names trivial) (names normal) (names complete) eflush;
    end;
-   let make_progress_first reset next =
+   let make_progress_first reset next tacloop =
       let rec prog_first tacs goals =
          match tacs with
             [] ->
                next goals
           | tac :: tacs ->
-               ifthenelseT tac.auto_tac (make_progressT goals prog_reset) (prog_first tacs goals)
+               ifthenelseT tac.auto_tac (make_progressT goals prog_reset tacloop) (prog_first tacs goals)
       and prog_reset goals = prog_first reset goals
       in
          prog_first
    in
    let next_idT _ = idT in
    let next_failT _ = failT in
-   let gen_trivT next = make_progress_first trivial next trivial [] in
-   let trivT = gen_trivT next_idT in
-   let gen_normT next = gen_trivT (make_progress_first (trivial @ normal) next normal) in
+   let trivT = make_progress_first trivial next_idT idT trivial [] in
+   let normal_tacs = trivial @ normal in
    let all_tacs = trivial @ normal @ complete in
-   let try_complete goals = tryT (make_progress_first all_tacs next_failT complete goals) in
-   let autoT = gen_normT try_complete in
-   let strongAutoT = make_progress_first all_tacs next_idT all_tacs [] in
-      (trivT, autoT, strongAutoT)
+   let try_complete goals = tryT (make_progress_first all_tacs next_failT failT complete goals) in
+   let autoT = make_progress_first normal_tacs try_complete idT normal_tacs [] in
+   let strongAutoT = make_progress_first all_tacs next_idT idT all_tacs [] in
+   let tcaT = tryT (make_progress_first all_tacs next_failT failT all_tacs []) in
+      (trivT, autoT, strongAutoT, tcaT)
 
 let improve_resource data info = info::data
 
 (*
  * Resource.
  *)
-let resource (auto_info, tactic * tactic * tactic) auto =
+let resource (auto_info, tactic * tactic * tactic * tactic) auto =
    Functional {
       fp_empty = [];
       fp_add = improve_resource;
@@ -373,31 +373,29 @@ let rec check_progress goal = function
  * Actual tactics.
  *)
 let trivialT =
-   funT (fun p -> let trivT, _, _ = get_resource_arg p get_auto_resource in trivT)
+   funT (fun p -> let trivT, _, _, _ = get_resource_arg p get_auto_resource in trivT)
 
 let autoT =
-   funT (fun p -> let _, autoT, _ = get_resource_arg p get_auto_resource in autoT)
+   funT (fun p -> let _, autoT, _, _ = get_resource_arg p get_auto_resource in autoT)
 
 let strongAutoT =
-   funT (fun p -> let _, _, sAutoT = get_resource_arg p get_auto_resource in sAutoT)
+   funT (fun p -> let _, _, sAutoT, _ = get_resource_arg p get_auto_resource in sAutoT)
 
-let tcaT = tryT (completeT strongAutoT)
+let tcaT =
+   funT (fun p -> let _, _, _, tca = get_resource_arg p get_auto_resource in tca)
 
 let prefix_ttca tac =
    tac thenT tcaT
 
 suffix ttca
 
-let tcaT = tryT (completeT strongAutoT)
-let tcwaT = tryT (completeT autoT)
-
 let prefix_tatca tac =
-   tac thenAT tcwaT
+   tac thenAT tcaT
 
 suffix tatca
 
 let prefix_twtca tac =
-   tac thenWT tcwaT
+   tac thenWT tcaT
 
 suffix twtca
 

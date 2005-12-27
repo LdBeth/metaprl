@@ -78,7 +78,7 @@ and auto_type =
  | AutoNormal
  | AutoComplete
 
-resource (auto_info, tactic * tactic * tactic) auto
+resource (auto_info, tactic * tactic * tactic * tactic) auto
 
 (*
  * Operations on precedences.
@@ -99,8 +99,8 @@ val reduce_prec : auto_prec
  *)
 topval trivialT : tactic
 topval strongAutoT : tactic (* use AutoComplete entries freely *)
-topval tcaT : tactic (* tryT (completeT strongAutoT) *)
-topval autoT : tactic (* weakAutoT thenT tcaT *)
+topval tcaT : tactic (* equivalent to "tryT (completeT strongAutoT)", but faster *)
+topval autoT : tactic (* "AutoTrivial" orthenT "AutoNormal" thenT tcaT *)
 
 (*
  * "tac ttca" is a short for "tac thenT tcaT"
