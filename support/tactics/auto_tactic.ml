@@ -333,8 +333,8 @@ let extract tactics =
    let try_complete goals = tryT (make_progress_first all_tacs next_failT failT complete goals) in
    let autoT = make_progress_first normal_tacs try_complete idT normal_tacs [] in
    let strongAutoT = make_progress_first all_tacs next_idT idT all_tacs [] in
-   let tcaT = tryT (make_progress_first all_tacs next_failT failT all_tacs []) in
-      (trivT, autoT, strongAutoT, tcaT)
+   let caT = make_progress_first all_tacs next_failT failT all_tacs [] in
+      (trivT, autoT, strongAutoT, caT)
 
 let improve_resource data info = info::data
 
@@ -381,8 +381,10 @@ let autoT =
 let strongAutoT =
    funT (fun p -> let _, _, sAutoT, _ = get_resource_arg p get_auto_resource in sAutoT)
 
-let tcaT =
+let completeAutoT =
    funT (fun p -> let _, _, _, tca = get_resource_arg p get_auto_resource in tca)
+
+let tcaT = tryT completeAutoT
 
 let prefix_ttca tac =
    tac thenT tcaT
@@ -442,6 +444,9 @@ let resource auto += [{
  *)
 let resource menubar +=
     [<< menuitem["refine", "autoT", "Command('refine autoT')"] >>, refine_is_enabled]
+
+(* This one will get the topval wrapping *)
+let tcaT = tcaT
 
 (*
  * -*-

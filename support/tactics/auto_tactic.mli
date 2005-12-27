@@ -99,13 +99,14 @@ val reduce_prec : auto_prec
  *)
 topval trivialT : tactic
 topval strongAutoT : tactic (* use AutoComplete entries freely *)
+topval completeAutoT : tactic (* equivalent to "completeT strongAutoT", but faster *)
 topval tcaT : tactic (* equivalent to "tryT (completeT strongAutoT)", but faster *)
 topval autoT : tactic (* "AutoTrivial" orthenT "AutoNormal" thenT tcaT *)
 
 (*
  * "tac ttca" is a short for "tac thenT tcaT"
- * "tac tatca" is a short for "tac thenAT tryT (completeT autoT)"
- * "tac twtca" is a short for "tac thenWT tryT (completeT autoT)"
+ * "tac tatca" is a short for "tac thenAT tcaT"
+ * "tac twtca" is a short for "tac thenWT tcaT"
  * "tac taa" is a short for "tac thenAT autoT"
  * "tac twa" is a short for "tac thenWT autoT"
  *)
