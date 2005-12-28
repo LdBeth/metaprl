@@ -214,7 +214,6 @@ let make_groupdsc_opts () =
       get "group" "The short name of the group of modules",
       get "descr" "The description of the group of modules"
 
-
 (************************************************************************
  * BINDINGS IN STR ITEMS                                                *
  ************************************************************************)
@@ -240,9 +239,8 @@ let no_resources =
      item_bindings = [];
    }
 
-let debug_loc = (Lexing.dummy_pos, Lexing.dummy_pos)
-let intro_resources =
-   { item_item = [debug_loc, "intro", []];
+let intro_resources _loc =
+   { item_item = [_loc, "intro", [<:expr< [] >>]];
      item_bindings = []
    }
 

@@ -1429,7 +1429,8 @@ struct
       let name_wf = "wf_" ^ name in
       let _, mt, params, res = parse_rule loc name_wf mt [] no_resources in
       let tac = Printf.sprintf "rwh unfold_%s 0 thenT proofRuleWFT" name in
-         define_thm proc loc name_wf [] mt tac no_resources
+      let res = intro_resources loc in
+         define_thm proc loc name_wf [] mt tac res
 
    (* Convert into an implication rule *)
    let add_infer proc loc item =
@@ -1547,7 +1548,9 @@ struct
       let name_wf = "wf_" ^ name in
       let logic_wf = TermGrammar.mk_parsed_meta_term logic_wf in
       let _, logic_wf, _, _ = parse_rule loc name_wf logic_wf [] no_resources in
-      let () = define_int_thm proc loc name_wf [] logic_wf no_resources in
+      let logic_res = intro_resources loc in
+      let logic_tac = Printf.sprintf "rwh unfold_%s 0 thenT autoT" name in
+      let () = define_thm proc loc name_wf [] logic_wf logic_tac logic_res in
 
       (* Define the Provable{'p} predicate *)
       let quote =
