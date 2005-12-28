@@ -1428,7 +1428,8 @@ struct
       let mt = TermGrammar.mk_parsed_meta_term (Filter_reflection.mk_rule_wf_thm state t) in
       let name_wf = "wf_" ^ name in
       let _, mt, params, res = parse_rule loc name_wf mt [] no_resources in
-         define_int_thm proc loc name_wf [] mt no_resources
+      let tac = Printf.sprintf "rwh unfold_%s 0 thenT proofRuleWFT" name in
+         define_thm proc loc name_wf [] mt tac no_resources
 
    (* Convert into an implication rule *)
    let add_infer proc loc item =
