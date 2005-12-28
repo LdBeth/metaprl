@@ -2067,6 +2067,26 @@ struct
          }
       in
          fold_proof postf pf addr (RuleBox info)
+
+   (************************************************************************
+    * Other creation rules.
+    *)
+   let create_io_rulebox goal text =
+      let arg =
+         { simp_goal = goal;
+           simp_label = "main";
+           simp_attributes = empty_attribute
+         }
+      in
+      let info =
+         { io_rule_status = LazyStatusDelayed;
+           io_rule_string = text;
+           io_rule_goal = IOGoal arg;
+           io_rule_subgoals = [];
+           io_rule_extras = []
+         }
+      in
+         IORuleBox info
 end
 
 (*

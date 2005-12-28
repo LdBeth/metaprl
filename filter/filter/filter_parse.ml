@@ -60,6 +60,7 @@ open Refiner.Refiner.TermShape
 open Refiner.Refiner.TermTy
 open Refiner.Refiner.Rewrite
 open Refiner.Refiner.RefineError
+open Refiner.Refiner.Refine
 
 open Term_grammar
 open Filter_type
@@ -70,6 +71,7 @@ open Filter_summary_util
 open Filter_reflection
 open Filter_prog
 open Filter_magic
+open Proof_boot
 open Proof_convert
 open Simple_print
 
@@ -991,25 +993,33 @@ let define_rule proc loc name
     (res : ((MLast.expr, term) resource_def)) =
    try
       let cmd = StrFilter.rule_command proc name params mterm extract res in
-      begin match cmd, extract with
-         Rule r, Primitive extract ->
-            let _, ext_args, _ = split_mfunction mterm in
-            let addrs = collect_cvars r.rule_params in
-               Refine.check_prim_rule name addrs (collect_terms r.rule_params) (strip_mfunction mterm) ext_args extract
-       | _ -> ()
-      end;
-      StrFilter.add_command proc (cmd, loc)
-   with exn ->
-      Stdpp.raise_with_loc loc exn
+      let () =
+         match cmd, extract with
+            Rule r, Primitive extract ->
+               let _, ext_args, _ = split_mfunction mterm in
+               let addrs = collect_cvars r.rule_params in
+                  Refine.check_prim_rule name addrs (collect_terms r.rule_params) (strip_mfunction mterm) ext_args extract
+          | _ ->
+               ()
+      in
+         StrFilter.add_command proc (cmd, loc)
+   with
+      exn ->
+         Stdpp.raise_with_loc loc exn
 
-let define_prim proc loc name params mterm extract =
-   define_rule proc loc name params mterm (Primitive extract)
+let define_prim proc loc name params mterm extract res =
+   define_rule proc loc name params mterm (Primitive extract) res
 
-let define_thm proc loc name params mterm tac =
-   define_rule proc loc name params mterm (Derived tac)
+let define_thm proc loc name params mterm s res =
+   let assums, goal = unzip_mfunction mterm in
+   let assums = List.map (fun (_, _, assum) -> assum) assums in
+   let mseq = mk_msequent goal assums in
+   let proof = Proof.create_io_rulebox mseq s in
+   let proof = Convert.of_raw () s proof in
+      define_rule proc loc name params mterm (Interactive proof) res
 
-let define_int_thm proc loc name params mterm =
-   define_rule proc loc name params mterm Incomplete
+let define_int_thm proc loc name params mterm res =
+   define_rule proc loc name params mterm Incomplete res
 
 (************************************************************************
  * QUOTATIONS                                                           *
@@ -2050,7 +2060,7 @@ EXTEND
            in
               handle_exn f ("prim " ^ name) _loc;
               empty_str_item _loc
-        | "thm"; name = LIDENT; res = optresources; params = optarglist; ":"; mt = bmterm; "="; tac = expr ->
+        | "thm"; name = LIDENT; res = optresources; params = optarglist; ":"; mt = bmterm; "="; tac = STRING ->
            let f () =
               let proc = StrFilter.get_proc _loc in
               let _, mt, params, res = parse_rule _loc name mt params res in

@@ -518,7 +518,7 @@ sig
    val clear_cache : unit -> unit
 
    (*
-    * Make sure all the compositions are left-assotiatoive.
+    * Make sure all the compositions are left-associative.
     * Remove unnecessary identities.
     *)
    val normalize : extract -> extract
@@ -705,6 +705,11 @@ sig
       (string -> MLast.expr) ->    (* Parser *)
       (MLast.expr -> tactic) ->    (* Evaluator *)
       Refiner_io.TermType.term ->
+      io_proof
+
+   val create_io_rulebox :
+      msequent ->                  (* Goal term *)
+      string ->                    (* Tactic *)
       io_proof
 
    (*

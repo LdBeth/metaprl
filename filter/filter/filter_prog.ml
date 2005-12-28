@@ -900,7 +900,9 @@ let extract_expr _loc modname name =
  * along with the params, so that we can figure out its type.
  *)
 let define_rewrite_resources proc _loc name redex contractum assums addrs params resources name_id_expr =
-   if resources.item_item = [] then <:expr< () >> else
+   if resources.item_item = [] then
+      <:expr< () >>
+   else
    let define_resource (_loc, name', args) =
       let input, _ = find_res proc _loc name' in
       let arg_expr =
@@ -1199,7 +1201,6 @@ let interactive_rule proc _loc ax =
 (*
  * An ML rule performs the same action as a normal one,
  * but the ML code computes the subgoals.
- *
  *)
 let define_ml_rule want_checkpoint proc _loc
     { mlterm_name       = name;

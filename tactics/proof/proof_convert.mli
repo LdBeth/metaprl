@@ -28,11 +28,12 @@
  *
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  *)
-
 open Tactic_boot_sig
+open Proof_boot
 
 module Convert : ConvertProofSig
                  with type t = unit
+                 with type raw = Proof.io_proof
 
 (*
  * -*-

@@ -148,7 +148,6 @@ struct
       if !debug_convert then
          eprintf "Creating term_io proof%t" eflush;
       Term_io proof
-
 end
 
 (*
