@@ -60,11 +60,16 @@ val dest_xrulequote_term_raw : parse_state -> term -> term
 (*
  * Constructing rules and theorems.
  *)
-val mk_rule_wf_thm : parse_state -> term -> meta_term
-val mk_infer_thm : parse_state -> meta_term -> meta_term
-val mk_type_check_thm : parse_state -> (term, term) poly_ty_term -> meta_term
+type parse_info
 
-val mk_logic_info : parse_state ->
+val create_parse_info : parse_state -> parse_info
+
+val mk_rule_wf_thm    : parse_info -> term -> meta_term
+val mk_logic_wf_thm   : parse_info -> term -> meta_term
+val mk_infer_thm      : parse_info -> meta_term -> meta_term
+val mk_type_check_thm : parse_info -> (term, term) poly_ty_term -> meta_term
+
+val mk_logic_info : parse_info ->
    term ->        (* The name that will be given to the logic *)
    term list ->   (* The rules in the logic *)
    term ->        (* The argument 'p to the Provable{'p} predicate *)
@@ -72,6 +77,13 @@ val mk_logic_info : parse_state ->
 
    (* List of rules, logic_wf rule, Provable{Sequent; logic; p}, provable_wf *)
    term * meta_term * term * meta_term
+
+(*
+ * Various constructors.
+ *)
+val mk_empty_logic_term : parse_info -> term
+val mk_cons_logic_term  : parse_info -> term -> term -> term
+val mk_union_logic_term : parse_info -> term -> term -> term
 
 (*!
  * @docoff

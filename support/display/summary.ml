@@ -131,6 +131,7 @@ doc <:doc<
 declare type ShapeClass -> Dform
 declare shape_normal : ShapeClass
 declare shape_iform : ShapeClass
+declare shape_class[n:n] : ShapeClass
 declare "parent"{'path : Dform; 'resources : Dform} : Dform
 declare declare_typeclass{'shape : ShapeClass; 'term : Dform; 'ty: Dform; 'parent : Dform} : Dform
 declare declare_type{'shape : ShapeClass; 'term : Dform; 'ty: Dform} : Dform
@@ -519,6 +520,18 @@ dform declare_term_df : "declare_term"{'shape; 'info} =
    pushm[4] szone
    info["declare"] " " 'shape szone 'info ezone
    ezone popm
+
+dform shape_class_normal_df : shape_class[0] =
+   `""
+
+dform shape_class_iform_df : shape_class[1] =
+   keyword["iform "]
+
+dform shape_class_const_df : shape_class[2] =
+   keyword["const "]
+
+dform shape_class_const_iform_df : shape_class[3] =
+   keyword["const iform "]
 
 dform define_term_df : "define_term"{'shape; 'info; term_def[name:s]{'contractum; 'res}} =
    pushm[4] szone

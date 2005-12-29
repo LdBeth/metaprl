@@ -769,9 +769,7 @@ let unfold_xvar_term state t =
               shape_arities = []
             }
          in
-         eprintf "Found const shape %s@." s;
          let sc = state.parse_shape shape in
-         eprintf "Found shape class %a@." pp_print_shape_class sc;
             if is_shape_const sc then
                mk_term (mk_op opname []) []
             else

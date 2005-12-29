@@ -1395,16 +1395,20 @@ struct
          in
             strip_param t
 
-   (* Add a definition for each of the terms *)
-   let add_define proc loc item =
+   (*
+    * Define the rule as a term, and add a theorem that states that
+    * it is well-formed.
+    *)
+   let add_define proc info loc item =
       let { ref_rule_name = name;
             ref_rule_term = def
           } = item
       in
       let opname = Opname.mk_opname name (opname_prefix loc) in
-      let t = TermGrammar.mk_parsed_term (mk_term (mk_op opname []) []) in
+      let t_rule = mk_term (mk_op opname []) [] in
+      let t_quote = TermGrammar.mk_parsed_term t_rule in
       let quote =
-         { ty_term   = t;
+         { ty_term   = t_quote;
            ty_opname = opname;
            ty_params = [];
            ty_bterms = [];
@@ -1415,75 +1419,93 @@ struct
       let def = parsed_xrulequote_of_parsed_meta_term def in
       let () = StrFilter.declare_define_term proc sc (parse_define_redex loc quote) in
       let quote, def = parse_define_term loc name sc quote def in
-         StrFilter.define_term proc loc sc ("unfold_" ^ name) quote def no_resources
+      let () = StrFilter.define_term proc loc sc ("unfold_" ^ name) quote def no_resources in
 
-   (* Add a rule that says that the rule is well-formed *)
-   let add_wf proc loc item =
-      let name = item.ref_rule_name in
-      let opname = Opname.mk_opname name (opname_prefix loc) in
-      let t = mk_term (mk_op opname []) [] in
-
-      (* The theorem is (<H> >- t IN ProofRule) *)
-      let state = StrFilter.mk_parse_state loc "term" in
-      let mt = TermGrammar.mk_parsed_meta_term (Filter_reflection.mk_rule_wf_thm state t) in
+      (* The wf theorem is (<H> >- t IN ProofRule) *)
+      let mt = TermGrammar.mk_parsed_meta_term (Filter_reflection.mk_rule_wf_thm info t_rule) in
       let name_wf = "wf_" ^ name in
       let _, mt, params, res = parse_rule loc name_wf mt [] no_resources in
       let tac = Printf.sprintf "rwh unfold_%s 0 thenT proofRuleWFT" name in
       let res = intro_resources loc in
          define_thm proc loc name_wf [] mt tac res
 
-   (* Convert into an implication rule *)
-   let add_infer proc loc item =
+   (*
+    * Add the rule to the current logic/sentinal.
+    *)
+   let add_to_logic proc info current_logic loc item =
+      (* Get the logical rule *)
+      let name = item.ref_rule_name in
+      let opname = Opname.mk_opname name (opname_prefix loc) in
+      let t_rule = mk_term (mk_op opname []) [] in
+
+      (* Define a term for the logic *)
+      let name = "logic_" ^ item.ref_rule_name in
+      let opname = Opname.mk_opname name (opname_prefix loc) in
+      let t_logic = mk_term (mk_op opname []) [] in
+      let t = TermGrammar.mk_parsed_term t_logic in
+      let quote =
+         { ty_term   = t;
+           ty_opname = opname;
+           ty_params = [];
+           ty_bterms = [];
+           ty_type   = term_type
+         }
+      in
+      let sc = shape_normal in
+      let def = Filter_reflection.mk_cons_logic_term info t_rule current_logic in
+      let def = TermGrammar.mk_parsed_term def in
+      let () = StrFilter.declare_define_term proc sc (parse_define_redex loc quote) in
+      let quote, def = parse_define_term loc name sc quote def in
+      let () = StrFilter.define_term proc loc sc ("unfold_" ^ name) quote def no_resources in
+
+      (* The wf theorem is (<H> >- t IN Logic) *)
+      let mt = TermGrammar.mk_parsed_meta_term (Filter_reflection.mk_logic_wf_thm info t_logic) in
+      let name_wf = "wf_" ^ name in
+      let _, mt, params, res = parse_rule loc name_wf mt [] no_resources in
+      let tac = Printf.sprintf "rwh unfold_%s 0 thenT proofRuleWFT" name in
+      let res = intro_resources loc in
+      let () = define_thm proc loc name_wf [] mt tac res in
+         t_logic
+
+   (*
+    * Convert into a "Provable" rule.
+    *)
+   let add_infer proc info current loc item =
       let { ref_rule_name      = name;
             ref_rule_params    = params;
             ref_rule_resources = res;
             ref_rule_term      = mt
           } = item
       in
-      let state = StrFilter.mk_parse_state loc "term" in
       let cvars, mt, params, res = parse_rule loc name mt params res in
-      let mt = Filter_reflection.mk_infer_thm state mt in
-
-      (* For now, we have to filter out context arguments *)
-      let params =
-         let (cvars1, cvars2) = cvars in
-         let params =
-            List.fold_left (fun params t ->
-                  let v = strip_param t in
-                     if SymbolSet.mem cvars1 v || SymbolSet.mem cvars2 v then
-                        params
-                     else
-                        mk_var_term v :: params) [] params
-         in
-            List.rev params
-      in
+      let mt = Filter_reflection.mk_infer_thm info mt in
       let mt, params, _ = mterms_of_parsed_mterms (fun _ -> true) mt params in
          define_int_thm proc loc name params mt res
 
-   let add_rule proc loc items item =
-      add_define proc loc item;
-      add_wf proc loc item;
-      (loc, item) :: items
+   let add_rule proc info current loc item =
+      let () = add_define proc info loc item in
+      let current = add_to_logic proc info current loc item in
+         (* add_infer proc info current loc item; *)
+         current
 
    (************************************************************************
     * Typeclasses.
     *)
-   let add_typeclass proc loc items item =
-      items
+   let add_typeclass proc info current loc item =
+      current
 
    (************************************************************************
     * Types.
     *)
-   let add_type proc loc items item =
-      items
+   let add_type proc info current loc item =
+      current
 
    (************************************************************************
     * Declarations.
     *)
-   let add_declare proc loc items quote =
-      let state = StrFilter.mk_parse_state loc "term" in
+   let add_declare proc info current loc quote =
       let name, _ = Opname.dst_opname quote.ty_opname in
-      let mt = Filter_reflection.mk_type_check_thm state quote in
+      let mt = Filter_reflection.mk_type_check_thm info quote in
       let mt = TermGrammar.mk_parsed_meta_term mt in
       let item =
          { ref_rule_name      = "term_" ^ name;
@@ -1492,17 +1514,16 @@ struct
            ref_rule_term      = mt
          }
       in
-         add_rule proc loc items item
+         add_rule proc info current loc item
 
    (************************************************************************
     * Rewrites.
     *)
-   let add_rewrite proc loc items item =
-      items
+   let add_rewrite proc info current loc item =
+      current
 
    (************************************************************************
     * Postprocessing.
-    *)
    let var_p = Lm_symbol.add "p"
 
    let postprocess_items proc loc name items =
@@ -1555,31 +1576,36 @@ struct
          (* Add all of the reflected rules *)
          List.iter (fun (loc, item) ->
                add_infer proc loc item) items
+    *)
 
    (************************************************************************
     * General handlers.
     *)
-   let process_item_exn proc loc items item =
+   let process_item_exn proc info current loc item =
       match item with
          RefRule item ->
-            add_rule proc loc items item
+            add_rule proc info current loc item
        | RefTypeClass item ->
-            add_typeclass proc loc items item
+            add_typeclass proc info current loc item
        | RefType item ->
-            add_type proc loc items item
+            add_type proc info current loc item
        | RefRewrite item ->
-            add_rewrite proc loc items item
+            add_rewrite proc info current loc item
        | RefDeclare quote ->
-            add_declare proc loc items quote
+            add_declare proc info current loc quote
 
-   let process_item proc items (loc, item) =
+   let process_item proc info current (loc, item) =
       let f () =
-         process_item_exn proc loc items item
+         process_item_exn proc info current loc item
       in
          handle_exn f "implem" loc
 
    let process_reflected_logic proc loc name items =
-      ignore (List.fold_left (process_item proc) [] items)
+      let state = StrFilter.mk_parse_state loc "term" in
+      let info = Filter_reflection.create_parse_info state in
+      let current = Filter_reflection.mk_empty_logic_term info in
+      let _final = List.fold_left (process_item proc info) current items in
+         ()
 end;;
 
 (*^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

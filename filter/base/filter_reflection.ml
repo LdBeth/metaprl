@@ -130,110 +130,104 @@ sig
    val mk_let_sovar_term      : t -> var -> term -> term -> int -> term -> term
    val mk_spread_term         : t -> term -> var -> var -> term -> term
    val mk_vsequent_term       : t -> term -> term list -> term -> term
+   val mk_empty_logic_term    : t -> term
+   val mk_cons_logic_term     : t -> term -> term -> term
+   val mk_union_logic_term    : t -> term -> term -> term
 end;;
 
 module Reflect : ReflectSig =
 struct
-   type t =
-      { opname_lambda         : opname Lazy.t;
-        opname_bind           : opname Lazy.t;
-        opname_bind_vec       : opname Lazy.t;
-        opname_mk_bterm       : opname Lazy.t;
-        opname_mk_term        : opname Lazy.t;
-        opname_operator       : opname Lazy.t;
-        term_nil              : term Lazy.t;
-        opname_cons           : opname Lazy.t;
-        opname_pair           : opname Lazy.t;
-        opname_length         : opname Lazy.t;
-        opname_append         : opname Lazy.t;
-        opname_sequent        : opname Lazy.t;
-        opname_list           : opname Lazy.t;
-        opname_exists         : opname Lazy.t;
-        opname_equal          : opname Lazy.t;
-        opname_number         : opname Lazy.t;
-        term_nat              : term Lazy.t;
-        opname_subst          : opname Lazy.t;
-        opname_substl         : opname Lazy.t;
-        opname_map            : opname Lazy.t;
-        opname_add            : opname Lazy.t;
-        opname_bterm2         : opname Lazy.t;
-        opname_cvar           : opname Lazy.t;
-        opname_ProofStep      : opname Lazy.t;
-        opname_proof_step     : opname Lazy.t;
-        opname_beq_proof_step : opname Lazy.t;
-        opname_ProofRule      : opname Lazy.t;
-        sequent_arg           : term Lazy.t;
-        opname_provable       : opname Lazy.t;
-        opname_Provable       : opname Lazy.t;
-        sequent_term          : term Lazy.t;
-        opname_meta_member    : opname Lazy.t;
-        meta_type             : term Lazy.t;
-        opname_Logic          : opname Lazy.t;
-        opname_type           : opname Lazy.t;
-        opname_assert         : opname Lazy.t;
-        opname_let_cvar       : opname Lazy.t;
-        opname_let_sovar      : opname Lazy.t;
-        opname_spread         : opname Lazy.t;
-        opname_vsequent       : opname Lazy.t;
-      }
+   (*
+    * Table of opnames that we care about.
+    *)
+   let hash_index = ref 0
 
-   let mk_state_opname state op params arities =
-      state.parse_opname NormalKind [op] params arities
+   let hash info =
+      let index = !hash_index in
+         incr hash_index;
+         index, info
+
+   let info_BTerm2            = hash ("BTerm",          [], [0])
+   let info_CVar              = hash ("CVar",           [], [0])
+   let info_Logic             = hash ("Logic",          [], [0])
+   let info_ProofRule         = hash ("ProofRule",      [], [0])
+   let info_ProofStep         = hash ("ProofStep",      [], [0])
+   let info_Provable1         = hash ("Provable",       [], [0])
+   let info_Provable3         = hash ("Provable",       [], [0; 0; 0])
+   let info_Sequent           = hash ("Sequent",        [], [])
+   let info_add               = hash ("add",            [], [0; 0])
+   let info_append            = hash ("append",         [], [0; 0])
+   let info_assert            = hash ("assert",         [], [0])
+   let info_beq_proof_step    = hash ("beq_proof_step", [], [0; 0])
+   let info_bind_vec          = hash ("bind",           [], [0; 1])
+   let info_bind              = hash ("bind",           [], [1])
+   let info_cons              = hash ("cons",           [], [0; 0])
+   let info_equal             = hash ("equal",          [], [0; 0; 0])
+   let info_exists            = hash ("exists",         [], [0; 1])
+   let info_lambda            = hash ("lambda",         [], [1])
+   let info_length            = hash ("length",         [], [0])
+   let info_let_cvar          = hash ("let_cvar",       [], [0; 0; 0; 1])
+   let info_let_sovar         = hash ("let_sovar",      [], [0; 0; 0; 1])
+   let info_list              = hash ("list",           [], [0])
+   let info_map               = hash ("map",            [], [1; 0])
+   let info_meta_member       = hash ("meta_member",    [], [0; 0])
+   let info_meta_type         = hash ("meta_type",      [], [])
+   let info_mk_bterm          = hash ("mk_bterm",       [], [0; 0; 0])
+   let info_mk_term           = hash ("mk_term",        [], [0; 0])
+   let info_nat               = hash ("nat",            [], [])
+   let info_nil               = hash ("nil",            [], [])
+   let info_number            = hash ("number",         [ShapeNumber], [])
+   let info_operator          = hash ("operator",       [ShapeOperator], [])
+   let info_pair              = hash ("pair",           [], [0; 0])
+   let info_proof_step        = hash ("proof_step",     [], [0; 0])
+   let info_sequent           = hash ("sequent",        [], [0; 0; 0])
+   let info_sequent_arg       = hash ("sequent_arg",    [], [])
+   let info_spread            = hash ("spread",         [], [0; 2])
+   let info_subst             = hash ("subst",          [], [0; 0])
+   let info_substl            = hash ("substl",         [], [0; 0])
+   let info_type              = hash ("type",           [], [0])
+   let info_vsequent          = hash ("vsequent",       [], [0])
+   let info_empty_logic       = hash ("empty_logic",    [], [])
+   let info_cons_logic        = hash ("cons_logic",     [], [0; 0])
+   let info_union_logic       = hash ("union_logic",    [], [0; 0])
+
+   (*
+    * Lazy opname creation.
+    *)
+   type t =
+      { info_state   : parse_state;
+        info_opnames : opname option array
+      }
 
    let create state =
-      { opname_lambda         = Lazy.lazy_from_fun (fun () -> mk_state_opname state "lambda"   [] [1]);
-        opname_bind           = Lazy.lazy_from_fun (fun () -> mk_state_opname state "bind"     [] [1]);
-        opname_bind_vec       = Lazy.lazy_from_fun (fun () -> mk_state_opname state "bind"     [] [0; 1]);
-        opname_mk_bterm       = Lazy.lazy_from_fun (fun () -> mk_state_opname state "mk_bterm" [] [0; 0; 0]);
-        opname_mk_term        = Lazy.lazy_from_fun (fun () -> mk_state_opname state "mk_term"  [] [0; 0]);
-        opname_operator       = Lazy.lazy_from_fun (fun () -> mk_state_opname state "operator" [ShapeOperator] []);
-        term_nil              = Lazy.lazy_from_fun (fun () -> mk_simple_term (mk_state_opname state "nil" [] []) []);
-        opname_cons           = Lazy.lazy_from_fun (fun () -> mk_state_opname state "cons"     [] [0; 0]);
-        opname_pair           = Lazy.lazy_from_fun (fun () -> mk_state_opname state "pair"     [] [0; 0]);
-        opname_length         = Lazy.lazy_from_fun (fun () -> mk_state_opname state "length"   [] [0]);
-        opname_append         = Lazy.lazy_from_fun (fun () -> mk_state_opname state "append"   [] [0; 0]);
-        opname_sequent        = Lazy.lazy_from_fun (fun () -> mk_state_opname state "sequent"  [] [0; 0; 0]);
-        opname_list           = Lazy.lazy_from_fun (fun () -> mk_state_opname state "list"     [] [0]);
-        opname_exists         = Lazy.lazy_from_fun (fun () -> mk_state_opname state "exists"   [] [0; 1]);
-        opname_equal          = Lazy.lazy_from_fun (fun () -> mk_state_opname state "equal"    [] [0; 0; 0]);
-        term_nat              = Lazy.lazy_from_fun (fun () -> mk_simple_term (mk_state_opname state "nat" [] []) []);
-        opname_number         = Lazy.lazy_from_fun (fun () -> mk_state_opname state "number" [ShapeNumber] []);
-        opname_subst          = Lazy.lazy_from_fun (fun () -> mk_state_opname state "subst"     [] [0; 0]);
-        opname_substl         = Lazy.lazy_from_fun (fun () -> mk_state_opname state "substl"    [] [0; 0]);
-        opname_map            = Lazy.lazy_from_fun (fun () -> mk_state_opname state "map"       [] [1; 0]);
-        opname_add            = Lazy.lazy_from_fun (fun () -> mk_state_opname state "add"       [] [0; 0]);
-        opname_bterm2         = Lazy.lazy_from_fun (fun () -> mk_state_opname state "BTerm"     [] [0]);
-        opname_cvar           = Lazy.lazy_from_fun (fun () -> mk_state_opname state "CVar"      [] [0]);
-        opname_ProofStep      = Lazy.lazy_from_fun (fun () -> mk_state_opname state "ProofStep" [] [0]);
-        opname_proof_step     = Lazy.lazy_from_fun (fun () -> mk_state_opname state "proof_step" [] [0; 0]);
-        opname_beq_proof_step = Lazy.lazy_from_fun (fun () -> mk_state_opname state "beq_proof_step" [] [0; 0]);
-        opname_ProofRule      = Lazy.lazy_from_fun (fun () -> mk_state_opname state "ProofRule" [] [0]);
-        sequent_arg           = Lazy.lazy_from_fun (fun () -> mk_simple_term (mk_state_opname state "sequent_arg" [] []) []);
-        sequent_term          = Lazy.lazy_from_fun (fun () -> mk_simple_term (mk_state_opname state "Sequent" [] []) []);
-        opname_provable       = Lazy.lazy_from_fun (fun () -> mk_state_opname state "Provable"  [] [0]);
-        opname_Provable       = Lazy.lazy_from_fun (fun () -> mk_state_opname state "Provable"  [] [0; 0; 0]);
-        opname_meta_member    = Lazy.lazy_from_fun (fun () -> mk_state_opname state "meta_member"  [] [0; 0]);
-        meta_type             = Lazy.lazy_from_fun (fun () -> mk_simple_term (mk_state_opname state "meta_type" [] []) []);
-        opname_Logic          = Lazy.lazy_from_fun (fun () -> mk_state_opname state "Logic"  [] [0]);
-        opname_type           = Lazy.lazy_from_fun (fun () -> mk_state_opname state "type"  [] [0]);
-        opname_assert         = Lazy.lazy_from_fun (fun () -> mk_state_opname state "assert" [] [0]);
-        opname_let_cvar       = Lazy.lazy_from_fun (fun () -> mk_state_opname state "let_cvar" [] [0; 0; 0; 1]);
-        opname_let_sovar      = Lazy.lazy_from_fun (fun () -> mk_state_opname state "let_sovar" [] [0; 0; 0; 1]);
-        opname_spread         = Lazy.lazy_from_fun (fun () -> mk_state_opname state "spread" [] [0; 2]);
-        opname_vsequent       = Lazy.lazy_from_fun (fun () -> mk_state_opname state "vsequent" [] [0]);
+      { info_state   = state;
+        info_opnames = Array.create !hash_index None
       }
 
+   let find_opname info (id, data) =
+      match info.info_opnames.(id) with
+         Some opname ->
+            opname
+       | None ->
+            let op, params, arities = data in
+            let opname = info.info_state.parse_opname NormalKind [op] params arities in
+               info.info_opnames.(id) <- Some opname;
+               opname
+
+   (************************************************************************
+    * Actual constructors.
+    *)
    let mk_length_term info t =
-      mk_dep0_term (Lazy.force info.opname_length) t
+      mk_dep0_term (find_opname info info_length) t
 
    let mk_lambda_term info v t =
-      mk_dep1_term (Lazy.force info.opname_lambda) v t
+      mk_dep1_term (find_opname info info_lambda) v t
 
    let mk_bind_term info v t =
-      mk_dep1_term (Lazy.force info.opname_bind) v t
+      mk_dep1_term (find_opname info info_bind) v t
 
    let mk_bind_vec_term info d v t =
-      mk_dep0_dep1_term (Lazy.force info.opname_bind_vec) v d t
+      mk_dep0_dep1_term (find_opname info info_bind_vec) v d t
 
    let rec mk_rev_bind_terms info vars t =
       match vars with
@@ -250,19 +244,19 @@ struct
             t
 
    let mk_mk_term_term info op subterms =
-      mk_simple_term (Lazy.force info.opname_mk_term) [op; subterms]
+      mk_simple_term (find_opname info info_mk_term) [op; subterms]
 
    let mk_mk_bterm_term info depth op subterms =
-      mk_simple_term (Lazy.force info.opname_mk_bterm) [depth; op; subterms]
+      mk_simple_term (find_opname info info_mk_bterm) [depth; op; subterms]
 
    let mk_operator_term info op =
-      mk_term (mk_op (Lazy.force info.opname_operator) [make_param (Operator op)]) []
+      mk_term (mk_op (find_opname info info_operator) [make_param (Operator op)]) []
 
    let mk_nil_term info =
-      Lazy.force info.term_nil
+      mk_simple_term (find_opname info info_nil) []
 
    let mk_cons_term info t1 t2 =
-      mk_simple_term (Lazy.force info.opname_cons) [t1; t2]
+      mk_simple_term (find_opname info info_cons) [t1; t2]
 
    let rec mk_list_term info l =
       match l with
@@ -272,10 +266,10 @@ struct
             mk_cons_term info v (mk_list_term info l)
 
    let mk_pair_term info t1 t2 =
-      mk_simple_term (Lazy.force info.opname_pair) [t1; t2]
+      mk_simple_term (find_opname info info_pair) [t1; t2]
 
    let mk_append_term info t1 t2 =
-      mk_simple_term (Lazy.force info.opname_append) [t1; t2]
+      mk_simple_term (find_opname info info_append) [t1; t2]
 
    let rec mk_append_list_term info l =
       match l with
@@ -287,25 +281,25 @@ struct
             mk_append_term info t (mk_append_list_term info l)
 
    let mk_sequent_term info arg hyps concl =
-      mk_simple_term (Lazy.force info.opname_sequent) [arg; hyps; concl]
+      mk_simple_term (find_opname info info_sequent) [arg; hyps; concl]
 
    let mk_ty_list_term info t =
-      mk_simple_term (Lazy.force info.opname_list) [t]
+      mk_simple_term (find_opname info info_list) [t]
 
    let mk_exists_term info v t1 t2 =
-      mk_dep0_dep1_term (Lazy.force info.opname_exists) v t1 t2
+      mk_dep0_dep1_term (find_opname info info_exists) v t1 t2
 
    let mk_equal_term info t1 t2 t3 =
-      mk_simple_term (Lazy.force info.opname_equal) [t3; t1; t2]
+      mk_simple_term (find_opname info info_equal) [t3; t1; t2]
 
    let mk_ty_nat info =
-      Lazy.force info.term_nat
+      mk_simple_term (find_opname info info_nat) []
 
    let mk_number_term info i =
-      mk_term (mk_op (Lazy.force info.opname_number) [make_param (Number (Lm_num.num_of_int i))]) []
+      mk_term (mk_op (find_opname info info_number) [make_param (Number (Lm_num.num_of_int i))]) []
 
    let mk_subst_term info t1 t2 =
-      mk_simple_term (Lazy.force info.opname_subst) [t1; t2]
+      mk_simple_term (find_opname info info_subst) [t1; t2]
 
    let rec mk_soapply_term info t args =
       match args with
@@ -315,7 +309,7 @@ struct
             t
 
    let mk_substl_term info t1 t2 =
-      mk_simple_term (Lazy.force info.opname_substl) [t1; t2]
+      mk_simple_term (find_opname info info_substl) [t1; t2]
 
    let rec mk_capply_term info t cvars =
       match cvars with
@@ -325,55 +319,55 @@ struct
             t
 
    let mk_map_term info v t1 t2 =
-      mk_dep1_dep0_term (Lazy.force info.opname_map) v t1 t2
+      mk_dep1_dep0_term (find_opname info info_map) v t1 t2
 
    let mk_add_term info t1 t2 =
-      mk_dep0_dep0_term (Lazy.force info.opname_add) t1 t2
+      mk_dep0_dep0_term (find_opname info info_add) t1 t2
 
    let mk_BTerm2_term info t =
-      mk_dep0_term (Lazy.force info.opname_bterm2) t
+      mk_dep0_term (find_opname info info_BTerm2) t
 
    let mk_CVar_term info t =
-      mk_dep0_term (Lazy.force info.opname_cvar) t
+      mk_dep0_term (find_opname info info_CVar) t
 
    let mk_ProofStep_term info t =
-      mk_dep0_term (Lazy.force info.opname_ProofStep) t
+      mk_dep0_term (find_opname info info_ProofStep) t
 
    let mk_proof_step_term info t1 t2 =
-      mk_dep0_dep0_term (Lazy.force info.opname_proof_step) t1 t2
+      mk_dep0_dep0_term (find_opname info info_proof_step) t1 t2
 
    let mk_beq_proof_step_term info t1 t2 =
-      mk_dep0_dep0_term (Lazy.force info.opname_beq_proof_step) t1 t2
+      mk_dep0_dep0_term (find_opname info info_beq_proof_step) t1 t2
 
    let mk_ProofRule_term info t =
-      mk_dep0_term (Lazy.force info.opname_ProofRule) t
+      mk_dep0_term (find_opname info info_ProofRule) t
 
    let mk_sequent_arg_term info =
-      Lazy.force info.sequent_arg
+      mk_simple_term (find_opname info info_sequent_arg) []
 
    let mk_Sequent_term info =
-      Lazy.force info.sequent_term
+      mk_simple_term (find_opname info info_Sequent) []
 
    let mk_Logic_term info t =
-      mk_dep0_term (Lazy.force info.opname_Logic) t
+      mk_dep0_term (find_opname info info_Logic) t
 
    let mk_provable_term info t =
-      mk_dep0_term (Lazy.force info.opname_provable) t
+      mk_dep0_term (find_opname info info_Provable1) t
 
    let mk_Provable_term info t1 t2 t3 =
-      mk_dep0_dep0_dep0_term (Lazy.force info.opname_Provable) t1 t2 t3
+      mk_dep0_dep0_dep0_term (find_opname info info_Provable3) t1 t2 t3
 
    let mk_meta_member_term info t1 t2 =
-      mk_dep0_dep0_term (Lazy.force info.opname_meta_member) t1 t2
+      mk_dep0_dep0_term (find_opname info info_meta_member) t1 t2
 
    let mk_meta_type_term info =
-      Lazy.force info.meta_type
+      mk_simple_term (find_opname info info_meta_type) []
 
    let mk_type_term info t =
-      mk_dep0_term (Lazy.force info.opname_type) t
+      mk_dep0_term (find_opname info info_type) t
 
    let mk_assert_term info t =
-      mk_dep0_term (Lazy.force info.opname_assert) t
+      mk_dep0_term (find_opname info info_assert) t
 
    let mk_dep0_dep0_dep0_dep1_term opname t1 t2 t3 v t4 =
       let bterms =
@@ -387,24 +381,37 @@ struct
 
    let mk_let_cvar_term info v t1 t2 t3 t4 =
       let t3 = mk_number_term info t3 in
-         mk_dep0_dep0_dep0_dep1_term (Lazy.force info.opname_let_cvar) t1 t2 t3 v t4
+         mk_dep0_dep0_dep0_dep1_term (find_opname info info_let_cvar) t1 t2 t3 v t4
 
    let mk_let_sovar_term info v t1 t2 t3 t4 =
       let t3 = mk_number_term info t3 in
-         mk_dep0_dep0_dep0_dep1_term (Lazy.force info.opname_let_sovar) t1 t2 t3 v t4
+         mk_dep0_dep0_dep0_dep1_term (find_opname info info_let_sovar) t1 t2 t3 v t4
 
    let mk_spread_term info t1 v1 v2 t2 =
-      mk_dep0_dep2_term (Lazy.force info.opname_spread) v1 v2 t1 t2
+      mk_dep0_dep2_term (find_opname info info_spread) v1 v2 t1 t2
 
    let mk_vsequent_term info arg hyps concl =
       let seq =
-         { sequent_args = mk_dep0_term (Lazy.force info.opname_vsequent) arg;
+         { sequent_args = mk_dep0_term (find_opname info info_vsequent) arg;
            sequent_hyps = SeqHyp.of_list (List.map (fun t -> Hypothesis (var_none, t)) hyps);
            sequent_concl = concl
          }
       in
          TermMan.mk_sequent_term seq
+
+   let mk_empty_logic_term info =
+      mk_simple_term (find_opname info info_empty_logic) []
+
+   let mk_cons_logic_term info t1 t2 =
+      mk_dep0_dep0_term (find_opname info info_cons_logic) t1 t2
+
+   let mk_union_logic_term info t1 t2 =
+      mk_dep0_dep0_term (find_opname info info_union_logic) t1 t2
 end;;
+
+type parse_info = Reflect.t
+
+let create_parse_info = Reflect.create
 
 (*
  * When a term is quoted, quote all its subparts.
@@ -780,10 +787,30 @@ let dest_xrulequote_term state t =
  *
  *    <H> >- t IN ProofRule
  *)
-let mk_rule_wf_thm state t =
-   let info = Reflect.create state in
+let mk_rule_wf_thm info t =
    let seq = Reflect.mk_Sequent_term info in
    let ty = Reflect.mk_ProofRule_term info seq in
+   let t = Reflect.mk_equal_term info t t ty in
+   let h = Context (var_H, [], []) in
+   let info =
+      { sequent_args = Reflect.mk_sequent_arg_term info;
+        sequent_hyps = SeqHyp.singleton h;
+        sequent_concl = t
+      }
+   in
+   let t = mk_sequent_term info in
+      MetaTheorem t
+
+(*
+ * Build the wf thm for a logic.
+ *
+ * This has the form
+ *
+ *    <H> >- t IN Logic
+ *)
+let mk_logic_wf_thm info t =
+   let seq = Reflect.mk_Sequent_term info in
+   let ty = Reflect.mk_Logic_term info seq in
    let t = Reflect.mk_equal_term info t t ty in
    let h = Context (var_H, [], []) in
    let info =
@@ -814,9 +841,7 @@ let mk_provable_sequent_term info h_v t =
    in
       mk_sequent_term info
 
-let mk_infer_thm state t =
-   let info = Reflect.create state in
-
+let mk_infer_thm info t =
    (* Convert the terms in the rule *)
    let premises, goal = unzip_mfunction t in
    let socvars, premises =
@@ -846,9 +871,7 @@ let mk_infer_thm state t =
 (*
  * Build a type checking rule.
  *)
-let mk_type_check_thm state quote =
-   let info = Reflect.create state in
-
+let mk_type_check_thm info quote =
    (* Get the parts of ther quoted term *)
    let { ty_term   = t;
          ty_opname = opname;
@@ -922,9 +945,7 @@ let mk_type_check_thm state quote =
 (*
  * Build the term that defines a logic.
  *)
-let mk_logic_info state t_logic rules var_p t_provable =
-   let info = Reflect.create state in
-
+let mk_logic_info info t_logic rules var_p t_provable =
    (* The logic is a list of rules *)
    let logic = Reflect.mk_list_term info rules in
 
@@ -961,6 +982,18 @@ let mk_logic_info state t_logic rules var_p t_provable =
    in
    let provable_wf = zip_mimplies [mk_sequent_term assum_info] (mk_sequent_term goal_info) in
       logic, logic_wf, provable, provable_wf
+
+(*
+ * Logic construction.
+ *)
+let mk_empty_logic_term info =
+   Reflect.mk_empty_logic_term info
+
+let mk_cons_logic_term info t_rule t_logic =
+   Reflect.mk_cons_logic_term info t_rule t_logic
+
+let mk_union_logic_term info t_logic1 t_logic2 =
+   Reflect.mk_union_logic_term info t_logic1 t_logic2
 
 (*!
  * @docoff
