@@ -35,6 +35,7 @@ open Refiner.Refiner.TermMan
 open Refiner.Refiner.RefineError
 
 open Filter_type
+open Filter_shape
 open Filter_summary_type
 
 open Tactic_type
@@ -117,9 +118,10 @@ let is_any_item _ =
 let is_rewrite_item = function
    Rewrite _
  | CondRewrite _
- | MLRewrite _
- | DefineTerm(ShapeNormal, _, _) ->
+ | MLRewrite _ ->
       true
+ | DefineTerm (shapeclass, _, _) ->
+      is_shape_normal shapeclass
  | _ ->
       false
 
@@ -142,17 +144,14 @@ let is_formal_item = function
  | MLRewrite _
  | Rule _
  | MLAxiom  _
- | DeclareTypeClass (ShapeNormal, _, _, _)
- | DeclareType (ShapeNormal, _, _)
- | DefineTerm (ShapeNormal, _, _)
  | DeclareTypeRewrite _ ->
       true
- | DeclareTerm (ShapeNormal, ty_term) ->
-      not (Perv.is_dform_type ty_term)
- | DeclareTerm (ShapeIForm, _)
- | DeclareTypeClass (ShapeIForm, _, _, _)
- | DeclareType (ShapeIForm, _, _)
- | DefineTerm (ShapeIForm, _, _)
+ | DeclareTypeClass (shapeclass, _, _, _)
+ | DeclareType (shapeclass, _, _)
+ | DefineTerm (shapeclass, _, _) ->
+      is_shape_normal shapeclass
+ | DeclareTerm (shapeclass, ty_term) ->
+      is_shape_normal shapeclass && not (Perv.is_dform_type ty_term)
  | Parent _
  | SummaryItem _
  | Improve _
@@ -177,14 +176,14 @@ let is_display_item = function
    MLGramUpd _
  | Prec _
  | DForm _
- | DeclareTerm (ShapeIForm, _)
- | DeclareTypeClass (ShapeIForm, _, _, _)
- | DeclareType (ShapeIForm, _, _)
- | DefineTerm (ShapeIForm, _, _)
  | InputForm _ ->
       true
- | DeclareTerm (ShapeNormal, ty_term) ->
-     Perv.is_dform_type ty_term
+ | DeclareTerm (shapeclass, ty_term) ->
+      is_shape_iform shapeclass || Perv.is_dform_type ty_term
+ | DeclareTypeClass (shapeclass, _, _, _)
+ | DeclareType (shapeclass, _, _)
+ | DefineTerm (shapeclass, _, _) ->
+      is_shape_iform shapeclass
  | _ ->
       false
 

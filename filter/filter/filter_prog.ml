@@ -46,6 +46,7 @@ open Precedence
 
 open Filter_type
 open Filter_util
+open Filter_shape
 open Filter_summary_type
 open Filter_summary_util
 open Filter_summary
@@ -619,9 +620,10 @@ let extract_sig_item (item, loc) =
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_sig_item: magic block%t" eflush;
          declare_magic_block loc block
-    | DefineTerm (ShapeNormal, class_term, term_def) ->
+    | DefineTerm (shapeclass, class_term, term_def)
+      when is_shape_normal shapeclass ->
          declare_define_term loc class_term term_def
-    | DefineTerm (ShapeIForm, _, _)
+    | DefineTerm _
     | DeclareTypeClass _
     | DeclareType _
     | DeclareTerm _
@@ -1654,9 +1656,10 @@ let extract_str_item proc (item, loc) =
     | MLGramUpd (Infix s)
     | MLGramUpd (Suffix s) ->
          define_prefix loc s
-    | DefineTerm (ShapeNormal, class_term, def) ->
+    | DefineTerm (shapeclass, class_term, def)
+      when is_shape_normal shapeclass ->
          define_term proc loc class_term def
-    | DefineTerm (ShapeIForm, _, _)
+    | DefineTerm _
     | DeclareTypeClass _
     | DeclareType _
     | DeclareTerm _

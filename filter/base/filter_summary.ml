@@ -34,6 +34,7 @@
 open Lm_debug
 open Lm_symbol
 open Lm_printf
+open Lm_num
 
 open Opname
 open Term_sig
@@ -45,6 +46,7 @@ open Term_ty_sig
 
 open Filter_util
 open Filter_type
+open Filter_shape
 
 (*
  * Show the file loading.
@@ -811,6 +813,7 @@ let toploop_item_op            = mk_opname "toploop_item"
 let improve_op                 = mk_opname "improve"
 let shape_normal_op            = mk_opname "shape_normal"
 let shape_iform_op             = mk_opname "shape_iform"
+let shape_class_op             = mk_opname "shape_class"
 
 (* XXX HACK: ASCII_IO format <= 1.0.17 had "opname" and "definition" *)
 let opname_op                  = mk_opname "opname"
@@ -1177,10 +1180,12 @@ struct
 
    let dest_shapeclass_term t =
       let op = opname_of_term t in
-         if Opname.eq op shape_normal_op then
-            ShapeNormal
+         if Opname.eq op shape_class_op then
+            shape_class_of_num (dest_number_term op t)
+         else if Opname.eq op shape_normal_op then (* XXX: HACK: ASCII IO <= 1.0.23 compatibility *)
+            shape_normal
          else if Opname.eq op shape_iform_op then
-            ShapeIForm
+            shape_iform
          else
             raise (Failure ("bad shape class: " ^ string_of_opname op))
 
@@ -1188,7 +1193,7 @@ struct
       let shapeclass, typeclass_opname, typeclass_type_opname, parent =
          match subterms_of_term t with
             [typeclass_opname; typeclass_type_opname; parent] -> (* XXX: HACK: ASCII IO <= 1.0.20 compatibility *)
-               ShapeNormal, typeclass_opname, typeclass_type_opname, parent
+               shape_normal, typeclass_opname, typeclass_type_opname, parent
           | [shapeclass; typeclass_opname; typeclass_type_opname; parent] ->
                dest_shapeclass_term shapeclass, typeclass_opname, typeclass_type_opname, parent
           | _ ->
@@ -1203,7 +1208,7 @@ struct
       let shapeclass, ty_def, ty_opname =
          match subterms_of_term t with
             [ty_def; ty_opname] -> (* XXX: HACK: ASCII IO <= 1.0.20 compatibility *)
-               ShapeNormal, ty_def, ty_opname
+               shape_normal, ty_def, ty_opname
           | [shapeclass; ty_def; ty_opname] ->
                dest_shapeclass_term shapeclass, ty_def, ty_opname
           | _ ->
@@ -1217,7 +1222,7 @@ struct
       let shapeclass, ty_def =
          match subterms_of_term t with
             [ty_def] -> (* XXX: HACK: ASCII IO <= 1.0.20 compatibility *)
-               ShapeNormal, ty_def
+               shape_normal, ty_def
           | [shapeclass; ty_def] ->
                dest_shapeclass_term shapeclass, ty_def
           | _ ->
@@ -1230,7 +1235,7 @@ struct
       let shapeclass, ty_def, term_def =
          match subterms_of_term t with
             [ty_def; term_def] -> (* XXX: HACK: ASCII IO <= 1.0.20 compatibility *)
-               ShapeNormal, ty_def, term_def
+               shape_normal, ty_def, term_def
           | [shapeclass; ty_def; term_def] ->
                dest_shapeclass_term shapeclass, ty_def, term_def
           | _ ->
@@ -1685,11 +1690,8 @@ struct
    let shape_normal_term = mk_term (mk_op shape_normal_op []) []
    let shape_iform_term = mk_term (mk_op shape_iform_op []) []
 
-   let mk_shapeclass_term = function
-      ShapeNormal ->
-         shape_normal_term
-    | ShapeIForm ->
-         shape_iform_term
+   let mk_shapeclass_term shapeclass =
+      mk_number_term shape_class_op (num_of_shape_class shapeclass)
 
    let term_of_declare_typeclass convert shapeclass opname type_opname parent =
       let t0 = mk_shapeclass_term shapeclass in
@@ -1888,7 +1890,8 @@ struct
             implem_error loc (sprintf "Rewrite %s: not implemented" name)
        | Rewrite { rw_name = name'; rw_redex = redex'; rw_contractum = con' } :: _ when name = name' ->
             redex', con'
-       | DefineTerm (ShapeNormal, ty_term, { term_def_name = name'; term_def_value = con' }) :: _ when name = name' ->
+       | DefineTerm (shapeclass, ty_term, { term_def_name = name'; term_def_value = con' }) :: _
+         when name = name' && is_shape_normal shapeclass ->
             (term_of_ty ty_term), con'
        | _ :: t ->
             search t
@@ -1911,9 +1914,10 @@ struct
          [] ->
             None
        | InputForm { iform_name = name'; iform_redex = redex'; iform_contractum = con' } :: _ when name = name' ->
-            Some((redex', con'))
-       | DefineTerm (ShapeIForm, ty_term, { term_def_name = name'; term_def_value = con' }) :: _ when name = name' ->
-            Some(((term_of_ty ty_term), con'))
+            Some (redex', con')
+       | DefineTerm (shapeclass, ty_term, { term_def_name = name'; term_def_value = con' }) :: _
+         when name = name' && is_shape_iform shapeclass ->
+            Some (term_of_ty ty_term, con')
        | _ :: t ->
             search t
       in

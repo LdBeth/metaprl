@@ -37,6 +37,7 @@ open Term_sig
 open Term_ty_sig
 open Term_meta_sig
 open Simple_print
+open Filter_shape
 open Refiner.Refiner
 open Refiner.Refiner.TermType
 open Refiner.Refiner.Term
@@ -55,8 +56,9 @@ open Tactic_type
  *)
 type parse_state =
    { parse_quotation : string -> string -> term;
-     parse_opname : op_kind -> string list -> shape_param list -> int list -> Opname.opname;
-     parse_param : term -> param
+     parse_opname    : op_kind -> string list -> shape_param list -> int list -> Opname.opname;
+     parse_shape     : shape -> shape_class;
+     parse_param     : term -> param
    }
 
 (*

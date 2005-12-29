@@ -45,6 +45,7 @@ open Refiner.Refiner.TermSubst
 open Refiner.Refiner.Rewrite
 open Refiner.Refiner.RefineError
 open Filter_reflection
+open Filter_shape
 
 open Tactic_type
 
@@ -753,14 +754,28 @@ let unfold_xterm_term state t =
       mk_term op bterms
 
 (*
- * Raw identifiers correspond to terms if the term has been declared.
+ * Raw identifiers correspond to terms if the term has been declared
+ * as a const 0-airty term.
+ *
  * Otherwise it is a variable.
  *)
 let unfold_xvar_term state t =
    let s = dest_xvar_term t in
       try
          let opname = state.parse_opname NormalKind [s] [] [] in
-            mk_term (mk_op opname []) []
+         let shape =
+            { shape_opname  = opname;
+              shape_params  = [];
+              shape_arities = []
+            }
+         in
+         eprintf "Found const shape %s@." s;
+         let sc = state.parse_shape shape in
+         eprintf "Found shape class %a@." pp_print_shape_class sc;
+            if is_shape_const sc then
+               mk_term (mk_op opname []) []
+            else
+               raise Not_found
       with
          Stdpp.Exc_located _
        | RefineError _

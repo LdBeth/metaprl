@@ -30,14 +30,16 @@ open Term_ty_sig
 open Term_shape_sig
 open Refiner.Refiner.TermType
 open Refiner.Refiner.TermShape
+open Filter_shape
 
 (*
  * For expanding quotations.
  *)
 type parse_state =
    { parse_quotation : string -> string -> term;
-     parse_opname : op_kind -> string list -> shape_param list -> int list -> Opname.opname;
-     parse_param : term -> param
+     parse_opname    : op_kind -> string list -> shape_param list -> int list -> Opname.opname;
+     parse_shape     : shape -> shape_class;
+     parse_param     : term -> param
    }
 
 (*

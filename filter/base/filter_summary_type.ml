@@ -46,6 +46,7 @@ open Refiner.Refiner.TermTy
 open File_base_type
 
 open Filter_type
+open Filter_shape
 open Filter_summary
 
 (*

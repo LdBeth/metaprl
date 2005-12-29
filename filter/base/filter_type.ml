@@ -37,6 +37,7 @@ open Term_ty_sig
 open Refiner.Refiner.TermType
 open Refiner.Refiner.TermMeta
 open Refiner.Refiner.TermTy
+open Filter_shape
 open Opname
 open Dform
 
@@ -300,13 +301,6 @@ type typeclass_parent =
  | ParentInclude of opname
 
 (*
- * Declarations have multiple classes.
- *)
-type shape_class =
-   ShapeNormal
- | ShapeIForm
-
-(*
  * The summary contains information about everything in the file.
  * We use the summary for both interfaces and implementations.
  * If the implementation requires a term for the definition,
@@ -356,6 +350,7 @@ type parse_state = Filter_reflection.parse_state
 type parsing_state =
    { opname_prefix      : MLast.loc -> opname;
      mk_opname_kind     : MLast.loc -> op_kind -> string list -> shape_param list -> int list -> Opname.opname;
+     find_shape_class   : MLast.loc -> shape -> shape_class;
      mk_var_contexts    : MLast.loc -> var -> int -> var list option;
      infer_term         : MLast.loc -> term -> term;
      check_rule         : MLast.loc -> meta_term -> term list -> unit;
@@ -408,13 +403,14 @@ sig
    type parsed_meta_term = parsed_term poly_meta_term
 
    (* Opnames *)
-   val mk_opname_kind  : MLast.loc -> op_kind -> string list -> shape_param list -> int list -> Opname.opname
-   val dest_xparam : MLast.loc -> term -> Refiner.Refiner.TermType.param
+   val mk_opname_kind       : MLast.loc -> op_kind -> string list -> shape_param list -> int list -> Opname.opname
+   val find_shape_class     : MLast.loc -> shape -> shape_class
+   val dest_xparam          : MLast.loc -> term -> Refiner.Refiner.TermType.param
 
    (* Quotation access *)
-   val dest_quot       : string -> string * string
-   val parse_quotation : MLast.loc -> string -> string -> string -> parsed_term
-   val convert_comment : MLast.loc -> term -> term
+   val dest_quot            : string -> string * string
+   val parse_quotation      : MLast.loc -> string -> string -> string -> parsed_term
+   val convert_comment      : MLast.loc -> term -> term
 
    (* Term conversion *)
    val parse_term           : MLast.loc -> parsed_term -> term

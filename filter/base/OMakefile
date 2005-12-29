@@ -56,6 +56,7 @@ FILTER_MAGIC[] =
     $(REFDIR)/term_ds/term_ds_sig.ml
     $(REFDIR)/reflib/ascii_io.ml
     $(PROOFDIR)/proof_term_boot.ml
+    filter_shape.ml
     filter_type.ml
     filter_grammar.ml
 

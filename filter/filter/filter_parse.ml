@@ -65,6 +65,7 @@ open Refiner.Refiner.Refine
 open Term_grammar
 open Filter_type
 open Filter_util
+open Filter_shape
 open Filter_summary
 open Filter_summary_type
 open Filter_summary_util
@@ -336,7 +337,8 @@ struct
            (fun name s ->
                  TermGrammar.raw_term_of_parsed_term (TermGrammar.parse_quotation loc id name s));
         Filter_reflection.parse_opname = TermGrammar.mk_opname_kind loc;
-        Filter_reflection.parse_param = TermGrammar.dest_xparam loc
+        Filter_reflection.parse_shape  = TermGrammar.find_shape_class loc;
+        Filter_reflection.parse_param  = TermGrammar.dest_xparam loc
       }
 
    let input_exp shape id s =
@@ -931,10 +933,8 @@ struct
            term_def_resources = res
          }
       in
-         begin match shapeclass with
-            ShapeNormal -> ()
-          | ShapeIForm -> add_iform proc loc redex contractum
-         end;
+         if is_shape_iform shapeclass then
+            add_iform proc loc redex contractum;
          add_command proc (DefineTerm (shapeclass, ty_term, term_def), loc)
 end
 
@@ -1262,13 +1262,12 @@ let parse_define_redex loc quote =
 
 let parse_define_term loc name shape_class quote contractum =
    let redex, contractum =
-      match shape_class with
-         ShapeNormal ->
-            parse_define loc name quote.ty_term contractum
-       | ShapeIForm ->
-            let mt = parse_iform loc name (MetaIff (MetaTheorem quote.ty_term, MetaTheorem contractum)) in
-            let _, redex, contractum = unzip_rewrite name mt in
-               redex, contractum
+      if is_shape_iform shape_class then
+         let mt = parse_iform loc name (MetaIff (MetaTheorem quote.ty_term, MetaTheorem contractum)) in
+         let _, redex, contractum = unzip_rewrite name mt in
+            redex, contractum
+      else
+         parse_define loc name quote.ty_term contractum
    in
       { quote with ty_term = redex }, contractum
 
@@ -1342,6 +1341,7 @@ let sig_keyword kw loc =
  * This is for reflection processing.
  * Try to keep it separate in case we want to remove it later.
  vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv*)
+
 type ref_rule =
    { ref_rule_name      : string;
      ref_rule_resources : (ProofCaches.StrFilterCache.str_expr, term) resource_def;
@@ -1411,7 +1411,7 @@ struct
            ty_type   = term_type
          }
       in
-      let sc = ShapeNormal in
+      let sc = shape_normal in
       let def = parsed_xrulequote_of_parsed_meta_term def in
       let () = StrFilter.declare_define_term proc sc (parse_define_redex loc quote) in
       let quote, def = parse_define_term loc name sc quote def in
@@ -1538,7 +1538,7 @@ struct
            ty_type   = term_type
          }
       in
-      let sc = ShapeNormal in
+      let sc = shape_normal in
       let () = StrFilter.declare_define_term proc sc (parse_define_redex loc quote) in
       let logic = TermGrammar.mk_parsed_term logic in
       let quote, def = parse_define_term loc name sc quote logic in
@@ -1551,27 +1551,6 @@ struct
       let logic_res = intro_resources loc in
       let logic_tac = Printf.sprintf "rwh unfold_%s 0 thenT autoT" name in
       let () = define_thm proc loc name_wf [] logic_wf logic_tac logic_res in
-
-      (* Define the Provable{'p} predicate *)
-      let quote =
-         { ty_term   = TermGrammar.mk_parsed_term t_provable;
-           ty_opname = opname;
-           ty_params = [];
-           ty_bterms = [{ ty_bvars = []; ty_bterm = term_type }];
-           ty_type   = term_type
-         }
-      in
-      let sc = ShapeNormal in
-      let () = StrFilter.declare_define_term proc sc (parse_define_redex loc quote) in
-      let provable = TermGrammar.mk_parsed_term provable in
-      let quote, def = parse_define_term loc name sc quote provable in
-      let () = StrFilter.define_term proc loc sc ("unfold_provable_" ^ name) quote def no_resources in
-
-      (* Give the wf rule *)
-      let name_wf = name ^ "_provable_wf" in
-      let provable_wf = TermGrammar.mk_parsed_meta_term provable_wf in
-      let _, provable_wf, _, _ = parse_rule loc name_wf provable_wf [] no_resources in
-      let () = define_int_thm proc loc name_wf [] provable_wf no_resources in
 
          (* Add all of the reflected rules *)
          List.iter (fun (loc, item) ->
@@ -1600,9 +1579,9 @@ struct
          handle_exn f "implem" loc
 
    let process_reflected_logic proc loc name items =
-      let items = List.fold_left (process_item proc) [] items in
-         postprocess_items proc loc name (List.rev items)
+      ignore (List.fold_left (process_item proc) [] items)
 end;;
+
 (*^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
  * This is for reflection processing.
  * Try to keep is separate in case we want to remove it later.
@@ -1728,20 +1707,20 @@ EXTEND
           (************************************************************************
            * Opname classes.
            *)
-        | "declare"; "typeclass"; sc = shapeclass; name = opname_name; typeclass_type = opt_typeclass_type; typeclass_parent = opt_typeclass_parent ->
+        | "declare"; "typeclass"; sc = shapeclasses; name = opname_name; typeclass_type = opt_typeclass_type; typeclass_parent = opt_typeclass_parent ->
           let f () =
              SigFilter.declare_typeclass (SigFilter.get_proc _loc) _loc sc name typeclass_type typeclass_parent
           in
              handle_exn f "declare-typeclass" _loc;
              empty_sig_item _loc
-        | "declare"; "type"; sc = shapeclass; quote = quote_term; ty_parent = opt_type_parent ->
+        | "declare"; "type"; sc = shapeclasses; quote = quote_term; ty_parent = opt_type_parent ->
           let f () =
              let quote = parse_declare_type _loc quote in
                 SigFilter.declare_type (SigFilter.get_proc _loc) _loc sc quote ty_parent
           in
              handle_exn f "declare-type" _loc;
              empty_sig_item _loc
-        | "declare"; "type"; sc = shapeclass; quote = quote_term; ty_parent = opt_type_parent; "="; cases = declare_cases ->
+        | "declare"; "type"; sc = shapeclasses; quote = quote_term; ty_parent = opt_type_parent; "="; cases = declare_cases ->
           let f () =
              let quote = parse_declare_type _loc quote in
              let cases = List.map (parse_declare_term _loc) cases in
@@ -1749,14 +1728,14 @@ EXTEND
           in
              handle_exn f "declare-type-cases" _loc;
              empty_sig_item _loc
-        | "declare"; sc = shapeclass; quote = quote_term ->
+        | "declare"; sc = shapeclasses; quote = quote_term ->
           let f () =
              let quote = parse_declare_term _loc quote in
                 SigFilter.declare_term (SigFilter.get_proc _loc) _loc sc quote
           in
              handle_exn f "declare" _loc;
              empty_sig_item _loc
-        | "define"; sc = shapeclass; name = LIDENT; res = optresources; ":"; quote = quote_term; "<-->"; def = term ->
+        | "define"; sc = shapeclasses; name = LIDENT; res = optresources; ":"; quote = quote_term; "<-->"; def = term ->
           let f () =
              let proc = SigFilter.get_proc _loc in
              let quote = parse_define_quote _loc quote in
@@ -1954,20 +1933,20 @@ EXTEND
           (************************************************************************
            * Opname classes.
            *)
-        | "declare"; "typeclass"; sc = shapeclass; name = opname_name; typeclass_type = opt_typeclass_type; typeclass_parent = opt_typeclass_parent ->
+        | "declare"; "typeclass"; sc = shapeclasses; name = opname_name; typeclass_type = opt_typeclass_type; typeclass_parent = opt_typeclass_parent ->
           let f () =
              StrFilter.declare_typeclass (StrFilter.get_proc _loc) _loc sc name typeclass_type typeclass_parent
           in
              handle_exn f "declare-typeclass" _loc;
              empty_str_item _loc
-        | "declare"; "type"; sc = shapeclass; quote = quote_term; ty_parent = opt_type_parent ->
+        | "declare"; "type"; sc = shapeclasses; quote = quote_term; ty_parent = opt_type_parent ->
           let f () =
              let quote = parse_declare_type _loc quote in
                 StrFilter.declare_type (StrFilter.get_proc _loc) _loc sc quote ty_parent
           in
              handle_exn f "declare-type" _loc;
              empty_str_item _loc
-        | "declare"; "type"; sc = shapeclass; quote = quote_term; ty_parent = opt_type_parent; "="; cases = declare_cases ->
+        | "declare"; "type"; sc = shapeclasses; quote = quote_term; ty_parent = opt_type_parent; "="; cases = declare_cases ->
           let f () =
              let quote = parse_declare_type _loc quote in
              let cases = List.map (parse_declare_term _loc) cases in
@@ -1975,14 +1954,14 @@ EXTEND
           in
              handle_exn f "declare-type-cases" _loc;
              empty_str_item _loc
-        | "declare"; sc = shapeclass; quote = quote_term ->
+        | "declare"; sc = shapeclasses; quote = quote_term ->
           let f () =
              let quote = parse_declare_term _loc quote in
                 StrFilter.declare_term (StrFilter.get_proc _loc) _loc sc quote
           in
              handle_exn f "declare" _loc;
              empty_str_item _loc
-        | "define"; sc = shapeclass; name = LIDENT; res = optresources; ":"; quote = quote_term; "<-->"; def = term ->
+        | "define"; sc = shapeclasses; name = LIDENT; res = optresources; ":"; quote = quote_term; "<-->"; def = term ->
           let f () =
              let proc = StrFilter.get_proc _loc in
              let quote = parse_define_quote _loc quote in
@@ -2250,7 +2229,7 @@ EXTEND
           in
              _loc, RefRule item
 
-        | "declare"; "typeclass"; sc = shapeclass; name = opname_name; typeclass_type = opt_typeclass_type; typeclass_parent = opt_typeclass_parent ->
+        | "declare"; "typeclass"; sc = shapeclasses; name = opname_name; typeclass_type = opt_typeclass_type; typeclass_parent = opt_typeclass_parent ->
           let f () =
              StrFilter.declare_typeclass (StrFilter.get_proc _loc) _loc sc name typeclass_type typeclass_parent
           in
@@ -2263,7 +2242,7 @@ EXTEND
           in
              _loc, RefTypeClass item
 
-        | "declare"; "type"; sc = shapeclass; quote = quote_term; ty_parent = opt_type_parent ->
+        | "declare"; "type"; sc = shapeclasses; quote = quote_term; ty_parent = opt_type_parent ->
           let f () =
              let quote = parse_declare_type _loc quote in
              let () = StrFilter.declare_type (StrFilter.get_proc _loc) _loc sc quote ty_parent in
@@ -2276,7 +2255,7 @@ EXTEND
           in
              handle_exn f "declare-type" _loc
 
-        | "declare"; sc = shapeclass; quote = quote_term ->
+        | "declare"; sc = shapeclasses; quote = quote_term ->
           let f () =
              let quote = parse_declare_term _loc quote in
              let () = StrFilter.declare_term (StrFilter.get_proc _loc) _loc sc quote in
@@ -2469,11 +2448,14 @@ EXTEND
    (*
     * Shapeclass.
     *)
+   shapeclasses:
+      [[ sc = LIST0 shapeclass ->
+            List.fold_left shape_combine shape_normal sc
+      ]];
+
    shapeclass:
-      [[ sc = OPT "iform" ->
-            match sc with
-               Some _ -> ShapeIForm
-             | None -> ShapeNormal
+      [[ "iform" -> shape_iform
+       | "const" -> shape_const
       ]];
 
    (*

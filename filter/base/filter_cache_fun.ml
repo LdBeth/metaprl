@@ -58,6 +58,7 @@ open Term_hash_code
 
 open Filter_type
 open Filter_util
+open Filter_shape
 open Filter_summary
 open Filter_summary_type
 
@@ -566,6 +567,10 @@ struct
                         raise (Failure ("opname " ^ SimplePrint.string_of_opname opname ^ " is not declared with shape name: " ^ string_of_op_shape shape))
                end
 
+   let find_shape_class cache shape =
+      let shapes = cache.shapes in
+         snd (ShapeTable.find shapes shape)
+
    let op_shape_of_term_kind name kind t =
       let params = List.map param_type (dest_op (dest_term t).term_op).op_params in
          if strip_quotations params != params then
@@ -893,11 +898,8 @@ struct
                         Not_found ->
                            check_input_term_error "undeclared term" t_root t
                   in
-                     match info with
-                        ShapeNormal ->
-                           ()
-                      | ShapeIForm ->
-                           check_input_term_error "unexpected iform term" t_root t) t_root
+                     if is_shape_iform info then
+                        check_input_term_error "unexpected iform term" t_root t) t_root
 
    let tenv_of_cache cache =
       let { typeenv        = typeenv;
@@ -916,39 +918,49 @@ struct
    let allow_seq_bindings tenv t =
       try
          not (Term_ty_infer.is_seq_ignore_bindings_tp (ShapeTable.find tenv.tenv_termenv (shape_of_term t)))
-      with Not_found ->
-         true
+      with
+         Not_found ->
+            true
 
    let wrap1 f loc arg =
-      try f arg with exn -> Stdpp.raise_with_loc loc exn
+      try f arg with
+         exn ->
+            Stdpp.raise_with_loc loc exn
 
    let wrap2 f loc arg1 arg2 =
-      try f arg1 arg2 with exn -> Stdpp.raise_with_loc loc exn
+      try f arg1 arg2 with
+         exn ->
+            Stdpp.raise_with_loc loc exn
 
    let wrap3 f loc arg1 arg2 arg3 =
-      try f arg1 arg2 arg3 with exn -> Stdpp.raise_with_loc loc exn
+      try f arg1 arg2 arg3 with
+         exn ->
+            Stdpp.raise_with_loc loc exn
 
    let wrap4 f loc arg1 arg2 arg3 arg4 =
-      try f arg1 arg2 arg3 arg4 with exn -> Stdpp.raise_with_loc loc exn
+      try f arg1 arg2 arg3 arg4 with
+         exn ->
+            Stdpp.raise_with_loc loc exn
 
    let get_parsing_state cache =
       let delay_tenv f arg = f (tenv_of_cache cache) arg in
-         { opname_prefix = (fun _ -> cache.opprefix);
-           mk_opname_kind = wrap4 (mk_opname_kind cache);
-           mk_var_contexts = (fun _ _ _ -> None);
-           infer_term = wrap1 (delay_tenv Term_ty_infer.infer_term);
-           check_rule = wrap2 (delay_tenv Term_ty_infer.check_rule);
-           check_rewrite = wrap2 (delay_tenv Term_ty_infer.check_rewrite);
-           check_type_rewrite = wrap2 (delay_tenv check_type_rewrite);
-           check_dform = wrap2 (delay_tenv Term_ty_infer.check_dform);
-           check_iform = wrap1 (delay_tenv Term_ty_infer.check_iform);
-           check_production = wrap2 (delay_tenv Term_ty_infer.check_production);
-           check_input_term = wrap1 (check_input_term cache);
-           check_input_mterm = wrap1 (iter_mterm (check_input_term cache));
-           allow_seq_bindings = wrap1 (delay_tenv allow_seq_bindings);
-           apply_iforms = wrap2 (fun quote t -> Filter_grammar.apply_iforms quote cache.grammar t);
-           apply_iforms_mterm = wrap3 (fun quote mt args -> Filter_grammar.apply_iforms_mterm quote cache.grammar mt args);
-           term_of_string = (fun loc quote name s -> Filter_grammar.term_of_string quote cache.grammar name (fst loc) s)
+         { opname_prefix          = (fun _ -> cache.opprefix);
+           mk_opname_kind         = wrap4 (mk_opname_kind cache);
+           find_shape_class       = wrap1 (find_shape_class cache);
+           mk_var_contexts        = (fun _ _ _ -> None);
+           infer_term             = wrap1 (delay_tenv Term_ty_infer.infer_term);
+           check_rule             = wrap2 (delay_tenv Term_ty_infer.check_rule);
+           check_rewrite          = wrap2 (delay_tenv Term_ty_infer.check_rewrite);
+           check_type_rewrite     = wrap2 (delay_tenv check_type_rewrite);
+           check_dform            = wrap2 (delay_tenv Term_ty_infer.check_dform);
+           check_iform            = wrap1 (delay_tenv Term_ty_infer.check_iform);
+           check_production       = wrap2 (delay_tenv Term_ty_infer.check_production);
+           check_input_term       = wrap1 (check_input_term cache);
+           check_input_mterm      = wrap1 (iter_mterm (check_input_term cache));
+           allow_seq_bindings     = wrap1 (delay_tenv allow_seq_bindings);
+           apply_iforms           = wrap2 (fun quote t -> Filter_grammar.apply_iforms quote cache.grammar t);
+           apply_iforms_mterm     = wrap3 (fun quote mt args -> Filter_grammar.apply_iforms_mterm quote cache.grammar mt args);
+           term_of_string         = (fun loc quote name s -> Filter_grammar.term_of_string quote cache.grammar name (fst loc) s)
          }
 
    (************************************************************************

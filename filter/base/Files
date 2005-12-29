@@ -1,6 +1,7 @@
 BASE_FILES[] =
     filter_buffer
     free_vars
+    filter_shape
     filter_reflection
     filter_grammar
     filter_type
