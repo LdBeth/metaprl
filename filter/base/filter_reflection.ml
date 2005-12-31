@@ -418,7 +418,6 @@ let create_parse_info = Reflect.create
  *)
 let xquote_opname = mk_opname "xquote" perv_opname
 let xunquote_opname = mk_opname "xunquote" perv_opname
-let xrulequote_opname = mk_opname "xrulequote" perv_opname
 
 let is_xunquote_term t =
    is_dep0_term xunquote_opname t
@@ -541,9 +540,6 @@ let maybe_new_var v vars =
       v
 
 let var_z = Lm_symbol.add "z"
-
-let is_xrulequote_term t =
-   is_dep0_term xrulequote_opname t && is_meta_term (dest_dep0_term xrulequote_opname t)
 
 let sweep_rulequote_term info socvars t =
    let rec sweepdn socvars t =
@@ -724,61 +720,6 @@ let mk_socvar_wf_assum info h_v (v, _, b, cargs, arity) =
 
 let mk_socvar_wf_assums info h_v socvars =
    List.map (mk_socvar_wf_assum info h_v) socvars
-
-(*
- * Quote the rule.
- *)
-let dest_xrulequote_term_inner state t =
-   let info = Reflect.create state in
-   let t, _, _ = mterms_of_parsed_mterms (fun _ -> true) t [] in
-
-   (* New variables to work with *)
-   let fv = free_vars_mterm t in
-   let v_step = maybe_new_var var_step fv in
-   let v_witness = maybe_new_var var_witness (SymbolSet.add fv v_step) in
-   let t_step = mk_var_term v_step in
-   let t_witness = mk_var_term v_witness in
-
-   (* Convert the terms in the rule *)
-   let premises, goal = unzip_mfunction t in
-   let socvars, premises =
-      List.fold_left (fun (socvars, premises) (_, _, t) ->
-            let socvars, t = sweep_rulequote_term info socvars t in
-            let premises = t :: premises in
-               socvars, premises) (SymbolTable.empty, []) premises
-   in
-   let socvars, goal = sweep_rulequote_term info socvars goal in
-   let premises = Reflect.mk_list_term info (List.rev premises) in
-
-   (* The inner term is an equality *)
-   let t = Reflect.mk_proof_step_term info premises goal in
-   let t = Reflect.mk_beq_proof_step_term info (mk_var_term v_step) t in
-
-   (* Quantify over the free context and second-order variables *)
-   let socvars = sort_socvars socvars in
-   let t = quantify_socvars info t_witness socvars t in
-
-   (* The entire thing is a function that takes a step, and checks it *)
-   let t = Reflect.mk_spread_term info t_step v_step v_witness t in
-   let t = Reflect.mk_lambda_term info v_step t in
-      t
-
-let dest_xrulequote_term_raw state t =
-   try
-      let t = meta_term_of_term t in
-         dest_xrulequote_term_inner state t
-   with
-      RefineError (s, err) ->
-         raise (RefineForceError ("dest_xrulequote_term", s, err))
-
-let dest_xrulequote_term state t =
-   try
-      let t = dest_dep0_term xrulequote_opname t in
-      let t = meta_term_of_term t in
-         dest_xrulequote_term_inner state t
-   with
-      RefineError (s, err) ->
-         raise (RefineForceError ("dest_xrulequote_term", s, err))
 
 (*
  * Build the wf thm.

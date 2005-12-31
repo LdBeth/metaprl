@@ -47,15 +47,12 @@ type parse_state =
  *)
 val is_xquote_term : term -> bool
 val is_xquote0_term : term -> bool
-val is_xrulequote_term : term -> bool
 
 (*
  * Reflection processing.
  *)
 val dest_xquote_term : parse_state -> term -> term
 val dest_xquote0_term : parse_state -> term -> term
-val dest_xrulequote_term : parse_state -> term -> term
-val dest_xrulequote_term_raw : parse_state -> term -> term
 
 (*
  * Constructing rules and theorems.
