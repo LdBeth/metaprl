@@ -74,6 +74,7 @@ struct
 
    let num_assums = TacticInternal.num_assums
    let nth_assum = TacticInternal.nth_assum
+   let all_assums = TacticInternal.all_assums
 
    let get_pos_assum_num arg i =
       if i < 0 then

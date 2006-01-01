@@ -322,8 +322,14 @@ struct
    let num_assums arg =
       msequent_num_assums arg.ref_goal
 
+   let all_assums arg =
+      msequent_all_assums arg.ref_goal
+
    let nth_assum arg i =
-      if i == 0 then goal arg else msequent_nth_assum arg.ref_goal i
+      if i == 0 then
+         goal arg
+      else
+         msequent_nth_assum arg.ref_goal i
 
    let label arg = arg.ref_label
 

@@ -993,18 +993,27 @@ let mk_infer_thm info t_logic t =
 
    (* Add the Provable predicates *)
    let premises = List.map (mk_provable_sequent_term info h_v logic_t) premises in
-   let goal = mk_provable_sequent_term info h_v logic_t goal in
+   let t_goal = mk_provable_sequent_term info h_v logic_t goal in
+
+   (* The logic should be a Logic{Sequent} *)
+   let t_seq = Reflect.mk_Sequent_term info in
+   let t_Logic = Reflect.mk_Logic_term info t_seq in
+   let t_logic_wf = Reflect.mk_equal_term info logic_t logic_t t_Logic in
+   let logic_premise = mk_normal_sequent_term info h_v t_logic_wf in
 
    (* Add the SubLogic constraint *)
-   let t_seq = Reflect.mk_Sequent_term info in
    let t_sublogic = Reflect.mk_SubLogic_term info t_seq t_logic logic_t in
    let sublogic_premise = mk_normal_sequent_term info h_v t_sublogic in
 
+   (* The goal must be a well-formed sequent *)
+   let t_goal_seq = Reflect.mk_equal_term info goal goal t_seq in
+   let goal_wf_premise = mk_normal_sequent_term info h_v t_goal_seq in
+
    (* Add all the premises *)
-   let premises = sublogic_premise :: premises in
+   let premises = logic_premise :: sublogic_premise :: goal_wf_premise :: premises in
 
    (* Build the sequent *)
-   let mt = zip_mimplies premises goal in
+   let mt = zip_mimplies premises t_goal in
       mt
 
 (*!

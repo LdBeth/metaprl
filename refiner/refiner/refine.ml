@@ -456,7 +456,7 @@ struct
        EDRule of opname * int list * address list * term list
      | EDRewrite
      | EDCondREwrite
-     | EDComposition (* any compilcated steps will fall into this category *)
+     | EDComposition (* any complicated steps will fall into this category *)
      | EDNthHyp of int
      | EDCut of term
      | EDIdentity
@@ -473,6 +473,8 @@ struct
    let msequent_nth_assum mseq i = List.nth mseq.mseq_assums (pred i)
 
    let msequent_num_assums mseq = List.length mseq.mseq_assums
+
+   let msequent_all_assums mseq = mseq.mseq_assums
 
    let mseq_so_vars =
       let join vs t =
