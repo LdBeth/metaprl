@@ -851,6 +851,8 @@ struct
 
    let all_vars = all_vars_term SymbolSet.empty
 
+   let all_vars_terms = all_vars_term_list SymbolSet.empty
+
    let rec all_vars_info vars t =
       match get_core t with
          Sequent seq ->

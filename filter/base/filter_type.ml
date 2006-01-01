@@ -444,7 +444,7 @@ sig
    val parsed_bound_term : term poly_aterm Grammar.Entry.e
 
    (* Reflection *)
-   val parsed_xrulequote_of_parsed_meta_term : parsed_meta_term -> parsed_term
+   val parse_proof_rule_term : parsed_meta_term -> meta_term * term list * (term -> term)
 
    (************************************************
     * !!! WARNING, UNSAFE !!!

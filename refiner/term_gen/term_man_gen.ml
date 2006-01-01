@@ -1075,6 +1075,9 @@ struct
    let all_vars_info = all_vars_term
    let all_vars_info_list = all_vars_term_list
    let all_vars t = SymbolTable.fold (fun t v _ -> SymbolSet.add t v) SymbolSet.empty (all_vars_info SymbolTable.empty t)
+   let all_vars_terms tl =
+      let info = all_vars_term_list SymbolTable.empty tl in
+         SymbolTable.fold (fun t v _ -> SymbolSet.add t v) SymbolSet.empty info
 
    (************************************************************************
     * General term destruction.

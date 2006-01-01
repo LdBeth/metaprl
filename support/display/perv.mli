@@ -161,7 +161,6 @@ declare xquotation[name:s, quote:s] : 'a
 declare iform xquote{'t}
 declare iform xquote{'depth; 't}
 declare iform xunquote{'t}
-declare iform xrulequote{'t : 'a}
 
 (************************************************************************
  * Normal terms.

@@ -158,9 +158,6 @@ let xparam_succ_opname   = Opname.mk_opname "xparam_string" perv_opname
 let xparam_max_opname    = Opname.mk_opname "xparam_max" perv_opname
 let xparam_term_opname   = Opname.mk_opname "xparam_term" perv_opname
 let xparam_opname        = Opname.mk_opname "xparam" perv_opname
-let xrulequote_opname    = Opname.mk_opname "xrulequote" perv_opname
-
-let mk_xrulequote_term = mk_dep0_term xrulequote_opname
 
 (*
  * Build the grammar.
@@ -1079,10 +1076,10 @@ struct
       mt
 
    (*
-    * Allow conversion from meta-terms to terms.
+    * Reflection
     *)
-   let parsed_xrulequote_of_parsed_meta_term mt =
-      mk_xrulequote_term (term_of_meta_term mt)
+   let parse_proof_rule_term mt =
+      TermMeta.mterms_of_parsed_mterms (fun _ -> true) mt []
 
    (************************************************
     * !!! WARNING !!!

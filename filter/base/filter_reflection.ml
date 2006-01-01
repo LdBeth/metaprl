@@ -73,6 +73,7 @@ let var_H       = Lm_symbol.add "H"
 let var_step    = Lm_symbol.add "step"
 let var_witness = Lm_symbol.add "witness"
 let var_none    = Lm_symbol.add "_"
+let var_logic   = Lm_symbol.add "logic"
 
 (************************************************
  * Reflection quotations.  We don't explicitly
@@ -118,8 +119,7 @@ sig
    val mk_beq_proof_step_term : t -> term -> term -> term
    val mk_ProofRule_term      : t -> term -> term
    val mk_sequent_arg_term    : t -> term
-   val mk_provable_term       : t -> term -> term
-   val mk_Provable_term       : t -> term -> term -> term -> term
+   val mk_Provable_term       : t -> term -> term -> term
    val mk_Sequent_term        : t -> term
    val mk_meta_type_term      : t -> term
    val mk_meta_member_term    : t -> term -> term -> term
@@ -130,9 +130,11 @@ sig
    val mk_let_sovar_term      : t -> var -> term -> term -> int -> term -> term
    val mk_spread_term         : t -> term -> var -> var -> term -> term
    val mk_vsequent_term       : t -> term -> term list -> term -> term
+   val mk_bsequent_term       : t -> term -> SeqHyp.t -> term -> term
    val mk_empty_logic_term    : t -> term
-   val mk_cons_logic_term     : t -> term -> term -> term
+   val mk_rules_logic_term    : t -> term -> term -> term
    val mk_union_logic_term    : t -> term -> term -> term
+   val mk_SubLogic_term       : t -> term -> term -> term -> term
 end;;
 
 module Reflect : ReflectSig =
@@ -152,8 +154,7 @@ struct
    let info_Logic             = hash ("Logic",          [], [0])
    let info_ProofRule         = hash ("ProofRule",      [], [0])
    let info_ProofStep         = hash ("ProofStep",      [], [0])
-   let info_Provable1         = hash ("Provable",       [], [0])
-   let info_Provable3         = hash ("Provable",       [], [0; 0; 0])
+   let info_Provable          = hash ("Provable",       [], [0; 0])
    let info_Sequent           = hash ("Sequent",        [], [])
    let info_add               = hash ("add",            [], [0; 0])
    let info_append            = hash ("append",         [], [0; 0])
@@ -187,9 +188,11 @@ struct
    let info_substl            = hash ("substl",         [], [0; 0])
    let info_type              = hash ("type",           [], [0])
    let info_vsequent          = hash ("vsequent",       [], [0])
+   let info_bsequent          = hash ("bsequent",       [], [0])
    let info_empty_logic       = hash ("empty_logic",    [], [])
-   let info_cons_logic        = hash ("cons_logic",     [], [0; 0])
+   let info_rules_logic       = hash ("rules_logic",    [], [0; 0])
    let info_union_logic       = hash ("union_logic",    [], [0; 0])
+   let info_SubLogic          = hash ("SubLogic",       [], [0; 0; 0])
 
    (*
     * Lazy opname creation.
@@ -351,11 +354,8 @@ struct
    let mk_Logic_term info t =
       mk_dep0_term (find_opname info info_Logic) t
 
-   let mk_provable_term info t =
-      mk_dep0_term (find_opname info info_Provable1) t
-
-   let mk_Provable_term info t1 t2 t3 =
-      mk_dep0_dep0_dep0_term (find_opname info info_Provable3) t1 t2 t3
+   let mk_Provable_term info t1 t2 =
+      mk_dep0_dep0_term (find_opname info info_Provable) t1 t2
 
    let mk_meta_member_term info t1 t2 =
       mk_dep0_dep0_term (find_opname info info_meta_member) t1 t2
@@ -399,14 +399,26 @@ struct
       in
          TermMan.mk_sequent_term seq
 
+   let mk_bsequent_term info arg hyps concl =
+      let seq =
+         { sequent_args = mk_dep0_term (find_opname info info_bsequent) arg;
+           sequent_hyps = hyps;
+           sequent_concl = concl
+         }
+      in
+         TermMan.mk_sequent_term seq
+
    let mk_empty_logic_term info =
       mk_simple_term (find_opname info info_empty_logic) []
 
-   let mk_cons_logic_term info t1 t2 =
-      mk_dep0_dep0_term (find_opname info info_cons_logic) t1 t2
+   let mk_rules_logic_term info t1 t2 =
+      mk_dep0_dep0_term (find_opname info info_rules_logic) t1 t2
 
    let mk_union_logic_term info t1 t2 =
       mk_dep0_dep0_term (find_opname info info_union_logic) t1 t2
+
+   let mk_SubLogic_term info t1 t2 t3 =
+      mk_dep0_dep0_dep0_term (find_opname info info_SubLogic) t1 t2 t3
 end;;
 
 type parse_info = Reflect.t
@@ -722,6 +734,98 @@ let mk_socvar_wf_assums info h_v socvars =
    List.map (mk_socvar_wf_assum info h_v) socvars
 
 (*
+ * Quote all the terms in the rule except for any variables.
+ *)
+let sweep_min_rulequote_term info h_v t =
+   let rec sweepdn t =
+      if is_var_term t then
+         t
+      else if is_so_var_term t then
+         sweep_sovar_term t
+      else if is_context_term t then
+         sweep_context_term t
+      else if is_sequent_term t then
+         sweep_sequent_term t
+      else if is_xunquote_term t then
+         dest_xunquote_term t
+      else
+         let param = Reflect.mk_operator_term info (opparam_of_term t) in
+         let bterms = List.map wrap_bterm (dest_term t).term_terms in
+         let bterms = Reflect.mk_list_term info bterms in
+            Reflect.mk_mk_term_term info param bterms
+
+   and wrap_bterm bterm =
+      let { bvars = vars; bterm = bterm } = dest_bterm bterm in
+      let bterm = sweepdn bterm in
+         List.fold_left (fun bterm v -> Reflect.mk_bind_term info v bterm) bterm (List.rev vars)
+
+   and sweep_list tl =
+      List.map sweepdn tl
+
+   and sweep_sovar_term t =
+      let x, cargs, args = dest_so_var t in
+         mk_so_var_term x (h_v :: cargs) (sweep_list args)
+
+   and sweep_context_term t =
+      let x, t, cargs, args = dest_context t in
+         mk_context_term x (sweepdn t) (h_v :: cargs) (sweep_list args)
+
+   and sweep_sequent_term t =
+      let { sequent_args = arg;
+            sequent_hyps = hyps;
+            sequent_concl = concl
+          } = explode_sequent t
+      in
+      let arg = sweepdn arg in
+      let hyps =
+         SeqHyp.map (fun h ->
+               match h with
+                  Hypothesis (x, t) ->
+                     Hypothesis (x, sweepdn t)
+                | Context (x, cargs, args) ->
+                     Context (x, h_v :: cargs, sweep_list args)) hyps
+      in
+      let concl = sweepdn concl in
+         Reflect.mk_bsequent_term info arg hyps concl
+   in
+      sweepdn t
+
+(*
+ * Rule quoting in "ugly" form.
+ *)
+let mk_rule_term info t =
+   (* New variables to work with *)
+   let fv = free_vars_mterm t in
+   let v_step = maybe_new_var var_step fv in
+   let v_witness = maybe_new_var var_witness (SymbolSet.add fv v_step) in
+   let t_step = mk_var_term v_step in
+   let t_witness = mk_var_term v_witness in
+
+   (* Convert the terms in the rule *)
+   let premises, goal = unzip_mfunction t in
+   let socvars, premises =
+      List.fold_left (fun (socvars, premises) (_, _, t) ->
+            let socvars, t = sweep_rulequote_term info socvars t in
+            let premises = t :: premises in
+               socvars, premises) (SymbolTable.empty, []) premises
+   in
+   let socvars, goal = sweep_rulequote_term info socvars goal in
+   let premises = Reflect.mk_list_term info (List.rev premises) in
+
+   (* The inner term is an equality *)
+   let t = Reflect.mk_proof_step_term info premises goal in
+   let t = Reflect.mk_beq_proof_step_term info (mk_var_term v_step) t in
+
+   (* Quantify over the free context and second-order variables *)
+   let socvars = sort_socvars socvars in
+   let t = quantify_socvars info t_witness socvars t in
+
+   (* The entire thing is a function that takes a step, and checks it *)
+   let t = Reflect.mk_spread_term info t_step v_step v_witness t in
+   let t = Reflect.mk_lambda_term info v_step t in
+      t
+
+(*
  * Build the wf thm.
  *
  * This has the form
@@ -764,56 +868,10 @@ let mk_logic_wf_thm info t =
       MetaTheorem t
 
 (*
- * Build the derived form.
- *     <H> >- ...
- *     <H> >- Provable{premise1}
- *     ...
- *     <H> >- Provable{premiseN}
- *     <H> >- Provable{goal}
- *)
-let mk_provable_sequent_term info h_v t =
-   let t = Reflect.mk_provable_term info t in
-   let h = Context (h_v, [], []) in
-   let info =
-      { sequent_args = Reflect.mk_sequent_arg_term info;
-        sequent_hyps = SeqHyp.singleton h;
-        sequent_concl = t
-      }
-   in
-      mk_sequent_term info
-
-let mk_infer_thm info t =
-   (* Convert the terms in the rule *)
-   let premises, goal = unzip_mfunction t in
-   let socvars, premises =
-      List.fold_left (fun (socvars, premises) (_, _, t) ->
-            let socvars, t = sweep_rulequote_term info socvars t in
-            let premises = t :: premises in
-               socvars, premises) (SymbolTable.empty, []) premises
-   in
-   let socvars, goal = sweep_rulequote_term info socvars goal in
-
-   (* Choose a new context variable *)
-   let fv = free_vars_terms (goal :: premises) in
-   let h_v = Lm_symbol.new_name var_H (SymbolSet.mem fv) in
-
-   (* Add the Provable predicates *)
-   let premises = List.map (mk_provable_sequent_term info h_v) premises in
-   let goal = mk_provable_sequent_term info h_v goal in
-
-   (* Add the wf subgoals *)
-   let socvars = sort_socvars socvars in
-   let wf_premises = mk_socvar_wf_assums info h_v socvars in
-
-   (* Build the sequent *)
-   let mt = zip_mimplies (wf_premises @ premises) goal in
-      mt
-
-(*
  * Build a type checking rule.
  *)
 let mk_type_check_thm info quote =
-   (* Get the parts of ther quoted term *)
+   (* Get the parts of the quoted term *)
    let { ty_term   = t;
          ty_opname = opname;
          ty_params = params;
@@ -884,57 +942,70 @@ let mk_type_check_thm info quote =
       mt
 
 (*
- * Build the term that defines a logic.
- *)
-let mk_logic_info info t_logic rules var_p t_provable =
-   (* The logic is a list of rules *)
-   let logic = Reflect.mk_list_term info rules in
-
-   (* The type of the logic is over Sequents *)
-   let arg = Reflect.mk_sequent_arg_term info in
-   let seq = Reflect.mk_Sequent_term info in
-   let ty_logic = Reflect.mk_Logic_term info seq in
-   let h = Context (var_H, [], []) in
-   let seq_info =
-      { sequent_args = arg;
-        sequent_hyps = SeqHyp.singleton h;
-        sequent_concl = Reflect.mk_equal_term info t_logic t_logic ty_logic
-      }
-   in
-   let logic_wf = MetaTheorem (mk_sequent_term seq_info) in
-
-   (* The provable judgment *)
-   let provable = Reflect.mk_Provable_term info seq t_logic var_p in
-
-   (* The provable wf rule *)
-   let h = Context (var_H, [], []) in
-   let concl = Reflect.mk_type_term info t_provable in
-   let assum_info =
-      { sequent_args = arg;
-        sequent_hyps = SeqHyp.singleton h;
-        sequent_concl = Reflect.mk_equal_term info var_p var_p seq
-      }
-   in
-   let goal_info =
-      { sequent_args = arg;
-        sequent_hyps = SeqHyp.singleton h;
-        sequent_concl = concl
-      }
-   in
-   let provable_wf = zip_mimplies [mk_sequent_term assum_info] (mk_sequent_term goal_info) in
-      logic, logic_wf, provable, provable_wf
-
-(*
  * Logic construction.
  *)
 let mk_empty_logic_term info =
    Reflect.mk_empty_logic_term info
 
-let mk_cons_logic_term info t_rule t_logic =
-   Reflect.mk_cons_logic_term info t_rule t_logic
+let mk_rules_logic_term info t_rules t_logic =
+   let t_rules = Reflect.mk_list_term info t_rules in
+      Reflect.mk_rules_logic_term info t_rules t_logic
 
 let mk_union_logic_term info t_logic1 t_logic2 =
    Reflect.mk_union_logic_term info t_logic1 t_logic2
+
+(*
+ * Build the derived form.
+ *     <H> >- ...
+ *     <H> >- Provable{premise1}
+ *     ...
+ *     <H> >- Provable{premiseN}
+ *     <H> >- Provable{goal}
+ *)
+let mk_normal_sequent_term info h_v t =
+   let h = Context (h_v, [], []) in
+   let info =
+      { sequent_args = Reflect.mk_sequent_arg_term info;
+        sequent_hyps = SeqHyp.singleton h;
+        sequent_concl = t
+      }
+   in
+      mk_sequent_term info
+
+let mk_provable_sequent_term info h_v t_logic t =
+   let t = Reflect.mk_Provable_term info t_logic t in
+      mk_normal_sequent_term info h_v t
+
+let mk_infer_thm info t_logic t =
+   (* Convert the terms in the rule *)
+   let premises, goal = unzip_mfunction t in
+   let premises = List.map (fun (_, _, premise) -> premise) premises in
+
+   (* Choose a new context variable *)
+   let fv = all_vars_terms (goal :: premises) in
+   let h_v = Lm_symbol.new_name var_H (SymbolSet.mem fv) in
+   let logic_v = Lm_symbol.new_name var_logic (SymbolSet.mem fv) in
+   let logic_t = mk_var_term logic_v in
+
+   (* Convert the terms *)
+   let premises = List.map (sweep_min_rulequote_term info h_v) premises in
+   let goal = sweep_min_rulequote_term info h_v goal in
+
+   (* Add the Provable predicates *)
+   let premises = List.map (mk_provable_sequent_term info h_v logic_t) premises in
+   let goal = mk_provable_sequent_term info h_v logic_t goal in
+
+   (* Add the SubLogic constraint *)
+   let t_seq = Reflect.mk_Sequent_term info in
+   let t_sublogic = Reflect.mk_SubLogic_term info t_seq t_logic logic_t in
+   let sublogic_premise = mk_normal_sequent_term info h_v t_sublogic in
+
+   (* Add all the premises *)
+   let premises = sublogic_premise :: premises in
+
+   (* Build the sequent *)
+   let mt = zip_mimplies premises goal in
+      mt
 
 (*!
  * @docoff

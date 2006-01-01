@@ -2449,6 +2449,10 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          let p0_1, p0_2 = p0 in
          merge merge_ss "TermMan.all_vars" (wrap1 TermMan1.all_vars p0_1) (wrap1 TermMan2.all_vars p0_2)
 
+      let all_vars_terms (p0 : term list) =
+         let p0_1, p0_2 = split p0 in
+         merge merge_ss "TermMan.all_vars_terms" (wrap1 TermMan1.all_vars_terms p0_1) (wrap1 TermMan2.all_vars_terms p0_2)
+
       let all_vars_info (p0 : var_info SymbolTable.t) (p1 : term) =
          let p1_1, p1_2 = p1 in
          merge merge_stables "TermMan.all_vars_info" (wrap2 TermMan1.all_vars_info p0 p1_1) (wrap2 TermMan2.all_vars_info p0 p1_2)
@@ -3370,7 +3374,7 @@ end
 
    end
 
-   module TermMetaInt = 
+   module TermMetaInt =
       Term_meta_gen.TermMeta (TermType) (Term) (TermSubst) (TermOp) (TermMan) (RefineError)
    module RewriteInt =
       Rewrite.Rewrite (TermType) (Term) (TermOp) (TermMan) (TermAddr) (TermSubst) (TermShape) (RefineError)

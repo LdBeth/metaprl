@@ -94,6 +94,7 @@ sig
 
    (* All vars in the term, even the bound ones *)
    val all_vars : term -> SymbolSet.t
+   val all_vars_terms : term list -> SymbolSet.t
    val all_vars_info : var_info SymbolTable.t -> term -> var_info SymbolTable.t
 
    (*
