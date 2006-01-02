@@ -47,6 +47,7 @@ sig
     *)
    val shape_of_term : term -> shape
    val eq : shape -> shape -> bool
+   val shape_eq : shape -> shape -> bool
    val param_type : param -> shape_param
 
    val unquote_shape : shape -> shape

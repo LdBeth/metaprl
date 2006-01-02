@@ -153,6 +153,8 @@ struct
       & (params1 = params2)
       & (arities1 = arities2)
 
+   let shape_eq = eq
+
    let canonical_param ps =
       make_param (**)
          (match ps with

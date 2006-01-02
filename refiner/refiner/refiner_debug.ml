@@ -215,6 +215,7 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
        | TermErrorError of term * refine_error
        | OpnameErrorError of opname * refine_error
        | ShapeErrorError of shape * refine_error
+       | ParamErrorError of param * refine_error
        | MetaTermErrorError of meta_term * refine_error
 
       exception RefineError of string * refine_error
@@ -423,6 +424,7 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
     | Err1.TermErrorError (t0, re1) -> TermErrorError (term_of_term1 t0, re_of_re1 re1)
     | Err1.OpnameErrorError (o0, re1) -> OpnameErrorError (o0, re_of_re1 re1)
     | Err1.ShapeErrorError (s0, re1) -> ShapeErrorError (s0, re_of_re1 re1)
+    | Err1.ParamErrorError (p0, re1) -> ParamErrorError (param_of_param1 p0, re_of_re1 re1)
     | Err1.MetaTermErrorError (mt0, re1) -> MetaTermErrorError (mterm_of_mterm1 mt0, re_of_re1 re1)
 
    and sre_of_sre1 (s, re) =
@@ -2497,6 +2499,10 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          let p0_1, p0_2 = p0 in
          merge merge_term "TermMan.concl" (wrap1 TermMan1.concl p0_1) (wrap1 TermMan2.concl p0_2)
 
+      let sequent_args = args
+      let sequent_hyps = hyps
+      let sequent_concl = concl
+
       let num_hyps (p0 : term) =
          let p0_1, p0_2 = p0 in
          merge merge_int "TermMan.num_hyps" (wrap1 TermMan1.num_hyps p0_1) (wrap1 TermMan2.num_hyps p0_2)
@@ -2752,6 +2758,8 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
 
       let eq (p0 : shape) (p1 : shape) =
          merge merge_bool "TermShape.eq" (wrap2 TermShape1.eq p0 p1) (wrap2 TermShape2.eq p0 p1)
+
+      let shape_eq = eq
 
       let param_type (p0 : param) =
          let p0_1, p0_2 = p0 in

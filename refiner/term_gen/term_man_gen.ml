@@ -1133,6 +1133,13 @@ struct
             MatchTerm (op, params, bterms)
 
    (************************************************************************
+    * Rename some functions.
+    *)
+   let sequent_args = args
+   let sequent_hyps = hyps
+   let sequent_concl = concl
+
+   (************************************************************************
     * Rewrite rules                                                        *
     ************************************************************************)
 

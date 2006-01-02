@@ -122,6 +122,9 @@ sig
    val args : term -> term
    val hyps : term -> term list
    val concl : term -> term
+   val sequent_args : term -> term
+   val sequent_hyps : term -> term list
+   val sequent_concl : term -> term
    val num_hyps : term -> int
    val declared_vars : term -> var list
    val get_decl_number : term -> var -> int

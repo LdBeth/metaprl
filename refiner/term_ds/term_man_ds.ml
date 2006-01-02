@@ -952,6 +952,13 @@ struct
    let all_contexts = FREE_VARS(List.fold_left aux (SymbolSet.add_list vars conts) ts)
 
    (************************************************************************
+    * Rename some functions.
+    *)
+   let sequent_args = args
+   let sequent_hyps = hyps
+   let sequent_concl = concl
+
+   (************************************************************************
     * Rewrite rules                                                        *
     ************************************************************************)
 

@@ -135,6 +135,7 @@ struct
     | TermErrorError of term * refine_error
     | OpnameErrorError of opname * refine_error
     | ShapeErrorError of shape * refine_error
+    | ParamErrorError of param * refine_error
     | MetaTermErrorError of meta_term * refine_error
 
    (*

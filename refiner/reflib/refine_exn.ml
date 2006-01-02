@@ -384,6 +384,10 @@ let format_refine_error db buf printers name error =
          format_string buf (string_of_shape shape);
          format_next_error err
 
+    | ParamErrorError (param, err) ->
+         printers.format_param db buf param;
+         format_next_error err
+
     | MetaTermErrorError (mt, err) ->
          printers.format_mterm db buf mt;
          format_next_error err
