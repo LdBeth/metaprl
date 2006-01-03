@@ -66,6 +66,7 @@ val mk_rule_wf_thm    : parse_info -> term -> meta_term
 val mk_logic_wf_thm   : parse_info -> term -> meta_term
 val mk_infer_thm      : parse_info -> term -> meta_term -> meta_term
 val mk_type_check_thm : parse_info -> (term, term) poly_ty_term -> meta_term
+val mk_mem_logic_thm  : parse_info -> term -> term -> meta_term
 
 (*
  * Various constructors for logics.

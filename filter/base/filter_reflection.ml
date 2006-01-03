@@ -70,6 +70,8 @@ let perv_opname       = mk_opname "Perv" nil_opname
  * Variables.
  *)
 let var_H       = Lm_symbol.add "H"
+let var_x       = Lm_symbol.add "x"
+let var_z       = Lm_symbol.add "z"
 let var_step    = Lm_symbol.add "step"
 let var_witness = Lm_symbol.add "witness"
 let var_none    = Lm_symbol.add "_"
@@ -135,6 +137,13 @@ sig
    val mk_rules_logic_term    : t -> term -> term -> term
    val mk_union_logic_term    : t -> term -> term -> term
    val mk_SubLogic_term       : t -> term -> term -> term -> term
+   val mk_MemLogic_term       : t -> term -> term -> term -> term
+   val mk_it_term             : t -> term
+   val mk_xconcl_term         : t -> term
+   val mk_hyplist_term        : t -> seq_hyps -> term
+   val mk_vlist_term          : t -> seq_hyps -> term
+   val mk_hyp_context_term    : t -> seq_hyps -> term -> term
+   val mk_vbind_term          : t -> seq_hyps -> term -> term
 end;;
 
 module Reflect : ReflectSig =
@@ -193,6 +202,13 @@ struct
    let info_rules_logic       = hash ("rules_logic",    [], [0; 0])
    let info_union_logic       = hash ("union_logic",    [], [0; 0])
    let info_SubLogic          = hash ("SubLogic",       [], [0; 0; 0])
+   let info_MemLogic          = hash ("MemLogic",       [], [0; 0; 0])
+   let info_it                = hash ("it",             [], [])
+   let info_xconcl            = hash ("xconcl",         [], [])
+   let info_hyplist           = hash ("hyplist",        [], [])
+   let info_vlist             = hash ("vlist",          [], [])
+   let info_hyp_context       = hash ("hyp_context",    [], [])
+   let info_vbind             = hash ("vbind",          [], [])
 
    (*
     * Lazy opname creation.
@@ -419,11 +435,75 @@ struct
 
    let mk_SubLogic_term info t1 t2 t3 =
       mk_dep0_dep0_dep0_term (find_opname info info_SubLogic) t1 t2 t3
+
+   let mk_MemLogic_term info t1 t2 t3 =
+      mk_dep0_dep0_dep0_term (find_opname info info_MemLogic) t1 t2 t3
+
+   let mk_it_term info =
+      mk_simple_term (find_opname info info_it) []
+
+   let mk_xconcl_term info =
+      mk_simple_term (find_opname info info_xconcl) []
+
+   let mk_hyplist_term info hyps =
+      let arg = mk_simple_term (find_opname info info_hyplist) [] in
+      let xconcl = mk_simple_term (find_opname info info_xconcl) [] in
+      let seq =
+         { sequent_args = arg;
+           sequent_hyps = hyps;
+           sequent_concl = xconcl
+         }
+      in
+         TermMan.mk_sequent_term seq
+
+   let mk_vlist_term info hyps =
+      let arg = mk_simple_term (find_opname info info_vlist) [] in
+      let xconcl = mk_simple_term (find_opname info info_xconcl) [] in
+      let seq =
+         { sequent_args = arg;
+           sequent_hyps = hyps;
+           sequent_concl = xconcl
+         }
+      in
+         TermMan.mk_sequent_term seq
+
+   let mk_hyp_context_term info hyps concl =
+      let arg = mk_simple_term (find_opname info info_hyp_context) [] in
+      let seq =
+         { sequent_args = arg;
+           sequent_hyps = hyps;
+           sequent_concl = concl
+         }
+      in
+         TermMan.mk_sequent_term seq
+
+   let mk_vbind_term info hyps concl =
+      let arg = mk_simple_term (find_opname info info_vbind) [] in
+      let seq =
+         { sequent_args = arg;
+           sequent_hyps = hyps;
+           sequent_concl = concl
+         }
+      in
+         TermMan.mk_sequent_term seq
 end;;
 
 type parse_info = Reflect.t
 
 let create_parse_info = Reflect.create
+
+(*
+ * Some generic constructors.
+ *)
+let mk_normal_sequent_term info h_v t =
+   let h = Context (h_v, [], []) in
+   let info =
+      { sequent_args = Reflect.mk_sequent_arg_term info;
+        sequent_hyps = SeqHyp.singleton h;
+        sequent_concl = t
+      }
+   in
+      mk_sequent_term info
 
 (*
  * When a term is quoted, quote all its subparts.
@@ -550,8 +630,6 @@ let maybe_new_var v vars =
       new_name v (SymbolSet.mem vars)
    else
       v
-
-let var_z = Lm_symbol.add "z"
 
 let sweep_rulequote_term info socvars t =
    let rec sweepdn socvars t =
@@ -736,59 +814,83 @@ let mk_socvar_wf_assums info h_v socvars =
 (*
  * Quote all the terms in the rule except for any variables.
  *)
-let sweep_min_rulequote_term info h_v t =
-   let rec sweepdn t =
+let sweep_min_rulequote_term info h_v socvars t =
+   let rec sweepdn socvars t =
       if is_var_term t then
-         t
+         socvars, t
       else if is_so_var_term t then
-         sweep_sovar_term t
+         sweep_sovar_term socvars t
       else if is_context_term t then
-         sweep_context_term t
+         sweep_context_term socvars t
       else if is_sequent_term t then
-         sweep_sequent_term t
+         sweep_sequent_term socvars t
       else if is_xunquote_term t then
-         dest_xunquote_term t
+         socvars, dest_xunquote_term t
       else
          let param = Reflect.mk_operator_term info (opparam_of_term t) in
-         let bterms = List.map wrap_bterm (dest_term t).term_terms in
-         let bterms = Reflect.mk_list_term info bterms in
-            Reflect.mk_mk_term_term info param bterms
+         let socvars, bterms =
+            List.fold_left (fun (socvars, bterms) bterm ->
+                  let socvars, bterm = wrap_bterm socvars bterm in
+                     socvars, bterm :: bterms) (socvars, []) (dest_term t).term_terms
+         in
+         let bterms = Reflect.mk_list_term info (List.rev bterms) in
+         let t = Reflect.mk_mk_term_term info param bterms in
+            socvars, t
 
-   and wrap_bterm bterm =
+   and wrap_bterm socvars bterm =
       let { bvars = vars; bterm = bterm } = dest_bterm bterm in
-      let bterm = sweepdn bterm in
-         List.fold_left (fun bterm v -> Reflect.mk_bind_term info v bterm) bterm (List.rev vars)
+      let socvars, bterm = sweepdn socvars bterm in
+      let bterm = List.fold_left (fun bterm v -> Reflect.mk_bind_term info v bterm) bterm (List.rev vars) in
+         socvars, bterm
 
-   and sweep_list tl =
-      List.map sweepdn tl
+   and sweep_list socvars tl =
+      let socvars, tl =
+         List.fold_left (fun (socvars, tl) t ->
+               let socvars, t = sweepdn socvars t in
+                  socvars, t :: tl) (socvars, []) tl
+      in
+         socvars, List.rev tl
 
-   and sweep_sovar_term t =
+   and sweep_sovar_term socvars t =
       let x, cargs, args = dest_so_var t in
-         mk_so_var_term x (h_v :: cargs) (sweep_list args)
+      let socvars, args = sweep_list socvars args in
+      let t = mk_so_var_term x (h_v :: cargs) args in
+      let socvars = SymbolTable.add socvars x (false, cargs, List.length args) in
+         socvars, t
 
-   and sweep_context_term t =
+   and sweep_context_term socvars t =
       let x, t, cargs, args = dest_context t in
-         mk_context_term x (sweepdn t) (h_v :: cargs) (sweep_list args)
+      let socvars, t = sweepdn socvars t in
+      let socvars, args = sweep_list socvars args in
+      let t = mk_context_term x t (h_v :: cargs) args in
+         socvars, t
 
-   and sweep_sequent_term t =
+   and sweep_sequent_term socvars t =
       let { sequent_args = arg;
             sequent_hyps = hyps;
             sequent_concl = concl
           } = explode_sequent t
       in
-      let arg = sweepdn arg in
-      let hyps =
-         SeqHyp.map (fun h ->
+      let socvars, arg = sweepdn socvars arg in
+      let socvars, hyps =
+         SeqHyp.fold (fun (socvars, hyps) _ h ->
                match h with
                   Hypothesis (x, t) ->
-                     Hypothesis (x, sweepdn t)
+                     let socvars, t = sweepdn socvars t in
+                     let hyp = Hypothesis (x, t) in
+                        socvars, hyp :: hyps
                 | Context (x, cargs, args) ->
-                     Context (x, h_v :: cargs, sweep_list args)) hyps
+                     let socvars, args = sweep_list socvars args in
+                     let hyp = Context (x, h_v :: cargs, args) in
+                     let socvars = SymbolTable.add socvars x (true, cargs, List.length args) in
+                        socvars, hyp :: hyps) (socvars, []) hyps
       in
-      let concl = sweepdn concl in
-         Reflect.mk_bsequent_term info arg hyps concl
+      let hyps = SeqHyp.of_list hyps in
+      let socvars, concl = sweepdn socvars concl in
+      let t = Reflect.mk_bsequent_term info arg hyps concl in
+         socvars, t
    in
-      sweepdn t
+      sweepdn socvars t
 
 (*
  * Rule quoting in "ugly" form.
@@ -955,6 +1057,99 @@ let mk_union_logic_term info t_logic1 t_logic2 =
    Reflect.mk_union_logic_term info t_logic1 t_logic2
 
 (*
+ * Collect the contexts for a well-formedness goal.
+ *)
+let mk_it_vec info arity =
+   let it = Reflect.mk_it_term info in
+   let rec loop l i =
+      if i = arity then
+         l
+      else
+         loop (it :: l) (succ i)
+   in
+      loop [] 0
+
+let rec mk_infer_wf_context info h_v socvars cargs_done hyps cargs =
+   match cargs with
+      [] ->
+         cargs_done, hyps
+    | v :: cargs ->
+         if List.mem v cargs_done then
+            mk_infer_wf_context info h_v socvars cargs_done hyps cargs
+         else
+            match SymbolTable.find socvars v with
+               (true, cargs_new, arity) ->
+                  let cargs_done, hyps = mk_infer_wf_context info h_v socvars cargs_done hyps cargs_new in
+                  let hyps = Context (v, h_v :: cargs, mk_it_vec info arity) :: hyps in
+                  let cargs_done = v :: cargs_done in
+                     mk_infer_wf_context info h_v socvars (v :: cargs_done) hyps cargs
+             | (false, _, _) ->
+                  raise (RefineError ("mk_infer_wf_contexts", StringVarError ("illegal context variable", v)))
+
+(*
+ * Make a list of scalar hyps.
+ *)
+let mk_infer_scalar_hyps info fv hyps arity =
+   let it = Reflect.mk_it_term info in
+   let rec loop fv vars hyps i =
+      if i = arity then
+         vars, hyps
+      else
+         let v = maybe_new_var var_x fv in
+         let fv = SymbolSet.add fv v in
+         let vars = mk_var_term v :: vars in
+         let hyps = Hypothesis (v, it) :: hyps in
+            loop fv vars hyps (succ i)
+   in
+      loop fv [] hyps 0
+
+(*
+ * Build a single well-formedness premise.
+ *)
+let mk_infer_wf_premise info h_v fv socvars v (b, cargs, arity) =
+   let _, hyps = mk_infer_wf_context info h_v socvars [] [] cargs in
+   let vars, hyps = mk_infer_scalar_hyps info fv (List.rev hyps) arity in
+   let hyps = SeqHyp.of_list hyps in
+
+   (*
+    * The term is either
+    *     hyp_context{| hyps >- hyplist{| v |} |}
+    * or
+    *     vbind{| hyps >- v |}
+    *)
+   let e =
+      if b then
+         let hyps_l = SeqHyp.singleton (Context (v, h_v :: cargs, vars)) in
+         let t = Reflect.mk_hyplist_term info hyps_l in
+            Reflect.mk_hyp_context_term info hyps t
+      else
+         let t = mk_so_var_term v cargs vars in
+            Reflect.mk_vbind_term info hyps t
+   in
+
+   (*
+    * The type is BTerm{length{vlist{| hyps |}}}
+    *)
+   let ty = Reflect.mk_vlist_term info hyps in
+   let ty = Reflect.mk_length_term info ty in
+   let ty = Reflect.mk_BTerm2_term info ty in
+
+   (* e in ty *)
+   let t = Reflect.mk_equal_term info e e ty in
+      mk_normal_sequent_term info h_v t
+
+(*
+ * Build all the well-formedness premises.
+ *)
+let mk_infer_wf_premises info h_v fv socvars =
+   let premises =
+      SymbolTable.fold (fun premises v vinfo ->
+            let premise = mk_infer_wf_premise info h_v fv socvars v vinfo in
+               premise :: premises) [] socvars
+   in
+      List.rev premises
+
+(*
  * Build the derived form.
  *     <H> >- ...
  *     <H> >- Provable{premise1}
@@ -962,16 +1157,6 @@ let mk_union_logic_term info t_logic1 t_logic2 =
  *     <H> >- Provable{premiseN}
  *     <H> >- Provable{goal}
  *)
-let mk_normal_sequent_term info h_v t =
-   let h = Context (h_v, [], []) in
-   let info =
-      { sequent_args = Reflect.mk_sequent_arg_term info;
-        sequent_hyps = SeqHyp.singleton h;
-        sequent_concl = t
-      }
-   in
-      mk_sequent_term info
-
 let mk_provable_sequent_term info h_v t_logic t =
    let t = Reflect.mk_Provable_term info t_logic t in
       mk_normal_sequent_term info h_v t
@@ -988,8 +1173,17 @@ let mk_infer_thm info t_logic t =
    let logic_t = mk_var_term logic_v in
 
    (* Convert the terms *)
-   let premises = List.map (sweep_min_rulequote_term info h_v) premises in
-   let goal = sweep_min_rulequote_term info h_v goal in
+   let socvars_premises, premises =
+      List.fold_left (fun (socvars, premises) premise ->
+            let socvars, premise = sweep_min_rulequote_term info h_v socvars premise in
+               socvars, premise :: premises) (SymbolTable.empty, []) premises
+   in
+   let premises = List.rev premises in
+   let socvars_goal, goal = sweep_min_rulequote_term info h_v SymbolTable.empty goal in
+   let socvars =
+      SymbolTable.fold (fun socvars v _ ->
+            SymbolTable.remove socvars v) socvars_goal socvars_premises
+   in
 
    (* Add the Provable predicates *)
    let premises = List.map (mk_provable_sequent_term info h_v logic_t) premises in
@@ -1005,16 +1199,40 @@ let mk_infer_thm info t_logic t =
    let t_sublogic = Reflect.mk_SubLogic_term info t_seq t_logic logic_t in
    let sublogic_premise = mk_normal_sequent_term info h_v t_sublogic in
 
-   (* The goal must be a well-formed sequent *)
-   let t_goal_seq = Reflect.mk_equal_term info goal goal t_seq in
-   let goal_wf_premise = mk_normal_sequent_term info h_v t_goal_seq in
+   (* Add the well-formedness subgoals *)
+   let wf_premises = mk_infer_wf_premises info h_v fv socvars in
 
    (* Add all the premises *)
-   let premises = logic_premise :: sublogic_premise :: goal_wf_premise :: premises in
+   let premises = logic_premise :: sublogic_premise :: (wf_premises @ premises) in
 
    (* Build the sequent *)
    let mt = zip_mimplies premises t_goal in
       mt
+
+(*
+ * Make the logic membership term.
+ *    <H> >- SubLogic{Sequent; t_logic; 'logic} -->
+ *    <H> >- MemLogic{Sequent; t_rule; 'logic}
+ *)
+let mk_mem_logic_thm info t_logic t_rule =
+   let fv = all_vars_terms [t_logic; t_rule] in
+   let h_v = maybe_new_var var_H fv in
+   let logic_v = maybe_new_var var_logic fv in
+   let logic_t = mk_var_term logic_v in
+   let t_seq = Reflect.mk_Sequent_term info in
+   let ty_logic = Reflect.mk_Logic_term info t_seq in
+
+   (* Premises *)
+   let t = Reflect.mk_equal_term info logic_t logic_t ty_logic in
+   let wf_premise = mk_normal_sequent_term info h_v t in
+
+   let t = Reflect.mk_SubLogic_term info t_seq t_logic logic_t in
+   let sub_premise = mk_normal_sequent_term info h_v t in
+
+   (* Goal term *)
+   let t = Reflect.mk_MemLogic_term info t_seq t_rule logic_t in
+   let goal = mk_normal_sequent_term info h_v t in
+      zip_mimplies [wf_premise; sub_premise] goal
 
 (*!
  * @docoff

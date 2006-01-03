@@ -1422,6 +1422,25 @@ struct
       add_define proc info rules loc item
 
    (*
+    * Add a logic membership rule.
+    *)
+   let add_mem_logic proc info logic_name t_logic (loc, item) =
+      let { ref_rule_name      = name } = item in
+      let opname = Opname.mk_opname name (opname_prefix loc) in
+      let t_rule = mk_term (mk_op opname []) [] in
+      let mt = Filter_reflection.mk_mem_logic_thm info t_logic t_rule in
+      let mt, _, _ = mterms_of_parsed_mterms (fun _ -> true) mt [] in
+      let tac =
+         Printf.sprintf "mem_logic_trans << %s >>
+thenLT [idT; idT; idT; idT; idT; rwh unfold_%s 0 thenT mem_rules_logic]
+thenT autoT" (**)
+            logic_name logic_name
+      in
+      let name = Printf.sprintf "mem_%s_%s" name logic_name in
+      let res = intro_resources loc in
+         define_thm proc loc name [] mt tac res
+
+   (*
     * Add an introduction rule in "Provable" form.
     *)
    let add_intro proc info t_logic (loc, item) =
@@ -1515,6 +1534,9 @@ struct
       let logic_res = intro_resources loc in
       let logic_tac = Printf.sprintf "rwh unfold_%s 0 thenT autoT" name in
       let () = define_thm proc loc name_wf [] logic_wf logic_tac logic_res in
+
+         (* Add a membership term for each of the rules *)
+         List.iter (add_mem_logic proc info name t_logic) items;
 
          (* Add an introduction form for each of the rules *)
          List.iter (add_intro proc info t_logic) items
