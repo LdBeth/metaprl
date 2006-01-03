@@ -1107,9 +1107,17 @@ let mk_infer_scalar_hyps info fv hyps arity =
  * Build a single well-formedness premise.
  *)
 let mk_infer_wf_premise info h_v fv socvars v (b, cargs, arity) =
-   let _, hyps = mk_infer_wf_context info h_v socvars [] [] cargs in
-   let vars, hyps = mk_infer_scalar_hyps info fv (List.rev hyps) arity in
+   let _, c_hyps = mk_infer_wf_context info h_v socvars [] [] cargs in
+   let vars, hyps = mk_infer_scalar_hyps info fv (List.rev c_hyps) arity in
    let hyps = SeqHyp.of_list hyps in
+
+   (* The depth of the term *)
+   let t_depth =
+      if c_hyps = [] then
+         Reflect.mk_number_term info arity
+      else
+         Reflect.mk_length_term info (Reflect.mk_vlist_term info hyps)
+   in
 
    (*
     * The term is either
@@ -1117,22 +1125,19 @@ let mk_infer_wf_premise info h_v fv socvars v (b, cargs, arity) =
     * or
     *     vbind{| hyps >- v |}
     *)
-   let e =
+   let e, ty =
       if b then
          let hyps_l = SeqHyp.singleton (Context (v, h_v :: cargs, vars)) in
          let t = Reflect.mk_hyplist_term info hyps_l in
-            Reflect.mk_hyp_context_term info hyps t
+         let e = Reflect.mk_hyp_context_term info hyps t in
+         let ty = Reflect.mk_CVar_term info t_depth in
+            e, ty
       else
          let t = mk_so_var_term v cargs vars in
-            Reflect.mk_vbind_term info hyps t
+         let e = Reflect.mk_vbind_term info hyps t in
+         let ty = Reflect.mk_BTerm2_term info t_depth in
+            e, ty
    in
-
-   (*
-    * The type is BTerm{length{vlist{| hyps |}}}
-    *)
-   let ty = Reflect.mk_vlist_term info hyps in
-   let ty = Reflect.mk_length_term info ty in
-   let ty = Reflect.mk_BTerm2_term info ty in
 
    (* e in ty *)
    let t = Reflect.mk_equal_term info e e ty in
