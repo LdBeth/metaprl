@@ -437,6 +437,7 @@ let tryOnAllMCumulativeHypsT = Tacticals.tryOnAllMCumulativeHypsT
 let tryOnAllMClausesT = Tacticals.tryOnAllMClausesT
 let onSomeAssumT = Tacticals.onSomeAssumT
 let onSomeHypT = Tacticals.onSomeHypT
+let onAnyHypT = Tacticals.onAnyHypT
 
 doc <:doc<
    @modsection{Labels}
@@ -511,9 +512,9 @@ let thinMatchT thin_many eq assum =
    funT (fun p ->
    let goal = Sequent.goal p in
    let index = Match_seq.match_hyps
-      eq 
+      eq
       (explode_sequent goal)
-      (explode_sequent assum) 
+      (explode_sequent assum)
    in
    let rec tac i j =
       if i = 0 then if j > 1 then thin_many 1 j else idT else

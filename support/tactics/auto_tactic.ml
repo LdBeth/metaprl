@@ -224,9 +224,9 @@ let process_nth_hyp_resource_annotation name args term_args statement pre_tactic
             [t1, t2, fun i -> Tactic_type.Tactic.tactic_of_rule pre_tactic empty_rw_args [] thenT nthHypT i]
        | [||], [||], _, [ [Context _], t1 ], ( [Context _], t2) ->
             let addrs =
-               try List.map (fun t -> List.hd (find_subterm t1 (fun t' _ -> alpha_equal t t'))) term_args
-               with _ ->
-                  raise (Invalid_argument (sprintf "Auto_tactic.improve_nth_hyp: %s: is not an appropriate rule" name))
+               try List.map (fun t -> List.hd (find_subterm t1 (fun t' _ -> alpha_equal t t'))) term_args with
+                  _ ->
+                     raise (Invalid_argument (sprintf "Auto_tactic.improve_nth_hyp: %s: is missing a subterm" name))
             in
             let tac = argfunT (fun i p ->
                let hyp = nth_hyp p i in

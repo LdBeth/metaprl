@@ -103,6 +103,7 @@ topval tryOnAllMCumulativeHypsT : (int -> tactic) -> tactic
 topval tryOnAllMClausesT : (int -> tactic) -> tactic
 topval onSomeAssumT : (int -> tactic) -> tactic
 topval onSomeHypT : (int -> tactic) -> tactic
+topval onAnyHypT : (int -> tactic) -> tactic
 topval atT : term -> tactic -> tactic
 topval selT : int -> tactic -> tactic
 topval altT : tactic -> tactic

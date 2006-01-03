@@ -43,7 +43,7 @@ open TermType
  * always compared using alpha equality). It is applied to the conclusion of the
  * small sequent ("assumption") first.
  *
- * match_some_hyps is simplar, but does not insist on matching all the hyps
+ * match_some_hyps is simpler, but does not insist on matching all the hyps
  * or the goal (does insist on matching all Contexts, though). If succeeds,
  * will return the nimber of the hyps in the "small" sequent that were
  * succesfully matched.

@@ -27,3 +27,4 @@ include Var
 include Typeinf
 include Auto_tactic
 include Dtactic
+include Forward

@@ -1,16 +1,10 @@
 (*
- * Order over terms.
+ * Forward-chaining tactic.
  *
  * ----------------------------------------------------------------
  *
- * This file is part of MetaPRL, a modular, higher order
- * logical framework that provides a logical programming
- * environment for OCaml and other languages.
- *
- * See the file doc/htmlman/default.html or visit http://metaprl.org/
- * for more information.
- *
- * Copyright (C) 2003 Yegor Bryukhov, Moscow State University
+ * @begin[license]
+ * Copyright (C) 2005 Mojave Group, Caltech
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -26,28 +20,35 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Yegor Bryukhov
+ * Author: Jason Hickey
+ * @email{jyh@cs.caltech.edu}
+ * @end[license]
  *)
+extends Dtactic
 
-module type TermOrderSig =
-functor(R: Refiner_sig.RefinerSig) ->
-sig
-	open R.TermType
+open Refiner.Refiner.Refine
 
-	val compare_level_vars : level_exp_var -> level_exp_var -> int
-	val compare_levels : level_exp -> level_exp -> int
-	val compare_params : param -> param -> int
-	val compare_operators : operator -> operator -> int
-	val compare_terms : term -> term -> int
-	val compare_bterms : bound_term -> bound_term -> int
-end
+open Tactic_type
+open Tactic_type.Tactic
 
-module TermOrder : TermOrderSig
+open Mp_resource
+open Dtactic
 
-(*
+resource (term * (int -> tactic), int -> tactic) forward
+
+val process_forward_resource_annotation :
+   (Tactic.pre_tactic * elim_option list, term * (int -> tactic)) annotation_processor
+
+topval forwardT : int -> tactic
+topval forwardChainBoundT : int -> tactic
+topval forwardChainT : tactic
+
+(*!
+ * @docoff
+ *
  * -*-
  * Local Variables:
- * Caml-master: "refiner"
+ * Caml-master: "compile"
  * End:
  * -*-
  *)

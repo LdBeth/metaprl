@@ -1450,7 +1450,7 @@ thenT autoT" (**)
             ref_rule_term      = mt
           } = item
       in
-      let name = name ^ "_intro" in
+      let name = "intro_" ^ name in
       let cvars, mt, params, res = parse_rule loc name mt params res in
       let mt = Filter_reflection.mk_infer_thm info t_logic mt in
       let mt, params, _ = mterms_of_parsed_mterms (fun _ -> true) mt params in

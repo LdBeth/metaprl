@@ -19,6 +19,7 @@ MPFILES[] =
     typeinf
     auto_tactic
     dtactic
+    forward
 
 # Files using the normal OCaml compiler
 MLFILES[] =

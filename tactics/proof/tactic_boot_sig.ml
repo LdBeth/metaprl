@@ -932,6 +932,7 @@ sig
 
    val onSomeAssumT : (int -> tactic) -> tactic
    val onSomeHypT : (int -> tactic) -> tactic
+   val onAnyHypT : (int -> tactic) -> tactic
 
    (*
     * Temporarily use an argument list.
