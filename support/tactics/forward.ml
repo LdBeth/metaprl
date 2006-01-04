@@ -151,7 +151,6 @@ let extract_forward_data =
                   Not_found ->
                      raise (RefineError ("extract_elim_data", StringTermError ("forwardT doesn't know about", t)))
             in
-               eprintf "forwardT: taking a step@.";
                firstiT i tacs)
    in
       step
@@ -252,13 +251,11 @@ let rec step tac hyps concl depth bound i =
       idT
    else
       funT (fun p ->
-            eprintf "Forward.step@.";
-            tac i thenT progress tac hyps concl (succ depth) bound)
+            tac i thenMT progress tac hyps concl (succ depth) bound)
 
 and progress tac orig_hyps orig_concl depth bound =
    funT (fun p ->
          let new_hyps, new_concl, changed = progress_check orig_hyps orig_concl p in
-            eprintf "Forward.progress: %b@." changed;
             if changed then
                onAnyHypT (step tac new_hyps new_concl depth bound)
             else

@@ -1450,11 +1450,12 @@ thenT autoT" (**)
             ref_rule_term      = mt
           } = item
       in
-      let name = "intro_" ^ name in
-      let cvars, mt, params, res = parse_rule loc name mt params res in
-      let mt = Filter_reflection.mk_infer_thm info t_logic mt in
+      let rule_name = "intro_" ^ name in
+      let cvars, mt, params, res = parse_rule loc rule_name mt params res in
+      let _, mt = Filter_reflection.mk_infer_thm info t_logic mt in
       let mt, params, _ = mterms_of_parsed_mterms (fun _ -> true) mt params in
-         define_int_thm proc loc name params mt res
+      let tac = Printf.sprintf "provableRuleT << %s >> unfold_%s" name name in
+         define_thm proc loc rule_name params mt tac res
 
    (************************************************************************
     * Typeclasses.

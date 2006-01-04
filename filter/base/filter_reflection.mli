@@ -31,6 +31,7 @@ open Term_shape_sig
 open Refiner.Refiner.TermType
 open Refiner.Refiner.TermShape
 open Filter_shape
+open Lm_symbol
 
 (*
  * For expanding quotations.
@@ -59,12 +60,19 @@ val dest_xquote0_term : parse_state -> term -> term
  *)
 type parse_info
 
+type var_info = var * var list * int
+
+type socvars_info =
+   { cvars_info  : var_info list;
+     sovars_info : var_info list
+   }
+
 val create_parse_info : parse_state -> parse_info
 
 val mk_rule_term      : parse_info -> meta_term -> term
 val mk_rule_wf_thm    : parse_info -> term -> meta_term
 val mk_logic_wf_thm   : parse_info -> term -> meta_term
-val mk_infer_thm      : parse_info -> term -> meta_term -> meta_term
+val mk_infer_thm      : parse_info -> term -> meta_term -> socvars_info * meta_term
 val mk_type_check_thm : parse_info -> (term, term) poly_ty_term -> meta_term
 val mk_mem_logic_thm  : parse_info -> term -> term -> meta_term
 

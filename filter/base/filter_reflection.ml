@@ -62,6 +62,16 @@ type parse_state =
    }
 
 (*
+ * Info about vars.
+ *)
+type var_info = var * var list * int
+
+type socvars_info =
+   { cvars_info  : var_info list;
+     sovars_info : var_info list
+   }
+
+(*
  * Opnames.
  *)
 let perv_opname       = mk_opname "Perv" nil_opname
@@ -1139,7 +1149,7 @@ let mk_infer_wf_premise info h_v fv socvars v (b, cargs, arity) =
             e, ty
    in
 
-   (* e in ty *)
+   (* Build the wf judgment *)
    let t = Reflect.mk_equal_term info e e ty in
       mk_normal_sequent_term info h_v t
 
@@ -1153,6 +1163,21 @@ let mk_infer_wf_premises info h_v fv socvars =
                premise :: premises) [] socvars
    in
       List.rev premises
+
+(*
+ * Construct the info for the proof witness.
+ *)
+let mk_infer_socvars_info socvars =
+   let cinfo, soinfo =
+      SymbolTable.fold (fun (cinfo, soinfo) v (b, cargs, arity) ->
+            if b then
+               (v, cargs, arity) :: cinfo, soinfo
+            else
+               cinfo, (v, cargs, arity) :: soinfo) ([], []) socvars
+   in
+      { cvars_info  = cinfo;
+        sovars_info = soinfo
+      }
 
 (*
  * Build the derived form.
@@ -1185,6 +1210,8 @@ let mk_infer_thm info t_logic t =
    in
    let premises = List.rev premises in
    let socvars_goal, goal = sweep_min_rulequote_term info h_v SymbolTable.empty goal in
+
+   (* The only socvars we care about are those in the goal, but not in a premise *)
    let socvars =
       SymbolTable.fold (fun socvars v _ ->
             SymbolTable.remove socvars v) socvars_goal socvars_premises
@@ -1212,7 +1239,11 @@ let mk_infer_thm info t_logic t =
 
    (* Build the sequent *)
    let mt = zip_mimplies premises t_goal in
-      mt
+
+   (* Collect information about all socvars, for the proof witness *)
+   let socvars_all = SymbolTable.fold SymbolTable.add socvars_premises socvars_goal in
+   let socvars_info = mk_infer_socvars_info socvars_all in
+      socvars_info, mt
 
 (*
  * Make the logic membership term.
