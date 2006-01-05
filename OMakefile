@@ -780,7 +780,7 @@ section
 .PHONY: check-status core-incompletes
 
 if $(NATIVE_ENABLED)
-   check-status core-incompletes: util/check-status util/check-status.sh editor/ml/mp.opt editor/ml/mpopt editor/ml/mpconfig $(THEORIES_PATH) $(MLDEBUG_PATH)
+   check-status core-incompletes: util/check-status util/check-status.sh $(MP_PREREQS) editor/ml/svnversion.txt
 
    check-status:
       util/check-status nomake

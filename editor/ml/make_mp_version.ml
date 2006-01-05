@@ -44,6 +44,15 @@ let mon_names =
 
 let main () =
    Arg.parse spec (fun s -> raise (Failure ("bad option: " ^ s))) "make_mp_version";
+   let svnversion = 
+      try
+         let ch = open_in "svnversion.txt" in
+         let version = input_line ch in
+         let () = close_in ch in
+            version
+      with _ ->
+         "unknown"
+   in
    let now = Unix.time () in
    let { Unix.tm_year = year;
          Unix.tm_mon = mon;
@@ -54,8 +63,9 @@ let main () =
          Unix.tm_sec = sec
        } = Unix.localtime now
    in
-      printf "let version = \"MetaPRL %s:\\n\\tbuild [%s %s %d %02d:%02d:%02d %d]\\n\\ton %s\\n\\tUses %s Refiner_%s\"\n"
+      printf "let version = \"MetaPRL %s  (Subversion rev %s):\\n\\tbuild [%s %s %d %02d:%02d:%02d %d]\\n\\ton %s\\n\\tUses %s Refiner_%s\"\n"
          !version
+         svnversion
          wday_names.(wday)
          mon_names.(mon)
          mday

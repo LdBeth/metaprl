@@ -105,5 +105,5 @@ done > $TEMP 2>&1
       echo ""
       echo BUILD FAILED!
    fi
-) 2>&1 ) | mail -s "MetaPRL $SUBJECT (`hostname -s`, `pwd`)" "$LOGNAME"
+) 2>&1 ) | mail -s "MetaPRL $SUBJECT (`hostname -s`, `pwd`, rev `cat editor/ml/svnversion.txt`)" "$LOGNAME"
 rm -rf $TMPDIR

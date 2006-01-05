@@ -105,7 +105,7 @@ if $(defined Options.MCC)
 # Profiling
 #
 if $(NATIVE_PROFILING_ENABLED)
-   gmon.out: mp.opt mpopt mpconfig
+   gmon.out: mp.opt mpopt mpconfig svnversion.txt
       echo 'restart_gmon();; status_all();;' | ./mpopt >& /dev/null
 
    native_profile.txt: mp.opt gmon.out
@@ -211,7 +211,27 @@ $(MP).opt: $(OPT_DEPS) $(TCMXFILES) $(TOBJFILES)
 make_mp_version$(EXE): make_mp_version.ml
     $(OCAMLC) $(OCAMLCFLAGS) -o $@ unix.cma $<
 
-mp_version.ml: make_mp_version$(EXE) $(ALL_DEPS)
+if $(and $(file-exists $(ROOT)/.svn/entries), $(file-exists $(ROOT)/libmojave/.svn/entries), $(where svnversion))
+    #
+    # XXX: BUG: nogin: for some reason, extracting dependencies gives an empty set here :-(
+    #
+    digest-deps() =
+        # dirs = $(dependencies $(MLDEBUG_PATH))
+        FS=$'"'
+        awk($(MLDEBUG_PATH))
+        case $'".*"'
+            dirs = $(filter-out -I, $(array $2))
+            export
+        return $(digest-optional $(addsuffix /.svn/entries, $(dirs)))
+
+    svnversion.txt: $(MLDEBUG_PATH) :value: $(digest-deps)
+        svnversion $(ROOT) > $@
+        
+else
+    svnversion.txt:
+        fprintln($@, unknown)
+
+mp_version.ml: make_mp_version$(EXE) $(ALL_DEPS) svnversion.txt
     ./make_mp_version -version $(MP_VERSION) -refiner $(REFINER) -terms $(TERMS) > $@
 
 LocalOCamlGeneratedFiles(mp_version.ml)
@@ -262,7 +282,7 @@ done: .test-metaprl-startup
 # Clean up
 #
 clean:
-    $(CLEAN) $(MP_SCRIPT) $(MP).top mp_version.ml make_mp_version$(EXE) native_profile.txt .test-metaprl-startup
+    $(CLEAN) $(MP_SCRIPT) $(MP).top mp_version.ml make_mp_version$(EXE) native_profile.txt .test-metaprl-startup svnversion.txt
 
 #
 # All defaults
