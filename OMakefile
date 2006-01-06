@@ -732,10 +732,18 @@ section
 
     # Collect the theories that need to be built, paying attention
     # to the value of the THEORY_DEPS variable in each theory.
-    TheorySubDir(theories) =
+    TheorySubDir(theories, source) =
         foreach (thy, $(theories))
             thydir = $(dir $(THEORY_DIR)/$(thy))
             if $(not $(mem $(thydir), $(COLLECTED_THEORIES)))
+                if $(not $(file-exists $(thydir)))
+                    eprintln($"!!! ERROR: $(in $(ROOT)/theories, $(thydir)) (referenced by the $(source)):")
+                    eprintln($"!!!        theory directory $(in $(ROOT), $(thydir)) does not exist")
+                    exit (1)
+                if $(not $(file-exists $(thydir)/OMakefile))
+                    eprintln($"!!! ERROR: $(in $(ROOT)/theories, $(thydir)) (referenced by the $(source)):")
+                    eprintln($"!!!        theory does not have an OMakefile")
+                    exit (1)
                 public.VirtualTheory(subdirs) =
                     VIRTUAL_THEORY = true
                     THEORY_DEPS = $(addprefix $(thy)/, $(subdirs))
@@ -753,10 +761,10 @@ section
                         
                 THEORY_DEPS_DIRS = $(dir $(addprefix $(THEORY_DIR)/, $(THEORY_DEPS)))
                 if $(intersects $(PENDING_THEORIES), $(THEORY_DEPS_DIRS))
-                    eprintln($"!!! ERROR: in $(in $(ROOT), $(thydir)) :")
+                    eprintln($"!!! ERROR: in $(in $(ROOT), $(thydir)):")
                     eprintln($"!!!        theory dependency ``$(thy): $(intersection $(PENDING_THEORIES), $(THEORY_DEPS_DIRS))'' creates a dependency loop")
                     exit(1)
-                TheorySubDir($(THEORY_DEPS))
+                TheorySubDir($(THEORY_DEPS), OMakefile in $(in $(ROOT), $(thydir)))
                 if $(not $(VIRTUAL_THEORY))
                     COLLECTED_THEORIES += $(thydir)
                     export COLLECTED_THEORIES
@@ -765,7 +773,7 @@ section
         export COLLECTED_THEORIES
 
     # Start the theory collection process with $(THEORIES)
-    TheorySubDir($(THEORIES))
+    TheorySubDir($(THEORIES), THEORIES variable in mk/config)
     export COLLECTED_THEORIES
 
 MP_DIRS[] =
