@@ -78,10 +78,11 @@ open File_type_base
  * Rev 24: added "Operator" term parameters.
  * Rev 25: added "Annotate" proof terms.
  * Rev 26: added "RWAvoidBindings" to term rewrites (raw I/O only)
+ * Rev 27: added "const" annotation to 0-arity "declare"/"define"
  *)
-let raw_versions = List.map (pack_version 1 0) [26;25;24]
+let raw_versions = List.map (pack_version 1 0) [27;26;25;24]
 
-let term_versions = List.map (pack_version 1 0) [25;24]
+let term_versions = List.map (pack_version 1 0) [27;25;24]
 
 (*
  * ASCII IO format revision history:
@@ -110,6 +111,7 @@ let term_versions = List.map (pack_version 1 0) [25;24]
  * Rev 21: added iform/normal classification to opname declarations
  * Rev 22: added "Operator" term parameters.
  * Rec 23: added "Annotate" proof terms.
+ * Rev 24: added "const" annotation to 0-arity "declare"/"define"
  *
  * Ascii_io has a HACK needed to read some rev 0-5 files
  * Ascii_io has another set of HACKs to read sequents in rev 0-6 files
@@ -125,8 +127,9 @@ let term_versions = List.map (pack_version 1 0) [25;24]
  * Filter_summary has another HACK needed to read some rev 0-17 files.
  * Filter_summary has another HACK needed to read some rev 0-18 files.
  * Filter_summary has another HACK needed to read some rev 0-20 files.
+ * Filter_summary has another HACK needed to read some rev 21-23 files.
  *)
-let ascii_versions = List.map (pack_version 1 0) [23;22;21;20;19;18;17;16;15;14;13;12;11;10;9;8;7;6;5;4;3;2;1;0]
+let ascii_versions = List.map (pack_version 1 0) [24;23;22;21;20;19;18;17;16;15;14;13;12;11;10;9;8;7;6;5;4;3;2;1;0]
 
 (************************************************************************
  * Magic numbers for interactive files                                  *

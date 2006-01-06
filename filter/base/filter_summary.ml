@@ -1182,7 +1182,8 @@ struct
       let op = opname_of_term t in
          if Opname.eq op shape_class_op then
             shape_class_of_num (dest_number_term op t)
-         else if Opname.eq op shape_normal_op then (* XXX: HACK: ASCII IO <= 1.0.23 compatibility *)
+         (* XXX: HACK: the two "else if" below are for ASCII IO vv 1.0.21-1.0.23 compatibility *)
+         else if Opname.eq op shape_normal_op then
             shape_normal
          else if Opname.eq op shape_iform_op then
             shape_iform
