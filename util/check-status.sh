@@ -20,27 +20,33 @@ if [ ! -d "$1" ]; then
    echo '$1' should be a directory!
    exit 1
 fi
+cd $1
 TMPDIR=`mktemp -d /tmp/mp-status-check.XXXXXX`
 LOGS=$TMPDIR/$ST_NAME
 REMOTE_LOGS=$REMOTE_DIR$ST_NAME
 if [ -z "$LOGNAME" ]; then
    LOGNAME=`whoami`
 fi
-DAYS=0
+if [ ! -e editor/ml/svnversion.txt ]; then
+   echo editor/ml/svnversion.txt does not exist!
+   exit 1
+fi
+MYREV="`cat editor/ml/svnversion.txt| sed -e 's/.*://' -e 's/M//'`"
+REV=$MYREV
 until [ -n "$LOG" -a -f "$LOG" -a -s "$LOG" ]; do
-   if [ "$DAYS" -gt 50 ]; then
-      echo "Tried last 100 days, can not find status logs at $REMOTE_DIR!" | \
+   if [ "$REV" -lt 8410 ]; then
+      echo "Tried revisions $MYREV down to 8410, can not find status logs at $REMOTE_DIR!" | \
       mail -s "MetaPRL proofs status can not be checked!" "$LOGNAME"
       exit 1
    fi
-   SUFFIX=`date -d "$DAYS days ago" +-%Y.%m.%d.txt`
+   SUFFIX=-rev"$REV".txt
    LOG=$LOGS$SUFFIX
    (cd $TMPDIR; $GET $REMOTE_LOGS$SUFFIX ) &>/dev/null
-   DAYS=`expr "$DAYS" + 1`
+   REV=`expr "$REV" - 1`
 done
+REV=`expr "$REV" + 1`
 TEMP=`mktemp /tmp/mkstatus.XXXXXX`
 umask 002
-cd $1
 shift
 RUN_OMAKE=yes
 MP_DEBUG=
@@ -105,5 +111,5 @@ done > $TEMP 2>&1
       echo ""
       echo BUILD FAILED!
    fi
-) 2>&1 ) | mail -s "MetaPRL $SUBJECT (`hostname -s`, `pwd`, rev `cat editor/ml/svnversion.txt`)" "$LOGNAME"
+) 2>&1 ) | mail -s "MetaPRL $SUBJECT (`hostname -s`, `pwd`, rev $REV->`cat editor/ml/svnversion.txt`)" "$LOGNAME"
 rm -rf $TMPDIR
