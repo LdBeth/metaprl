@@ -29,6 +29,8 @@ cumulativity
 de
 destructors
 doc
+doesn't
+don't
 Emre
 endpoints
 epimorphism
@@ -46,11 +48,14 @@ foundness
 HOAS
 html
 HTML
+I've
 iff
+inexpressible
 intensional
 intuitionistic
 INRIA
 IR
+isn't
 ITT
 Kopylov
 lowercase
@@ -76,6 +81,7 @@ quotiented
 redex
 redices
 reflectivity
+rewriter
 semigroup
 sequent
 sequents
@@ -90,6 +96,7 @@ superclass
 surjection
 tactical
 tacticals
+teleportation
 toplevel
 toploop
 thinning
@@ -98,6 +105,7 @@ typehood
 unorthodox
 untyped
 uppercase
+we've
 Xin
 Yegor
 Yu

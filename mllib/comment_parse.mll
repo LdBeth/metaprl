@@ -619,47 +619,6 @@ and parse_white is_nl_flag buf =
             White
 
 (*
- * Adjacent strings are concatenated.
- *)
-and parse_strings mode s buf =
-   let buffer = Buffer.create 19 in
-      Buffer.add_string buffer s;
-      parse_strings' mode buffer buf
-
-and parse_strings' mode buffer buf =
-   let token = parse_token buf in
-      match token with
-         TokString (_, s) ->
-            add_string mode s buffer buf
-       | TokSpecial c ->
-            if is_special mode c then
-               flush_string token buffer buf
-            else
-               add_char mode c buffer buf
-       | TokWhite _
-       | TokVariable _
-       | TokMath _
-       | TokQString _
-       | TokQuote _
-       | TokName _
-       | TokLeftBrace
-       | TokRightBrace
-       | TokEof ->
-            flush_string token buffer buf
-
-and add_string mode s buffer buf =
-   Buffer.add_string buffer s;
-   parse_strings' mode buffer buf
-
-and add_char mode c buffer buf =
-   Buffer.add_char buffer c;
-   parse_strings' mode buffer buf
-
-and flush_string token buffer buf =
-   push_back token buf;
-   String (Buffer.contents buffer)
-
-(*
  * Parse a term.
  * There are several mode cases to consider.
  *)

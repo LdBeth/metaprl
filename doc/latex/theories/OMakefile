@@ -2,7 +2,7 @@
 # Format a document containing all of the theories
 #
 ALL_THEORIES[] =
-    base
+    meta
     fol
     itt
     czf
