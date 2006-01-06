@@ -219,8 +219,11 @@ if $(and $(file-exists $(ROOT)/.svn/entries), $(file-exists $(ROOT)/libmojave/.s
         # dirs = $(dependencies $(MLDEBUG_PATH))
         FS=$'"'
         awk($(MLDEBUG_PATH))
-        case $'".*"'
+        case $'^DEBUGINCLUDES='
             dirs = $(filter-out -I, $(array $2))
+            export
+        case $'^-I'
+            dirs = $(filter-out -I, $(array $0))
             export
         return $(digest-optional $(addsuffix /.svn/entries, $(dirs)))
 
