@@ -1229,19 +1229,34 @@ struct
       in
          collect_opname (fun x -> x) (dest_opname opname)
 
+   let describe_args (opname, ints, addrs, params) =
+      let ints = Array.of_list (List.map (fun addr -> IntArg addr) ints) in
+      let addrs = Array.of_list (List.map (fun addr -> AddrArg addr) addrs) in
+      let params = Array.of_list (List.map (fun t -> TermArg t) params) in
+      let name = [|StringArg (string_of_opname opname)|] in
+         Array.concat [name; ints; addrs; params]
+
+   let rwarg = StringArg "rw"
+         
    let make_extract_expr ext =
       let arglist =
          match Refine.describe_extract ext with
-            EDRule (opname, ints, addrs, params) ->
-               let ints = Array.of_list (List.map (fun addr -> IntArg addr) ints) in
-               let addrs = Array.of_list (List.map (fun addr -> AddrArg addr) addrs) in
-               let params = Array.of_list (List.map (fun t -> TermArg t) params) in
-               let name = [|StringArg (string_of_opname opname)|] in
-                  GeneralArgList (Array.concat [name; ints; addrs; params])
-          | EDRewrite ->
+            EDRule args ->
+               GeneralArgList (describe_args args)
+          | EDRewrite None ->
                NoneArgList "<rewrite>"
-          | EDCondREwrite ->
+          | EDRewrite ( Some (op, addr)) ->
+               GeneralArgList [| rwarg; StringArg (string_of_opname op); AddrArg addr |]
+          | EDCondRewrite None ->
                NoneArgList "<conditional-rewrite>"
+          | EDCondRewrite (Some (args, addr)) ->
+               let args = describe_args args in
+                  GeneralArgList (Array.concat (
+                     if (Array.length args) > 1 then
+                        [ [| rwarg; StringArg "(" |]; args; [| StringArg ")"; AddrArg addr |] ]
+                     else
+                        [ [| rwarg |]; args; [| AddrArg addr |] ]
+                  ))
           | EDComposition ->
                StringStringArgList ("<tactic>", "thenT", "<tactic>")
           | EDNthHyp i ->

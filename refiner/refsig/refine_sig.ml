@@ -183,10 +183,12 @@ sig
     * For UI purposes only, we want refiner to be able to desribe
     * what it did in a proof step
     *)
+   type ed_args = opname * int list * address list * term list
+   
    type extract_description =
-      EDRule of opname * int list * address list * term list
-    | EDRewrite
-    | EDCondREwrite
+      EDRule of ed_args
+    | EDRewrite of (opname * address) option
+    | EDCondRewrite of (ed_args * address) option
     | EDComposition (* any compilcated steps will fall into this category *)
     | EDNthHyp of int
     | EDCut of term

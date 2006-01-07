@@ -452,14 +452,16 @@ struct
    (*
     * Extract decription for UI purposes.
     *)
+   type ed_args = opname * int list * address list * term list
+
    type extract_description =
-       EDRule of opname * int list * address list * term list
-     | EDRewrite
-     | EDCondREwrite
-     | EDComposition (* any complicated steps will fall into this category *)
-     | EDNthHyp of int
-     | EDCut of term
-     | EDIdentity
+      EDRule of ed_args
+    | EDRewrite of (opname * address) option
+    | EDCondRewrite of (ed_args * address) option
+    | EDComposition (* any complicated steps will fall into this category *)
+    | EDNthHyp of int
+    | EDCut of term
+    | EDIdentity
 
    (************************************************************************
     * SEQUENT OPERATIONS                                                   *
@@ -889,12 +891,40 @@ struct
    (*
     * Extract decription for UI purposes.
     *)
+   let null_address = make_address []
+   
+   let describe name args params =
+      name, Array.to_list args.arg_ints, Array.to_list args.arg_addrs, params
+
+   let rec describe_rw addr = function
+      RewriteHere (_, nm)
+    | RewriteML (_, nm) ->
+         EDRewrite( Some ((nm, addr)))
+    | RewriteHigher(_, [rw]) ->
+         describe_rw addr rw
+    | RewriteAddress(_, addr', rw) ->
+         describe_rw (compose_address addr addr') rw
+    | _ ->
+         EDRewrite None
+   
+   let rec describe_crw addr = function
+      CondRewriteHere crh
+    | CondRewriteML (crh, _, _) ->
+         EDCondRewrite (Some (
+            (describe crh.cjust_refiner crh.cjust_addrs crh.cjust_params), addr))
+    | CondRewriteHigher(_, [crw]) ->
+         describe_crw addr crw
+    | CondRewriteAddress(_, addr', crw) ->
+         describe_crw (compose_address addr addr') crw
+    | _ ->
+         EDCondRewrite None
+
    let describe_extract ext =
       match ext.ext_just with
          RuleJust j | MLJust (j, _, _) ->
-            EDRule (j.just_refiner, Array.to_list j.just_addrs.arg_ints, Array.to_list j.just_addrs.arg_addrs, j.just_params)
-       | RewriteJust _ -> EDRewrite
-       | CondRewriteJust _ -> EDCondREwrite
+            EDRule (describe j.just_refiner j.just_addrs j.just_params)
+       | RewriteJust (_, rw) -> describe_rw null_address rw
+       | CondRewriteJust (_, crw) -> describe_crw null_address crw
        | ComposeJust _ -> EDComposition
        | NthHypJust (_, i) -> EDNthHyp i
        | CutJust j -> EDCut j.cut_hyp
