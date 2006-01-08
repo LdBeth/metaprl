@@ -457,6 +457,7 @@ let get_val_rwi info _ t _ _ =
 
 let rec get_val_all info f t tl fallbacks =
    (get_val info f t tl fallbacks), get_val_all_aux f t tl fallbacks
+
 and get_val_all_aux f t tl fallbacks () =
    search_infos get_val_all f t fallbacks tl
 

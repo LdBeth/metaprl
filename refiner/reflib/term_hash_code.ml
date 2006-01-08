@@ -52,6 +52,9 @@ let hash_int code i =
 let hash_item code item =
    hash_int code (Hashtbl.hash_param max_int max_int item)
 
+let hash_item_list code items =
+   List.fold_left hash_item code items
+
 (*
  * Variable environment maps variables to DeBruijn numbers.
  *)
@@ -113,15 +116,15 @@ and hash_var_term venv code e =
 
 and hash_so_var_term venv code e =
    let v, cvars, args = dest_so_var e in
-   let code = hash_var venv code v in
-   let code = hash_var_list venv code cvars in
+   let code = hash_item code v in
+   let code = hash_item_list code cvars in
       hash_term_list venv code args
 
 and hash_context_term venv code e =
    let v, e, cvars, args = dest_context e in
-   let code = hash_var venv code v in
+   let code = hash_item code v in
    let code = hash_term venv code e in
-   let code = hash_var_list venv code cvars in
+   let code = hash_item_list code cvars in
       hash_term_list venv code args
 
 and hash_sequent_term venv code e =
@@ -139,8 +142,8 @@ and hash_sequent_term venv code e =
                   let venv, code = venv_add_var venv code v in
                      venv, code
              | Context (v, cvars, args) ->
-                  let code = hash_var venv code v in
-                  let code = hash_var_list venv code cvars in
+                  let code = hash_item code v in
+                  let code = hash_item_list code cvars in
                   let code = hash_term_list venv code args in
                      venv, code) (venv, code) hyps
    in
@@ -210,7 +213,6 @@ let hash_ty venv code ty =
 (************************************************************************
  * External functions.
  *)
-
 let hash_term e =
    hash_term venv_empty 0 e
 

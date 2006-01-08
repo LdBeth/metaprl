@@ -61,81 +61,16 @@ let debug_forward =
       }
 
 (*
- * Build a term table from the sequent.
- * This is a term set indexed by hash code.
- *)
-module type TermTableSig =
-sig
-   type t
-
-   val empty : t
-   val add : t -> term -> t
-   val mem : t -> term -> bool
-end;;
-
-module TermTable =
-struct
-   type t
-
-   let empty = IntMTable.empty
-
-   let add table t =
-      IntMTable.add table (hash_term t) t
-
-   let mem table t =
-      try
-         let tl = IntMTable.find_all table (hash_term t) in
-            List.exists (fun t' -> alpha_equal t' t) tl
-      with
-         Not_found ->
-            false
-end;;
-
-(*
- * Build a table from the hyps.
- *)
-let term_table_of_hyps hyps =
-   SeqHyp.fold (fun table _ h ->
-         match h with
-            Hypothesis (_, t) ->
-               TermTable.add table t
-          | Context _ ->
-               table) TermTable.empty hyps
-
-(*
- * Merge the new hyps into the list.
- * Fails if there are no new hyps and the concl has not changed.
- *)
-let progress_check orig_hyps orig_concl p =
-   let { sequent_hyps = hyps;
-         sequent_concl = concl
-       } = explode_sequent (Sequent.goal p)
-   in
-   let hyps, changed =
-      SeqHyp.fold (fun (new_hyps, changed) _ h ->
-            match h with
-               Hypothesis (_, t) ->
-                  if TermTable.mem new_hyps t then
-                     new_hyps, changed
-                  else
-                     TermTable.add new_hyps t, true
-             | Context _ ->
-                  new_hyps, changed) (orig_hyps, false) hyps
-   in
-   let changed = changed || not (alpha_equal concl orig_concl) in
-      hyps, concl, changed
-
-(*
  * Extract the elimination tactic from the table.
  *)
 let extract_forward_data =
-   let rec firstiT i = function
+   let rec alliT i = function
       [] ->
-         raise (Invalid_argument "extract_elim_data: internal error")
+         raise (Invalid_argument "extract_forward_data: internal error")
     | [tac] ->
-         tac i
+         tryT (tac i)
     | tac :: tacs ->
-         tac i orelseT firstiT i tacs
+         tryT (tac i) thenMT alliT i tacs
    in
    let step tbl =
       argfunT (fun i p ->
@@ -149,9 +84,9 @@ let extract_forward_data =
                   lookup_bucket tbl select_all t
                with
                   Not_found ->
-                     raise (RefineError ("extract_elim_data", StringTermError ("forwardT doesn't know about", t)))
+                     raise (RefineError ("extract_forward_data", StringTermError ("forwardT doesn't know about", t)))
             in
-               firstiT i tacs)
+               alliT i tacs)
    in
       step
 
@@ -242,24 +177,114 @@ let resource (term * (int -> tactic), int -> tactic) forward =
 let forward_proof p =
    Sequent.get_resource_arg p get_forward_resource
 
-(*
- * Forward-chain, then repeat on all hyps if something has
- * changed.
+(************************************************************************
+ * Build a term table from the sequent.
+ * This is a term set indexed by hash code.
  *)
-let rec step tac hyps concl depth bound i =
-   if depth = bound then
+module type TermTableSig =
+sig
+   type t
+
+   val empty : t
+   val add : t -> term -> t
+   val mem : t -> term -> bool
+end;;
+
+module TermTable =
+struct
+   type t
+
+   let empty = IntMTable.empty
+
+   let add table t =
+      IntMTable.add table (hash_term t) t
+
+   let mem table t =
+      try
+         let tl = IntMTable.find_all table (hash_term t) in
+            List.exists (fun t' -> alpha_equal t' t) tl
+      with
+         Not_found ->
+            false
+end;;
+
+(*
+ * Build a table from the hyps.
+ *)
+let term_table_of_hyps hyps =
+   SeqHyp.fold (fun table _ h ->
+         match h with
+            Hypothesis (_, t) ->
+               TermTable.add table t
+          | Context _ ->
+               table) TermTable.empty hyps
+
+(*
+ * Merge the new hyps into the list.
+ * Fails if there are no new hyps and the concl has not changed.
+ *)
+let progress_check orig_hyps orig_concl orig_length p =
+   let { sequent_hyps = hyps;
+         sequent_concl = concl
+       } = explode_sequent (Sequent.goal p)
+   in
+   let length = SeqHyp.length hyps in
+   let rec search new_hyps changed i =
+      if i = length then
+         new_hyps, changed
+      else
+         match SeqHyp.get hyps i with
+            Hypothesis (_, t) ->
+               if TermTable.mem new_hyps t then
+                  new_hyps, changed
+               else
+                  TermTable.add new_hyps t, true
+          | Context _ ->
+               new_hyps, changed
+   in
+   let hyps, changed =
+      if length <= orig_length then
+         orig_hyps, false
+      else
+         search orig_hyps false orig_length
+   in
+   let changed = changed || not (alpha_equal concl orig_concl) in
+      hyps, concl, length, changed
+
+(*
+ * Forward-chain, then repeat if something has changed.
+ *)
+let rec step forward_tac orig_hyps orig_concl orig_length i depth bound =
+   if depth = bound || i = orig_length then
       idT
    else
-      funT (fun p ->
-            tac i thenMT progress tac hyps concl (succ depth) bound)
+      let i = succ i in
+      let depth = succ depth in
+         funT (fun p -> (**)
+            (forward_tac i thenMT progress forward_tac orig_hyps orig_concl orig_length i depth bound)
+            orelseT step forward_tac orig_hyps orig_concl orig_length i depth bound)
 
-and progress tac orig_hyps orig_concl depth bound =
-   funT (fun p ->
-         let new_hyps, new_concl, changed = progress_check orig_hyps orig_concl p in
-            if changed then
-               onAnyHypT (step tac new_hyps new_concl depth bound)
-            else
-               raise (RefineError ("Forward.progress", StringError "no progress")))
+and progress forward_tac orig_hyps orig_concl orig_length i depth bound =
+   funT (fun p -> (**)
+      let new_hyps, new_concl, new_length, changed = progress_check orig_hyps orig_concl orig_length p in
+         if changed then
+            step forward_tac new_hyps new_concl new_length i depth bound
+         else
+            raise (RefineError ("Forward.progress", StringError "no progress")))
+
+(*
+ * Single step.
+ *)
+let single_progress orig_hyps orig_concl orig_length =
+   funT (fun p -> (**)
+      let _, _, _, changed = progress_check orig_hyps orig_concl orig_length p in
+         if changed then
+            idT
+         else
+            raise (RefineError ("Forward.progress", StringError "no progress")))
+
+let single_step forward_tac orig_hyps orig_concl orig_length i =
+   funT (fun p -> forward_tac i thenMT single_progress orig_hyps orig_concl orig_length)
 
 (*
  * Describe the original sequent.
@@ -269,21 +294,22 @@ let start_info p =
          sequent_concl = concl
        } = explode_sequent (Sequent.goal p)
    in
+   let len = SeqHyp.length hyps in
    let hyps = term_table_of_hyps hyps in
-      hyps, concl
+      len, hyps, concl
 
 let forwardT i =
    funT (fun p ->
-         let tac = forward_proof p in
-         let hyps, concl = start_info p in
+         let forward_tac = forward_proof p in
+         let len, hyps, concl = start_info p in
          let i = Sequent.get_pos_hyp_num p i in
-            step tac hyps concl 0 1 i)
+            single_step forward_tac hyps concl len i)
 
 let forwardChainBoundT bound =
    funT (fun p ->
-         let tac = forward_proof p in
-         let hyps, concl = start_info p in
-            onAnyHypT (step tac hyps concl 0 bound))
+         let forward_tac = forward_proof p in
+         let len, hyps, concl = start_info p in
+            step forward_tac hyps concl len 1 0 bound)
 
 let forwardChainT =
    forwardChainBoundT max_int

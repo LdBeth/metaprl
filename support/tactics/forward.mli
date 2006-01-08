@@ -34,6 +34,12 @@ open Tactic_type.Tactic
 open Mp_resource
 open Dtactic
 
+(*
+ * Rules for forward chaning.
+ * WARNING: the rules you add should not delete, permute, or otherwise
+ * modify the existing hyp list.  The new hyps must be placed at the end
+ * of the hyp list.
+ *)
 resource (term * (int -> tactic), int -> tactic) forward
 
 val process_forward_resource_annotation :

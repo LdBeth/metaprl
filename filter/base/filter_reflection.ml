@@ -895,7 +895,7 @@ let sweep_min_rulequote_term info h_v socvars t =
                      let socvars = SymbolTable.add socvars x (true, cargs, List.length args) in
                         socvars, hyp :: hyps) (socvars, []) hyps
       in
-      let hyps = SeqHyp.of_list hyps in
+      let hyps = SeqHyp.of_list (List.rev hyps) in
       let socvars, concl = sweepdn socvars concl in
       let t = Reflect.mk_bsequent_term info arg hyps concl in
          socvars, t
