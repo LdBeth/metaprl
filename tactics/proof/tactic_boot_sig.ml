@@ -377,6 +377,7 @@ sig
    (* Wrap a tactic selection function *)
    val funT : (tactic_arg -> tactic) -> tactic
    val argfunT : ('a -> tactic_arg -> tactic) -> 'a -> tactic
+   val argfun2T : ('a -> 'b -> tactic_arg -> tactic) -> 'a -> 'b -> tactic
 
    (*
     * Basic tacticals.
@@ -818,6 +819,7 @@ sig
    (* Wrap a tactic selection function *)
    val funT : (tactic_arg -> tactic) -> tactic
    val argfunT : ('a -> tactic_arg -> tactic) -> 'a -> tactic
+   val argfun2T : ('a -> 'b -> tactic_arg -> tactic) -> 'a -> 'b -> tactic
 
    (* Print timing information *)
    val timingT : tactic -> tactic

@@ -1056,6 +1056,7 @@ struct
    (* funT is just an application *)
    let funT tac p = tac p p
    let argfunT tac arg p = tac arg p p
+   let argfun2T tac arg1 arg2 p = tac arg1 arg2 p p
 
    (*
     * Identity doesn't do anything.

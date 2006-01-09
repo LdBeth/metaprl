@@ -82,6 +82,7 @@ struct
    let cutT = TacticInternal.cutT
    let funT = TacticInternal.funT
    let argfunT = TacticInternal.argfunT
+   let argfun2T = TacticInternal.argfun2T
 
    let failT =
       funT (fun _ -> raise (RefineError ("failT", StringError "Fail")))

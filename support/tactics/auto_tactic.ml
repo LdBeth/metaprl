@@ -423,6 +423,7 @@ let repeatWithRwsT convs tac  = repeatT (firstT (List.map (fun conv-> progressT 
 let trivial_prec = create_auto_prec [] []
 let nth_hyp_prec = create_auto_prec [trivial_prec] []
 let reduce_prec = create_auto_prec [trivial_prec; nth_hyp_prec] []
+let large_prec = create_auto_prec [trivial_prec; nth_hyp_prec; reduce_prec] []
 
 (*
  * Some trivial tactics.

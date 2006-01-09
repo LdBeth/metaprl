@@ -69,7 +69,7 @@ type auto_prec
 type auto_info = {
    auto_name : string;
    auto_prec : auto_prec;
-   auto_tac : tactic;
+   auto_tac  : tactic;
    auto_type : auto_type;
 }
 
@@ -93,6 +93,7 @@ val create_auto_prec : auto_prec list -> auto_prec list -> auto_prec
 val trivial_prec : auto_prec
 val nth_hyp_prec : auto_prec
 val reduce_prec : auto_prec
+val large_prec : auto_prec
 
 (*
  * Trivial tactic.

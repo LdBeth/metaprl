@@ -24,15 +24,35 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
-extends Dtactic
-
 open Refiner.Refiner.Refine
 
 open Tactic_type
 open Tactic_type.Tactic
 
 open Mp_resource
-open Dtactic
+
+(*
+ * Precedences.
+ *)
+type forward_prec
+
+val forward_trivial_prec : forward_prec
+val forward_normal_prec  : forward_prec
+val forward_max_prec     : forward_prec
+
+(*
+ * Operations on precedences.
+ * The create operation takes a list of precedences that
+ * are smaller, and another list that are larger.
+ *)
+val create_forward_prec : forward_prec list -> forward_prec list -> forward_prec
+
+(*
+ * Arguments to forward-chaining.
+ *)
+type forward_option =
+   ForwardArgsOption of (tactic_arg -> term -> term list) * term option
+ | ForwardPrec of forward_prec
 
 (*
  * Rules for forward chaning.
@@ -40,10 +60,15 @@ open Dtactic
  * modify the existing hyp list.  The new hyps must be placed at the end
  * of the hyp list.
  *)
-resource (term * (int -> tactic), int -> tactic) forward
+type forward_info =
+   { forward_prec : forward_prec;
+     forward_tac  : int -> tactic
+   }
+
+resource (term * forward_info, forward_prec -> int -> tactic) forward
 
 val process_forward_resource_annotation :
-   (Tactic.pre_tactic * elim_option list, term * (int -> tactic)) annotation_processor
+   (Tactic.pre_tactic * forward_option list, term * forward_info) annotation_processor
 
 topval forwardT : int -> tactic
 topval forwardChainBoundT : int -> tactic

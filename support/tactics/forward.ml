@@ -26,11 +26,12 @@
  * @end[license]
  *)
 extends Top_tacticals
-extends Dtactic
 
 open Lm_debug
 open Lm_printf
 open Lm_int_set
+open Lm_dag_sig
+open Lm_imp_dag
 
 open Term_sig
 open Rewrite_sig
@@ -51,8 +52,6 @@ open Tactic_type
 open Tactic_type.Tactic
 open Tactic_type.Tacticals
 
-open Dtactic
-
 let debug_forward =
    create_debug (**)
       { debug_name = "forward";
@@ -61,19 +60,59 @@ let debug_forward =
       }
 
 (*
+ * Arguments to forward-chaining.
+ *)
+type forward_prec = unit ImpDag.node
+
+type forward_option =
+   ForwardArgsOption of (tactic_arg -> term -> term list) * term option
+ | ForwardPrec of forward_prec
+
+type forward_info =
+   { forward_prec : forward_prec;
+     forward_tac  : int -> tactic
+   }
+
+(*
+ * Precedences.
+ *)
+let dag = ImpDag.create ()
+
+let create_forward_prec before after =
+   let node = ImpDag.insert dag () in
+      List.iter (fun p -> ImpDag.add_edge dag p node) before;
+      List.iter (fun p -> ImpDag.add_edge dag node p) after;
+      node
+
+let forward_trivial_prec = create_forward_prec [] []
+let forward_normal_prec = create_forward_prec [forward_trivial_prec] []
+let forward_max_prec = create_forward_prec [forward_trivial_prec] []
+
+let equal_forward_prec = ImpDag.eq
+
+let forward_precs () =
+   ImpDag.sort dag
+
+(*
  * Extract the elimination tactic from the table.
  *)
 let extract_forward_data =
-   let rec alliT i = function
+   let rec alliT apre i = function
       [] ->
          raise (Invalid_argument "extract_forward_data: internal error")
-    | [tac] ->
-         tryT (tac i)
-    | tac :: tacs ->
-         tryT (tac i) thenMT alliT i tacs
+    | [{ forward_prec = pre; forward_tac = tac }] ->
+         if equal_forward_prec pre apre then
+            tryT (tac i)
+         else
+            idT
+    | { forward_prec = pre; forward_tac = tac } :: tacs ->
+         if equal_forward_prec pre apre then
+            tryT (tac i) thenMT alliT apre i tacs
+         else
+            alliT apre i tacs
    in
    let step tbl =
-      argfunT (fun i p ->
+      argfun2T (fun apre i p ->
             let t = Sequent.nth_hyp p i in
             let () =
                if !debug_forward then
@@ -86,15 +125,18 @@ let extract_forward_data =
                   Not_found ->
                      raise (RefineError ("extract_forward_data", StringTermError ("forwardT doesn't know about", t)))
             in
-               alliT i tacs)
+               alliT apre i tacs)
    in
       step
+
+let resource (term * forward_info, forward_prec -> int -> tactic) forward =
+   table_resource_info extract_forward_data
 
 (*
  * Get explicit arguments to the elimination rule.
  *)
 let rec get_elim_args_arg = function
-   ElimArgsOption (f, arg) :: t ->
+   ForwardArgsOption (f, arg) :: t ->
       Some (f, arg)
  | _ :: t ->
       get_elim_args_arg t
@@ -103,6 +145,23 @@ let rec get_elim_args_arg = function
 
 let one_rw_arg i =
    { arg_ints = [| i |]; arg_addrs = [||] }
+
+(*
+ * Precedence.
+ *)
+let rec get_prec_arg assums = function
+   ForwardPrec pre :: _ ->
+      pre
+ | _ :: t ->
+      get_prec_arg assums t
+ | [] ->
+      (*
+       * If there are no wf subgoals, then we can use at the trivial prec.
+       * Otherwise postpone as long as possible.
+       *)
+      match assums with
+         [_] -> forward_trivial_prec
+       | _ -> forward_max_prec
 
 (*
  * Process a forward-chaining rule.
@@ -155,6 +214,11 @@ let process_forward_resource_annotation name args term_args statement (pre_tacti
             in
 
             (*
+             * Get the precedence.
+             *)
+            let pre = get_prec_arg assums options in
+
+            (*
              * Define the tactic for forward chaining.
              *)
             let tac =
@@ -167,12 +231,14 @@ let process_forward_resource_annotation name args term_args statement (pre_tacti
                 | _ ->
                      raise (Invalid_argument (sprintf "forwardT: %s: not an elimination rule" name))
             in
-               [t, tac]
+            let info =
+               { forward_prec = pre;
+                 forward_tac  = tac
+               }
+            in
+               [t, info]
        | _ ->
             raise (Invalid_argument (sprintf "forwardT.improve_elim: %s: must be an elimination rule" name))
-
-let resource (term * (int -> tactic), int -> tactic) forward =
-   table_resource_info extract_forward_data
 
 let forward_proof p =
    Sequent.get_resource_arg p get_forward_resource
@@ -233,14 +299,17 @@ let progress_check orig_hyps orig_concl orig_length p =
       if i = length then
          new_hyps, changed
       else
-         match SeqHyp.get hyps i with
-            Hypothesis (_, t) ->
-               if TermTable.mem new_hyps t then
+         let new_hyps, changed =
+            match SeqHyp.get hyps i with
+               Hypothesis (_, t) ->
+                  if TermTable.mem new_hyps t then
+                     new_hyps, changed
+                  else
+                     TermTable.add new_hyps t, true
+             | Context _ ->
                   new_hyps, changed
-               else
-                  TermTable.add new_hyps t, true
-          | Context _ ->
-               new_hyps, changed
+         in
+            search new_hyps changed (succ i)
    in
    let hyps, changed =
       if length <= orig_length then
@@ -300,19 +369,30 @@ let start_info p =
 
 let forwardT i =
    funT (fun p ->
-         let forward_tac = forward_proof p in
+         let forward_tac = forward_proof p forward_max_prec in
          let len, hyps, concl = start_info p in
          let i = Sequent.get_pos_hyp_num p i in
             single_step forward_tac hyps concl len i)
 
-let forwardChainBoundT bound =
+let forwardChainBoundPrecT pre bound =
    funT (fun p ->
-         let forward_tac = forward_proof p in
+         let forward_tac = forward_proof p pre in
          let len, hyps, concl = start_info p in
             step forward_tac hyps concl len 1 0 bound)
 
+let forwardChainBoundT = forwardChainBoundPrecT forward_max_prec
+
 let forwardChainT =
-   forwardChainBoundT max_int
+   funT (fun p -> (**)
+      let rec searchT precs =
+         match precs with
+            pre :: precs ->
+               forwardChainBoundPrecT pre max_int
+               thenT searchT precs
+          | [] ->
+               idT
+      in
+         searchT (forward_precs ()))
 
 (*!
  * @docoff
