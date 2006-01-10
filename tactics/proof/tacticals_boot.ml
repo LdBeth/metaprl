@@ -743,29 +743,29 @@ struct
     * ARGUMENTS                                                            *
     ************************************************************************)
 
-   let forceT        = TacticInternal.forceT
+   let forceT            = TacticInternal.forceT
 
-   let addTermT     = TacticInternal.addTermT
-   let addTermListT = TacticInternal.addTermListT
-   let addTypeT     = TacticInternal.addTypeT
-   let addBoolT     = TacticInternal.addBoolT
-   let addStringT   = TacticInternal.addStringT
-   let addIntT      = TacticInternal.addIntT
+   let addTermT          = TacticInternal.addTermT
+   let addTermListT      = TacticInternal.addTermListT
+   let addTypeT          = TacticInternal.addTypeT
+   let addBoolT          = TacticInternal.addBoolT
+   let addStringT        = TacticInternal.addStringT
+   let addIntT           = TacticInternal.addIntT
 
-   let withTermT     = TacticInternal.withTermT
-   let withTermListT = TacticInternal.withTermListT
-   let withTypeT     = TacticInternal.withTypeT
-   let withBoolT     = TacticInternal.withBoolT
-   let withStringT   = TacticInternal.withStringT
-   let withIntT      = TacticInternal.withIntT
+   let withTermT         = TacticInternal.withTermT
+   let withTermListT     = TacticInternal.withTermListT
+   let withTypeT         = TacticInternal.withTypeT
+   let withBoolT         = TacticInternal.withBoolT
+   let withStringT       = TacticInternal.withStringT
+   let withIntT          = TacticInternal.withIntT
 
-   let removeTermT      = TacticInternal.removeTermT
-   let removeTermListT  = TacticInternal.removeTermListT
-   let removeTypeT      = TacticInternal.removeTypeT
-   let removeBoolT      = TacticInternal.removeBoolT
-   let removeStringT    = TacticInternal.removeStringT
-   let removeStringValT = TacticInternal.removeStringValT
-   let removeIntT       = TacticInternal.removeIntT
+   let removeTermT       = TacticInternal.removeTermT
+   let removeTermListT   = TacticInternal.removeTermListT
+   let removeTypeT       = TacticInternal.removeTypeT
+   let removeBoolT       = TacticInternal.removeBoolT
+   let removeStringT     = TacticInternal.removeStringT
+   let removeStringValT  = TacticInternal.removeStringValT
+   let removeIntT        = TacticInternal.removeIntT
 
    let withoutTermT      = TacticInternal.withoutTermT
    let withoutTermListT  = TacticInternal.withoutTermListT
@@ -774,6 +774,11 @@ struct
    let withoutStringT    = TacticInternal.withoutStringT
    let withoutStringValT = TacticInternal.withoutStringValT
    let withoutIntT       = TacticInternal.withoutIntT
+
+   (*
+    * Subgoal checking.
+    *)
+   let subgoalsCheckT    = TacticInternal.subgoalsCheckT
 
    (*
     * Term arguments.

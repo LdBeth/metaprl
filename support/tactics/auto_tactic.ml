@@ -215,7 +215,7 @@ let explode t =
    let t = TermMan.explode_sequent t in
       SeqHyp.to_list t.sequent_hyps, t.sequent_concl
 
-let process_nth_hyp_resource_annotation name args term_args statement pre_tactic =
+let process_nth_hyp_resource_annotation name args term_args statement _loc pre_tactic =
    let assums, goal = unzip_mfunction statement in
       match args.spec_ints, args.spec_addrs, term_args, List.map (fun (_, _, t) -> explode t) assums, explode goal with
          [| _ |], [||], [], [], ([ Context _; Hypothesis(_,t1); Context _ ], t2) ->

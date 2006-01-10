@@ -67,6 +67,7 @@ type ('annotation, 'input) annotation_processor =
    rewrite_args_spec -> (* Names of the context vars parameters *)
    term list ->         (* Term parameters *)
    meta_term ->         (* Rule statement *)
+   MLast.loc ->         (* Location of the rule *)
    'annotation ->       (* Extra arguments, will include Tactic.pre_tactic *)
    'input list
 
@@ -77,6 +78,7 @@ type ('annotation, 'input) rw_annotation_processor =
    term list ->         (* Assumptions *)
    rewrite_args_spec -> (* Names of the context vars parameters *)
    term list ->         (* Term arguments *)
+   MLast.loc ->         (* Location of the rewrite *)
    'annotation ->       (* Extra arguments, will include Refine.prim_rewrite *)
    'input list
 

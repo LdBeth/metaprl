@@ -2461,6 +2461,14 @@ EXTEND
        ]];
 
    (*
+    * Add a location identifier.
+    *)
+   expr:
+      [[ "LOCATION" ->
+            expr_of_loc _loc
+       ]];
+
+   (*
     * Add the ML parts of the terms.
     *
    exterm:

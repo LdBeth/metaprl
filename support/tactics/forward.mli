@@ -61,7 +61,8 @@ type forward_option =
  * of the hyp list.
  *)
 type forward_info =
-   { forward_prec : forward_prec;
+   { forward_loc  : MLast.loc;
+     forward_prec : forward_prec;
      forward_tac  : int -> tactic
    }
 

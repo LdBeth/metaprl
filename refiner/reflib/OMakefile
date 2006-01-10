@@ -2,6 +2,7 @@ OCAMLPPFLAGS =
 OCAMLFLAGS += -rectypes
 
 OCAMLINCLUDES[] +=
+    $(CAMLP4LIB)
     ../refbase
     ../refsig
     ../refiner

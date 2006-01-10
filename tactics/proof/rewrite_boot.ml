@@ -397,7 +397,7 @@ struct
       let goal, _ = Refine.dest_msequent (List.hd res).ref_goal in
          goal
 
-   let redex_and_conv_of_rw_annotation name _ redex _ _ addrs args rw =
+   let redex_and_conv_of_rw_annotation name _ redex _ _ addrs args _ rw =
       match addrs, args with
          { spec_ints = [||]; spec_addrs = [||] }, [] -> [redex, rewrite_of_pre_rewrite rw empty_rw_args []]
        | _ -> raise (Invalid_argument (name ^ " resource does not support annotations on rewrites that take arguments"))

@@ -69,7 +69,8 @@ type forward_option =
  | ForwardPrec of forward_prec
 
 type forward_info =
-   { forward_prec : forward_prec;
+   { forward_loc  : MLast.loc;
+     forward_prec : forward_prec;
      forward_tac  : int -> tactic
    }
 
@@ -94,13 +95,43 @@ let forward_precs () =
    ImpDag.sort dag
 
 (*
+ * Check that only one subgoal is labeled "main" (or "empty")
+ *)
+let string_of_loc (pos, _) =
+   let { Lexing.pos_fname = fname;
+         Lexing.pos_lnum  = lnum;
+         Lexing.pos_cnum  = cnum
+       } = pos
+   in
+      Printf.sprintf "%s: Line %d, Char %d" fname lnum cnum
+
+let check_main_fun loc pl =
+   let main_count =
+      List.fold_left (fun main_count p ->
+            match Sequent.label p with
+               "main"
+             | "" ->
+                  succ main_count
+             | _ ->
+                  main_count) 0 pl
+   in
+      if main_count <> 1 then
+         raise (RefineForceError ("Forward.check_main",
+                                  Printf.sprintf "this rule produced %d subgoals labeled \"main\"
+and it should produce exactly one" main_count,
+                                  StringError (string_of_loc loc)))
+
+let checkMainT loc tac =
+   subgoalsCheckT (check_main_fun loc) tac
+
+(*
  * Extract the elimination tactic from the table.
  *)
 let extract_forward_data =
    let rec alliT i (cont : forward_info lazy_lookup) =
       try
-         let { forward_tac = tac }, cont = cont () in
-            tryT (tac i) thenMT alliT i cont
+         let { forward_loc = loc; forward_tac = tac }, cont = cont () in
+            tryT (checkMainT loc (tac i)) thenMT alliT i cont
       with
          Not_found ->
             idT
@@ -163,7 +194,7 @@ let rec get_prec_arg assums = function
 (*
  * Process a forward-chaining rule.
  *)
-let process_forward_resource_annotation name args term_args statement (pre_tactic, options) =
+let process_forward_resource_annotation name args term_args statement loc (pre_tactic, options) =
    if args.spec_addrs <> [||] then
       raise (Invalid_argument (sprintf "elim annotation: %s: context arguments not supported yet" name));
 
@@ -229,7 +260,8 @@ let process_forward_resource_annotation name args term_args statement (pre_tacti
                      raise (Invalid_argument (sprintf "forwardT: %s: not an elimination rule" name))
             in
             let info =
-               { forward_prec = pre;
+               { forward_loc  = loc;
+                 forward_prec = pre;
                  forward_tac  = tac
                }
             in

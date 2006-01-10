@@ -1072,6 +1072,12 @@ struct
          ThreadRefinerTacticals.create_value subgoals ext
 
    (*
+    * Add a checker.
+    *)
+   let subgoalsCheckT =
+      ThreadRefinerTacticals.check_terms
+
+   (*
     * Sequencing tactics.
     *)
    let prefix_thenT tac1 tac2 =

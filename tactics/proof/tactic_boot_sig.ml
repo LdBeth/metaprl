@@ -374,6 +374,9 @@ sig
    val nthAssumT : int -> tactic
    val cutT : term -> tactic
 
+   (* Allow a function to look at all the subgoals *)
+   val subgoalsCheckT : (tactic_arg list -> unit) -> tactic -> tactic
+
    (* Wrap a tactic selection function *)
    val funT : (tactic_arg -> tactic) -> tactic
    val argfunT : ('a -> tactic_arg -> tactic) -> 'a -> tactic
@@ -815,6 +818,9 @@ sig
    val failWithT : string -> tactic
    val nthAssumT : int -> tactic
    val cutT : term -> tactic
+
+   (* Check the subgoals *)
+   val subgoalsCheckT : (tactic_arg list -> unit) -> tactic -> tactic
 
    (* Wrap a tactic selection function *)
    val funT : (tactic_arg -> tactic) -> tactic

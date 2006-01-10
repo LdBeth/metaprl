@@ -317,6 +317,27 @@ let add_eq_expr _loc =
    <:expr< Precedence.add_eq >>
 
 (*
+ * Build an expression from a position.
+ *)
+let expr_of_pos _loc pos =
+   let { Lexing.pos_fname = fname;
+         Lexing.pos_lnum  = lnum;
+         Lexing.pos_bol   = bol;
+         Lexing.pos_cnum  = cnum
+       } = pos
+   in
+      <:expr< { Lexing.pos_fname = $str: fname$;
+                Lexing.pos_lnum  = $int: string_of_int lnum$;
+                Lexing.pos_bol   = $int: string_of_int bol$;
+                Lexing.pos_cnum  = $int: string_of_int cnum$
+              }
+      >>
+
+let expr_of_loc _loc =
+   let pos1, pos2 = _loc in
+      <:expr< ($expr_of_pos _loc pos1$, $expr_of_pos _loc pos2$) >>
+
+(*
  * Each rule gets a refiner associated with it, with the following name.
  *)
 let refiner_let _loc =
@@ -918,7 +939,7 @@ let define_rewrite_resources proc _loc name redex contractum assums addrs params
       let anno_name = "$" ^ name' ^ "_resource_annotation" in
          impr_resource_list proc _loc name' <:expr<
             ($lid:process_name$ : Mp_resource.rw_annotation_processor '$anno_name$ $input$)
-               $str:name$ $redex$ $contractum$ $assums$ $addrs$ $params$ $arg_expr$
+               $str:name$ $redex$ $contractum$ $assums$ $addrs$ $params$ $expr_of_loc _loc$ $arg_expr$
          >>
    in
       bindings_let proc _loc resources <:expr< do { $list:List.map define_resource resources.item_item$ } >>
@@ -1139,7 +1160,7 @@ let define_rule_resources proc _loc name args_id params_id assums_id resources n
       let anno_name = "$" ^ name' ^ "_resource_annotation" in
          impr_resource_list proc _loc name' <:expr<
             ($lid:process_name$ : Mp_resource.annotation_processor '$anno_name$ $input$)
-               $str:name$ $lid:args_id$ $lid:params_id$ $lid:assums_id$ $arg_expr$
+               $str:name$ $lid:args_id$ $lid:params_id$ $lid:assums_id$ $expr_of_loc _loc$ $arg_expr$
          >>
    in
       bindings_let proc _loc resources <:expr< do { $list:List.map define_resource resources.item_item$ } >>

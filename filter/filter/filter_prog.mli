@@ -50,6 +50,8 @@ val extract_str :
    (module_path * string * MLast.ctyp resource_sig) list ->
    string -> string -> string -> (MLast.str_item * MLast.loc) list
 
+val expr_of_loc : MLast.loc -> MLast.expr
+
 module ProofCaches :
    CachesSig with type t = Convert.t and type cooked = Convert.cooked
 
