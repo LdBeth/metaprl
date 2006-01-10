@@ -78,6 +78,7 @@ open Refiner.Refiner.RefineError
 
 open Term_match_table
 
+open Tactic_type.Tacticals
 open Tactic_type.Tactic
 open Tactic_type.Conversionals
 open Tactic_type.Sequent
@@ -433,8 +434,9 @@ let reduceTopC = funC reduceTopC_env
 let reduceC =
    funC (fun e -> repeatC (higherC (reduceTopC_env e)))
 
-let reduceT =
-   rwAll reduceC
+let reduceT = funT (fun p ->
+   let reduceTopC = get_resource_arg p get_reduce_resource in
+      rwAll (repeatC (higherC reduceTopC)))
 
 (*
  * Debugging.
