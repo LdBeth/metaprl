@@ -1082,25 +1082,21 @@ struct
       else
          ThreadRefinerTacticals.compose1 tac1 tac2
 
-   let emptyLabel = ""
-
-   let prefix_thenLocalLabelT tac1 tac2 p =
-      let prefer l1 l2 =
-         if l2 = emptyLabel then
-            l1
-         else
-            l2
+   let prefix_thenLocalLabelT =
+      let emptyLabel = "" in
+      let prefer_label l p =
+         (* idT *) (if p.ref_label = emptyLabel then { p with ref_label = l } else p)
       in
-      let label = p.ref_label in
-         ThreadRefinerTacticals.wrap_terms (**)
-            (fun p' -> { p' with ref_label = prefer label p'.ref_label })
-            (fun p' -> prefix_thenT tac1 tac2 { p' with ref_label = emptyLabel })
-            p
-(*      prefix_thenT
-	      (fun p' -> prefix_thenT tac1 tac2 { p' with ref_label = emptyLabel })
-      	(fun p' -> idT { p' with ref_label = prefer label p'.ref_label })
-      	p
-*)
+      let prefix_emptyLabel_thenT tac1 tac2 p =
+         let p = if p.ref_label = emptyLabel then p else { p with ref_label = emptyLabel } in
+            prefix_thenT tac1 tac2 p
+      in
+      fun tac1 tac2 p ->
+         let label = p.ref_label in
+            ThreadRefinerTacticals.wrap_terms (**)
+               (prefer_label label)
+               (prefix_emptyLabel_thenT tac1 tac2)
+               p
 
    let prefix_thenLT tac1 tacl =
       if tac1 == idT then
