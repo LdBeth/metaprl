@@ -65,7 +65,7 @@ type forward_info =
      forward_tac  : int -> tactic
    }
 
-resource (term * forward_info, forward_prec -> int -> tactic) forward
+resource (term * forward_info, (forward_info -> bool) -> int -> tactic) forward
 
 val process_forward_resource_annotation :
    (Tactic.pre_tactic * forward_option list, term * forward_info) annotation_processor

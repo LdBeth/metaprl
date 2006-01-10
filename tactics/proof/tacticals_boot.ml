@@ -361,7 +361,7 @@ struct
    let ifMT tac =
       funT (fun p -> if List.mem (Sequent.label p) main_labels then tac else idT)
 
-        let wfLabel="wf"
+   let wfLabel="wf"
 
    let ifWT tac =
       ifLabT wfLabel tac idT
@@ -389,18 +389,18 @@ struct
          tac2')
 
    let isEmptyOrMainLabel l =
-      (l=emptyLabel) or (List.mem l main_labels)
+      l = emptyLabel || List.mem l main_labels
 
    let isAuxLabel l = not (isEmptyOrMainLabel l)
 
    let isWFLabel l =
-      (l=wfLabel)
+      l = wfLabel
 
    let isEqualityLabel l =
-      (l=eqLabel)
+      l = eqLabel
 
    let isPredicateLabel l =
-      (List.mem l predicate_labels)
+      List.mem l predicate_labels
 
    let prefix_thenMT tac1 tac2 =
       prefix_thenLocalLabelT tac1 (ifLabelPredT isEmptyOrMainLabel tac2 idT)

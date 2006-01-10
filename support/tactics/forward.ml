@@ -97,22 +97,16 @@ let forward_precs () =
  * Extract the elimination tactic from the table.
  *)
 let extract_forward_data =
-   let rec alliT apre i = function
-      [] ->
-         raise (Invalid_argument "extract_forward_data: internal error")
-    | [{ forward_prec = pre; forward_tac = tac }] ->
-         if equal_forward_prec pre apre then
-            tryT (tac i)
-         else
+   let rec alliT i (cont : forward_info lazy_lookup) =
+      try
+         let { forward_tac = tac }, cont = cont () in
+            tryT (tac i) thenMT alliT i cont
+      with
+         Not_found ->
             idT
-    | { forward_prec = pre; forward_tac = tac } :: tacs ->
-         if equal_forward_prec pre apre then
-            tryT (tac i) thenMT alliT apre i tacs
-         else
-            alliT apre i tacs
    in
    let step tbl =
-      argfun2T (fun apre i p ->
+      argfun2T (fun select i p ->
             let t = Sequent.nth_hyp p i in
             let () =
                if !debug_forward then
@@ -120,17 +114,20 @@ let extract_forward_data =
             in
             let tacs =
                try
-                  lookup_bucket tbl select_all t
+                  lookup_all tbl select t
                with
                   Not_found ->
                      raise (RefineError ("extract_forward_data", StringTermError ("forwardT doesn't know about", t)))
             in
-               alliT apre i tacs)
+               alliT i tacs)
    in
       step
 
-let resource (term * forward_info, forward_prec -> int -> tactic) forward =
+let resource (term * forward_info, (forward_info -> bool) -> int -> tactic) forward =
    table_resource_info extract_forward_data
+
+let select_true _ =
+   true
 
 (*
  * Get explicit arguments to the elimination rule.
@@ -369,7 +366,7 @@ let start_info p =
 
 let forwardT i =
    funT (fun p ->
-         let forward_tac = forward_proof p forward_max_prec in
+         let forward_tac = forward_proof p select_true in
          let len, hyps, concl = start_info p in
          let i = Sequent.get_pos_hyp_num p i in
             single_step forward_tac hyps concl len i)
@@ -380,19 +377,22 @@ let forwardChainBoundPrecT pre bound =
          let len, hyps, concl = start_info p in
             step forward_tac hyps concl len 1 0 bound)
 
-let forwardChainBoundT = forwardChainBoundPrecT forward_max_prec
-
-let forwardChainT =
+let forwardChainBoundT bound =
    funT (fun p -> (**)
       let rec searchT precs =
          match precs with
-            pre :: precs ->
-               forwardChainBoundPrecT pre max_int
-               thenT searchT precs
+            pre1 :: precs ->
+               let select { forward_prec = pre2 } =
+                  equal_forward_prec pre2 pre1
+               in
+                  forwardChainBoundPrecT select bound
+                  thenMT searchT precs
           | [] ->
                idT
       in
          searchT (forward_precs ()))
+
+let forwardChainT = forwardChainBoundT max_int
 
 (*!
  * @docoff

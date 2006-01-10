@@ -1085,10 +1085,18 @@ struct
    let prefix_thenLocalLabelT =
       let emptyLabel = "" in
       let prefer_label l p =
-         (* idT *) (if p.ref_label = emptyLabel then { p with ref_label = l } else p)
+         if p.ref_label = emptyLabel then
+            { p with ref_label = l }
+         else
+            p
       in
       let prefix_emptyLabel_thenT tac1 tac2 p =
-         let p = if p.ref_label = emptyLabel then p else { p with ref_label = emptyLabel } in
+         let p =
+            if p.ref_label = emptyLabel then
+               p
+            else
+               { p with ref_label = emptyLabel }
+         in
             prefix_thenT tac1 tac2 p
       in
       fun tac1 tac2 p ->
@@ -1120,7 +1128,10 @@ struct
    let forceT = ThreadRefinerTacticals.force
 
    let prefix_orelseT tac1 tac2 =
-      if tac1 == idT then idT else ThreadRefinerTacticals.first [tac1; tac2]
+      if tac1 == idT then
+         idT
+      else
+         ThreadRefinerTacticals.first [tac1; tac2]
 
    let prefix_thenFLT =
       let rec join tacs args =

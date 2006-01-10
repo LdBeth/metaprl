@@ -1576,7 +1576,7 @@ end;;
 
 (*^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
  * This is for reflection processing.
- * Try to keep is separate in case we want to remove it later.
+ * Try to keep it separate in case we want to remove it later.
  ************************************************************************)
 
 (************************************************************************
