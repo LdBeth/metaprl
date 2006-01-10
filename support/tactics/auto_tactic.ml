@@ -170,10 +170,10 @@ and auto_type =
 (*
  * Opname for pairing a hypothesis and a conclusion into a single term
  *)
-declare pair{'hyp;'concl}
+declare nthhyp_pair{'hyp;'concl}
 
-let mk_pair_term =
-   mk_dep0_dep0_term (opname_of_term <<pair{'hyp;'concl}>>)
+let mk_nthhyp_pair_term =
+   mk_dep0_dep0_term (opname_of_term <<nthhyp_pair{'hyp;'concl}>>)
 
 let extract_nth_hyp_data =
    let err = RefineError ("extract_nth_hyp_data", StringError "nthHypT tactic doesn't have an entry for this hypothesis/conclusion combination") in
@@ -186,17 +186,17 @@ let extract_nth_hyp_data =
    in
    (fun tbl ->
       argfunT (fun i p ->
-         let t = mk_pair_term (Sequent.nth_hyp p i) (Sequent.concl p) in
+         let t = mk_nthhyp_pair_term (Sequent.nth_hyp p i) (Sequent.concl p) in
             iterate i (Term_match_table.lookup_all tbl select_all t) p),
       fun t1 t2 ->
-         let t = mk_pair_term t1 t2 in
+         let t = mk_nthhyp_pair_term t1 t2 in
             try
                let _ = Term_match_table.lookup tbl select_all t in true
             with Not_found ->
                false)
 
 let add_nth_hyp_data tbl (hyp,concl,tac) =
-   add_item tbl (mk_pair_term hyp concl) tac
+   add_item tbl (mk_nthhyp_pair_term hyp concl) tac
 
 let resource (term * term * (int -> tactic), (int -> tactic) * (term -> term -> bool)) nth_hyp =
    Functional {
