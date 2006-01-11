@@ -78,7 +78,8 @@ let set_export () =
    Punix.putenv "MP_EXPORT=true"
 
 let add_anon_arg arg =
-   ()
+   let _, _, name = !Pcaml.position in name := arg;
+   Pcaml.input_file := arg
 
 let spec =
    ["-I", String add_include, "add an directory to the path for include files";

@@ -40,6 +40,7 @@ open Lm_rformat_text
 open Opname
 open Term_sig
 open Refiner_sig
+open Lexing
 
 (*
  * Show the file loading.
@@ -66,6 +67,35 @@ let format_quoted_var buf v =
 
 let format_var buf v =
    format_string buf (dstring_of_var v)
+
+let format_loc buf (bp, ep) =
+   if (bp.pos_fname <> "") && (bp.pos_fname <> "-") && (List.mem ep.pos_fname [bp.pos_fname; ""; "-"]) then begin
+      format_string buf "File \"";
+      format_string buf bp.pos_fname;
+      format_string buf "\", line ";
+   end
+   else
+      format_string buf "Line ";
+   format_int buf bp.pos_lnum;
+   format_string buf ", ";
+   if bp.pos_lnum = ep.pos_lnum then begin
+      format_string buf "characters ";
+      format_int buf (bp.pos_cnum - bp.pos_bol + 1);
+      format_string buf "-";
+   end
+   else begin
+      format_string buf "char ";
+      format_int buf (bp.pos_cnum - bp.pos_bol + 1);
+      format_string buf " -- line ";
+      format_int buf ep.pos_lnum;
+      format_string buf ", char ";
+   end;
+   format_int buf (ep.pos_cnum - ep.pos_bol)
+
+let string_of_loc loc =
+   let buf = new_buffer () in
+      format_loc buf loc;
+      print_text_string 120 buf
 
 module MakeSimplePrint (Refiner : RefinerSig) =
 struct

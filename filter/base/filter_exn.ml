@@ -36,6 +36,7 @@ open Lexing
 open Refiner.Refiner.TermShape
 open Refiner.Refiner.RefineError
 open Dform
+open Simple_print
 open Simple_print.SimplePrint
 open File_type_base
 
@@ -69,30 +70,6 @@ let format_version buf i =
       format_int buf minor;
       format_char buf '.';
       format_int buf rev
-
-let format_loc buf (bp, ep) =
-   if (bp.pos_fname <> "") && (bp.pos_fname <> "-") && (bp.pos_fname = ep.pos_fname) then begin
-      format_string buf "File \"";
-      format_string buf bp.pos_fname;
-      format_string buf "\", line ";
-   end
-   else
-      format_string buf "Line ";
-   format_int buf bp.pos_lnum;
-   format_string buf ", ";
-   if bp.pos_lnum = ep.pos_lnum then begin
-      format_string buf "characters ";
-      format_int buf (bp.pos_cnum - bp.pos_bol + 1);
-      format_string buf "-";
-   end
-   else begin
-      format_string buf "char ";
-      format_int buf (bp.pos_cnum - bp.pos_bol + 1);
-      format_string buf " -- line ";
-      format_int buf ep.pos_lnum;
-      format_string buf ", char ";
-   end;
-   format_int buf (ep.pos_cnum - ep.pos_bol)
 
 (*
  * Convert an exception to a string.

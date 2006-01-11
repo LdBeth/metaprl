@@ -1,3 +1,4 @@
+include Simple_print
 include Lm_symbol
 include Term_sig
 include Term_addr_sig

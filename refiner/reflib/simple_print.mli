@@ -38,6 +38,12 @@ open Simple_print_sig
  *)
 val dstring_of_var : Lm_symbol.var -> string
 
+(*
+ * Utilities
+ *)
+val string_of_loc : MLast.loc -> string
+val format_loc : Lm_rformat.buffer -> MLast.loc -> unit
+
 module MakeSimplePrint (Refiner : RefinerSig)
 : SimplePrintSig
   with type term = Refiner.TermType.term

@@ -114,6 +114,7 @@ open Refiner.Refiner.TermAddr
 open Refiner.Refiner.Rewrite
 open Mp_resource
 open Term_match_table
+open Simple_print
 open Dform
 
 open Tactic_type
@@ -215,7 +216,7 @@ let explode t =
    let t = TermMan.explode_sequent t in
       SeqHyp.to_list t.sequent_hyps, t.sequent_concl
 
-let process_nth_hyp_resource_annotation name args term_args statement _loc pre_tactic =
+let process_nth_hyp_resource_annotation name args term_args statement loc pre_tactic =
    let assums, goal = unzip_mfunction statement in
       match args.spec_ints, args.spec_addrs, term_args, List.map (fun (_, _, t) -> explode t) assums, explode goal with
          [| _ |], [||], [], [], ([ Context _; Hypothesis(_,t1); Context _ ], t2) ->
@@ -226,7 +227,8 @@ let process_nth_hyp_resource_annotation name args term_args statement _loc pre_t
             let addrs =
                try List.map (fun t -> List.hd (find_subterm t1 (fun t' _ -> alpha_equal t t'))) term_args with
                   _ ->
-                     raise (Invalid_argument (sprintf "Auto_tactic.improve_nth_hyp: %s: is missing a subterm" name))
+                     raise (Invalid_argument (sprintf
+                        "%s: Auto_tactic.improve_nth_hyp: %s: missing a subterm" (string_of_loc loc) name))
             in
             let tac = argfunT (fun i p ->
                let hyp = nth_hyp p i in
@@ -235,7 +237,8 @@ let process_nth_hyp_resource_annotation name args term_args statement _loc pre_t
             in
                [t1, t2, tac]
        | _ ->
-            raise (Invalid_argument (sprintf "Auto_tactic.improve_nth_hyp: %s: is not an appropriate rule" name))
+            raise (Invalid_argument (sprintf
+               "%s: Auto_tactic.improve_nth_hyp: %s: is not an appropriate rule" (string_of_loc loc) name))
 
 (************************************************************************
  * IMPLEMENTATION - autoT                                               *

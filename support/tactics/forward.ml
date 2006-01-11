@@ -97,14 +97,6 @@ let forward_precs () =
 (*
  * Check that only one subgoal is labeled "main" (or "empty")
  *)
-let string_of_loc (pos, _) =
-   let { Lexing.pos_fname = fname;
-         Lexing.pos_lnum  = lnum;
-         Lexing.pos_cnum  = cnum
-       } = pos
-   in
-      Printf.sprintf "%s: Line %d, Char %d" fname lnum cnum
-
 let check_main_fun loc pl =
    let main_count =
       List.fold_left (fun main_count p ->

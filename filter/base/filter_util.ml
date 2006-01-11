@@ -58,7 +58,7 @@ let _ =
  *)
 let dummy_loc =
    Lexing.dummy_pos, Lexing.dummy_pos
-
+   
 (*
  * Construct a location.
  * XXX: TODO: This converts the old-style location data into modern one.
