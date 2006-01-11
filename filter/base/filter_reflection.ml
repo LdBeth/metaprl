@@ -87,6 +87,19 @@ let var_witness = Lm_symbol.add "witness"
 let var_none    = Lm_symbol.add "_"
 let var_logic   = Lm_symbol.add "logic"
 
+(*
+ * Additional term constructors missing from TermOp.
+ *)
+let mk_string_dep0_dep0_dep0_dep1_term op s t1 t2 t3 v t4 =
+   let bterms =
+      [mk_simple_bterm t1;
+       mk_simple_bterm t2;
+       mk_simple_bterm t3;
+       mk_bterm [v] t4]
+   in
+   let op = mk_op op [make_param (String s)] in
+      mk_term op bterms
+
 (************************************************
  * Reflection quotations.  We don't explicitly
  * use ITT opnames here, but the environment must
@@ -186,8 +199,8 @@ struct
    let info_exists            = hash ("exists",         [], [0; 1])
    let info_lambda            = hash ("lambda",         [], [1])
    let info_length            = hash ("length",         [], [0])
-   let info_let_cvar          = hash ("let_cvar",       [], [0; 0; 0; 1])
-   let info_let_sovar         = hash ("let_sovar",      [], [0; 0; 0; 1])
+   let info_let_cvar          = hash ("let_cvar",       [ShapeString], [0; 0; 0; 1])
+   let info_let_sovar         = hash ("let_sovar",      [ShapeString], [0; 0; 0; 1])
    let info_list              = hash ("list",           [], [0])
    let info_map               = hash ("map",            [], [1; 0])
    let info_meta_member       = hash ("meta_member",    [], [0; 0])
@@ -407,11 +420,11 @@ struct
 
    let mk_let_cvar_term info v t1 t2 t3 t4 =
       let t3 = mk_number_term info t3 in
-         mk_dep0_dep0_dep0_dep1_term (find_opname info info_let_cvar) t1 t2 t3 v t4
+         mk_string_dep0_dep0_dep0_dep1_term (find_opname info info_let_cvar) (Lm_symbol.string_of_symbol v) t1 t2 t3 v t4
 
    let mk_let_sovar_term info v t1 t2 t3 t4 =
       let t3 = mk_number_term info t3 in
-         mk_dep0_dep0_dep0_dep1_term (find_opname info info_let_sovar) t1 t2 t3 v t4
+         mk_string_dep0_dep0_dep0_dep1_term (find_opname info info_let_sovar) (Lm_symbol.string_of_symbol v) t1 t2 t3 v t4
 
    let mk_spread_term info t1 v1 v2 t2 =
       mk_dep0_dep2_term (find_opname info info_spread) v1 v2 t1 t2
