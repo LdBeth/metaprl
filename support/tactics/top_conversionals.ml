@@ -74,6 +74,7 @@ open Lm_printf
 open Lm_symbol
 
 open Rewrite_sig
+open Refiner.Refiner
 open Refiner.Refiner.TermType
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermAddr
@@ -445,20 +446,30 @@ let rec wrap_addrs conv = function
    [] -> conv
  | addr :: addrs -> addrLiteralC addr reduceC thenC wrap_addrs conv addrs
 
-let find_conds vars t _ =
-   is_so_var_term t &&
-   let v, _, ts = dest_so_var t in
-      ts == [] && SymbolTable.mem vars v
+let cound_vars tbl t =
+   if is_so_var_term t then
+      let v, _, _ = dest_so_var t in
+         if Hashtbl.mem tbl v then
+            Hashtbl.replace tbl v ((Hashtbl.find tbl v) + 1)
+         else
+            Hashtbl.add tbl v 1
 
-let process_reduce_resource_rw_annotation name redex _ assums addrs args loc rw =
+let find_conds tbl t _ =
+   is_so_var_term t &&
+   let v, _, _ = dest_so_var t in
+      Hashtbl.mem tbl v && ((Hashtbl.find tbl v) > 1)
+
+let process_reduce_resource_rw_annotation name redex contractum assums addrs args loc rw =
    let conv = rewrite_of_pre_rewrite rw empty_rw_args [] in
-      match addrs, args, assums with
-         { spec_ints = [||]; spec_addrs = [||] }, [], [] ->
-            (* unconditional rewrite *)
-            [redex, conv]
-       | { spec_ints = [||]; spec_addrs = [||] }, [], _ :: _ ->
-            (* conditional rewrite *)
-            let vars = so_vars_info_list SymbolTable.empty assums in
+      match addrs, args with
+         { spec_ints = [||]; spec_addrs = [||] }, [] ->
+            (*
+             * Before executing conv, run recursive reduceC on all the subterms
+             * that will be copied more than once to reduce the possibility
+             * for an exponential blow-up.
+             *)
+            let vars = Hashtbl.create 19 in
+            let () = List.iter (TermOp.iter_down (cound_vars vars)) (contractum :: assums) in
             let addrs = find_subterm redex (find_conds vars) in
                [redex, wrap_addrs conv addrs]
        | _ ->
