@@ -352,9 +352,10 @@ let one_rw_arg i =
 (*
  * Improve the intro resource from a rule.
  *)
-let process_intro_resource_annotation name args term_args statement _loc (pre_tactic, options) =
+let process_intro_resource_annotation name args term_args statement loc (pre_tactic, options) =
    if args.spec_addrs <> [||] then
-      raise (Invalid_argument (sprintf "intro annotation: %s: context arguments not supported yet" name));
+      raise (Invalid_argument (sprintf
+         "%s: intro annotation: %s: context arguments not supported yet" (string_of_loc loc) name));
    let assums, goal = unzip_mfunction statement in
    let goal = TermMan.explode_sequent goal in
    let t = goal.sequent_concl in
@@ -374,8 +375,8 @@ let process_intro_resource_annotation name args term_args statement _loc (pre_ta
                                  addr :: _ ->
                                     (fun p -> term_subterm (Sequent.concl p) addr)
                                | [] ->
-                                    raise (RefineError("intro annotation",
-                                                       StringTermError("term not found in the conclusion", arg)))
+                                    raise (RefineError((string_of_loc loc),
+                                       StringTermError("intro annotation: term not found in the conclusion", arg)))
                         end
                   in
                      (fun p -> f p (get_arg p))
@@ -402,7 +403,8 @@ let process_intro_resource_annotation name args term_args statement _loc (pre_ta
        | [|_|], [Context _; Hypothesis _; Context _] when not (is_so_var_term t) ->
             onSomeHypT (argfunT (fun i p -> Tactic_type.Tactic.tactic_of_rule pre_tactic (one_rw_arg i) (term_args_fun p)))
        | _ ->
-            raise (Invalid_argument (sprintf "Dtactic.intro: %s: not an introduction rule" name))
+            raise (Invalid_argument (sprintf
+               "%s: intro annotation: %s: not an introduction rule" (string_of_loc loc) name))
    in
    let sel_opts = get_sel_arg options in
    let option_opts = get_option_args [] options in
@@ -434,9 +436,10 @@ let rec get_elim_args_arg = function
  | [] ->
       None
 
-let process_elim_resource_annotation name args term_args statement _loc (pre_tactic, options) =
+let process_elim_resource_annotation name args term_args statement loc (pre_tactic, options) =
    if args.spec_addrs <> [||] then
-      raise (Invalid_argument (sprintf "elim annotation: %s: context arguments not supported yet" name));
+      raise (Invalid_argument (sprintf
+         "%s: elim annotation: %s: context arguments not supported yet" (string_of_loc loc) name));
    let assums, goal = unzip_mfunction statement in
    match SeqHyp.to_list (TermMan.explode_sequent goal).sequent_hyps with
       [ Context _; Hypothesis(v,t); Context _ ] ->

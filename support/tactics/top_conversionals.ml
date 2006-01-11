@@ -71,10 +71,15 @@ doc docoff
 
 open Lm_debug
 open Lm_printf
+open Lm_symbol
 
+open Rewrite_sig
 open Refiner.Refiner.TermType
 open Refiner.Refiner.Term
+open Refiner.Refiner.TermAddr
+open Refiner.Refiner.TermMan
 open Refiner.Refiner.RefineError
+open Refiner.Refiner.Rewrite
 
 open Term_match_table
 
@@ -418,8 +423,6 @@ let extract_data tbl =
    in
       termC rw
 
-let process_reduce_resource_rw_annotation = redex_and_conv_of_rw_annotation "reduce"
-
 (*
  * Resource.
  *)
@@ -437,6 +440,30 @@ let reduceC =
 let reduceT = funT (fun p ->
    let reduceTopC = get_resource_arg p get_reduce_resource in
       rwAll (repeatC (higherC reduceTopC)))
+
+let rec wrap_addrs conv = function
+   [] -> conv
+ | addr :: addrs -> addrLiteralC addr reduceC thenC wrap_addrs conv addrs
+
+let find_conds vars t _ =
+   is_so_var_term t &&
+   let v, _, ts = dest_so_var t in
+      ts == [] && SymbolTable.mem vars v
+
+let process_reduce_resource_rw_annotation name redex _ assums addrs args loc rw =
+   let conv = rewrite_of_pre_rewrite rw empty_rw_args [] in
+      match addrs, args, assums with
+         { spec_ints = [||]; spec_addrs = [||] }, [], [] ->
+            (* unconditional rewrite *)
+            [redex, conv]
+       | { spec_ints = [||]; spec_addrs = [||] }, [], _ :: _ ->
+            (* conditional rewrite *)
+            let vars = so_vars_info_list SymbolTable.empty assums in
+            let addrs = find_subterm redex (find_conds vars) in
+               [redex, wrap_addrs conv addrs]
+       | _ ->
+            raise (Invalid_argument ((Simple_print.string_of_loc loc) ^ ": reduce resource annotation:
+rewrite " ^ name ^": rewrites that take arguments are not supported"))
 
 (*
  * Debugging.
