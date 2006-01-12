@@ -474,8 +474,7 @@ struct
          HeadWrapped (ext_add_arglist info (Tactic.expand_arglist label), ext_add_extract info ext)
     | Compose { comp_goal = goal;
                 comp_subgoals = subgoals;
-                comp_extras = extras;
-                comp_leaves = leaves
+                comp_extras = extras
       } ->
          HeadCompose (ext_add_extract info goal,
                       List.map (ext_add_extract info) subgoals,
