@@ -186,31 +186,57 @@ let extract_nth_hyp_data =
             raise err
    in
    (fun tbl ->
-      argfunT (fun i p ->
-         let t = mk_nthhyp_pair_term (Sequent.nth_hyp p i) (Sequent.concl p) in
-            iterate i (Term_match_table.lookup_all tbl select_all t) p),
-      fun t1 t2 ->
-         let t = mk_nthhyp_pair_term t1 t2 in
-            try
-               let _ = Term_match_table.lookup tbl select_all t in true
-            with Not_found ->
-               false)
+      let rec somehyp hyps t i =
+         if i = 0 then
+            raise err
+         else
+            match SeqHyp.get hyps (i-1) with
+               Context _ ->
+                  somehyp hyps t (i-1)
+             | Hypothesis (_, h) ->
+                  let t' = mk_nthhyp_pair_term h t in
+                     iterate_some hyps t i (Term_match_table.lookup_all tbl select_all t')
+      and iterate_some hyps t i c =
+         try 
+            let tac, cont = c () in tac i orelseT funT (keep_iterate_some hyps t i cont)
+         with
+            Not_found ->
+               somehyp hyps t (i-1)
+      and keep_iterate_some hyps t i cont _ =
+         iterate_some hyps t i cont
+      in
+         argfunT (fun i p ->
+            let t = mk_nthhyp_pair_term (Sequent.nth_hyp p i) (Sequent.concl p) in
+               iterate i (Term_match_table.lookup_all tbl select_all t) p),
+         (fun t1 t2 ->
+            let t = mk_nthhyp_pair_term t1 t2 in
+               try
+                  let _ = Term_match_table.lookup tbl select_all t in true
+               with Not_found ->
+                  false),
+         fun p ->
+            let goal = Sequent.explode_sequent_arg p in
+               somehyp goal.sequent_hyps goal.sequent_concl (SeqHyp.length goal.sequent_hyps))
 
 let add_nth_hyp_data tbl (hyp,concl,tac) =
    add_item tbl (mk_nthhyp_pair_term hyp concl) tac
 
-let resource (term * term * (int -> tactic), (int -> tactic) * (term -> term -> bool)) nth_hyp =
+let resource (term * term * (int -> tactic), (int -> tactic) * (term -> term -> bool) * (tactic_arg -> tactic)) nth_hyp =
    Functional {
       fp_empty = empty_table;
       fp_add = add_nth_hyp_data;
       fp_retr = extract_nth_hyp_data;
    }
 
-let nthHypT = argfunT (fun i p -> fst (get_resource_arg p get_nth_hyp_resource) i)
-let nth_hyp_mem p = snd (get_resource_arg p get_nth_hyp_resource)
+let nthHypT =
+   argfunT (fun i p -> let tac, _, _ = get_resource_arg p get_nth_hyp_resource in tac i)
+
+let nth_hyp_mem p =
+   let _, f, _ = get_resource_arg p get_nth_hyp_resource in f
 
 let someNthHypT = funT (fun p ->
-   onSomeHypT (fst (get_resource_arg p get_nth_hyp_resource)))
+   let _, _, tac = get_resource_arg p get_nth_hyp_resource in
+      tac p)
 
 let explode t =
    let t = TermMan.explode_sequent t in
