@@ -142,7 +142,7 @@ let item_of_obj pack name
          Filter_type.CondRewrite {
             crw_name = name;
             crw_params = params;
-            crw_args = assums;
+            crw_assums = assums;
             crw_redex = redex;
             crw_contractum = contractum;
             crw_proof = proof;
@@ -402,7 +402,7 @@ let view_rw pack parse_arg window
 let view_crw pack parse_arg window
     { crw_name = name;
       crw_params = params;
-      crw_args = args;
+      crw_assums = args;
       crw_redex = redex;
       crw_contractum = contractum;
       crw_proof = proof;

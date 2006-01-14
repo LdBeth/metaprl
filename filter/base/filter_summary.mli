@@ -73,10 +73,6 @@ val info_items : ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) mod
    ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) summary_item_loc list
 
 (* Access *)
-val find_axiom : ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) module_info ->
-   string ->
-   ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) summary_item_loc option
-
 val find_rewrite : ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) module_info ->
    string ->
    ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) summary_item_loc option

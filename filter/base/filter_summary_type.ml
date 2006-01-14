@@ -225,7 +225,6 @@ sig
 
    (* Inherited access for module_info *)
    val find           : info -> string -> (str_elem * loc)
-   val find_axiom     : info -> string -> (str_elem * loc) option
    val find_rewrite   : info -> string -> (str_elem * loc) option
    val find_mlrewrite : info -> string -> (str_elem * loc) option
    val find_mlaxiom   : info -> string -> (str_elem * loc) option

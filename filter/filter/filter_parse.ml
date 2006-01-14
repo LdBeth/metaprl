@@ -529,7 +529,7 @@ struct
       let args, redex, contractum = unzip_rewrite name args in
          CondRewrite { crw_name       = name;
                        crw_params     = params;
-                       crw_args       = args;
+                       crw_assums       = args;
                        crw_redex      = redex;
                        crw_contractum = contractum;
                        crw_proof      = pf;

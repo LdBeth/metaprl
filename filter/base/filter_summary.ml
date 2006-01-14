@@ -286,12 +286,15 @@ let parents { info_list = summary } =
 (*
  * Test for an axiom.
  *)
-let test_axiom name = function
-   (Rule { rule_name = n }, _) -> n = name
+let test_proof name = function
+   (Rule { rule_name = n }, _)
+ | (Rewrite { rw_name = n }, _)
+ | (CondRewrite { crw_name = n }, _) ->
+      n = name
  | _ -> false
 
-let find_axiom { info_list = summary } name =
-   try Some (Lm_list_util.find (test_axiom name) summary) with
+let find_proof { info_list = summary } name =
+   try Some (Lm_list_util.find (test_proof name) summary) with
       Not_found ->
          None
 
@@ -487,11 +490,10 @@ let find { info_list = summary } name =
 let set_command info item =
    let test =
       match fst item with
-         Rule { rule_name = name } ->
-            test_axiom name
+         Rule { rule_name = name }
        | Rewrite { rw_name = name }
        | CondRewrite { crw_name = name } ->
-            test_rewrite name
+            test_proof name
        | InputForm { iform_name = name } ->
             test_iform name
        | MLRewrite { mlterm_name = name } ->
@@ -655,7 +657,7 @@ let summary_map (convert : ('term1, 'meta_term1, 'proof1, 'resource1, 'ctyp1, 'e
           | CondRewrite crw ->
                CondRewrite { crw_name = crw.crw_name;
                              crw_params = List.map param_map crw.crw_params;
-                             crw_args = List.map convert.term_f crw.crw_args;
+                             crw_assums = List.map convert.term_f crw.crw_assums;
                              crw_redex = convert.term_f crw.crw_redex;
                              crw_contractum = convert.term_f crw.crw_contractum;
                              crw_proof = convert.proof_f crw.crw_name crw.crw_proof;
@@ -1101,7 +1103,7 @@ struct
       let params, args, redex, contractum, proof, res = six_subterms t in
          CondRewrite { crw_name = name;
                        crw_params = dest_rule_params convert params;
-                       crw_args = List.map convert.term_f (dest_xlist args);
+                       crw_assums = List.map convert.term_f (dest_xlist args);
                        crw_redex = convert.term_f redex;
                        crw_contractum = convert.term_f contractum;
                        crw_proof = convert.proof_f name proof;
@@ -1606,7 +1608,7 @@ struct
 
    let term_of_cond_rewrite convert { crw_name = name;
                                       crw_params = params;
-                                      crw_args = args;
+                                      crw_assums = args;
                                       crw_redex = redex;
                                       crw_contractum = con;
                                       crw_proof = pf;
@@ -1945,7 +1947,7 @@ struct
        (items : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item_loc list) =
       let { crw_name = name;
             crw_params = params;
-            crw_args = args;
+            crw_assums = args;
             crw_redex = redex;
             crw_contractum = contractum
           } = info
@@ -1957,7 +1959,7 @@ struct
             match h with
                CondRewrite { crw_name = name';
                              crw_params = params';
-                             crw_args = args';
+                             crw_assums = args';
                              crw_redex = redex';
                              crw_contractum = contractum'
                } ->
@@ -2423,13 +2425,17 @@ struct
     *)
    let copy_rw_proof copy_proof rw info2 =
       Rewrite (
-         match find_rewrite info2 rw.rw_name with
+         match find_proof info2 rw.rw_name with
             Some (Rewrite { rw_redex = redex;
                             rw_contractum = contractum;
                             rw_proof = proof
                   }, _) ->
                if not (alpha_equal rw.rw_redex redex & alpha_equal rw.rw_contractum contractum) then
                   eprintf "Copy_proof: warning: rewrite %s%s%t" rw.rw_name changed_warning eflush;
+               { rw with rw_proof = copy_proof rw.rw_proof proof }
+          | Some (Rule { rule_proof = proof }, _)
+          | Some (CondRewrite { crw_proof = proof }, _) ->
+               eprintf "Copy_proof: warning: rewrite %s%s%t" rw.rw_name changed_warning eflush;
                { rw with rw_proof = copy_proof rw.rw_proof proof }
           | _ ->
                rw
@@ -2440,15 +2446,21 @@ struct
     *)
    let copy_crw_proof copy_proof crw info2 =
       CondRewrite (
-         match find_rewrite info2 crw.crw_name with
+         match find_proof info2 crw.crw_name with
             Some (CondRewrite { crw_redex = redex;
                                 crw_contractum = contractum;
+                                crw_assums = assums;
                                 crw_proof = proof
                   }, _) ->
                if not (alpha_equal crw.crw_redex redex)
                   or not (alpha_equal crw.crw_contractum contractum)
+                  or not (Lm_list_util.for_all2 alpha_equal crw.crw_assums assums)
                then
                   eprintf "Copy_proof: warning: cond_rewrite %s%s%t" crw.crw_name changed_warning eflush;
+               { crw with crw_proof = copy_proof crw.crw_proof proof }
+          | Some (Rewrite { rw_proof = proof }, _)
+          | Some (Rule { rule_proof = proof }, _) ->
+               eprintf "Copy_proof: warning: cond_rewrite %s%s%t" crw.crw_name changed_warning eflush;
                { crw with crw_proof = copy_proof crw.crw_proof proof }
           | _ ->
                crw
@@ -2459,23 +2471,25 @@ struct
     *)
    let copy_rule_proof copy_proof item info2 =
       Rule (
-         match find_axiom info2 item.rule_name with
+         match find_proof info2 item.rule_name with
             Some (Rule { rule_stmt = stmt;
                          rule_proof = proof
                   }, _) ->
-               if not (meta_alpha_equal item.rule_stmt stmt) then
-                  begin
-                     eprintf "Copy_proof: warning: rule %s%s%t" item.rule_name changed_warning eflush;
-                     if !debug_match then
-                        begin
-                           eprintf "Term 1:\n\t";
-                           prerr_simple_mterm item.rule_stmt;
-                           eflush stderr;
-                           eprintf "Term 2:\n\t";
-                           prerr_simple_mterm stmt;
-                           eflush stderr
-                        end
-                  end;
+               if not (meta_alpha_equal item.rule_stmt stmt) then begin
+                  eprintf "Copy_proof: warning: rule %s%s%t" item.rule_name changed_warning eflush;
+                  if !debug_match then begin
+                     eprintf "Term 1:\n\t";
+                     prerr_simple_mterm item.rule_stmt;
+                     eflush stderr;
+                     eprintf "Term 2:\n\t";
+                     prerr_simple_mterm stmt;
+                     eflush stderr
+                  end
+               end;
+               { item with rule_proof = copy_proof item.rule_proof proof }
+          | Some (Rewrite { rw_proof = proof }, _)
+          | Some (CondRewrite { crw_proof = proof }, _) ->
+               eprintf "Copy_proof: warning: rule %s%s%t" item.rule_name changed_warning eflush;
                { item with rule_proof = copy_proof item.rule_proof proof }
           | _ ->
                item

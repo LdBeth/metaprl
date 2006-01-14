@@ -184,7 +184,7 @@ type 'term iform_info =
 type ('term, 'proof, 'expr) cond_rewrite_info =
    { crw_name : string;
      crw_params : 'term param list;
-     crw_args : 'term list;
+     crw_assums : 'term list;
      crw_redex : 'term;
      crw_contractum : 'term;
      crw_proof : 'proof;

@@ -1006,7 +1006,6 @@ struct
    let proofs cache         = Filter_summary.get_proofs cache.info
    let parents cache        = Filter_summary.parents cache.info
    let find cache           = Filter_summary.find cache.info
-   let find_axiom cache     = Filter_summary.find_axiom cache.info
    let find_rewrite cache   = Filter_summary.find_rewrite cache.info
    let find_mlrewrite cache = Filter_summary.find_mlrewrite cache.info
    let find_mlaxiom cache   = Filter_summary.find_mlaxiom cache.info
