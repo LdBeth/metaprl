@@ -134,6 +134,8 @@ struct
    let get_resource_arg   = TacticInternal.get_resource
    let mem_string_arg     = TacticInternal.mem_string
    let get_string_args    = TacticInternal.get_strings
+   let get_option_args    = TacticInternal.get_options
+   let set_option_args    = TacticInternal.set_options
 end
 
 (*

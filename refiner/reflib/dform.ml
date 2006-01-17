@@ -731,6 +731,7 @@ let null_base =
 let dform_resource =
    Mp_resource.create_resource "dform" (
       Mp_resource.Functional {
+         Mp_resource.fp_is_local = false;
          Mp_resource.fp_empty = null_table;
          Mp_resource.fp_add = add_dform;
          Mp_resource.fp_retr = ((fun tbl -> tbl) : (dform_table -> dform_table));

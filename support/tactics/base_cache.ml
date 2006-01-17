@@ -67,9 +67,10 @@ let improve_data cache info =
  *)
 let resource (cache_rule, cache) cache =
    Functional {
-      fp_empty = empty_cache;
-      fp_add = improve_data;
-      fp_retr = (fun x -> x)
+      fp_is_local = false;
+      fp_empty    = empty_cache;
+      fp_add      = improve_data;
+      fp_retr     = (fun x -> x)
    }
 
 (*

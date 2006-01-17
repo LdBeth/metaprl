@@ -750,6 +750,7 @@ struct
    let addTypeT          = TacticInternal.addTypeT
    let addBoolT          = TacticInternal.addBoolT
    let addStringT        = TacticInternal.addStringT
+   let addOptionsT       = TacticInternal.addOptionsT
    let addIntT           = TacticInternal.addIntT
 
    let withTermT         = TacticInternal.withTermT
@@ -757,6 +758,7 @@ struct
    let withTypeT         = TacticInternal.withTypeT
    let withBoolT         = TacticInternal.withBoolT
    let withStringT       = TacticInternal.withStringT
+   let withOptionsT      = TacticInternal.withOptionsT
    let withIntT          = TacticInternal.withIntT
 
    let removeTermT       = TacticInternal.removeTermT
@@ -795,14 +797,8 @@ struct
    let altT      = withBoolT   "alt" true
    let thinningT = withBoolT   "thin"
 
-   let withOptionT   = withStringT "option"
-   let addOptionT = addStringT "option"
-   let removeOptionT = removeStringValT "option"
-   let withoutOptionT = withoutStringValT "option"
-   let get_option_arg arg s =
-      Sequent.mem_string_arg arg "option" s
-   let get_option_args arg =
-      Sequent.get_string_args arg "option"
+   let get_option_args = Sequent.get_option_args
+   let set_option_args = Sequent.set_option_args
 
    let get_with_args p =
       Sequent.get_term_list_arg p "with"

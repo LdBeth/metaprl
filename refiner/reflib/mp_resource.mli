@@ -45,15 +45,17 @@ open Refiner.Refiner.Refine
 type bookmark = string * string (* theory name + local name *)
 
 type ('input, 'intermediate, 'output) funct_processor = {
-   fp_empty: 'intermediate;
-   fp_add: 'intermediate -> 'input -> 'intermediate;
-   fp_retr: 'intermediate -> 'output
+   fp_is_local : bool;       (* Resource is theory-local *)
+   fp_empty    : 'intermediate;
+   fp_add      : 'intermediate -> 'input -> 'intermediate;
+   fp_retr     : 'intermediate -> 'output
 }
 
 type ('input, 'intermediate, 'output) imper_processor = {
-   imp_create: unit -> 'intermediate;
-   imp_add: 'intermediate -> 'input -> unit;
-   imp_retr: 'intermediate -> 'output
+   imp_is_local : bool;
+   imp_create   : unit -> 'intermediate;
+   imp_add      : 'intermediate -> 'input -> unit;
+   imp_retr     : 'intermediate -> 'output
 }
 
 type ('input, 'intermediate, 'output) resource_info =

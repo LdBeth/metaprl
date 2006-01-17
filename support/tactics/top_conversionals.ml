@@ -73,6 +73,7 @@ open Lm_debug
 open Lm_printf
 open Lm_symbol
 
+open Opname
 open Rewrite_sig
 open Refiner.Refiner
 open Refiner.Refiner.TermType
@@ -88,6 +89,8 @@ open Tactic_type.Tacticals
 open Tactic_type.Tactic
 open Tactic_type.Conversionals
 open Tactic_type.Sequent
+
+open Top_options
 
 (*
  * Debug statement.
@@ -406,32 +409,35 @@ doc <:doc<
 
    @docoff
 >>
-type reduce_conv = SymbolSet.t -> conv
-type reduce_info = SymbolSet.t option * conv
+type reduce_conv = conv
+type reduce_info = OpnameSet.t option * conv
 type reduce_entry = term * reduce_info
 
-let symbols_of_strings options =
-   List.fold_left (fun options s -> SymbolSet.add options (Lm_symbol.add s)) SymbolSet.empty options
+let opnames_of_terms options =
+   List.fold_left (fun options t -> OpnameSet.add options (opname_of_term t)) OpnameSet.empty options
 
 let select_of_option = function
    None ->
       None
  | Some options ->
-      Some (symbols_of_strings options)
+      Some (opnames_of_terms options)
 
 let wrap_reduce ?select conv =
    select_of_option select, conv
 
 let extract_data =
-   let rec select_option options (opts, _) =
+   let select_option options (opts, _) =
       match opts with
          None ->
             true
        | Some opts ->
-            SymbolSet.intersectp opts options
+            options_are_allowed options opts
    in
-   let rw tbl options =
-      termC (fun t -> (**)
+   let rw tbl =
+      funC (fun e -> (**)
+         let t = env_term e in
+         let p = env_arg e in
+         let options = get_options p in
          let _, conv =
             try
                (* Find and apply the right tactic *)
@@ -455,9 +461,7 @@ let resource (reduce_entry, reduce_conv) reduce =
    table_resource_info extract_data
 
 let reduceTopC_env e =
-   let p = env_arg e in
-   let options = symbols_of_strings (get_option_args p) in
-      get_resource_arg p get_reduce_resource options
+   get_resource_arg (env_arg e) get_reduce_resource
 
 let reduceTopC = funC reduceTopC_env
 
@@ -465,8 +469,7 @@ let reduceC =
    funC (fun e -> repeatC (higherC (reduceTopC_env e)))
 
 let reduceT = funT (fun p ->
-   let options = symbols_of_strings (get_option_args p) in
-   let reduceTopC = get_resource_arg p get_reduce_resource options in
+   let reduceTopC = get_resource_arg p get_reduce_resource in
       rwAll (repeatC (higherC reduceTopC)))
 
 let rec wrap_addrs conv = function

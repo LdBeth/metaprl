@@ -34,6 +34,7 @@
  *)
 open Lm_symbol
 
+open Opname
 open Refiner.Refiner
 open Refiner.Refiner.Rewrite
 open Refiner.Refiner.Refine
@@ -88,6 +89,15 @@ type arglist =
  | TermStringArgList         of string * term * string
  | TermTermArgList           of string * term * term
  | GeneralArgList            of attribute array
+
+(*
+ * Flags associated with options.
+ *)
+type option_info =
+   OptionAllow
+ | OptionExclude
+
+type option_table = option_info OpnameTable.t
 
 (*
  * Internal type definitions.
@@ -366,6 +376,8 @@ sig
    val get_strings   : tactic_arg -> string -> string list
    val mem_string    : tactic_arg -> string -> string -> bool
    val get_resource  : tactic_arg -> (global_resource -> 'a) -> 'a
+   val get_options   : tactic_arg -> option_table
+   val set_options   : tactic_arg -> option_table -> tactic_arg
 
    (*
     * Basic tactics.
@@ -403,6 +415,7 @@ sig
    val addBoolT : string -> bool -> tactic
    val addIntT : string -> int -> tactic
    val addStringT : string -> string -> tactic
+   val addOptionsT : option_table -> tactic
 
    val withTermT : string -> term -> tactic -> tactic
    val withTermListT : string -> term list -> tactic -> tactic
@@ -410,6 +423,7 @@ sig
    val withBoolT : string -> bool -> tactic -> tactic
    val withIntT : string -> int -> tactic -> tactic
    val withStringT : string -> string -> tactic -> tactic
+   val withOptionsT : option_table -> tactic -> tactic
 
    val removeTermT : string -> tactic
    val removeTermListT : string -> tactic
@@ -802,6 +816,8 @@ sig
    val get_resource_arg   : tactic_arg -> (global_resource -> 'a) -> 'a
    val mem_string_arg     : tactic_arg -> string -> string -> bool
    val get_string_args    : tactic_arg -> string -> string list
+   val get_option_args    : tactic_arg -> option_table
+   val set_option_args    : tactic_arg -> option_table -> tactic_arg
 end
 
 (*
@@ -998,10 +1014,8 @@ sig
    val altT : tactic -> tactic
    val thinningT : bool -> tactic -> tactic
 
-   val addOptionT : string -> tactic
-   val withOptionT : string -> tactic -> tactic
-   val removeOptionT : string -> tactic
-   val withoutOptionT : string -> tactic -> tactic
+   val addOptionsT : option_table -> tactic
+   val withOptionsT : option_table -> tactic -> tactic
 
    val get_with_arg : tactic_arg -> term
    val get_with_args : tactic_arg -> term list
@@ -1009,8 +1023,8 @@ sig
    val get_sel_arg : tactic_arg -> int option
    val get_thinning_arg : tactic_arg -> bool
    val get_alt_arg : tactic_arg -> bool
-   val get_option_arg : tactic_arg -> string -> bool
-   val get_option_args : tactic_arg -> string list
+   val get_option_args : tactic_arg -> option_table
+   val set_option_args : tactic_arg -> option_table -> tactic_arg
 end
 
 module type RewriteInternalSig =

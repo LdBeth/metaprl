@@ -482,9 +482,10 @@ let default_commandbar_info state =
 
 let commandbar_collection =
    Functional (**)
-      { fp_empty = default_commandbar;
-        fp_add   = improve;
-        fp_retr  = extract
+      { fp_is_local = false;
+        fp_empty    = default_commandbar;
+        fp_add      = improve;
+        fp_retr     = extract
       }
 
 let resource (menu_item, browser_state -> browser_info) commandbar =
@@ -553,9 +554,10 @@ let default_menubar_info state =
 
 let menubar_collection =
    Functional (**)
-      { fp_empty = default_menubar;
-        fp_add   = improve;
-        fp_retr  = extract
+      { fp_is_local = false;
+        fp_empty    = default_menubar;
+        fp_add      = improve;
+        fp_retr     = extract
       }
 
 let resource (menu_item, browser_state -> browser_info) menubar =

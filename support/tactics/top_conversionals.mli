@@ -30,10 +30,11 @@
  * Modified By: Alexei Kopylov <kopylov@cs.cornell.edu>
  * Modified By: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
-
 extends Mptop
 
 open Lm_symbol
+
+open Opname
 open Term_addr_sig
 open Refiner.Refiner.Refine
 open Mp_resource
@@ -101,14 +102,14 @@ infix thenTC
  ************************************************************************)
 
 type reduce_conv
-type reduce_info = SymbolSet.t option * conv
+type reduce_info = OpnameSet.t option * conv
 type reduce_entry = term * reduce_info
 
 resource (reduce_entry, reduce_conv) reduce
 
-val process_reduce_resource_rw_annotation : ?select: string list -> reduce_entry rw_annotation_processor
+val process_reduce_resource_rw_annotation : ?select: term list -> reduce_entry rw_annotation_processor
 
-val wrap_reduce : ?select:string list -> conv -> reduce_info
+val wrap_reduce : ?select:term list -> conv -> reduce_info
 
 topval reduceTopC : conv
 topval reduceC : conv

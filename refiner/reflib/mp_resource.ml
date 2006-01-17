@@ -69,26 +69,29 @@ type 'input raw_data = (string, 'input data) Hashtbl.t
 type bookmark = string * string
 
 type 'input increment = {
-   inc_bookmark: bookmark;
-   inc_increment: 'input Table.t
+   inc_bookmark  : bookmark;
+   inc_increment : 'input Table.t
 }
 
 type ('input, 'output) processor = {
-   proc_add: 'input -> unit;
-   proc_retrieve: unit -> 'output;
-   proc_clone: unit -> ('input, 'output) processor
+   proc_is_local  : bool;
+   proc_add       : 'input -> unit;
+   proc_retrieve  : unit -> 'output;
+   proc_clone     : unit -> ('input, 'output) processor
 }
 
 type ('input, 'intermediate, 'output) funct_processor = {
-   fp_empty: 'intermediate;
-   fp_add: 'intermediate -> 'input -> 'intermediate;
-   fp_retr: 'intermediate -> 'output
+   fp_is_local : bool;
+   fp_empty    : 'intermediate;
+   fp_add      : 'intermediate -> 'input -> 'intermediate;
+   fp_retr     : 'intermediate -> 'output
 }
 
 type ('input, 'intermediate, 'output) imper_processor = {
-   imp_create: unit -> 'intermediate;
-   imp_add: 'intermediate -> 'input -> unit;
-   imp_retr: 'intermediate -> 'output
+   imp_is_local : bool;
+   imp_create   : unit -> 'intermediate;
+   imp_add      : 'intermediate -> 'input -> unit;
+   imp_retr     : 'intermediate -> 'output
 }
 
 type ('input, 'output) proc_result = {
@@ -127,35 +130,38 @@ type ('prim_rewrite, 'input) poly_rw_annotation_processor =
  *)
 type global_state =
    { (* Theory name  ->  theory resources (local + includes names) *)
-     mutable raw_data : (string * Obj.t) raw_data;
+     mutable raw_data        : (string * Obj.t) raw_data;
      (* A list of DatInclude for all the theories we've seen *)
-     mutable top_data    : (string * Obj.t) data;
+     mutable top_data        : (string * Obj.t) data;
      (* Theory name -> theory parents *)
      mutable theory_includes : (string, StringSet.t) Hashtbl.t;
      (* Bookmark -> bookmark increment *)
-     mutable bookmarker : (bookmark, Obj.t increment) Hashtbl.t;
+     mutable bookmarker      : (bookmark, Obj.t increment) Hashtbl.t;
      (* Resource name -> (bookmark -> processed resource) *)
-     mutable processed_data : (string, (bookmark, (Obj.t, Obj.t) proc_result) Hashtbl.t) Hashtbl.t
+     mutable processed_data  : (string, (bookmark, (Obj.t, Obj.t) proc_result) Hashtbl.t) Hashtbl.t;
+     (* Resource name -> is local to each theory *)
+     mutable local_resources : (string, bool) Hashtbl.t
    }
 
 (*
  * State that we keep while processing data from an individual theory
  *)
-type local_state = {
-     mutable data  : (string * Obj.t) data;
+type local_state =
+   { mutable data  : (string * Obj.t) data;
      mutable names : StringSet.t;
-}
+   }
 
 (************************************************************************
  * IMPLEMENTATION                                                       *
  ************************************************************************)
 
 let state =
-   { raw_data = Hashtbl.create 19;
-     top_data    = [];
+   { raw_data        = Hashtbl.create 19;
+     top_data        = [];
      theory_includes = Hashtbl.create 19;
-     bookmarker = Hashtbl.create 19;
-     processed_data = Hashtbl.create 19
+     bookmarker      = Hashtbl.create 19;
+     processed_data  = Hashtbl.create 19;
+     local_resources = Hashtbl.create 19
    }
 
 let local_state =
@@ -206,10 +212,36 @@ let clear () =
 let close_theory name =
    if Hashtbl.mem state.raw_data name then
       raise(Invalid_argument("Mp_resource.close_theory: theory "^name^" aready exists"));
-   Hashtbl.add state.raw_data name local_state.data;
-   state.top_data <- DatInclude name :: state.top_data;
-   local_state.data <- [];
-   local_state.names <- StringSet.empty
+
+   (*
+    * Remove all the entries from resources that are local.
+    *)
+   let local = state.local_resources in
+   let data =
+      List.fold_left (fun data item ->
+            match item with
+               DatData items ->
+                  let items =
+                     List.fold_left (fun items item ->
+                           let name, _ = item in
+                              if Hashtbl.find local name then
+                                 items
+                              else
+                                 item :: items) [] items
+                  in
+                     if items = [] then
+                        data
+                     else
+                        DatData (List.rev items) :: data
+             | DatInclude _
+             | DatBookmark _ ->
+                  item :: data) [] local_state.data
+   in
+   let data = List.rev data in
+      Hashtbl.add state.raw_data name data;
+      state.top_data <- DatInclude name :: state.top_data;
+      local_state.data <- [];
+      local_state.names <- StringSet.empty
 
 let add_data (name, data) incr =
    Table.add incr name data
@@ -282,24 +314,26 @@ let make_fun_proc fun_proc =
       let data_ref = ref data in
       let add data = data_ref := fun_proc.fp_add !data_ref data in
       let retrieve () = fun_proc.fp_retr !data_ref in
-      let clone () = clone !data_ref in {
-         proc_add = add;
-         proc_retrieve = retrieve;
-         proc_clone = clone;
-      }
+      let clone () = clone !data_ref in
+         { proc_is_local = fun_proc.fp_is_local;
+           proc_add      = add;
+           proc_retrieve = retrieve;
+           proc_clone    = clone;
+         }
    in
       clone fun_proc.fp_empty
 
 let make_proc_functional imp_proc =
    let result l =
       let dat = imp_proc.imp_create () in
-      Lm_list_util.rev_iter (imp_proc.imp_add dat) l;
-      imp_proc.imp_retr dat
-   in {
-      fp_empty = [];
-      fp_add = (fun l d -> d::l);
-      fp_retr = result
-   }
+         Lm_list_util.rev_iter (imp_proc.imp_add dat) l;
+         imp_proc.imp_retr dat
+   in
+      { fp_is_local = imp_proc.imp_is_local;
+        fp_empty    = [];
+        fp_add      = (fun l d -> d::l);
+        fp_retr     = result
+      }
 
 let make_processor = function
    Functional fp -> make_fun_proc fp
@@ -312,11 +346,13 @@ let make_resource name proc =
    if Hashtbl.mem state.processed_data name then
       raise (Invalid_argument ("Mp_resource.create_resource: resource with name " ^ name ^ "already exists!"));
    let proc_data = Hashtbl.create 19 in
+   let processor = make_processor proc in
       Hashtbl.add proc_data empty_bookmark {
-         res_proc = obj_processor (make_processor proc);
+         res_proc = obj_processor processor;
          res_result = None
       };
-      Hashtbl.add state.processed_data name proc_data
+      Hashtbl.add state.processed_data name proc_data;
+      Hashtbl.add state.local_resources name processor.proc_is_local
 
 let get_result = function
    { res_result = Some res } -> res
@@ -334,20 +370,24 @@ let find ((name, _) as bookmark) =
 let get_resource bookmark resource_name =
    let data = Hashtbl.find state.processed_data resource_name in
    let rec extract_bookmark bookmark =
-      if Hashtbl.mem data bookmark then Hashtbl.find data bookmark else begin
-      let incr = Hashtbl.find state.bookmarker bookmark in
-      let proc = extract_bookmark incr.inc_bookmark in
-      let incr = Table.find_all incr.inc_increment resource_name in
-      let proc =
-         if incr == [] then proc else
-         let proc = proc.res_proc.proc_clone () in
-         Lm_list_util.rev_iter proc.proc_add incr; {
-            res_proc = proc;
-            res_result = None
-         }
-      in
-         Hashtbl.add data bookmark proc;
-         proc
+      if Hashtbl.mem data bookmark then
+         Hashtbl.find data bookmark
+      else begin
+         let incr = Hashtbl.find state.bookmarker bookmark in
+         let proc = extract_bookmark incr.inc_bookmark in
+         let incr = Table.find_all incr.inc_increment resource_name in
+         let proc =
+            if incr == [] then
+               proc
+            else
+               let proc = proc.res_proc.proc_clone () in
+                  Lm_list_util.rev_iter proc.proc_add incr;
+                  { res_proc = proc;
+                    res_result = None
+                  }
+         in
+            Hashtbl.add data bookmark proc;
+            proc
       end
    in
       get_result (extract_bookmark bookmark)

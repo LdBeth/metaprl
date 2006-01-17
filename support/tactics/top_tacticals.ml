@@ -58,7 +58,9 @@ extends Perv
 
 open Lm_printf
 
+open Opname
 open Term_sig
+open Tactic_boot_sig
 open Refiner.Refiner.TermType
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermSubst
@@ -342,10 +344,6 @@ let addTypeT = Tacticals.addTypeT
 let addBoolT = Tacticals.addBoolT
 let addIntT = Tacticals.addIntT
 let addT = Tacticals.addT
-let addOptionT = Tacticals.addOptionT
-let printOptionT s = funT (fun p ->
-   eprintf "Option: %s = %b@." s (Tacticals.get_option_arg p s);
-   idT)
 
 let withTermT = Tacticals.withTermT
 let withTypeT = Tacticals.withTypeT
@@ -353,19 +351,16 @@ let withBoolT = Tacticals.withBoolT
 let withIntT = Tacticals.withIntT
 let withT = Tacticals.withT
 let withTermsT = Tacticals.withTermsT
-let withOptionT = Tacticals.withOptionT
 
 let removeTermT = Tacticals.removeTermT
 let removeTypeT = Tacticals.removeTypeT
 let removeBoolT = Tacticals.removeBoolT
 let removeIntT = Tacticals.removeIntT
-let removeOptionT = Tacticals.removeOptionT
 
 let withoutTermT = Tacticals.withoutTermT
 let withoutTypeT = Tacticals.withoutTypeT
 let withoutBoolT = Tacticals.withoutBoolT
 let withoutIntT = Tacticals.withoutIntT
-let withoutOptionT = Tacticals.withoutOptionT
 
 let atT = Tacticals.atT
 let selT = Tacticals.selT

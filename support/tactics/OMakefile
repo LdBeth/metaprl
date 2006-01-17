@@ -15,6 +15,7 @@ MPFILES[] =
     base_cache
     var
     top_resource
+    top_options
     top_tacticals
     top_conversionals
     simp_typeinf

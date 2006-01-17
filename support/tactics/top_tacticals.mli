@@ -116,8 +116,6 @@ topval addTypeT : string -> term -> tactic
 topval addBoolT : string -> bool -> tactic
 topval addIntT : string -> int -> tactic
 topval addT : term -> tactic
-topval addOptionT : string -> tactic
-topval printOptionT : string -> tactic
 
 topval withTermT : string -> term -> tactic -> tactic
 topval withTypeT : string -> term -> tactic -> tactic
@@ -125,19 +123,16 @@ topval withBoolT : string -> bool -> tactic -> tactic
 topval withIntT : string -> int -> tactic -> tactic
 topval withT : term -> tactic -> tactic
 topval withTermsT : term list -> tactic -> tactic
-topval withOptionT : string -> tactic -> tactic
 
 topval removeTermT : string -> tactic
 topval removeTypeT : string -> tactic
 topval removeBoolT : string -> tactic
 topval removeIntT : string -> tactic
-topval removeOptionT : string -> tactic
 
 topval withoutTermT : string -> tactic -> tactic
 topval withoutTypeT : string -> tactic -> tactic
 topval withoutBoolT : string -> tactic -> tactic
 topval withoutIntT : string -> tactic -> tactic
-topval withoutOptionT : string -> tactic -> tactic
 
 topval nameHypT : int -> string -> tactic
 topval nameHypsT : int list -> string list -> tactic

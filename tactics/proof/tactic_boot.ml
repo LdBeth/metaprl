@@ -81,6 +81,8 @@ let debug_refine = load_debug "refine"
 let eq = (==)
 let equal = (=)
 
+let option_name = "option"
+
 (*
  * This module implements:
  *   TacticType
@@ -139,6 +141,7 @@ struct
         attr_ints       : (string * int) list;
         attr_bools      : (string * bool) list;
         attr_strings    : (string * string) list;
+        attr_options    : option_table;
         attr_keys       : (string * sentinal) list
       }
 
@@ -303,6 +306,7 @@ struct
         attr_ints       = [];
         attr_bools      = [];
         attr_strings    = [];
+        attr_options    = OpnameTable.empty;
         attr_keys       = []
       }
 
@@ -311,6 +315,9 @@ struct
     * Cache is initially out-of-date.  It will be
     * set to the current goal when requested.
     *)
+   let option_allow_label = "option_allow"
+   let option_exclude_label = "option_exclude"
+
    let attribute_info_of_raw_attributes attributes =
       { attr_terms      = Lm_list_util.some_map (function (name, RawTerm t)     -> Some (name, t) | _ -> None) attributes;
         attr_term_lists = Lm_list_util.some_map (function (name, RawTermList t) -> Some (name, t) | _ -> None) attributes;
@@ -318,7 +325,16 @@ struct
         attr_ints       = Lm_list_util.some_map (function (name, RawInt i)      -> Some (name, i) | _ -> None) attributes;
         attr_bools      = Lm_list_util.some_map (function (name, RawBool b)     -> Some (name, b) | _ -> None) attributes;
         attr_strings    = Lm_list_util.some_map (function (name, RawString s)   -> Some (name, s) | _ -> None) attributes;
-        attr_keys       = Lm_list_util.some_map (function (name, RawSentinal k) -> Some (name, k) | _ -> None) attributes
+        attr_keys       = Lm_list_util.some_map (function (name, RawSentinal k) -> Some (name, k) | _ -> None) attributes;
+        attr_options    =
+           List.fold_left (fun options attr ->
+                 match attr with
+                    ("option_allow", RawTerm t) ->
+                       OpnameTable.add options (opname_of_term t) OptionAllow
+                  | ("option_exclude", RawTerm t) ->
+                       OpnameTable.add options (opname_of_term t) OptionAllow
+                  | _ ->
+                       options) OpnameTable.empty attributes
       }
 
    let squash_attributes attrs =
@@ -544,7 +560,8 @@ struct
                                        attr_types = types;
                                        attr_ints = ints;
                                        attr_bools = bools;
-                                       attr_strings = strings
+                                       attr_strings = strings;
+                                       attr_options = options
                                      } } =
       (List.map (fun (name, t) -> name, TermArg t) terms)
       @ (List.map (fun (name, t) -> name, TermListArg t) term_lists)
@@ -552,6 +569,14 @@ struct
       @ (List.map (fun (name, i) -> name, IntArg i) ints)
       @ (List.map (fun (name, b) -> name, BoolArg b) bools)
       @ (List.map (fun (name, s) -> name, StringArg s) strings)
+      @ (OpnameTable.fold (fun attrs op kind ->
+               let label =
+                  match kind with
+                     OptionAllow -> option_allow_label
+                   | OptionExclude -> option_exclude_label
+               in
+               let attr = label, TermArg (mk_term (mk_op op []) []) in
+                  attr :: attrs) [] options)
 
    let raw_attributes { ref_attributes = { attr_terms = terms;
                                            attr_term_lists = term_lists;
@@ -559,7 +584,8 @@ struct
                                            attr_ints = ints;
                                            attr_bools = bools;
                                            attr_strings = strings;
-                                           attr_keys = keys
+                                           attr_keys = keys;
+                                           attr_options = options
                                      } } =
       (List.map (fun (name, t) -> name, RawTerm t) terms)
       @ (List.map (fun (name, t) -> name, RawTermList t) term_lists)
@@ -568,6 +594,14 @@ struct
       @ (List.map (fun (name, b) -> name, RawBool b) bools)
       @ (List.map (fun (name, s) -> name, RawString s) strings)
       @ (List.map (fun (name, t) -> name, RawSentinal t) keys)
+      @ (OpnameTable.fold (fun attrs op kind ->
+               let label =
+                  match kind with
+                     OptionAllow -> option_allow_label
+                   | OptionExclude -> option_exclude_label
+               in
+               let attr = label, RawTerm (mk_term (mk_op op []) []) in
+                  attr :: attrs) [] options)
 
    (************************************************************************
     * PROOF PRINTING                                                       *
@@ -580,7 +614,8 @@ struct
       ffunc buf data
 
    let format_alist name buf ffunc = function
-      [] -> ()
+      [] ->
+         ()
     | [s,data] ->
          format_space buf;
          format_pushm buf 2;
@@ -850,6 +885,13 @@ struct
    let mem_string arg name s =
       List.mem (name, s) arg.ref_attributes.attr_strings
 
+   let get_options arg =
+      arg.ref_attributes.attr_options
+
+   let set_options arg options =
+      let attr = { arg.ref_attributes with attr_options = options } in
+         { arg with ref_attributes = attr }
+
    (*
     * Compare all the relevant parts of the attribute lists.
     *)
@@ -866,7 +908,8 @@ struct
             attr_types      = types1;
             attr_ints       = ints1;
             attr_bools      = bools1;
-            attr_strings    = strings1
+            attr_strings    = strings1;
+            attr_options    = options1
           } = arg1
       in
       let { attr_terms      = terms2;
@@ -874,7 +917,8 @@ struct
             attr_types      = types2;
             attr_ints       = ints2;
             attr_bools      = bools2;
-            attr_strings    = strings2
+            attr_strings    = strings2;
+            attr_options    = options2
           } = arg2
       in
          assoc_equal terms1 terms2 alpha_equal
@@ -883,6 +927,7 @@ struct
          && assoc_equal ints1 ints2 eq
          && assoc_equal bools1 bools2 eq
          && assoc_equal strings1 strings2 equal
+         && OpnameTable.equal eq options1 options2
 
    (*
     * Two args are equal if their goals are equal.
@@ -1224,6 +1269,9 @@ struct
    let addStringT name s =
       addT (fun attr -> { attr with attr_strings = (name, s) :: attr.attr_strings })
 
+   let addOptionsT options =
+      addT (fun attr -> { attr with attr_options = options })
+
    (*
     * Add a temporary argument.
     *)
@@ -1256,6 +1304,9 @@ struct
 
    let withStringT name s =
       withT (fun attr -> { attr with attr_strings = (name, s) :: attr.attr_strings })
+
+   let withOptionsT options =
+      withT (fun attr -> { attr with attr_options = options })
 
    (*
     * Remove an argument permanently.

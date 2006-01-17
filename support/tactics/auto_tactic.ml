@@ -197,7 +197,7 @@ let extract_nth_hyp_data =
                   let t' = mk_nthhyp_pair_term h t in
                      iterate_some hyps t i (Term_match_table.lookup_all tbl select_all t')
       and iterate_some hyps t i c =
-         try 
+         try
             let tac, cont = c () in tac i orelseT funT (keep_iterate_some hyps t i cont)
          with
             Not_found ->
@@ -223,6 +223,7 @@ let add_nth_hyp_data tbl (hyp,concl,tac) =
 
 let resource (term * term * (int -> tactic), (int -> tactic) * (term -> term -> bool) * (tactic_arg -> tactic)) nth_hyp =
    Functional {
+      fp_is_local = false;
       fp_empty = empty_table;
       fp_add = add_nth_hyp_data;
       fp_retr = extract_nth_hyp_data;
@@ -372,6 +373,7 @@ let improve_resource data info = info::data
  *)
 let resource (auto_info, tactic * tactic * tactic * tactic) auto =
    Functional {
+      fp_is_local = false;
       fp_empty = [];
       fp_add = improve_resource;
       fp_retr = extract
