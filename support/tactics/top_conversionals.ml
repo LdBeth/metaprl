@@ -411,8 +411,8 @@ type reduce_conv = StringSet.t -> conv
 type reduce_info = string option * conv
 type reduce_entry = term * reduce_info
 
-let wrap_reduce conv =
-   None, conv
+let wrap_reduce ?select conv =
+   select, conv
 
 let extract_data =
    let rec select_option options (opt, _) =
