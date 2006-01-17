@@ -369,6 +369,21 @@ let args_spec_expr _loc ivars avars =
             Rewrite_sig.spec_addrs = [| $list: List.map var_expr avars$ |]
          } >>
 
+let rec apply_annotation_processor _loc e args =
+   match args with
+      [] ->
+         e
+    | arg :: args ->
+         (* Label the arg if it isn't already labeled *)
+         let arg =
+            match arg with
+               MLast.ExLab _ ->
+                  arg
+             | _ ->
+                  MLast.ExLab (_loc, "options", Some arg)
+         in
+            apply_annotation_processor _loc <:expr< $e$ $arg$ >> args
+
 (*
  * Variable names.
  *)
@@ -928,18 +943,10 @@ let define_rewrite_resources proc _loc name redex contractum assums addrs params
    else
    let define_resource (_loc, name', args) =
       let input, _ = find_res proc _loc name' in
-      let arg_expr =
-         match args with
-            [] ->
-               name_id_expr
-          | _ ->
-               <:expr< ( $list:name_id_expr :: args$ ) >>
-      in
-      let process_name = "process_" ^ name' ^ "_resource_rw_annotation" in
-      let anno_name = "$" ^ name' ^ "_resource_annotation" in
+      let processor = apply_annotation_processor _loc <:expr< $lid:"process_" ^ name' ^ "_resource_rw_annotation"$ >> args in
          impr_resource_list proc _loc name' <:expr<
-            ($lid:process_name$ : Mp_resource.rw_annotation_processor '$anno_name$ $input$)
-               $str:name$ $redex$ $contractum$ $assums$ $addrs$ $params$ $expr_of_loc _loc$ $arg_expr$
+            ($processor$ $str:name$ : Top_resource.named_rw_annotation_processor $input$)
+               $redex$ $contractum$ $assums$ $addrs$ $params$ $expr_of_loc _loc$ $name_id_expr$
          >>
    in
       bindings_let proc _loc resources <:expr< do { $list:List.map define_resource resources.item_item$ } >>
@@ -1149,18 +1156,10 @@ let define_rule_resources proc _loc name args_id params_id assums_id resources n
    if resources.item_item = [] then <:expr< () >> else
    let define_resource (_loc, name', args) =
       let input, _ = find_res proc _loc name' in
-      let arg_expr =
-         match args with
-            [] ->
-               name_rule_expr
-          | _ ->
-               <:expr< ( $list:name_rule_expr :: args$ ) >>
-      in
-      let process_name = "process_" ^ name' ^ "_resource_annotation" in
-      let anno_name = "$" ^ name' ^ "_resource_annotation" in
+      let processor = apply_annotation_processor _loc <:expr< $lid:"process_" ^ name' ^ "_resource_annotation"$ >> args in
          impr_resource_list proc _loc name' <:expr<
-            ($lid:process_name$ : Mp_resource.annotation_processor '$anno_name$ $input$)
-               $str:name$ $lid:args_id$ $lid:params_id$ $lid:assums_id$ $expr_of_loc _loc$ $arg_expr$
+            ($processor$ $str:name$ : Top_resource.named_annotation_processor $input$)
+               $lid:args_id$ $lid:params_id$ $lid:assums_id$ $expr_of_loc _loc$ $name_rule_expr$
          >>
    in
       bindings_let proc _loc resources <:expr< do { $list:List.map define_resource resources.item_item$ } >>

@@ -6,13 +6,15 @@ OCAMLINCLUDES[] +=
     ../shell
 
 # Common files
-MLZFILES =
+MLZFILES[] =
+    top_resource
 
 # Library files
 MPFILES[] =
     tactic_cache
     base_cache
     var
+    top_resource
     top_tacticals
     top_conversionals
     simp_typeinf

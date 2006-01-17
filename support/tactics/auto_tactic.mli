@@ -38,6 +38,7 @@
  * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 open Mp_resource
+open Top_resource
 open Refiner.Refiner.TermType
 open Tactic_type.Tactic
 
@@ -56,7 +57,7 @@ val nth_hyp_mem : tactic_arg -> term -> term -> bool
 resource (term * term * (int -> tactic), (int -> tactic) * (term -> term -> bool) * (tactic_arg -> tactic)) nth_hyp
 
 val process_nth_hyp_resource_annotation :
-   (pre_tactic, term * term * (int -> tactic)) annotation_processor
+   (term * term * (int -> tactic)) annotation_processor
 
 (*
  * The info provided is a name (used for debugging),

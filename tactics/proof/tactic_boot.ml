@@ -60,6 +60,7 @@ open Refiner.Refiner.RefineError
 open Refiner.Refiner.Refine
 
 open Tactic_boot_sig
+open Rewrite_sig
 open Theory
 
 (*
@@ -232,6 +233,38 @@ struct
     | IdentityConv
     | TacticConv of (address -> tactic)
     | ForceConv of string * conv
+
+   (*
+    * Resources.
+    *
+    * Split the annotation processor types into named versions
+    * so that we can force choice of optional arguments.
+    *)
+   type 'input named_annotation_processor =
+      rewrite_args_spec -> (* Names of the context vars parameters *)
+      term list ->         (* Term parameters *)
+      meta_term ->         (* Rule statement *)
+      MLast.loc ->         (* Location of the rule *)
+      pre_tactic ->
+      'input list
+
+   type 'input annotation_processor =
+      string ->            (* Name of the new rule *)
+      'input named_annotation_processor
+
+   type 'input named_rw_annotation_processor =
+      term ->              (* Redex *)
+      term ->              (* Contractum *)
+      term list ->         (* Assumptions *)
+      rewrite_args_spec -> (* Names of the context vars parameters *)
+      term list ->         (* Term arguments *)
+      MLast.loc ->         (* Location of the rewrite *)
+      prim_rewrite ->
+      'input list
+
+   type 'input rw_annotation_processor =
+      string ->            (* Name of the new rewrite *)
+      'input named_rw_annotation_processor
 
    (************************************************************************
     * IMPLEMENTATION                                                       *

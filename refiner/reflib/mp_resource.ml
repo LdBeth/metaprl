@@ -102,16 +102,16 @@ type ('input, 'intermediate, 'output) resource_info =
 
 type global_resource = bookmark
 
-type ('annotation, 'input) annotation_processor =
+type ('pre_tactic, 'input) poly_annotation_processor =
    string ->            (* Name of the new rule *)
    rewrite_args_spec -> (* Names of the context vars parameters *)
    term list ->         (* Term parameters *)
    meta_term ->         (* Rule statement *)
    MLast.loc ->         (* Location of the rule *)
-   'annotation ->       (* Extra arguments, will include Tactic.pre_tactic *)
+   'pre_tactic ->       (* Tactic.pre_tactic *)
    'input list
 
-type ('annotation, 'input) rw_annotation_processor =
+type ('prim_rewrite, 'input) poly_rw_annotation_processor =
    string ->            (* Name of the new rewrite *)
    term ->              (* Redex *)
    term ->              (* Contractum *)
@@ -119,15 +119,14 @@ type ('annotation, 'input) rw_annotation_processor =
    rewrite_args_spec -> (* Names of the context vars parameters *)
    term list ->         (* Term arguments *)
    MLast.loc ->         (* Location of the rewrite *)
-   'annotation ->       (* Extra arguments, will include Refine.prim_rewrite *)
+   'prim_rewrite ->     (* Refine.prim_rewrite *)
    'input list
 
 (*
  * The global state of all the resources in the system.
  *)
 type global_state =
-   {
-     (* Theory name  ->  theory resources (local + includes names) *)
+   { (* Theory name  ->  theory resources (local + includes names) *)
      mutable raw_data : (string * Obj.t) raw_data;
      (* A list of DatInclude for all the theories we've seen *)
      mutable top_data    : (string * Obj.t) data;

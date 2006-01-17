@@ -186,7 +186,7 @@ let rec get_prec_arg assums = function
 (*
  * Process a forward-chaining rule.
  *)
-let process_forward_resource_annotation name args term_args statement loc (pre_tactic, options) =
+let process_forward_resource_annotation ?(options = []) name args term_args statement loc pre_tactic =
    if args.spec_addrs <> [||] then
       raise (Invalid_argument (sprintf "elim annotation: %s: context arguments not supported yet" name));
 

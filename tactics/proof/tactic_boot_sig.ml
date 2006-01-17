@@ -39,6 +39,7 @@ open Refiner.Refiner.Rewrite
 open Refiner.Refiner.Refine
 open Refiner.Refiner.RefineError
 
+open Rewrite_sig
 open Refiner_sig
 open Refiner_io
 open Mp_resource
@@ -230,8 +231,7 @@ sig
    (*
     * Build an initial argument for a proof.
     *)
-   val create :
-      sentinal -> msequent -> global_resource -> tactic_arg
+   val create : sentinal -> msequent -> global_resource -> tactic_arg
 
    (*
     * Conversion between general forms and optimized forms.
@@ -1113,7 +1113,7 @@ sig
    (*
     * Standard rewrite annotatetion processor: return a pair of the redex and the conv
     *)
-   val redex_and_conv_of_rw_annotation: string -> (prim_rewrite, term * conv) rw_annotation_processor
+   val redex_and_conv_of_rw_annotation: string -> (prim_rewrite, term * conv) poly_rw_annotation_processor
 end
 
 (*
@@ -1274,7 +1274,7 @@ sig
    (*
     * Standard rewrite annotatetion processor: return a pair of the redex and the conv
     *)
-   val redex_and_conv_of_rw_annotation: string -> (prim_rewrite, term * conv) rw_annotation_processor
+   val redex_and_conv_of_rw_annotation: string -> (prim_rewrite, term * conv) poly_rw_annotation_processor
 end
 
 (*

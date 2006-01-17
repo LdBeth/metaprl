@@ -33,9 +33,11 @@
 
 extends Mptop
 
+open Lm_string_set
 open Term_addr_sig
 open Refiner.Refiner.Refine
 open Mp_resource
+open Top_resource
 
 open Tactic_type.Tactic
 
@@ -98,9 +100,15 @@ infix thenTC
  * REDUCTION RESOURCE                                                   *
  ************************************************************************)
 
-resource (term * conv, conv) reduce
+type reduce_conv
+type reduce_info = string option * conv
+type reduce_entry = term * reduce_info
 
-val process_reduce_resource_rw_annotation : (prim_rewrite, term * conv) rw_annotation_processor
+resource (reduce_entry, reduce_conv) reduce
+
+val process_reduce_resource_rw_annotation : ?select: string -> reduce_entry rw_annotation_processor
+
+val wrap_reduce : conv -> reduce_info
 
 topval reduceTopC : conv
 topval reduceC : conv

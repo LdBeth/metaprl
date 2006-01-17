@@ -72,6 +72,7 @@ doc docoff
 open Lm_debug
 open Lm_printf
 open Lm_symbol
+open Lm_string_set
 
 open Rewrite_sig
 open Refiner.Refiner
@@ -406,32 +407,49 @@ doc <:doc<
 
    @docoff
 >>
-let extract_data tbl =
-   let rw t =
-      let conv =
-         try
-            (* Find and apply the right tactic *)
-            if !debug_reduce then
-               eprintf "Conversionals: lookup %a%t" debug_print t eflush;
-            Term_match_table.lookup tbl select_all t
-         with
-            Not_found ->
-               raise (RefineError ("Conversionals.extract_data", StringTermError ("no reduction for", t)))
-      in
-         if !debug_reduce then
-            eprintf "Conversionals: applying %a%t" debug_print t eflush;
-         conv
+type reduce_conv = StringSet.t -> conv
+type reduce_info = string option * conv
+type reduce_entry = term * reduce_info
+
+let wrap_reduce conv =
+   None, conv
+
+let extract_data =
+   let rec select_option options (opt, _) =
+      match opt with
+         None ->
+            true
+       | Some opt ->
+            StringSet.mem options opt
    in
-      termC rw
+   let rw tbl options =
+      termC (fun t -> (**)
+         let _, conv =
+            try
+            (* Find and apply the right tactic *)
+               if !debug_reduce then
+                  eprintf "Conversionals: lookup %a%t" debug_print t eflush;
+               Term_match_table.lookup tbl (select_option options) t
+            with
+               Not_found ->
+                  raise (RefineError ("Conversionals.extract_data", StringTermError ("no reduction for", t)))
+         in
+            if !debug_reduce then
+               eprintf "Conversionals: applying %a%t" debug_print t eflush;
+            conv)
+   in
+      rw
 
 (*
  * Resource.
  *)
-let resource (term * conv, conv) reduce =
+let resource (reduce_entry, reduce_conv) reduce =
    table_resource_info extract_data
 
 let reduceTopC_env e =
-   get_resource_arg (env_arg e) get_reduce_resource
+   let p = env_arg e in
+   let options = StringSet.of_list (get_option_args p) in
+      get_resource_arg p get_reduce_resource options
 
 let reduceTopC = funC reduceTopC_env
 
@@ -439,7 +457,8 @@ let reduceC =
    funC (fun e -> repeatC (higherC (reduceTopC_env e)))
 
 let reduceT = funT (fun p ->
-   let reduceTopC = get_resource_arg p get_reduce_resource in
+   let options = StringSet.of_list (get_option_args p) in
+   let reduceTopC = get_resource_arg p get_reduce_resource options in
       rwAll (repeatC (higherC reduceTopC)))
 
 let rec wrap_addrs conv = function
@@ -459,7 +478,7 @@ let find_conds tbl t _ =
    let v, _, _ = dest_so_var t in
       Hashtbl.mem tbl v && ((Hashtbl.find tbl v) > 1)
 
-let process_reduce_resource_rw_annotation name redex contractum assums addrs args loc rw =
+let process_reduce_resource_rw_annotation ?select name redex contractum assums addrs args loc rw =
    let conv = rewrite_of_pre_rewrite rw empty_rw_args [] in
       match addrs, args with
          { spec_ints = [||]; spec_addrs = [||] }, [] ->
@@ -471,7 +490,7 @@ let process_reduce_resource_rw_annotation name redex contractum assums addrs arg
             let vars = Hashtbl.create 19 in
             let () = List.iter (TermOp.iter_down (cound_vars vars)) (contractum :: assums) in
             let addrs = find_subterm redex (find_conds vars) in
-               [redex, wrap_addrs conv addrs]
+               [redex, (select, wrap_addrs conv addrs)]
        | _ ->
             raise (Invalid_argument ((Simple_print.string_of_loc loc) ^ ": reduce resource annotation:
 rewrite " ^ name ^": rewrites that take arguments are not supported"))

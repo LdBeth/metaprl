@@ -352,7 +352,7 @@ let one_rw_arg i =
 (*
  * Improve the intro resource from a rule.
  *)
-let process_intro_resource_annotation name args term_args statement loc (pre_tactic, options) =
+let process_intro_resource_annotation ?(options = []) name args term_args statement loc pre_tactic =
    if args.spec_addrs <> [||] then
       raise (Invalid_argument (sprintf
          "%s: intro annotation: %s: context arguments not supported yet" (string_of_loc loc) name));
@@ -436,7 +436,7 @@ let rec get_elim_args_arg = function
  | [] ->
       None
 
-let process_elim_resource_annotation name args term_args statement loc (pre_tactic, options) =
+let process_elim_resource_annotation ?(options = []) name args term_args statement loc pre_tactic =
    if args.spec_addrs <> [||] then
       raise (Invalid_argument (sprintf
          "%s: elim annotation: %s: context arguments not supported yet" (string_of_loc loc) name));

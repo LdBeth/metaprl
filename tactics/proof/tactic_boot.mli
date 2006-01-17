@@ -36,6 +36,9 @@ open Tactic_boot_sig
 module TacticInternalType
 : TacticInternalTypeSig
 
+(*
+ * Tactic modules.
+ *)
 module Tactic
 : TacticSig
   with type tactic_arg = TacticInternalType.tactic_arg

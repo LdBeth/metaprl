@@ -29,7 +29,6 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
-
 extends Auto_tactic
 
 open Refiner.Refiner.Refine
@@ -38,6 +37,7 @@ open Tactic_type
 open Tactic_type.Tactic
 
 open Mp_resource
+open Top_resource
 open Auto_tactic
 
 type intro_option =
@@ -57,10 +57,10 @@ resource (term * (int -> tactic), int -> tactic) elim
 resource (term * intro_item, tactic) intro
 
 val process_elim_resource_annotation :
-   (Tactic.pre_tactic * elim_option list, term * (int -> tactic)) annotation_processor
+   ?options: elim_option list -> (term * (int -> tactic)) annotation_processor
 
 val process_intro_resource_annotation :
-   (Tactic.pre_tactic * intro_option list, term * intro_item) annotation_processor
+   ?options: intro_option list -> (term * intro_item) annotation_processor
 
 val wrap_intro : tactic -> intro_item
 val intro_must_select : intro_item

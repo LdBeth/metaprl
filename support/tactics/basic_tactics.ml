@@ -16,6 +16,7 @@ include Refiner.Refiner.TermSubst
 include Refiner.Refiner.Rewrite
 include Refiner.Refiner.RefineError
 include Mp_resource
+include Top_resource
 include Top_tacticals
 include Top_conversionals
 include Tactic_type.Tactic

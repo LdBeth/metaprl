@@ -30,6 +30,7 @@ open Tactic_type
 open Tactic_type.Tactic
 
 open Mp_resource
+open Top_resource
 
 (*
  * Precedences.
@@ -69,7 +70,7 @@ type forward_info =
 resource (term * forward_info, (forward_info -> bool) -> int -> tactic) forward
 
 val process_forward_resource_annotation :
-   (Tactic.pre_tactic * forward_option list, term * forward_info) annotation_processor
+   ?options: forward_option list -> (term * forward_info) annotation_processor
 
 topval forwardT : int -> tactic
 topval forwardChainBoundT : int -> tactic
