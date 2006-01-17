@@ -41,17 +41,24 @@ type select_entry = term * option_info
 resource (select_entry, option_table) select
 
 (*
+ * Labels for a rule.
+ *)
+type rule_labels
+
+(*
  * Check whether an options set is allowed.
  *)
 val get_options : tactic_arg -> option_table
-val options_are_allowed : option_table -> OpnameSet.t -> bool
-val options_are_allowed_arg : tactic_arg -> OpnameSet.t -> bool
+val rule_labels_are_allowed : option_table -> rule_labels -> bool
+val rule_labels_are_allowed_arg : tactic_arg -> rule_labels -> bool
 
 (*
  * Utilities.
  *)
-val opset_of_terms : term list -> OpnameSet.t
-val opset_of_opt_terms : term list option -> OpnameSet.t option
+val rule_labels_empty        : rule_labels
+val rule_labels_of_terms     : term list -> term list -> rule_labels
+val rule_labels_of_opt_terms : term list option -> term list option -> rule_labels
+val rule_labels_not_allowed  : MLast.loc -> term list option -> term list option -> unit
 
 (*
  * Tactics.

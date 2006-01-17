@@ -39,6 +39,7 @@ open Tactic_type.Tactic
 
 open Mp_resource
 open Top_resource
+open Top_options
 open Auto_tactic
 
 type intro_option =
@@ -51,24 +52,22 @@ type elim_option =
    ThinOption of (int -> tactic)  (* Thin the eliminated hyp, unless overridden *)
  | ElimArgsOption of (tactic_arg -> term -> term list) * term option
 
-type intro_item = string * int option * OpnameSet.t option * auto_type * tactic
-type elim_item  = OpnameSet.t option * (int -> tactic)
+type intro_item = string * int option * rule_labels * auto_type * tactic
+type elim_item  = rule_labels * (int -> tactic)
 
 resource (term * elim_item, int -> tactic) elim
 resource (term * intro_item, tactic) intro
 
 val process_elim_resource_annotation :
    ?options: elim_option list ->
-   ?select: term list ->
    (term * elim_item) annotation_processor
 
 val process_intro_resource_annotation :
    ?options: intro_option list ->
-   ?select: term list ->
    (term * intro_item) annotation_processor
 
-val wrap_intro : ?select: term list -> tactic -> intro_item
-val wrap_elim  : ?select: term list -> (int -> tactic) -> elim_item
+val wrap_intro : ?select: term list -> ?labels: term list -> tactic -> intro_item
+val wrap_elim  : ?select: term list -> ?labels: term list -> (int -> tactic) -> elim_item
 val intro_must_select : intro_item
 
 (*

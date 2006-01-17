@@ -122,6 +122,7 @@ open Tactic_type.Sequent
 open Tactic_type.Tactic
 open Tactic_type.Tacticals
 open Top_conversionals
+open Top_options
 open Browser_resource
 
 (*
@@ -243,8 +244,9 @@ let explode t =
    let t = TermMan.explode_sequent t in
       SeqHyp.to_list t.sequent_hyps, t.sequent_concl
 
-let process_nth_hyp_resource_annotation name args term_args statement loc pre_tactic =
+let process_nth_hyp_resource_annotation ?select ?labels name args term_args statement loc pre_tactic =
    let assums, goal = unzip_mfunction statement in
+      rule_labels_not_allowed loc select labels;
       match args.spec_ints, args.spec_addrs, term_args, List.map (fun (_, _, t) -> explode t) assums, explode goal with
          [| _ |], [||], [], [], ([ Context _; Hypothesis(_,t1); Context _ ], t2) ->
             [t1, t2, fun i -> Tactic_type.Tactic.tactic_of_rule pre_tactic { arg_ints = [| i |]; arg_addrs = [||] } []]

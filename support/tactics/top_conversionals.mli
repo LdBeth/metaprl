@@ -39,6 +39,7 @@ open Term_addr_sig
 open Refiner.Refiner.Refine
 open Mp_resource
 open Top_resource
+open Top_options
 
 open Tactic_type.Tactic
 
@@ -102,14 +103,14 @@ infix thenTC
  ************************************************************************)
 
 type reduce_conv
-type reduce_info = OpnameSet.t option * conv
+type reduce_info = rule_labels * conv
 type reduce_entry = term * reduce_info
 
 resource (reduce_entry, reduce_conv) reduce
 
-val process_reduce_resource_rw_annotation : ?select: term list -> reduce_entry rw_annotation_processor
+val process_reduce_resource_rw_annotation : reduce_entry rw_annotation_processor
 
-val wrap_reduce : ?select:term list -> conv -> reduce_info
+val wrap_reduce : ?select:term list -> ?labels:term list -> conv -> reduce_info
 
 topval reduceTopC : conv
 topval reduceC : conv

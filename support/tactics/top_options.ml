@@ -44,6 +44,13 @@ open Tactic_type.Tacticals
 
 type select_entry = term * option_info
 
+type rule_labels_info =
+   { rule_when    : OpnameSet.t;
+     rule_unless  : OpnameSet.t
+   }
+
+type rule_labels = rule_labels_info option
+
 (*
  * Extract the option.
  *)
@@ -85,24 +92,61 @@ let add_options_tag info =
 (************************************************************************
  * Check whether the options on the rule/rewrite are allowed.
  *)
-let options_are_allowed options keys =
-   OpnameSet.for_all (fun key ->
-         not (OpnameTable.mem options key) || OpnameTable.find options key = OptionAllow) keys
+let rule_labels_are_allowed options labels =
+   match labels with
+      None ->
+         true
+    | Some labels ->
+         let { rule_when = labels_when;
+               rule_unless = labels_unless
+             } = labels
+         in
+            OpnameSet.for_all (fun key ->
+                  OpnameTable.mem options key && OpnameTable.find options key = OptionAllow) labels_when
+            && OpnameSet.for_all (fun key ->
+                  not (OpnameTable.mem options key) || OpnameTable.find options key = OptionAllow) labels_unless
 
-let options_are_allowed_arg p keys =
-   options_are_allowed (get_options p) keys
+
+let rule_labels_are_allowed_arg p labels =
+   rule_labels_are_allowed (get_options p) labels
 
 (************************************************************************
  * Utilities.
  *)
-let opset_of_terms tl =
-   List.fold_left (fun options t -> OpnameSet.add options (opname_of_term t)) OpnameSet.empty tl
+let rule_labels_empty = None
 
-let opset_of_opt_terms = function
-   None ->
-      None
- | Some tl ->
-      Some (opset_of_terms tl)
+let rule_labels_of_terms tl_select tl_label =
+   match tl_select, tl_label with
+      [], [] ->
+         None
+    | _ ->
+         let info =
+            { rule_when   = List.fold_left (fun options t -> OpnameSet.add options (opname_of_term t)) OpnameSet.empty tl_select;
+              rule_unless = List.fold_left (fun options t -> OpnameSet.add options (opname_of_term t)) OpnameSet.empty tl_label
+            }
+         in
+            Some info
+
+let rule_labels_of_opt_terms tl_select tl_label =
+   let tl_select =
+      match tl_select with
+         Some labels -> labels
+       | None -> []
+   in
+   let tl_label =
+      match tl_label with
+         Some labels -> labels
+       | None -> []
+   in
+      rule_labels_of_terms tl_select tl_label
+
+let rule_labels_not_allowed loc tl_select tl_label =
+   match tl_select, tl_label with
+      None, None ->
+         ()
+    | Some _, _
+    | _, Some _ ->
+         Stdpp.raise_with_loc loc (RefineError ("option check", StringError "rule labels are not allowed, or the annotation processor has not been updated"))
 
 (************************************************************************
  * Tacticals for option handling.

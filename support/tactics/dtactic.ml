@@ -218,8 +218,8 @@ type elim_option =
    ThinOption of (int -> tactic)
  | ElimArgsOption of (tactic_arg -> term -> term list) * term option
 
-type intro_item = string * int option * OpnameSet.t option * auto_type * tactic
-type elim_item  = OpnameSet.t option * (int -> tactic)
+type intro_item = string * int option * rule_labels * auto_type * tactic
+type elim_item  = rule_labels * (int -> tactic)
 
 (************************************************************************
  * IMPLEMENTATION                                                       *
@@ -231,11 +231,7 @@ type elim_item  = OpnameSet.t option * (int -> tactic)
  *)
 let extract_elim_data =
    let select_options options (opts, _) =
-      match opts with
-         None ->
-            true
-       | Some opts ->
-            options_are_allowed options opts
+      rule_labels_are_allowed options opts
    in
    let rec firstiT i = function
       [] ->
@@ -291,11 +287,7 @@ let extract_intro_data =
                | None ->
                     false)
       &&
-      (match options with
-          None ->
-             true
-        | Some opts ->
-             options_are_allowed_arg p opts)
+      (rule_labels_are_allowed_arg p options)
    in
    let extract (name, _, _, _, tac) =
       if !debug_dtactic then
@@ -347,7 +339,7 @@ let one_rw_arg i =
 (*
  * Improve the intro resource from a rule.
  *)
-let process_intro_resource_annotation ?(options = []) ?select name args term_args statement loc pre_tactic =
+let process_intro_resource_annotation ?(options = []) ?select ?labels name args term_args statement loc pre_tactic =
    if args.spec_addrs <> [||] then
       raise (Invalid_argument (sprintf
          "%s: intro annotation: %s: context arguments not supported yet" (string_of_loc loc) name));
@@ -402,7 +394,7 @@ let process_intro_resource_annotation ?(options = []) ?select name args term_arg
                "%s: intro annotation: %s: not an introduction rule" (string_of_loc loc) name))
    in
    let sel_opts = get_sel_arg options in
-   let option_opts = (opset_of_opt_terms select : OpnameSet.t option) in
+   let option_opts = rule_labels_of_opt_terms select labels in
    let rec auto_aux = function
       [] ->
          [t, (name, sel_opts, option_opts, (if assums = [] then AutoTrivial else AutoNormal), tac)]
@@ -431,7 +423,7 @@ let rec get_elim_args_arg = function
  | [] ->
       None
 
-let process_elim_resource_annotation ?(options = []) ?select name args term_args statement loc pre_tactic =
+let process_elim_resource_annotation ?(options = []) ?select ?labels name args term_args statement loc pre_tactic =
    if args.spec_addrs <> [||] then
       raise (Invalid_argument (sprintf
          "%s: elim annotation: %s: context arguments not supported yet" (string_of_loc loc) name));
@@ -528,19 +520,19 @@ let process_elim_resource_annotation ?(options = []) ?select name args term_args
              | _ ->
                   raise (Invalid_argument (sprintf "Dtactic: %s: not an elimination rule" name))
          in
-         let options = opset_of_opt_terms select in
+         let options = rule_labels_of_opt_terms select labels in
             [t, (options, tac)]
     | _ ->
          raise (Invalid_argument (sprintf "Dtactic.improve_elim: %s: must be an elimination rule" name))
 
-let wrap_intro ?select tac =
-   ("wrap_intro", None, opset_of_opt_terms select, AutoNormal, tac)
+let wrap_intro ?select ?labels tac =
+   ("wrap_intro", None, rule_labels_of_opt_terms select labels, AutoNormal, tac)
 
 let mustSelectT = funT (fun p ->
    raise (RefineError ("Dtactic.mustSelectT", StringTermError ("Select (selT) argument required", Sequent.concl p))))
 
 let intro_must_select =
-   ("mustSelectT", None, None, AutoNormal, mustSelectT)
+   ("mustSelectT", None, rule_labels_empty, AutoNormal, mustSelectT)
 
 let mustOptionT = funT (fun p ->
    raise (RefineError ("Dtactic.mustOptionT", StringTermError ("String option (optionT) argument required", Sequent.concl p))))
@@ -548,8 +540,8 @@ let mustOptionT = funT (fun p ->
 let intro_must_option =
    ("mustOptionT", None, None, AutoNormal, mustOptionT)
 
-let wrap_elim ?select tac =
-   opset_of_opt_terms select, tac
+let wrap_elim ?select ?labels tac =
+   rule_labels_of_opt_terms select labels, tac
 
 (*
  * Resources

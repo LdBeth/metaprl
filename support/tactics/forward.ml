@@ -52,6 +52,8 @@ open Tactic_type
 open Tactic_type.Tactic
 open Tactic_type.Tacticals
 
+open Top_options
+
 let debug_forward =
    create_debug (**)
       { debug_name = "forward";
@@ -186,9 +188,10 @@ let rec get_prec_arg assums = function
 (*
  * Process a forward-chaining rule.
  *)
-let process_forward_resource_annotation ?(options = []) name args term_args statement loc pre_tactic =
+let process_forward_resource_annotation ?(options = []) ?select ?labels name args term_args statement loc pre_tactic =
    if args.spec_addrs <> [||] then
       raise (Invalid_argument (sprintf "elim annotation: %s: context arguments not supported yet" name));
+   rule_labels_not_allowed loc select labels;
 
    let assums, goal = unzip_mfunction statement in
       match SeqHyp.to_list (explode_sequent goal).sequent_hyps with

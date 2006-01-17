@@ -410,28 +410,18 @@ doc <:doc<
    @docoff
 >>
 type reduce_conv = conv
-type reduce_info = OpnameSet.t option * conv
+type reduce_info = rule_labels * conv
 type reduce_entry = term * reduce_info
 
 let opnames_of_terms options =
    List.fold_left (fun options t -> OpnameSet.add options (opname_of_term t)) OpnameSet.empty options
 
-let select_of_option = function
-   None ->
-      None
- | Some options ->
-      Some (opnames_of_terms options)
-
-let wrap_reduce ?select conv =
-   select_of_option select, conv
+let wrap_reduce ?select ?labels conv =
+   rule_labels_of_opt_terms select labels, conv
 
 let extract_data =
    let select_option options (opts, _) =
-      match opts with
-         None ->
-            true
-       | Some opts ->
-            options_are_allowed options opts
+      rule_labels_are_allowed options opts
    in
    let rw tbl =
       funC (fun e -> (**)
@@ -489,7 +479,7 @@ let find_conds tbl t _ =
    let v, _, _ = dest_so_var t in
       Hashtbl.mem tbl v && ((Hashtbl.find tbl v) > 1)
 
-let process_reduce_resource_rw_annotation ?select name redex contractum assums addrs args loc rw =
+let process_reduce_resource_rw_annotation ?select ?labels name redex contractum assums addrs args loc rw =
    let conv = rewrite_of_pre_rewrite rw empty_rw_args [] in
       match addrs, args with
          { spec_ints = [||]; spec_addrs = [||] }, [] ->
@@ -501,7 +491,7 @@ let process_reduce_resource_rw_annotation ?select name redex contractum assums a
             let vars = Hashtbl.create 19 in
             let () = List.iter (TermOp.iter_down (cound_vars vars)) (contractum :: assums) in
             let addrs = find_subterm redex (find_conds vars) in
-            let select = select_of_option select in
+            let select = rule_labels_of_opt_terms select labels in
                [redex, (select, wrap_addrs conv addrs)]
        | _ ->
             raise (Invalid_argument ((Simple_print.string_of_loc loc) ^ ": reduce resource annotation:
