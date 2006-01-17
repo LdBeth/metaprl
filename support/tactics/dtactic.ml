@@ -340,7 +340,7 @@ let rec get_sel_arg = function
 
 let rec get_option_args l = function
    StringOption s :: t ->
-      get_option_args l t
+      get_option_args (s :: l) t
  | _ :: t ->
       get_option_args l t
  | [] ->
