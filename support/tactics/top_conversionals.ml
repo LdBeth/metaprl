@@ -72,7 +72,6 @@ doc docoff
 open Lm_debug
 open Lm_printf
 open Lm_symbol
-open Lm_string_set
 
 open Rewrite_sig
 open Refiner.Refiner
@@ -407,26 +406,35 @@ doc <:doc<
 
    @docoff
 >>
-type reduce_conv = StringSet.t -> conv
-type reduce_info = string option * conv
+type reduce_conv = SymbolSet.t -> conv
+type reduce_info = SymbolSet.t option * conv
 type reduce_entry = term * reduce_info
 
+let symbols_of_strings options =
+   List.fold_left (fun options s -> SymbolSet.add options (Lm_symbol.add s)) SymbolSet.empty options
+
+let select_of_option = function
+   None ->
+      None
+ | Some options ->
+      Some (symbols_of_strings options)
+
 let wrap_reduce ?select conv =
-   select, conv
+   select_of_option select, conv
 
 let extract_data =
-   let rec select_option options (opt, _) =
-      match opt with
+   let rec select_option options (opts, _) =
+      match opts with
          None ->
             true
-       | Some opt ->
-            StringSet.mem options opt
+       | Some opts ->
+            SymbolSet.intersectp opts options
    in
    let rw tbl options =
       termC (fun t -> (**)
          let _, conv =
             try
-            (* Find and apply the right tactic *)
+               (* Find and apply the right tactic *)
                if !debug_reduce then
                   eprintf "Conversionals: lookup %a%t" debug_print t eflush;
                Term_match_table.lookup tbl (select_option options) t
@@ -448,7 +456,7 @@ let resource (reduce_entry, reduce_conv) reduce =
 
 let reduceTopC_env e =
    let p = env_arg e in
-   let options = StringSet.of_list (get_option_args p) in
+   let options = symbols_of_strings (get_option_args p) in
       get_resource_arg p get_reduce_resource options
 
 let reduceTopC = funC reduceTopC_env
@@ -457,7 +465,7 @@ let reduceC =
    funC (fun e -> repeatC (higherC (reduceTopC_env e)))
 
 let reduceT = funT (fun p ->
-   let options = StringSet.of_list (get_option_args p) in
+   let options = symbols_of_strings (get_option_args p) in
    let reduceTopC = get_resource_arg p get_reduce_resource options in
       rwAll (repeatC (higherC reduceTopC)))
 
@@ -490,6 +498,7 @@ let process_reduce_resource_rw_annotation ?select name redex contractum assums a
             let vars = Hashtbl.create 19 in
             let () = List.iter (TermOp.iter_down (cound_vars vars)) (contractum :: assums) in
             let addrs = find_subterm redex (find_conds vars) in
+            let select = select_of_option select in
                [redex, (select, wrap_addrs conv addrs)]
        | _ ->
             raise (Invalid_argument ((Simple_print.string_of_loc loc) ^ ": reduce resource annotation:
