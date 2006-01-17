@@ -34,7 +34,6 @@
  *)
 open Lm_symbol
 
-open Opname
 open Refiner.Refiner
 open Refiner.Refiner.Rewrite
 open Refiner.Refiner.Refine
@@ -44,6 +43,7 @@ open Rewrite_sig
 open Refiner_sig
 open Refiner_io
 open Mp_resource
+open Option_sig
 
 (* Visible types.  *)
 
@@ -89,15 +89,6 @@ type arglist =
  | TermStringArgList         of string * term * string
  | TermTermArgList           of string * term * term
  | GeneralArgList            of attribute array
-
-(*
- * Flags associated with options.
- *)
-type option_info =
-   OptionAllow
- | OptionExclude
-
-type option_table = option_info OpnameTable.t
 
 (*
  * Internal type definitions.

@@ -38,11 +38,17 @@ open Refiner.Refiner.Term
 open Refiner.Refiner.RefineError
 open Mp_resource
 open Top_resource
+open Option_sig
 
 open Tactic_type
 open Tactic_type.Tacticals
 
-type select_entry = term * option_info
+type option_command =
+   OptionAccept
+ | OptionReject
+ | OptionClear
+
+type select_entry = term * option_command
 
 type rule_labels_info =
    { rule_when    : OpnameSet.t;
@@ -55,12 +61,17 @@ type rule_labels = rule_labels_info option
  * Extract the option.
  *)
 let add_data options (t, info) =
-   OpnameTable.add options (opname_of_term t) info
+   match info with
+      OptionAccept ->
+         OpnameTable.add options (opname_of_term t) OptionAllow
+    | OptionReject ->
+         OpnameTable.add options (opname_of_term t) OptionExclude
+    | OptionClear ->
+         OpnameTable.empty
 
 let resource_info =
    Functional (**)
-      { fp_is_local = true;
-        fp_empty    = OpnameTable.empty;
+      { fp_empty    = OpnameTable.empty;
         fp_add      = add_data;
         fp_retr     = (fun x -> x)
       }
@@ -91,6 +102,8 @@ let add_options_tag info =
 
 (************************************************************************
  * Check whether the options on the rule/rewrite are allowed.
+ *
+ * XXX: JYH: this could be more efficient.
  *)
 let rule_labels_are_allowed options labels =
    match labels with
@@ -213,8 +226,8 @@ let withoutOptionT t tac =
 let printOptionT t =
    funT (fun p -> (**)
       let opname = opname_of_term t in
-      let options = Tacticals.get_option_args p in
-         eprintf "Option: %s =" (string_of_opname opname);
+      let options = get_options p in
+         eprintf "Option: %s = " (string_of_opname opname);
          (try eprintf "%a@." pp_print_option_info (OpnameTable.find options opname) with
              Not_found ->
                 eprintf "<unbound>@.");

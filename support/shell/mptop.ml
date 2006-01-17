@@ -133,7 +133,6 @@ doc <:doc<
 >>
 let resource (item, item list -> top_table) toploop =
    Functional {
-      fp_is_local = false;
       fp_empty    = Table.empty;
       fp_add      = add;
       fp_retr     = add_list

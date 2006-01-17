@@ -33,10 +33,16 @@ open Tactic_boot_sig
 open Refiner.Refiner.Refine
 open Mp_resource
 open Top_resource
+open Option_sig
 
 open Tactic_type.Tactic
 
-type select_entry = term * option_info
+type option_command =
+   OptionAccept
+ | OptionReject
+ | OptionClear
+
+type select_entry = term * option_command
 
 resource (select_entry, option_table) select
 

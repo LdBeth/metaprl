@@ -12,6 +12,7 @@ OCAMLPPFLAGS = -pp $(quote-argv camlp4o$(EXE) -I $(CAMLP4LIB) q_MLast.cmo $(LOC)
 # Library files
 #
 PROOF_FILES[] =
+    option_sig
     tactic_boot_sig
     tactic_boot
     sequent_boot

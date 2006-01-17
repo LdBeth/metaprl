@@ -291,7 +291,6 @@ let add_map tbl t1 t2 v =
 
 let table_resource_info extract =
    Functional {
-      fp_is_local = false;
       fp_empty    = empty_table;
       fp_add      = (fun tbl (t, v) -> add_item tbl t v);
       fp_retr     = extract
@@ -299,7 +298,6 @@ let table_resource_info extract =
 
 let rmap_table_resource_info extract =
    Functional {
-      fp_is_local = false;
       fp_empty    = empty_map_table;
       fp_add      = (fun tbl (t1, t2, v) -> add_map tbl t1 t2 v);
       fp_retr     = extract

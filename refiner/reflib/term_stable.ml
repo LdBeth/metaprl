@@ -76,7 +76,6 @@ let slookup_all tbl t =
 
 let stable_resource_info retrieve =
    Imperative {
-      imp_is_local = false;
       imp_create   = new_stable;
       imp_add      = sinsert;
       imp_retr     = retrieve

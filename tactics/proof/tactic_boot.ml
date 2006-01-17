@@ -61,6 +61,7 @@ open Refiner.Refiner.Refine
 
 open Tactic_boot_sig
 open Rewrite_sig
+open Option_sig
 open Theory
 
 (*

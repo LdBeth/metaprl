@@ -224,7 +224,6 @@ let add_nth_hyp_data tbl (hyp,concl,tac) =
 
 let resource (term * term * (int -> tactic), (int -> tactic) * (term -> term -> bool) * (tactic_arg -> tactic)) nth_hyp =
    Functional {
-      fp_is_local = false;
       fp_empty = empty_table;
       fp_add = add_nth_hyp_data;
       fp_retr = extract_nth_hyp_data;
@@ -375,7 +374,6 @@ let improve_resource data info = info::data
  *)
 let resource (auto_info, tactic * tactic * tactic * tactic) auto =
    Functional {
-      fp_is_local = false;
       fp_empty = [];
       fp_add = improve_resource;
       fp_retr = extract
