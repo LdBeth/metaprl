@@ -654,6 +654,7 @@ let new_proof pack_info arg name hyps goal =
          let sentinal = Tactic_type.Tactic.sentinal_of_refiner_object mod_name name in
          let bookmark = find_bookmark mod_name name in
          let seq = Tactic_type.Tactic.create sentinal (mk_msequent goal hyps) bookmark in
+         let seq = Proof_initialize.initialize_arg seq in
          let proof = Proof.create seq in
          let ped = Proof_edit.ped_of_proof proof in
             ref (ProofEdit (arg, ped)))

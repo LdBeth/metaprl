@@ -17,6 +17,7 @@ MLZFILES[] =
 # MetaPRL Files
 MPFILES[] =
     proof_edit
+    proof_initialize
     mptop
     shell_command
     shell_package
@@ -44,6 +45,7 @@ FILES[] =
     browser_edit
     shell_tex
     proof_edit
+    proof_initialize
     package_info
     shell_syscall_sig
     mptop

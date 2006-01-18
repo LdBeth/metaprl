@@ -27,6 +27,7 @@
  * @end[license]
  *)
 extends Mptop
+extends Proof_initialize
 
 open Lm_printf
 

@@ -27,6 +27,7 @@
 open Refiner.Refiner.TermType
 open Tactic_type.Tactic
 open Rewrite_sig
+open Mp_resource
 
 (*
  * Resource types.

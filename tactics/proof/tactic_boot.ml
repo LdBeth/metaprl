@@ -344,6 +344,9 @@ struct
    let update_attributes attrs raws =
       { attrs with attr_keys = Lm_list_util.some_map (function (name, RawSentinal k) -> Some (name, k) | _ -> None) raws }
 
+   let main_loop () =
+      ThreadRefiner.main_loop (get_remote_server ())
+
    let create sentinal goal bookmark =
       { ref_goal = goal;
         ref_label = "main";
@@ -351,9 +354,6 @@ struct
         ref_bookmark = bookmark;
         ref_sentinal = sentinal
       }
-
-   let main_loop () =
-      ThreadRefiner.main_loop (get_remote_server ())
 
    (*
     * Access to the sequent.
