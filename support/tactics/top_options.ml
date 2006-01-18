@@ -81,25 +81,16 @@ let resource (select_entry, option_table) select =
    resource_info
 
 (************************************************************************
- * Get the options.  For efficiency, we assume that if the tactic_arg
- * options are non-empty, the resource does not need to be consulted.
+ * Initialize a tactic_arg by loading the initial options from the
+ * resource.
  *)
-declare options
+let initialize_arg p =
+   let info = Sequent.get_resource_arg p get_select_resource in
+      Sequent.set_option_args p info
 
-let options_opname = opname_of_term << options >>
+let resource proof_initialize += initialize_arg
 
-let get_options p =
-   let info = Sequent.get_option_args p in
-      if OpnameTable.is_empty info then
-         Sequent.get_resource_arg p get_select_resource
-      else
-         info
-
-(*
- * Force the table to be nonempty.
- *)
-let add_options_tag info =
-   OpnameTable.add info options_opname OptionAllow
+let get_options = Sequent.get_option_args
 
 (************************************************************************
  * Check whether the options on the rule/rewrite are allowed.
@@ -181,7 +172,7 @@ let option_info_of_string = function
 let addOptionInfoT t info =
    funT (fun p -> (**)
       let opname = opname_of_term t in
-      let options = add_options_tag (get_options p) in
+      let options = get_options p in
       let options = OpnameTable.add options opname info in
          Tacticals.addOptionsT options)
 
@@ -197,14 +188,14 @@ let excludeOptionT t =
 let removeOptionT t =
    funT (fun p -> (**)
       let opname = opname_of_term t in
-      let options = add_options_tag (get_options p) in
+      let options = get_options p in
       let options = OpnameTable.remove options opname in
          Tacticals.addOptionsT options)
 
 let withOptionInfoT t info tac =
    funT (fun p -> (**)
       let opname = opname_of_term t in
-      let options = add_options_tag (get_options p) in
+      let options = get_options p in
       let options = OpnameTable.add options opname info in
          Tacticals.withOptionsT options tac)
 
@@ -220,7 +211,7 @@ let withExcludeOptionT t =
 let withoutOptionT t tac =
    funT (fun p -> (**)
       let opname = opname_of_term t in
-      let options = add_options_tag (get_options p) in
+      let options = get_options p in
       let options = OpnameTable.remove options opname in
          Tacticals.withOptionsT options tac)
 

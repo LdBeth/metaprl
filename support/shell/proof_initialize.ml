@@ -24,6 +24,8 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
+open Lm_printf
+
 open Tactic_type.Tactic
 open Tactic_type
 open Mp_resource
@@ -40,11 +42,13 @@ let resource_info =
 
 type initialize_entry = tactic_arg -> tactic_arg
 
-let resource (initialize_entry, initialize_entry list) initialize_proof =
+let resource (initialize_entry, initialize_entry list) proof_initialize =
    resource_info
 
 let initialize_arg p =
-   List.fold_left (fun p f -> f p) p (Sequent.get_resource_arg p get_initialize_proof_resource)
+   let funs = Sequent.get_resource_arg p get_proof_initialize_resource in
+      (* eprintf "Initializer functions: %d@." (List.length funs); *)
+      List.fold_left (fun p f -> f p) p funs
 
 (*!
  * @docoff

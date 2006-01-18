@@ -96,9 +96,9 @@ let mk_rw_goal assums redex contractum =
 
 let mk_bare_goal assums = function
    GRule goal ->
-      Tactic.create Tactic.null_sentinal (mk_msequent goal assums) (Mp_resource.find Mp_resource.top_bookmark)
+      Tactic.create () Tactic.null_sentinal (mk_msequent goal assums) (Mp_resource.find Mp_resource.top_bookmark)
  | GRewrite (_, _, mseq) ->
-      Tactic.create Tactic.null_sentinal mseq (Mp_resource.find Mp_resource.top_bookmark)
+      Tactic.create () Tactic.null_sentinal mseq (Mp_resource.find Mp_resource.top_bookmark)
 
 (************************************************************************
  * FORMATTING                                                           *

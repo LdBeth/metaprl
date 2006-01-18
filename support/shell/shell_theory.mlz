@@ -24,6 +24,7 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
+extends Proof_initialize
 extends Browser_resource
 extends Mptop
 extends Shell_command

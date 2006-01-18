@@ -32,7 +32,7 @@ open Mp_resource
  *)
 type initialize_entry = tactic_arg -> tactic_arg
 
-resource (initialize_entry, initialize_entry list) initialize_proof
+resource (initialize_entry, initialize_entry list) proof_initialize
 
 (*
  * Initialize a tactic argument.
