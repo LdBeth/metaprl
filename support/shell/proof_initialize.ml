@@ -4,7 +4,7 @@
  * ----------------------------------------------------------------
  *
  * @begin[license]
- * Copyright (C) 2005 Mojave Group, Caltech
+ * Copyright (C) 2006 Mojave Group, Caltech
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -20,8 +20,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * @email{jyh@cs.caltech.edu}
+ * Author: Jason Hickey @email{jyh@cs.caltech.edu}
+ * Modified By: Aleksey Nogin @email{nogin@cs.caltech.edu}
  * @end[license]
  *)
 open Lm_printf
@@ -35,27 +35,22 @@ open Mp_resource
  *)
 let resource_info =
    Functional (**)
-      { fp_empty    = [];
-        fp_add      = (fun options x -> x :: options);
+      { fp_empty    = (fun x -> x);
+        fp_add      = (fun options x p -> options (x p));
         fp_retr     = (fun x -> x)
       }
 
 type initialize_entry = tactic_arg -> tactic_arg
 
-let resource (initialize_entry, initialize_entry list) proof_initialize =
+let resource (initialize_entry, initialize_entry) proof_initialize =
    resource_info
 
 let initialize_arg p =
-   let funs = Sequent.get_resource_arg p get_proof_initialize_resource in
-      (* eprintf "Initializer functions: %d@." (List.length funs); *)
-      List.fold_left (fun p f -> f p) p funs
+   Sequent.get_resource_arg p get_proof_initialize_resource p
 
-(*!
- * @docoff
- *
+(*
  * -*-
  * Local Variables:
- * Caml-master: "compile"
  * End:
  * -*-
  *)
