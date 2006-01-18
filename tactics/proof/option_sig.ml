@@ -25,6 +25,7 @@
  * @end[license]
  *)
 open Opname
+open Refiner.Refiner.RefineError
 
 (*
  * Flags associated with options.
@@ -32,8 +33,29 @@ open Opname
 type option_info =
    OptionAllow
  | OptionExclude
+ | OptionIgnore
 
-type option_table = option_info OpnameTable.t
+type option_table =
+   (opname * option_info) list
+
+let string_of_option = function
+   OptionAllow -> "allow"
+ | OptionExclude -> "exclude"
+ | OptionIgnore -> "ignore"
+
+let option_of_string = function
+   "allow" -> OptionAllow
+ | "exclude" -> OptionExclude
+ | "ignore" -> OptionIgnore
+ | s -> raise (RefineError ("option_of_string", StringError (Printf.sprintf "illegal option string '%s': legal values are 'allow', 'exclude', 'ignore'" s)))
+
+let is_option_string = function
+   "allow"
+ | "exclude"
+ | "ignore" ->
+      true
+ | _ ->
+      false
 
 (*!
  * @docoff

@@ -44,8 +44,7 @@ type 'input named_annotation_processor =
    'input list
 
 type 'input annotation_processor =
-   ?select: term list ->        (* Allow the rule only if the labels are allowed *)
-   ?labels: term list ->        (* Prevent the rule if the label is excluded *)
+   ?labels: term list ->        (* Rule labels *)
    string ->                    (* Name of the new rule *)
    'input named_annotation_processor
 
@@ -60,8 +59,7 @@ type 'input named_rw_annotation_processor =
    'input list
 
 type 'input rw_annotation_processor =
-   ?select: term list ->        (* Allow the rule only if the labels are allowed *)
-   ?labels: term list ->        (* Prevent the rule if the label is excluded *)
+   ?labels: term list ->        (* Rewrite labels *)
    string ->                    (* Name of the new rewrite *)
    'input named_rw_annotation_processor
 

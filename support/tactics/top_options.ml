@@ -44,40 +44,43 @@ open Option_sig
 open Tactic_type
 open Tactic_type.Tacticals
 
-type option_command =
-   OptionAccept
- | OptionReject
- | OptionClear
-
-type select_entry = term * option_command
-
-type rule_labels_info =
-   { rule_when    : OpnameSet.t;
-     rule_unless  : OpnameSet.t
-   }
-
-type rule_labels = rule_labels_info option
+(*
+ * A rule is labeled with positive and negative arguments.
+ *)
+type rule_labels = OpnameSet.t
 
 (*
- * Extract the option.
+ * The options are collected in a list.
+ * For efficiency, squash the entries in the list when
+ * the resource is extracted.
  *)
 let add_data options (t, info) =
-   match info with
-      OptionAccept ->
-         OpnameTable.add options (opname_of_term t) OptionAllow
-    | OptionReject ->
-         OpnameTable.add options (opname_of_term t) OptionExclude
-    | OptionClear ->
-         OpnameTable.empty
+   (opname_of_term t, info) :: options
+
+let extract_data options =
+   let _, options =
+      List.fold_left (fun (found, options) info ->
+            match info with
+               (opname, OptionIgnore) ->
+                  OpnameSet.add found opname, options
+             | (opname, _) ->
+                  if OpnameSet.mem found opname then
+                     found, options
+                  else
+                     let found = OpnameSet.add found opname in
+                     let options = info :: options in
+                        found, options) (OpnameSet.empty, []) options
+   in
+      List.rev options
 
 let resource_info =
    Functional (**)
-      { fp_empty    = OpnameTable.empty;
+      { fp_empty    = [];
         fp_add      = add_data;
-        fp_retr     = (fun x -> x)
+        fp_retr     = extract_data
       }
 
-let resource (select_entry, option_table) select =
+let resource (term * option_info, option_table) select =
    resource_info
 
 (************************************************************************
@@ -97,20 +100,22 @@ let get_options = Sequent.get_option_args
  *
  * XXX: JYH: this could be more efficient.
  *)
-let rule_labels_are_allowed options labels =
-   match labels with
-      None ->
+let rec test_rule_labels options labels =
+   match options with
+      (opname, OptionAllow) :: options ->
+         OpnameSet.mem labels opname || test_rule_labels options labels
+    | (opname, OptionExclude) :: options ->
+         if OpnameSet.mem labels opname then
+            false
+         else
+            test_rule_labels options labels
+    | (_, OptionIgnore) :: options ->
+         test_rule_labels options labels
+    | [] ->
          true
-    | Some labels ->
-         let { rule_when = labels_when;
-               rule_unless = labels_unless
-             } = labels
-         in
-            OpnameSet.for_all (fun key ->
-                  OpnameTable.mem options key && OpnameTable.find options key = OptionAllow) labels_when
-            && OpnameSet.for_all (fun key ->
-                  not (OpnameTable.mem options key) || OpnameTable.find options key = OptionAllow) labels_unless
 
+let rec rule_labels_are_allowed options labels =
+   OpnameSet.is_empty labels || options = [] || test_rule_labels options labels
 
 let rule_labels_are_allowed_arg p labels =
    rule_labels_are_allowed (get_options p) labels
@@ -118,66 +123,38 @@ let rule_labels_are_allowed_arg p labels =
 (************************************************************************
  * Utilities.
  *)
-let rule_labels_empty = None
+let rule_labels_empty = OpnameSet.empty
 
-let rule_labels_of_terms tl_select tl_label =
-   match tl_select, tl_label with
-      [], [] ->
-         None
-    | _ ->
-         let info =
-            { rule_when   = List.fold_left (fun options t -> OpnameSet.add options (opname_of_term t)) OpnameSet.empty tl_select;
-              rule_unless = List.fold_left (fun options t -> OpnameSet.add options (opname_of_term t)) OpnameSet.empty tl_label
-            }
-         in
-            Some info
+let rule_labels_of_terms labels =
+   List.fold_left (fun opnames t ->
+         OpnameSet.add opnames (opname_of_term t)) OpnameSet.empty labels
 
-let rule_labels_of_opt_terms tl_select tl_label =
-   let tl_select =
-      match tl_select with
+let rule_labels_of_opt_terms labels =
+   let labels =
+      match labels with
          Some labels -> labels
        | None -> []
    in
-   let tl_label =
-      match tl_label with
-         Some labels -> labels
-       | None -> []
-   in
-      rule_labels_of_terms tl_select tl_label
+      rule_labels_of_terms labels
 
-let rule_labels_not_allowed loc tl_select tl_label =
-   match tl_select, tl_label with
-      None, None ->
+let rule_labels_not_allowed loc labels =
+   match labels with
+      None ->
          ()
-    | Some _, _
-    | _, Some _ ->
+    | Some _ ->
          Stdpp.raise_with_loc loc (RefineError ("option check", StringError "rule labels are not allowed, or the annotation processor has not been updated"))
 
 (************************************************************************
  * Tacticals for option handling.
  *)
 let pp_print_option_info buf info =
-   let s =
-      match info with
-         OptionAllow -> "allow"
-       | OptionExclude -> "exclude"
-   in
-      pp_print_string buf s
-
-let option_info_of_string = function
-   "allow" -> OptionAllow
- | "exclude" -> OptionExclude
- | s -> raise (RefineError ("option_info_of_string", StringError (Printf.sprintf "illegal option '%s': valid options are 'allow' and 'exclude'" (String.escaped s))))
+   pp_print_string buf (string_of_option info)
 
 let addOptionInfoT t info =
-   funT (fun p -> (**)
-      let opname = opname_of_term t in
-      let options = get_options p in
-      let options = OpnameTable.add options opname info in
-         Tacticals.addOptionsT options)
+   Tacticals.addOptionT (opname_of_term t) info
 
 let addOptionT t s =
-   addOptionInfoT t (option_info_of_string s)
+   addOptionInfoT t (option_of_string s)
 
 let allowOptionT t =
    addOptionInfoT t OptionAllow
@@ -185,22 +162,11 @@ let allowOptionT t =
 let excludeOptionT t =
    addOptionInfoT t OptionExclude
 
-let removeOptionT t =
-   funT (fun p -> (**)
-      let opname = opname_of_term t in
-      let options = get_options p in
-      let options = OpnameTable.remove options opname in
-         Tacticals.addOptionsT options)
-
 let withOptionInfoT t info tac =
-   funT (fun p -> (**)
-      let opname = opname_of_term t in
-      let options = get_options p in
-      let options = OpnameTable.add options opname info in
-         Tacticals.withOptionsT options tac)
+   Tacticals.withOptionT (opname_of_term t) info tac
 
 let withOptionT t s =
-   withOptionInfoT t (option_info_of_string s)
+   withOptionInfoT t (option_of_string s)
 
 let withAllowOptionT t =
    withOptionInfoT t OptionAllow
@@ -208,19 +174,18 @@ let withAllowOptionT t =
 let withExcludeOptionT t =
    withOptionInfoT t OptionExclude
 
+let removeOptionT t =
+   Tacticals.removeOptionT (opname_of_term t)
+
 let withoutOptionT t tac =
-   funT (fun p -> (**)
-      let opname = opname_of_term t in
-      let options = get_options p in
-      let options = OpnameTable.remove options opname in
-         Tacticals.withOptionsT options tac)
+   Tacticals.withoutOptionT (opname_of_term t) tac
 
 let printOptionT t =
    funT (fun p -> (**)
       let opname = opname_of_term t in
       let options = get_options p in
          eprintf "Option: %s = " (string_of_opname opname);
-         (try eprintf "%a@." pp_print_option_info (OpnameTable.find options opname) with
+         (try eprintf "%a@." pp_print_option_info (List.assoc opname options) with
              Not_found ->
                 eprintf "<unbound>@.");
          idT)

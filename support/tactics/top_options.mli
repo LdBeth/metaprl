@@ -37,14 +37,7 @@ open Option_sig
 
 open Tactic_type.Tactic
 
-type option_command =
-   OptionAccept
- | OptionReject
- | OptionClear
-
-type select_entry = term * option_command
-
-resource (select_entry, option_table) select
+resource (term * option_info, option_table) select
 
 (*
  * Labels for a rule.
@@ -62,9 +55,9 @@ val rule_labels_are_allowed_arg : tactic_arg -> rule_labels -> bool
  * Utilities.
  *)
 val rule_labels_empty        : rule_labels
-val rule_labels_of_terms     : term list -> term list -> rule_labels
-val rule_labels_of_opt_terms : term list option -> term list option -> rule_labels
-val rule_labels_not_allowed  : MLast.loc -> term list option -> term list option -> unit
+val rule_labels_of_terms     : term list -> rule_labels
+val rule_labels_of_opt_terms : term list option -> rule_labels
+val rule_labels_not_allowed  : MLast.loc -> term list option -> unit
 
 (*
  * Tactics.

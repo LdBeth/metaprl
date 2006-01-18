@@ -750,7 +750,7 @@ struct
    let addTypeT          = TacticInternal.addTypeT
    let addBoolT          = TacticInternal.addBoolT
    let addStringT        = TacticInternal.addStringT
-   let addOptionsT       = TacticInternal.addOptionsT
+   let addOptionT        = TacticInternal.addOptionT
    let addIntT           = TacticInternal.addIntT
 
    let withTermT         = TacticInternal.withTermT
@@ -758,7 +758,7 @@ struct
    let withTypeT         = TacticInternal.withTypeT
    let withBoolT         = TacticInternal.withBoolT
    let withStringT       = TacticInternal.withStringT
-   let withOptionsT      = TacticInternal.withOptionsT
+   let withOptionT       = TacticInternal.withOptionT
    let withIntT          = TacticInternal.withIntT
 
    let removeTermT       = TacticInternal.removeTermT
@@ -768,6 +768,7 @@ struct
    let removeStringT     = TacticInternal.removeStringT
    let removeStringValT  = TacticInternal.removeStringValT
    let removeIntT        = TacticInternal.removeIntT
+   let removeOptionT     = TacticInternal.removeOptionT
 
    let withoutTermT      = TacticInternal.withoutTermT
    let withoutTermListT  = TacticInternal.withoutTermListT
@@ -776,6 +777,7 @@ struct
    let withoutStringT    = TacticInternal.withoutStringT
    let withoutStringValT = TacticInternal.withoutStringValT
    let withoutIntT       = TacticInternal.withoutIntT
+   let withoutOptionT    = TacticInternal.withoutOptionT
 
    (*
     * Subgoal checking.

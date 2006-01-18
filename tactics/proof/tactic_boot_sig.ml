@@ -34,6 +34,7 @@
  *)
 open Lm_symbol
 
+open Opname
 open Refiner.Refiner
 open Refiner.Refiner.Rewrite
 open Refiner.Refiner.Refine
@@ -406,7 +407,7 @@ sig
    val addBoolT : string -> bool -> tactic
    val addIntT : string -> int -> tactic
    val addStringT : string -> string -> tactic
-   val addOptionsT : option_table -> tactic
+   val addOptionT : opname -> option_info -> tactic
 
    val withTermT : string -> term -> tactic -> tactic
    val withTermListT : string -> term list -> tactic -> tactic
@@ -414,7 +415,7 @@ sig
    val withBoolT : string -> bool -> tactic -> tactic
    val withIntT : string -> int -> tactic -> tactic
    val withStringT : string -> string -> tactic -> tactic
-   val withOptionsT : option_table -> tactic -> tactic
+   val withOptionT : opname -> option_info -> tactic -> tactic
 
    val removeTermT : string -> tactic
    val removeTermListT : string -> tactic
@@ -423,6 +424,7 @@ sig
    val removeIntT : string -> tactic
    val removeStringT : string -> tactic
    val removeStringValT : string -> string -> tactic
+   val removeOptionT : opname -> tactic
 
    val withoutTermT : string -> tactic -> tactic
    val withoutTermListT : string -> tactic -> tactic
@@ -431,6 +433,7 @@ sig
    val withoutIntT : string -> tactic -> tactic
    val withoutStringT : string -> tactic -> tactic
    val withoutStringValT : string -> string -> tactic -> tactic
+   val withoutOptionT : opname -> tactic -> tactic
 
    (*
     * Force an exception if the tactic fails.
@@ -963,6 +966,7 @@ sig
    val addBoolT : string -> bool -> tactic
    val addStringT : string -> string -> tactic
    val addIntT : string -> int -> tactic
+   val addOptionT : opname -> option_info -> tactic
 
    (*
     * General argument functions that add a temporary annotation.
@@ -973,6 +977,7 @@ sig
    val withBoolT : string -> bool -> tactic -> tactic
    val withStringT : string -> string -> tactic -> tactic
    val withIntT : string -> int -> tactic -> tactic
+   val withOptionT : opname -> option_info -> tactic -> tactic
 
    (*
     * Argument functions that remove an annotation permanetly.
@@ -983,6 +988,7 @@ sig
    val removeBoolT : string -> tactic
    val removeStringT : string -> tactic
    val removeIntT : string -> tactic
+   val removeOptionT : opname -> tactic
 
    (*
     * Argument functions that remove an annotation temporarily.
@@ -993,6 +999,7 @@ sig
    val withoutBoolT : string -> tactic -> tactic
    val withoutStringT : string -> tactic -> tactic
    val withoutIntT : string -> tactic -> tactic
+   val withoutOptionT : opname -> tactic -> tactic
 
    (*
     * Specific argument functions.
@@ -1004,9 +1011,6 @@ sig
    val selT : int -> tactic -> tactic
    val altT : tactic -> tactic
    val thinningT : bool -> tactic -> tactic
-
-   val addOptionsT : option_table -> tactic
-   val withOptionsT : option_table -> tactic -> tactic
 
    val get_with_arg : tactic_arg -> term
    val get_with_args : tactic_arg -> term list
