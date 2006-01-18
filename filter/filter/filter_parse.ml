@@ -13,7 +13,8 @@
  * See the file doc/htmlman/default.html or visit http://metaprl.org/
  * for more information.
  *
- * Copyright (C) 1998 Jason Hickey, Cornell University
+ * Copyright (C) 1998-2006 MetaPRL Group, Cornell University and California
+ * Institute of Technology
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -61,6 +62,7 @@ open Refiner.Refiner.TermTy
 open Refiner.Refiner.Rewrite
 open Refiner.Refiner.RefineError
 open Refiner.Refiner.Refine
+open Mp_resource
 
 open Term_grammar
 open Filter_type
@@ -2075,11 +2077,12 @@ EXTEND
            in
               handle_exn f ("resource " ^ name) _loc;
               empty_str_item _loc
-        | "let"; "resource"; name = LIDENT; "+=" ; code = expr ->
+        | flag = opt_pvt_flag; "let"; "resource"; name = LIDENT; "+=" ; code = expr ->
            let f () =
               let proc = StrFilter.get_proc _loc in
                  StrFilter.improve_resource proc _loc (**)
                     { improve_name = name;
+                      improve_flag = flag;
                       improve_expr = bind_item _loc code;
                     }
            in
@@ -2204,6 +2207,14 @@ EXTEND
              Reflect.process_reflected_logic (StrFilter.get_proc _loc) _loc name items;
              empty_str_item _loc
        ]];
+
+    opt_pvt_flag:
+       [[ flag = OPT pvt_flag ->
+             match flag with Some flag -> flag | None -> Public
+       ]];
+
+    pvt_flag:
+       [[ "public" -> Public | "private" -> Private ]];
 
     logic_items:
       [[ "struct"; items = LIST0 logic_item; "end" ->
@@ -2363,29 +2374,23 @@ EXTEND
            | None -> no_resources
       ]];
 
+   updresource: 
+      [[ flag = opt_pvt_flag; e = expr LEVEL "expr1" ->
+            let rec split_application tl expr =
+               match expr with
+                  <:expr< $e1$ $e2$ >> ->
+                     split_application (e2 :: tl) e1
+                | <:expr< $lid:name$ >> ->
+                     { res_loc = _loc; res_name = name; res_flag = flag; res_args = tl }
+                | _ ->
+                     Stdpp.raise_with_loc (MLast.loc_of_expr expr) (Failure "resource is not an application")
+            in
+               split_application [] e
+      ]];
+            
    updresources:
-      [[ "{|"; e = expr; "|}" ->
-           let f () =
-                let rec split_application _loc tl expr =
-                   match expr with
-                      <:expr< $e1$ $e2$ >> ->
-                         split_application _loc (e2 :: tl) e1
-                    | <:expr< $lid:name$ >> ->
-                         _loc, name, tl
-                    | _ ->
-                         Stdpp.raise_with_loc (MLast.loc_of_expr expr) (Failure "resource is not a sequence")
-                in
-                let e =
-                   match e with
-                      <:expr< do { $list:el$ } >> ->
-                         List.map (fun expr -> split_application (MLast.loc_of_expr expr) [] expr) el
-                    | _ ->
-                         [split_application (MLast.loc_of_expr e) [] e]
-                in
-                  (* context in resource term quotations will get converted by parse_rule/rewrite *)
-                  { item_item = e; item_bindings = get_unchecked_bindings () }
-           in
-              handle_exn f "updresources" _loc
+      [[ "{|"; res = LIST1 updresource SEP ";" ; "|}" ->
+         { item_item = res; item_bindings = get_unchecked_bindings () }
       ]];
 
    mlrule_keyword:

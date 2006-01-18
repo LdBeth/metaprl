@@ -531,6 +531,38 @@ struct
            term_terms = [mk_simple_bterm t]}}
 
    (*
+    * Two number parameters, a string, and two subterms.
+    *)
+   let is_number_number_string_dep0_dep0_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [Number _; Number _; String _] };
+             term_terms = [ {bvars=[]}; {bvars=[]} ]
+           } -> Opname.eq opname opname'
+    | _ ->
+         false
+
+   let dest_number_number_string_dep0_dep0_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [Number s1; Number s2; String s3] };
+             term_terms = [{bvars=[]; bterm=t1}; {bvars=[]; bterm=t2}]
+           } when Opname.eq opname opname' ->
+         s1, s2, s3, t1, t2
+    | _ ->
+         REF_RAISE(RefineError ("dest_number_number_dep0_dep0_term", TermMatchError (t, "bad arity")))
+
+   let dest_number_number_string_dep0_dep0_any_term t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [Number s1; Number s2; String s3] };
+             term_terms = [{bvars=[]; bterm=t1}; {bvars=[]; bterm=t2}]
+           } ->
+         s1, s2, s3, t1, t2
+    | _ ->
+         REF_RAISE(RefineError ("dest_number_number_dep0_dep0_any_term", TermMatchError (t, "bad arity")))
+
+   let mk_number_number_string_dep0_dep0_term opname s1 s2 s3 t1 t2 =
+      { free_vars = VarsDelayed;
+        core = Term
+         { term_op = { op_name = opname; op_params = [Number s1; Number s2; String s3] };
+           term_terms = [{bvars=[]; bterm=t1}; {bvars=[]; bterm=t2}]}}
+
+   (*
     * One string parameter, two subterms.
     *)
    let is_string_dep0_dep0_term opname t = match get_core t with

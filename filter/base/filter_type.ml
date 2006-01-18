@@ -40,6 +40,7 @@ open Refiner.Refiner.TermTy
 open Filter_shape
 open Opname
 open Dform
+open Mp_resource
 
 (************************************************************************
  * COMMON ERRORS                                                        *
@@ -142,8 +143,15 @@ type ('item, 'term) bnd_expr =
      item_item : 'item
    }
 
+type 'expr resource_anno = {
+   res_loc  : MLast.loc;
+   res_name : string;
+   res_flag : private_flag;
+   res_args : 'expr list
+}
+
 type ('expr, 'term) resource_def =
-   ((MLast.loc * string * 'expr list) list, 'term) bnd_expr
+   ('expr resource_anno list, 'term) bnd_expr
 
 (*
  * Resource descriptions.
@@ -266,6 +274,7 @@ type 'expr resource_expr = 'expr
  *)
 type ('expr, 'term) improve_info = {
    improve_name : string;
+   improve_flag : private_flag;
    improve_expr : ('expr, 'term) bnd_expr
 }
 

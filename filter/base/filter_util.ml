@@ -240,7 +240,13 @@ let no_resources =
    }
 
 let intro_resources _loc =
-   { item_item = [_loc, "intro", [<:expr< [] >>]];
+   let intro = {
+      res_loc = _loc;
+      res_name = "intro";
+      res_flag = Mp_resource.Public;
+      res_args = [<:expr< [] >>]
+   } in
+   { item_item = [intro];
      item_bindings = []
    }
 

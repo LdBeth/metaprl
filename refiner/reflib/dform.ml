@@ -747,7 +747,7 @@ let find_dftable bk =
       dform_resource (Mp_resource.find bk)
 
 let add_dform df =
-   Mp_resource.improve "dform" (Obj.repr (df : dform_info))
+   Mp_resource.improve Mp_resource.Public "dform" (Obj.repr (df : dform_info))
 
 let get_table base =
    match base.df_table with

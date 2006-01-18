@@ -571,6 +571,39 @@ struct
          }
 
    (*
+    * Two number parameters, a string, and two subterms.
+    *)
+   let is_number_number_string_dep0_dep0_term opname = function
+      { term_op = { op_name = opname'; op_params = [Number _; Number _; String _] };
+        term_terms = [{ bvars = [] }; { bvars = [] }]
+      } when Opname.eq opname opname' ->
+         true
+    | _ ->
+         false
+
+   let dest_number_number_string_dep0_dep0_term opname = function
+      { term_op = { op_name = opname'; op_params = [Number s1; Number s2; String s3] };
+        term_terms = [{ bvars = []; bterm = t1 }; { bvars = []; bterm = t2 }]
+      } when Opname.eq opname opname' ->
+         s1, s2, s3, t1, t2
+    | t ->
+         REF_RAISE(RefineError ("dest_number_number_dep0_dep0_term", TermMatchError (t, "bad arity")))
+
+   let dest_number_number_string_dep0_dep0_any_term = function
+      { term_op = { op_name = opname'; op_params = [Number s1; Number s2; String s3] };
+        term_terms = [{ bvars = []; bterm = t1 }; { bvars = []; bterm = t2 }]
+      } ->
+         s1, s2, s3, t1, t2
+    | t ->
+         REF_RAISE(RefineError ("dest_number_number_dep0_dep0_any_term", TermMatchError (t, "bad arity")))
+
+   let mk_number_number_string_dep0_dep0_term opname = fun
+      s1 s2 s3 t1 t2 ->
+         { term_op = { op_name = opname; op_params = [Number s1; Number s2; String s3] };
+           term_terms = [{ bvars = []; bterm = t1 }; { bvars = []; bterm = t2 }]
+         }
+
+   (*
     * One string parameter, two subterms.
     *)
    let is_string_dep0_dep0_term opname = function

@@ -62,6 +62,10 @@ type ('input, 'intermediate, 'output) resource_info =
 
 type global_resource
 
+type private_flag =
+   Public  (* Will be inherited by other theories *)
+ | Private (* Will only be visible within the current theory *)
+
 type ('pre_tactic, 'input) poly_annotation_processor =
    string ->            (* Name of the new rule *)
    rewrite_args_spec -> (* Names of the context vars parameters *)
@@ -86,8 +90,8 @@ type ('prim_rewrite, 'input) poly_rw_annotation_processor =
  * IMPLEMENTATION                                                       *
  ************************************************************************)
 
-val improve : string -> Obj.t -> unit
-val improve_list : string -> Obj.t list -> unit
+val improve : private_flag -> string -> Obj.t -> unit
+val improve_list : private_flag -> string -> Obj.t list -> unit
 val bookmark : string -> unit
 val extends_theory : string -> unit
 val close_theory : string -> unit

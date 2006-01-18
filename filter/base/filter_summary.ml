@@ -40,6 +40,7 @@ open Opname
 open Term_sig
 open Refiner_sig
 open Precedence
+open Mp_resource
 open Dform
 open Lexing
 open Term_ty_sig
@@ -575,8 +576,10 @@ let summary_map (convert : ('term1, 'meta_term1, 'proof1, 'resource1, 'ctyp1, 'e
       }
    in
 
+   let res_item_map res = { res with res_args = List.map convert.expr_f res.res_args } in
+
    let res_map res =
-      { item_item = List.map (fun (loc, name, exprs) -> (loc, name, List.map convert.expr_f exprs)) res.item_item;
+      { item_item = List.map res_item_map res.item_item;
         item_bindings = List.map convert_bnd res.item_bindings;
       }
    in
@@ -733,8 +736,8 @@ let summary_map (convert : ('term1, 'meta_term1, 'proof1, 'resource1, 'ctyp1, 'e
           | Resource (name, r) ->
                Resource (name, convert.resource_f r)
 
-          | Improve { improve_name = name; improve_expr = expr } ->
-               Improve { improve_name = name; improve_expr = convert_bnd_expr expr }
+          | Improve impr ->
+               Improve { impr with improve_expr = convert_bnd_expr impr.improve_expr }
 
           | MagicBlock { magic_name = name;
                          magic_code = items
@@ -816,11 +819,15 @@ let improve_op                 = mk_opname "improve"
 let shape_normal_op            = mk_opname "shape_normal"
 let shape_iform_op             = mk_opname "shape_iform"
 let shape_class_op             = mk_opname "shape_class"
+let private_op                 = mk_opname "private"
+let public_op                  = mk_opname "public"
 
 (* XXX HACK: ASCII_IO format <= 1.0.17 had "opname" and "definition" *)
 let opname_op                  = mk_opname "opname"
 let definition_op              = mk_opname "definition"
 
+let some_op                    = mk_opname "some"
+let none_op                    = mk_opname "none"
 
 (*
  * Meta term conversions.
@@ -849,6 +856,10 @@ struct
    let meta_term_of_term = meta_term_of_term
    let term_of_meta_term = term_of_meta_term
 
+   let public_term = mk_simple_term public_op []
+   let private_term = mk_simple_term private_op []
+   let none_term = mk_simple_term none_op []
+
    (*************
     * DESTRUCTION
     *)
@@ -867,12 +878,20 @@ struct
          else
             raise (Failure "dest_loc: location is not an integer")
 
+   (* XXX HACK: only used for ASCII IO <= 1.0.24 compatibility *)
    let dest_loc_string t =
       let i, j, s, t = dest_number_number_string_dep0_any_term t in
          if Lm_num.is_integer_num i && Lm_num.is_integer_num j then
             t, (mk_proper_loc i j), s
          else
             raise (Failure "dest_loc_string: location is not an integer")
+
+   let dest_loc_string2 t =
+      let i, j, s, t1, t2 = dest_number_number_string_dep0_dep0_any_term t in
+         if Lm_num.is_integer_num i && Lm_num.is_integer_num j then
+            t1, t2, (mk_proper_loc i j), s
+         else
+            raise (Failure "dest_loc_string2: location is not an integer")
 
    (*
     * PRL bindings
@@ -968,9 +987,6 @@ struct
    (*
     * Optional args.
     *)
-   let some_op = mk_opname "some"
-   let none_op = mk_opname "none"
-
    let dest_opt f t =
       let opname = opname_of_term t in
          if Opname.eq opname some_op then
@@ -1034,9 +1050,28 @@ struct
    (*
     * Get the list of resource updates
     *)
+   let dest_pvt_flag t =
+      let opname = opname_of_term t in
+         if Opname.eq opname private_op then Private
+         else if Opname.eq opname public_op then Public
+         else raise (RefineError ("Filter_summary.dest_pvt_flag", StringTermError ("malformed term", t)))
+   
    let dest_resource_term expr_f t =
-      let t, loc, name = dest_loc_string t in
-         loc, name, List.map expr_f (dest_xlist t)
+      let t1, t2, loc, name = 
+         (* 
+          * XXX HACK: ASCII IO format <= 1.0.24 compatibility:
+          *           resource improvement terms used to have one subterm
+          *)
+         if is_two_subterm res_op t then
+            dest_loc_string2 t
+         else
+            let t2, loc, name = dest_loc_string t in public_term, t2, loc, name
+      in {
+         res_loc = loc;
+         res_name = name;
+         res_flag = dest_pvt_flag t1;
+         res_args = List.map expr_f (dest_xlist t2)
+      }
 
    let dest_res_inner convert t =
       List.map (dest_resource_term convert.expr_f) (dest_xlist t)
@@ -1059,10 +1094,21 @@ struct
       Resource (dest_string_param t, convert.resource_f (one_subterm t))
 
    let dest_improve convert t =
-      Improve {
-         improve_name = dest_string_param t;
-         improve_expr = dest_bnd_expr convert (one_subterm t)
-      }
+      let pvt, expr =
+         (* 
+          * XXX HACK: ASCII IO format <= 1.0.24 compatibility:
+          *           resource improvement terms used to have one subterm
+          *)
+         if is_two_subterm improve_op t then
+            two_subterms t
+         else
+            public_term, one_subterm t
+      in
+         Improve {
+            improve_name = dest_string_param t;
+            improve_flag = dest_pvt_flag pvt; 
+            improve_expr = dest_bnd_expr convert expr
+         }
 
    (*
     * Collect a rewrite.
@@ -1468,6 +1514,9 @@ struct
    let mk_loc_string_term op (start, finish) name t =
       mk_number_number_string_dep0_term op (Lm_num.num_of_int start.pos_cnum) (Lm_num.num_of_int finish.pos_cnum) name t
 
+   let mk_loc_string_term2 op (start, finish) name t1 t2 =
+      mk_number_number_string_dep0_dep0_term op (Lm_num.num_of_int start.pos_cnum) (Lm_num.num_of_int finish.pos_cnum) name t1 t2
+
    (*
     * Make a optional arg.
     *)
@@ -1475,14 +1524,14 @@ struct
       Some t ->
          mk_simple_term some_op [f t]
     | None ->
-         mk_simple_term none_op []
+         none_term
 
    let mk_opt_pair f = function
       Some (t1, t2) ->
          let t1, t2 = f (t1, t2) in
             mk_simple_term some_op [t1; t2]
     | None ->
-         mk_simple_term none_op []
+         none_term
 
    (*
     * Make a term with a string parameter.
@@ -1576,8 +1625,14 @@ struct
    (*
     * Term conversions.
     *)
-   let term_of_res expr_f (loc, name, args) =
-      mk_loc_string_term res_op loc name (mk_xlist_term (List.map expr_f args))
+   let term_of_flag = function
+      Private -> private_term
+    | Public -> public_term
+   
+   let term_of_res expr_f res =
+      mk_loc_string_term2 res_op res.res_loc res.res_name (**)
+         (term_of_flag res.res_flag)
+         (mk_xlist_term (List.map expr_f res.res_args))
 
    let term_of_resources convert res =
       term_of_bindings convert (mk_xlist_term (List.map (term_of_res convert.expr_f) res.item_item)) res.item_bindings
@@ -1821,8 +1876,8 @@ struct
          mk_number_term id_op (Lm_num.num_of_int id)
     | Resource (name, r) ->
          mk_string_dep0_term resource_op name (convert.resource_f r)
-    | Improve { improve_name = name; improve_expr = expr } ->
-         mk_string_dep0_term improve_op name (mk_bnd_expr convert expr)
+    | Improve { improve_name = name; improve_flag = flag; improve_expr = expr } ->
+         mk_string_dep0_dep0_term improve_op name (term_of_flag flag) (mk_bnd_expr convert expr)
     | MLGramUpd (Infix op) ->
          mk_string_term infix_op op
     | MLGramUpd (Suffix op) ->

@@ -176,11 +176,13 @@ doc <:doc<
    to improve and the expression to improve the resource with.
 >>
 declare "resource"[name:s]{'expr : Dform} : Dform
-declare "resource_defs"[name:s]{'res : Dform} : Dform
+declare "resource_defs"[name:s]{'flag : Dform; 'res : Dform} : Dform
 declare "resource"{'inp : Dform; 'outp : Dform; 'expr : Dform} : Dform
-declare "improve"[name:s]{'expr : Dform} : Dform
+declare "improve"[name:s]{'flag : Dform; 'expr : Dform} : Dform
+declare "private" : Dform
+declare "public" : Dform
 doc docoff
-declare "resource_defs"[start:n, finish:n, name:s]{'res : Dform} : Dform
+declare "resource_defs"[start:n, finish:n, name:s]{'flag: Dform; 'res : Dform} : Dform
 
 doc <:doc<
    Infix definitions (like the tacticals @tt[thenT] and @tt[orelseT]) are defined with
@@ -406,14 +408,14 @@ dform res_def_list_df1 : res_def_list{xcons{'a; xnil}} =
 dform res_def_list_df2 : res_def_list{xcons{'a; 'b}} =
    'a keyword[";"] hspace res_def_list{'b}
 
-dform resource_defs_df1 : resource_defs[name:s]{'args} =
-   slot[name:s] " " 'args
+dform resource_defs_df1 : resource_defs[name:s]{'flag; 'args} =
+   'flag " " slot[name:s] " " 'args
 
-dform resource_defs_df1 : resource_defs[name:s]{xnil} =
-   slot[name:s]
+dform resource_defs_df1 : resource_defs[name:s]{'flag; xnil} =
+   'flag " " slot[name:s]
 
-dform resource_defs_dfs : resource_defs[start:n, finish:n, name:s]{'args} =
-   resource_defs[name:s]{'args}
+dform resource_defs_dfs : resource_defs[start:n, finish:n, name:s]{'flag; 'args} =
+   resource_defs[name:s]{'flag; 'args}
 
 dform declare_type_rewrite_df : declare_type_rewrite{'t1; 't2} =
    szone pushm[4]
@@ -660,10 +662,13 @@ dform resource_df : "resource"[name]{"resource"{'inp; 'outp; 'expr}} =
    info["let"] " " info["resource"] `" (" 'inp `", " 'outp `") " resource_name[name:s] " " keyword ["="] hspace
    szone{'expr} ezone popm
 
-dform improve_df : "improve"[name]{'expr} =
+dform improve_df : "improve"[name]{'flag; 'expr} =
    pushm[3] szone
-   info["let"] " " info["resource"] " " resource_name[name:s] " " keyword ["+="] hspace
+   'flag " " info["let"] " " info["resource"] " " resource_name[name:s] " " keyword ["+="] hspace
    szone{'expr} ezone popm
+
+dform public_df : "public" = info["public"]
+dform private_df : "public" = info["private"]
 
 dform infix_df : "infix"[name:s] =
    info["infix"] " " slot[name:s]

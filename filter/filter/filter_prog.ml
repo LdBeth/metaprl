@@ -10,7 +10,8 @@
  * See the file doc/htmlman/default.html or visit http://metaprl.org/
  * for more information.
  *
- * Copyright (C) 1998 Jason Hickey, Cornell University
+ * Copyright (C) 1998-2006 MetaPRL Group, Cornell University and California
+ * Institute of Technology
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -43,6 +44,7 @@ open Refiner.Refiner.TermTy
 open Refiner.Refiner.Rewrite
 open Refiner.Refiner.RefineError
 open Precedence
+open Mp_resource
 
 open Filter_type
 open Filter_util
@@ -722,13 +724,17 @@ let find_res proc loc name =
       Not_found ->
          Stdpp.raise_with_loc loc (Failure ("Attempted to use undeclared resource " ^ name))
 
-let impr_resource proc _loc name expr =
-   let ctyp, fqn = find_res proc _loc name in
-      <:expr< Mp_resource.improve $str:fqn$ (Obj.repr ( $expr$ : $ctyp$ )) >>
+let flag_expr _loc = function
+   Private -> <:expr< Mp_resource.Private >>
+ | Public -> <:expr< Mp_resource.Public >>
 
-let impr_resource_list proc _loc name expr =
+let impr_resource proc _loc flag name expr =
    let ctyp, fqn = find_res proc _loc name in
-      <:expr< Mp_resource.improve_list $str:fqn$ (Obj.magic ( $expr$ : list $ctyp$ )) >>
+      <:expr< Mp_resource.improve $flag_expr _loc flag$ $str:fqn$ (Obj.repr ( $expr$ : $ctyp$ )) >>
+
+let impr_resource_list proc _loc flag name expr =
+   let ctyp, fqn = find_res proc _loc name in
+      <:expr< Mp_resource.improve_list $flag_expr _loc flag$ $str:fqn$ (Obj.magic ( $expr$ : list $ctyp$ )) >>
 
 let rec mk_string_list_expr _loc = function
    [] ->
@@ -761,7 +767,7 @@ let expr_of_bnd_expr proc _loc expr =
 
 let impr_toploop proc _loc name (expr,texpr) =
    let expr = <:expr< ($str:proc.imp_name$, $str: name$, $expr$, $texpr$) >> in
-      <:str_item< ($impr_resource proc _loc "toploop" expr$) >>
+      <:str_item< ($impr_resource proc _loc Public "toploop" expr$) >>
 
 (*
  * This is a little bogus, but we add rewrites automatically to the
@@ -941,10 +947,10 @@ let define_rewrite_resources proc _loc name redex contractum assums addrs params
    if resources.item_item = [] then
       <:expr< () >>
    else
-   let define_resource (_loc, name', args) =
+   let define_resource {res_loc = _loc; res_name = name'; res_flag = flag; res_args = args} =
       let input, _ = find_res proc _loc name' in
       let processor = apply_annotation_processor _loc <:expr< $lid:"process_" ^ name' ^ "_resource_rw_annotation"$ >> args in
-         impr_resource_list proc _loc name' <:expr<
+         impr_resource_list proc _loc flag name' <:expr<
             ($processor$ $str:name$ : Top_resource.named_rw_annotation_processor $input$)
                $redex$ $contractum$ $assums$ $addrs$ $params$ $expr_of_loc _loc$ $name_id_expr$
          >>
@@ -1154,10 +1160,10 @@ let define_ml_rewrite proc _loc mlrw rewrite_expr =
  *)
 let define_rule_resources proc _loc name args_id params_id assums_id resources name_rule_expr =
    if resources.item_item = [] then <:expr< () >> else
-   let define_resource (_loc, name', args) =
+   let define_resource {res_loc = _loc; res_name = name'; res_flag = flag; res_args = args} =
       let input, _ = find_res proc _loc name' in
       let processor = apply_annotation_processor _loc <:expr< $lid:"process_" ^ name' ^ "_resource_annotation"$ >> args in
-         impr_resource_list proc _loc name' <:expr<
+         impr_resource_list proc _loc flag name' <:expr<
             ($processor$ $str:name$ : Top_resource.named_annotation_processor $input$)
                $lid:args_id$ $lid:params_id$ $lid:assums_id$ $expr_of_loc _loc$ $name_rule_expr$
          >>
@@ -1406,13 +1412,13 @@ let rec is_list_expr = function
       is_list_expr tail
  | _ -> false
 
-let improve_resource proc _loc { improve_name = name; improve_expr = expr } =
+let improve_resource proc _loc { improve_name = name; improve_flag = flag; improve_expr = expr } =
    let expr' = expr_of_bnd_expr proc _loc expr in
    let improve_expr =
       if is_list_expr expr.item_item then
-         impr_resource_list proc _loc name expr'
+         impr_resource_list proc _loc flag name expr'
       else
-         impr_resource proc _loc name expr'
+         impr_resource proc _loc flag name expr'
    in
       [<:str_item< ($improve_expr$) >> ]
 

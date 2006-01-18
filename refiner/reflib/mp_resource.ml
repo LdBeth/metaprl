@@ -56,9 +56,13 @@ module Table = StringMTable
  * TYPES                                                                *
  ************************************************************************)
 
+type private_flag =
+   Public  (* Will be inherited by other theories *)
+ | Private (* Will only be visible within the current theory *)
+
 type 'input data_cell =
    DatInclude of string
- | DatData of 'input list (* last added first *)
+ | DatData of private_flag * 'input list (* last added first *)
  | DatBookmark of string
 
 type 'input data =
@@ -131,7 +135,7 @@ type global_state =
      (* A list of DatInclude for all the theories we've seen *)
      mutable top_data    : (string * Obj.t) data;
      (* Theory name -> theory parents *)
-     mutable theory_includes : (string, StringSet.t) Hashtbl.t;
+     mutable theory_includes : (string, StringSet.t * bool) Hashtbl.t;
      (* Bookmark -> bookmark increment *)
      mutable bookmarker : (bookmark, Obj.t increment) Hashtbl.t;
      (* Resource name -> (bookmark -> processed resource) *)
@@ -163,15 +167,15 @@ let local_state =
      names = StringSet.empty;
    }
 
-let improve name (data:'input) =
+let improve pvt name (data:'input) =
    match local_state.data with
-      (DatData l_data) :: l_tail ->
-         local_state.data <- DatData ((name,data) :: l_data) :: l_tail
+      DatData (pvt', l_data) :: l_tail when pvt = pvt' ->
+         local_state.data <- DatData (pvt, (name,data) :: l_data) :: l_tail
     | l_data ->
-         local_state.data <- DatData [name, data] :: l_data
+         local_state.data <- DatData (pvt, [name, data]) :: l_data
 
-let improve_list name data =
-   List.iter (improve name) data
+let improve_list pvt name data =
+   List.iter (improve pvt name) data
 
 let bookmark name =
    if StringSet.mem local_state.names name then
@@ -217,9 +221,10 @@ let add_data (name, data) incr =
 let rec collect_include_aux incr includes = function
    [] ->
       incr, includes
- | DatBookmark _ :: tail ->
+ | DatBookmark _ :: tail
+ | DatData(Private, _) :: tail ->
       collect_include_aux incr includes tail
- | DatData data :: tail ->
+ | DatData(Public, data) :: tail ->
       let incr, includes = collect_include_aux incr includes tail in
          List.fold_right add_data data incr, includes
  | DatInclude name :: tail ->
@@ -234,26 +239,26 @@ and collect_include incr name includes =
 
 let rec compute_aux name top_includes = function
    [] ->
-      empty_bookmark, Table.empty, top_includes
+      empty_bookmark, Table.empty, top_includes, false
  | DatInclude name' :: _ when StringSet.mem top_includes name' ->
       raise (Invalid_argument("Mp_resource: theory " ^ name ^ " extends " ^ name' ^ " twice"))
  | [DatInclude name'] ->
       if not (Hashtbl.mem state.theory_includes name') then compute_data name';
-      let includes = Hashtbl.find state.theory_includes name' in
+      let includes, has_pvts = Hashtbl.find state.theory_includes name' in
       let top_includes' = StringSet.add top_includes name' in
-      if StringSet.intersectp includes top_includes then
+      if has_pvts || StringSet.intersectp includes top_includes then
          (* Can not take theory as a whole, have to process its data *)
          (* XXX: Could be made somewhat more efficient *)
          let incr, includes = collect_include Table.empty name' top_includes' in
-         empty_bookmark, incr, includes
+         empty_bookmark, incr, includes, false
       else
          (* Take theory as a whole *)
-         (theory_bookmark name'), Table.empty, (StringSet.union top_includes' includes)
- | DatData data :: tail ->
-      let bookmark, incr , includes = compute_aux name top_includes tail in
-      bookmark, List.fold_right add_data data incr, includes
+         (theory_bookmark name'), Table.empty, (StringSet.union top_includes' includes), false
+ | DatData (pvt, data) :: tail ->
+      let bookmark, incr , includes, has_pvts = compute_aux name top_includes tail in
+      bookmark, List.fold_right add_data data incr, includes, (has_pvts || pvt = Private)
  | DatBookmark bk :: tail ->
-      let bookmark, incr, includes = compute_aux name top_includes tail in
+      let bookmark, incr, includes, has_pvts = compute_aux name top_includes tail in
       let bkmrk = (name, bk) in
       if Hashtbl.mem state.bookmarker bkmrk then
          raise (Invalid_argument ("Mp_resource: duplicate bookmark " ^ name ^ "." ^ bk));
@@ -261,17 +266,17 @@ let rec compute_aux name top_includes = function
          inc_bookmark = bookmark;
          inc_increment = incr
       };
-      bkmrk, Table.empty, includes
+      bkmrk, Table.empty, includes, has_pvts
   | DatInclude name' :: tail ->
-      let bookmark, incr, includes = compute_aux name (StringSet.add top_includes name') tail in
+      let bookmark, incr, includes, has_pvts = compute_aux name (StringSet.add top_includes name') tail in
       let incr, includes = collect_include incr name' includes in
-      bookmark, incr, includes
+         bookmark, incr, includes, has_pvts
 
 and compute_data name =
-   let bookmark, incr, includes =
+   let bookmark, incr, includes, has_pvts =
       compute_aux name StringSet.empty (Hashtbl.find state.raw_data name)
    in
-      Hashtbl.add state.theory_includes name includes;
+      Hashtbl.add state.theory_includes name (includes, has_pvts);
       Hashtbl.add state.bookmarker (theory_bookmark name) {
          inc_bookmark = bookmark;
          inc_increment = incr
