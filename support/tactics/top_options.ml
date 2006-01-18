@@ -105,17 +105,14 @@ let rec test_rule_labels options labels =
       (opname, OptionAllow) :: options ->
          OpnameSet.mem labels opname || test_rule_labels options labels
     | (opname, OptionExclude) :: options ->
-         if OpnameSet.mem labels opname then
-            false
-         else
-            test_rule_labels options labels
-    | (_, OptionIgnore) :: options ->
-         test_rule_labels options labels
+         not (OpnameSet.mem labels opname) && test_rule_labels options labels
+    | (opname, OptionIgnore) :: options ->
+         test_rule_labels options (OpnameSet.remove labels opname)
     | [] ->
          true
 
 let rec rule_labels_are_allowed options labels =
-   OpnameSet.is_empty labels || options = [] || test_rule_labels options labels
+   OpnameSet.is_empty labels || test_rule_labels options labels
 
 let rule_labels_are_allowed_arg p labels =
    rule_labels_are_allowed (get_options p) labels

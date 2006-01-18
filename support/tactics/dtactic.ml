@@ -267,7 +267,7 @@ let in_auto p =
          false
 
 let extract_intro_data =
-   let select_intro p in_auto_type (_, sel, options, auto_type, _) =
+   let select_intro p options in_auto_type (_, sel, opts, auto_type, _) =
       (match in_auto_type, auto_type with
           Some 0, AutoTrivial
         | Some 1, AutoNormal
@@ -287,7 +287,7 @@ let extract_intro_data =
                | None ->
                     false)
       &&
-      (rule_labels_are_allowed_arg p options)
+      (rule_labels_are_allowed options opts)
    in
    let extract (name, _, _, _, tac) =
       if !debug_dtactic then
@@ -296,19 +296,24 @@ let extract_intro_data =
       (fun tbl ->
             funT (fun p ->
                   let t = Sequent.concl p in
+                  let options = Sequent.get_option_args p in
                   let () =
                      if !debug_dtactic then
                         eprintf "Dtactic: intro: lookup %s%t" (SimplePrint.short_string_of_term t) eflush
                   in
                   let tacs =
-                     try lookup_bucket tbl (select_intro p (Sequent.get_int_arg p "d_auto")) t with
+                     try lookup_bucket tbl (select_intro p options (Sequent.get_int_arg p "d_auto")) t with
                         Not_found ->
                            let msg =
                               match get_sel_arg p with
                                  Some _ ->
                                     "dT tactic failed: the select argument may be out of range"
                                | None ->
-                                    "dT tactic failed: the option arguments may not be valid"
+                                    match options with
+                                       _ :: _ ->
+                                          "dT tactic failed: the option arguments may not be valid"
+                                     | [] ->
+                                          "dT tactic failed"
                            in
                               raise (RefineError ("extract_intro_data", StringTermError (msg, t)))
                   in
