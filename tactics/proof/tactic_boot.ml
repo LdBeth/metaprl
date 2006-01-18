@@ -347,7 +347,7 @@ struct
    let main_loop () =
       ThreadRefiner.main_loop (get_remote_server ())
 
-   let create () sentinal goal bookmark =
+   let create sentinal goal bookmark =
       { ref_goal = goal;
         ref_label = "main";
         ref_attributes = empty_attribute;

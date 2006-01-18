@@ -232,7 +232,7 @@ sig
    (*
     * Build an initial argument for a proof.
     *)
-   val create : unit -> sentinal -> msequent -> global_resource -> tactic_arg
+   val create : sentinal -> msequent -> global_resource -> tactic_arg
 
    (*
     * Conversion between general forms and optimized forms.
