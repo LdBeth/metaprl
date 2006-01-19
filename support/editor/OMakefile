@@ -1,0 +1,89 @@
+#
+# MetaPRL editor.
+#
+OCAMLINCLUDES[] +=
+   $(dir $(ROOT)/$(ENSEMBLE_DIR))
+   ../shell
+   ../tactics
+
+OCAML_LIB_FLAGS += -linkall
+
+# Name of main libraries
+MP = libmp
+
+########################################################################
+# LOCAL FILES
+########################################################################
+
+# Common files
+MLZFILES[] =
+    proof_sig
+    display_sig
+    nuprl_sig
+
+RUNFILES[] =
+    mp_version
+    shell_mp
+    shell_p4
+    nuprl_sig
+    nuprl_eval
+    nuprl_jprover
+    nuprl_run
+    mp
+
+TOPFILES[] =
+    mp_version
+    shell_mp
+    nuprl_sig
+    nuprl_eval
+    nuprl_jprover
+    nuprl_run
+    mp_top
+
+########################################################################
+# Generate the mp_version.ml file
+#
+make_mp_version$(EXE): make_mp_version.ml
+    $(OCAMLC) $(OCAMLCFLAGS) -o $@ unix.cma $<
+
+if $(and $(file-exists $(ROOT)/.svn/entries), $(file-exists $(ROOT)/libmojave/.svn/entries), $(where svnversion))
+    #
+    # XXX: BUG: nogin: for some reason, extracting dependencies gives an empty set here :-(
+    #
+    digest-deps() =
+        # dirs = $(dependencies $(MLDEBUG_PATH))
+        FS=$'"'
+        awk($(MLDEBUG_PATH))
+        case $'^DEBUGINCLUDES='
+            dirs = $(filter-out -I, $(array $2))
+            export
+        case $'^-I'
+            dirs = $(filter-out -I, $(array $0))
+            export
+        return $(digest-optional $(addsuffix /.svn/entries, $(dirs)))
+
+    svnversion.txt: $(MLDEBUG_PATH) :value: $(digest-deps)
+        svnversion $(ROOT) > $@
+
+else
+    svnversion.txt:
+        fprintln($@, unknown)
+
+mp_version.ml: make_mp_version$(EXE) svnversion.txt
+    ./make_mp_version -version $(MP_VERSION) -refiner $(REFINER) -terms $(TERMS) > $@
+
+LocalOCamlGeneratedFiles(mp_version.ml)
+
+########################################################################
+# Libraries
+#
+OCamlLibrary($(MP)run, $(RUNFILES))
+OCamlLibrary($(MP)top, $(TOPFILES))
+OCamlLibraryCopy($(MPINSTALL), $(LIB), $(MP)run, $(set $(RUNFILES) $(TOPFILES)))
+OCamlLibraryCopy($(MPINSTALL), $(LIB), $(MP)top, $(EMPTY))
+
+#
+# Clean up
+#
+clean:
+    $(CLEAN) mp_version.ml make_mp_version$(EXE) svnversion.txt

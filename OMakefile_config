@@ -1,0 +1,73 @@
+
+########################################################################
+# Configuration section
+#
+
+#
+# Configuration defaults
+#
+include mk/defaults
+
+#
+# Configuration file
+#
+include mk/make_config
+
+#
+# Include config if it exist
+#
+if $(file-exists mk/config)
+    include mk/config
+    export
+else
+    protected.fullname = $(MakeConfig mk/config)
+    eprintln($"!!!!! A new config file $(fullname) was created for you.
+!!!!! In that file, we filled in a number of default values for you.
+!!!!! In particular, by default only the following theories will be compiled in:
+!!!!!     $(THEORIES)
+!!!!! You may want to edit the $(fullname) file before continuing.
+!!!!!
+!!!!! After you are done, run omake again to continue the build process.")
+    exit(0)
+
+#
+# Things that can not be enabled on Win32.
+#
+if $(equal $(OSTYPE), Win32)
+    READLINE_ENABLED = false
+    NCURSES_ENABLED = false
+    NATIVE_PROFILING_ENABLED = false
+    export
+
+#
+# Canonize boolean flags
+# This helps in keeping mk/config nice, but can be omitted.
+#
+Bool(arg) =
+    return $(not $(not $(arg)))
+
+SSL_ENABLED = $(Bool $(SSL_ENABLED))
+THREADS_ENABLED = $(Bool $(THREADS_ENABLED))
+READLINE_ENABLED = $(and $(READLINE_ENABLED), $(NCURSES_ENABLED))
+NCURSES_ENABLED = $(Bool $(NCURSES_ENABLED))
+NATIVE_PROFILING_ENABLED = $(Bool $(NATIVE_PROFILING_ENABLED))
+TESTS_ENABLED = $(Bool $(TESTS_ENABLED))
+SLOPPY_DEPENDENCIES = $(Bool $(SLOPPY_DEPENDENCIES))
+MPRUN_ENABLED = $(Bool $(MPRUN_ENABLED))
+
+if $(equal $(COMPILATION_MODE), bytecode)
+    COMPILATION_MODE = byte
+    export
+
+#
+# Create a fresh copy if it is out-of-date
+#
+.INCLUDE: mk/config: mk/make_config
+    section eval
+       MakeConfig(mk/config)
+
+#
+# Local config
+#
+.INCLUDE: mk/config.local
+    $(CP) $(file mk/config.local.empty) $(file mk/config.local)

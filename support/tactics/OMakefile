@@ -27,6 +27,8 @@ $(THEORIES_PATH): $(CWD)
 
 OCamlLibrary(theory, $(MPFILES))
 
+InstallCmizFiles($(filter-out $(MLFILES), $(MPFILES)))
+
 #
 # Clean up
 #

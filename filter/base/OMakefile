@@ -3,8 +3,6 @@
 #
 include Files
 
-OCamlLibraryInstall($(MPINSTALL), $(LIB), filterbase, $(BASE_FILES))
-
 ########################################################################
 # Magic numbers
 #

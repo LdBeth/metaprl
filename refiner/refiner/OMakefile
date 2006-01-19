@@ -6,8 +6,6 @@ OCAMLINCLUDES[] +=
     ../term_ds
     ../rewrite
 
-OCamlLibraryInstall(all, $(LIB), refine, $(REFINER_FILES))
-
 #
 # Clean up
 #

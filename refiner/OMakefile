@@ -34,10 +34,7 @@ FILES[] =
     $(REFINER_FILES)
     $(REFLIB_FILES)
 
-OCamlLibrary(refiner, $(FILES))
-OCamlLibraryCopy($(MPINSTALL), $(LIB), refiner, $(EMPTY))
-
-InstallMliFiles($(FILES))
+OCamlLibraryInstall($(MPINSTALL), $(LIB), refiner, $(FILES))
 
 #
 # Subdirectories

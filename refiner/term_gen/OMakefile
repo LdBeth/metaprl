@@ -4,7 +4,5 @@ OCAMLINCLUDES[] +=
     ../refbase
     ../refsig
 
-OCamlLibraryInstall(all, $(LIB), termgen, $(TERM_GEN_FILES))
-
 clean:
     $(CLEAN)

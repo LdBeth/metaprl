@@ -1,0 +1,51 @@
+#
+# Configure Ensemble
+#
+ENS_PORT=7474
+ENS_MODES="DEERING:UDP"
+ENS_DEERING_PORT=7472
+ENS_GOSSIP_PORT=7470
+ENS_GOSSIP_HOSTS=tulare
+ENS_ID=$USER
+ENS_DOMAIN_PORT=7473
+
+export ENS_PORT ENS_MODES ENS_DEERING_PORT ENS_GOSSIP_PORT ENS_GOSSIP_HOSTS ENS_ID ENS_DOMAIN_PORT
+
+#
+# Root directory is two directories up
+#
+export MP_ROOT=../..
+
+#
+# TPTP libraries
+#
+TPTP=$MP_ROOT/../TPTP
+if [ -d $TPTP ]; then
+   MP_TPTP=`echo . $TPTP $TPTP/Problems/* | sed -e 's, ,:,g'`
+   export MP_TPTP
+fi
+export TPTP
+
+#
+# Use the local copy of the library
+#
+MPLIB=$MP_ROOT/lib
+export MPLIB
+
+#
+# Work in Unicode locale.
+#
+LC_ALL=en_US.UTF-8
+export LC_ALL
+
+#
+# Camlp4 directory
+#
+if [ -z "$CAMLP4LIB" ]; then
+   CAMLP4LIB=`ocamlc -where`/camlp4
+fi
+
+. ./mldebug.dir
+. ./theories.dir
+
+export INCLUDES DEBUGINCLUDES

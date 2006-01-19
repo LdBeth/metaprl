@@ -27,11 +27,7 @@ SUB_FILES[] =
     $(addprefix base/, $(BASE_FILES))
     filter/term_grammar
 
-OCamlLibrary($(MAINLIB), $(SUB_FILES))
-OCamlLibraryCopy($(MPINSTALL), $(LIB), $(MAINLIB), $(EMPTY))
-
-InstallMliFiles($(SUB_FILES))
-InstallLibFiles($(MAINLIB))
+OCamlLibraryInstall($(MPINSTALL), $(LIB), $(MAINLIB), $(SUB_FILES))
 
 ########################################################################
 # MAIN PROGRAMS
@@ -48,13 +44,13 @@ if $(NATIVE_PROFILING_ENABLED)
 # Other libraries that we always want to include
 #
 OCAML_CLIBS[] =
-   $(file $(ROOT)/clib/clib)
-   $(LIBMOJAVE_CLIB)
+   $(LIB)/clib
+   $(LIB)/liblmcutil
 
 OCAML_OTHER_LIBS += str
 
 OCAML_LIBS[] =
-   $(LIBMOJAVE)
+   $(LIB)/lm
    $(file $(ROOT)/mllib/util)
 
 #
@@ -113,8 +109,6 @@ section
 
     LIB_PROGS = camlp4n camlp4o
 
-    InstallLibExeFiles($(LIB_PROGS))
-
     export LIB_PROGS
 
 section
@@ -152,19 +146,15 @@ section
 
     BIN_PROGS =
 
-    InstallBinExeFiles($(BIN_PROGS))
-
     export BIN_PROGS
 
 #
 # Default targets
 #
 PROGS = $(LIB_PROGS) $(BIN_PROGS)
-INSTALL = $(addprefix $(LIB)/, $(LIB_PROGS)) $(addprefix $(BIN)/, $(BIN_PROGS))
 
 all: $(PROGS)
 opt: $(PROGS)
-install: $(INSTALL)
 
 #
 # Clean up

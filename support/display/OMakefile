@@ -8,6 +8,8 @@ include Files
 
 MPFILES = $(DISPLAY_FILES)
 
+InstallCmizFiles($(MPFILES))
+
 Theory($(MPFILES))
 
 #

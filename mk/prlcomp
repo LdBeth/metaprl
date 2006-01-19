@@ -5,11 +5,11 @@
 
 Shell. +=
    prlcomp(argv) =
-      setenv (MP_ROOT, $(ROOT))
-      setenv (MPLIB, $(LIB))
-      setenv (MP_GROUP, $(THEORYNAME))
-      setenv (MP_DESCR, $(THEORYDESCR))
-      setenv (MP_INCLUDE, $(concat :, $(OCAMLINCLUDES)))
+      setenv(MP_ROOT, $(ROOT))
+      setenv(MPLIB, $(LIB))
+      setenv(MP_GROUP, $(THEORYNAME))
+      setenv(MP_DESCR, $(THEORYDESCR))
+      setenv(MP_INCLUDE, $(concat :, $(OCAMLINCLUDES)))
       code=$(shell-code $(argv))
       if $(eq $(code), 0)
          return 1

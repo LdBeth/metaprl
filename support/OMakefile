@@ -17,16 +17,25 @@ FILES[] =
     $(TACTICS_FILES)
     $(DOC_FILES)
 
-OCamlLibrary(support, $(FILES))
-OCamlLibraryCopy($(MPINSTALL), $(LIB), support, $(EMPTY))
+OCAML_LIB_FLAGS += -linkall
 
-InstallMliFiles($(FILES))
-InstallLibFiles(support)
+OCamlLibraryInstall($(MPINSTALL), $(LIB), support, $(FILES))
+
+#
+# Install .cmiz files
+#
+InstallCmizFiles(files) =
+    files = $(addprefix $(LIB)/, $(addsuffix .cmiz, $(files)))
+
+    $(files): $(LIB)/%.cmiz: %.cmiz
+        $(symlink $<, $@)
+
+    $(MPINSTALL): $(files)
 
 #
 # Subdirectories
 #
-.SUBDIRS: display shell tactics doc
+.SUBDIRS: display shell tactics doc editor
 
 #
 # Clean up

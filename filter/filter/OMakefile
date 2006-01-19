@@ -5,25 +5,7 @@ OCAMLINCLUDES[] +=
     ../base
 
 #
-# Library files
-#
-FILTER_FILES[] =
-    term_grammar
-    filter_patt
-    filter_prog
-    filter_parse
-    filter_main
-    filter_bin
-    filter_convert
-    filter_merge_prla
-    prlcomp
-
-OCamlLibraryInstall($(MPINSTALL), $(LIB), filterfilter, $(FILTER_FILES))
-
-#
 # Clean up
 #
 clean:
     $(CLEAN)
-
-all: filterfilter$(LIB_SUFFIX)

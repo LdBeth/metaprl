@@ -10,6 +10,8 @@ include Files
 
 MPFILES = $(DOC_FILES)
 
+InstallCmizFiles($(MPFILES))
+
 Theory($(MPFILES))
 
 #

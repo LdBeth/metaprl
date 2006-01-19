@@ -1,0 +1,362 @@
+########################################################################
+# General config
+#
+
+#
+# Simplify the machine name
+#
+ARCH = $(MACHINE)
+
+if $(equal $(ARCH), Power Macintosh)
+    ARCH = ppc
+    export
+
+if $(mem $(ARCH), x86 i386 i486 i586 i686)
+    ARCH = x86
+    export
+
+#
+# Default compile options are to be quiet
+# and print a progress bar.
+#
+if $(not $(defined VERBOSE))
+    VERBOSE = false
+    export
+
+if $(not $(VERBOSE))
+    OMakeFlags(-S --progress)
+    export
+
+#
+# omake options
+#
+ABORT_ON_DEPENDENCY_ERRORS = true
+OCAMLDEPFLAGS =
+USE_OCAMLFIND = false
+SCANNER_MODE = error
+
+########################################################################
+# OS-specific config.
+#
+if $(equal $(OSTYPE), Win32)
+   #
+   # Compile C files with threads
+   #
+   CFLAGS += /MT
+
+   #
+   # CAMLLIB should be set in the environment
+   #
+   CAMLLIB = $(dir $(string $(getenv OCAMLLIB, $(CAMLLIB_DEFAULT))))
+   CAMLP4LIB = $(dir $(CAMLLIB)/camlp4)
+   export
+
+else
+   #
+   # Location of OCaml root
+   #
+   if $(not $(defined CAMLLIB))
+      CAMLLIB = $(dir $(getenv CAMLLIB, $(getenv OCAMLLIB, $(CAMLLIB_DEFAULT))))
+      export
+
+   if $(not $(defined CAMLP4LIB))
+      CAMLP4LIB = $(dir $(getenv CAMLP4LIB, $(CAMLLIB)/camlp4))
+      export
+
+   export
+
+########################################################################
+# Config cleaning
+#
+if $(not $(defined CAMLP4R))
+   CAMLP4R = camlp4r$(EXE)
+   export
+
+if $(not $(defined CAMLP4O))
+   CAMLP4O = camlp4o$(EXE)
+   export
+
+#
+# Inline more aggressively
+#
+if $(not $(NATIVE_PROFILING_ENABLED))
+   OCAMLOPTFLAGS += -inline $(OCAMLOPT_INLINE)
+   export
+
+#
+# Do not compile MetaPRL with threads.
+#
+THREADSLIB[] =
+OPTTHREADSLIB[] =
+OCAML_OTHER_LIBS += unix
+
+if $(THREADS_ENABLED)
+    OCAMLFLAGS += -thread
+    OCAML_OTHER_LIBS += threads
+    THREADSLIB = $(CAMLLIB)/threads/threads.cma
+    OPTTHREADSLIB = $(CAMLLIB)/threads/threads.cmxa
+    export
+
+#
+# For native code profiling, we need both versions of the filter libraries.
+#
+if $(NATIVE_PROFILING_ENABLED)
+   COMPILATION_MODE = both
+   OCAMLOPTFLAGS += -p -inline 0
+   CFLAGS += -p -DPROF
+   if $(equal $(NATIVE_PROFILING_ENABLED), compact)
+      OCAMLOPTFLAGS += -compact
+      export
+   export
+
+########################################################################
+# Version and config checking
+#
+CheckVar(name, val, valid) =
+    if $(not $(mem $(val), $(valid)))
+        valid = $(array $(valid))
+        valid = $(concat $', ', $(valid.map $(quote)))
+        eprintln($"""!!! ERROR: The $(name) variable is currently set to an invalid value "$(val)".""")
+        eprintln($"""!!!        Valid values for $(name) are: $(valid).""")
+        eprintln($"""!!!        Please fix it in the mk/config file.""")
+        exit(1)
+
+CheckVar(COMPILATION_MODE, $(COMPILATION_MODE), native byte mixed both)
+
+NATIVE_ENABLED = $(mem $(COMPILATION_MODE), native mixed both)
+BYTE_ENABLED = $(mem $(COMPILATION_MODE), byte mixed both)
+
+if $(file-exists $(CAMLLIB)/../compiler-lib/parsetree.cmi)
+   OCAMLINCLUDES += $(dir $(CAMLLIB)/../compiler-lib)
+   export
+else
+   if $(and $(BYTE_ENABLED) $(not $(file-exists $(CAMLLIB)/parsetree.cmi)))
+      eprintln(!!! The file $(CAMLLIB)/parsetree.cmi does not exist \(or is not readable\))
+      eprintln(!!!)
+      eprintln(!!! Please consult doc/htmlman/mp-install.html \(http://metaprl.org/install.html\))
+      eprintln(!!! for instructions on compiling OCaml and setting the CAMLLIB variable)
+      eprintln(!!!)
+      exit(1)
+
+if $(BYTE_ENABLED)
+   if $(not $(and $(file-exists $(CAMLP4LIB)/camlp4.cma), $(file-exists $(CAMLP4LIB)/pa_op.cmo)))
+      eprintln(!!! One of the files)
+      eprintln(!!!    $(CAMLP4LIB)/camlp4.cma)
+      eprintln(!!!    $(CAMLP4LIB)/pa_op.cmo)
+      eprintln(!!! does not exist \(or is not readable\))
+      eprintln(!!!)
+      eprintln(!!! Please consult doc/htmlman/mp-install.html \(http://metaprl.org/install.html\))
+      eprintln(!!! for instructions on compiling OCaml and setting the CAMLP4LIB variable)
+      eprintln(!!!)
+      exit(1)
+
+if $(NATIVE_ENABLED)
+   if $(not $(and $(file-exists $(CAMLP4LIB)/camlp4.cmxa), $(file-exists $(CAMLP4LIB)/pa_op.cmx)))
+      eprintln(!!! One of the files)
+      eprintln(!!!    $(CAMLP4LIB)/camlp4.cmxa)
+      eprintln(!!!    $(CAMLP4LIB)/pa_op.cmx)
+      eprintln(!!! does not exist \(or is not readable\))
+      eprintln(!!!)
+      eprintln(!!! Please consult doc/htmlman/mp-install.html \(http://metaprl.org/install.html\))
+      eprintln(!!! for instructions on compiling OCaml and setting the CAMLP4LIB variable)
+      eprintln(!!!)
+      exit(1)
+
+CheckVar(TERMS, $(TERMS), std ds both)
+CheckVar(REFINER, $(REFINER), SIMPLE VERBOSE)
+CheckVar(SEQ_SET, $(SEQ_SET), Lm_array Lm_splay)
+CheckVar(DEFAULT_UI, $(DEFAULT_UI), browser cli)
+
+if $(equal $(OSTYPE), Win32)
+    if $(SSL_ENABLED)
+        if $(not $(and $(file-exists $(SSL_LIB_WIN32)/ssleay32.lib), $(file-exists $(SSL_LIB_WIN32)/libeay32.lib), $(file-exists $(SSL_INC_WIN32)/openssl/ssl.h)))
+            eprintln(!!! One of the files)
+            eprintln(!!!    $(SSL_LIB_WIN32)/ssleay32.lib)
+            eprintln(!!!    $(SSL_LIB_WIN32)/libeay32.lib)
+            eprintln(!!!    $(SSL_INC_WIN32)/openssl/ssl.h)
+            eprintln(!!! does not exist \(or is not readable\))
+            eprintln(!!!)
+            eprintln(!!! Please either:)
+            eprintln(!!!  - Make sure your OpenSSL installation is complete and)
+            eprintln(!!!    the SSL_LIB_WIN32 and SSL_INC_WIN32 variables in mk/config.local)
+            eprintln(!!!    point to the correct locations)
+            eprintln(!!!  - Set SSL_ENABLED to false in mk/config)
+            eprintln(!!!    Note that SSL is currently required for the browser interface to work)
+
+#
+# Different version files
+#
+OCAMLC_VERSION     = $(file .version.ocamlc)
+OCAMLOPT_VERSION   = $(file .version.ocamlopt)
+CAMLP4_VERSION     = $(file .version.camlp4)
+CAMLP4R_VERSION    = $(file .version.camlp4r)
+CAMLP4O_VERSION    = $(file .version.camlp4o)
+OCAMLMKTOP_VERSION = $(file .version.ocamlmktop)
+
+#
+# Generate the rule for version checking.
+#
+VersionCheck(versionfile, command) =
+    fullcommand = $(which $(command))
+
+    $(versionfile): $(fullcommand)
+        section eval
+            version = $(concat _, $(shell $(command) -version))
+            if $(mem $(version), $(CAML_VERSIONS))
+                fd = $(fopen $(versionfile), w)
+                fprintln($(fd), $(version))
+                close($(fd))
+            else
+                eprintln(!!! Wrong CAML version.)
+                eprintln(!!! $(command) -version produced the version string $(version))
+                eprintln(!!! You need this version to be compatible with MetaPRL\,)
+                eprintln(!!! which is only known to work with versions $(CAML_VERSIONS).)
+                eprintln(!!! If you believe that this list of versions is incorrect\, edit)
+                eprintln(!!! the CAML_VERSIONS variable in the mk/defaults file.)
+                exit(1)
+
+VersionCheck($(OCAMLC_VERSION),     $(OCAMLC))
+VersionCheck($(OCAMLOPT_VERSION),   $(OCAMLOPT))
+VersionCheck($(OCAMLMKTOP_VERSION), $(OCAMLMKTOP))
+VersionCheck($(CAMLP4_VERSION),     $(CAMLP4))
+VersionCheck($(CAMLP4R_VERSION),    $(CAMLP4R))
+VersionCheck($(CAMLP4O_VERSION),    $(CAMLP4O))
+
+#
+# XXX: This is here to make sure that Camlp4 3.08 acts the same way as 3.09
+# (in 3.08 the default value is loc, but in 3.09 it's _loc).
+#
+LOC = -loc _loc
+
+%.cmo %.cmi: $(OCAMLC_VERSION)
+%.cmx: $(OCAMLOPT_VERSION)
+
+########################################################################
+# MetaPRL-specific config cleaning
+#
+
+#
+# Library suffix
+#
+if $(NATIVE_ENABLED)
+   LIB_SUFFIX = .cmxa
+   OBJ_SUFFIX = .opt
+   export
+else
+   LIB_SUFFIX = .cma
+   OBJ_SUFFIX = .top
+   export
+
+#
+# Whether to compile a distributed version or not
+#
+if $(equal $(ENSROOT), undefined)
+   ENSEMBLE_DIR = tactics/null
+   export
+else
+   ENSEMBLE_DIR = tactics/ensemble
+   export
+
+#
+# Include the generic caml library
+#
+INCLUDES += $(CAMLLIB)
+
+#
+# Generic phony targets
+#
+.PHONY: all install clean realclean depend tex doc
+
+#
+# Phony target for installing libraries
+#
+INSTALL_INTERFACES = true
+MPINSTALL = mp.install
+LMINSTALL = $(MPINSTALL)
+
+.PHONY: $(MPINSTALL)
+
+if $(SSL_ENABLED)
+    if $(equal $(OSTYPE), Win32)
+        OCAML_LINK_FLAGS += -cclib $(SSL_LIB_WIN32)/ssleay32.lib -cclib $(SSL_LIB_WIN32)/libeay32.lib
+        CFLAGS += /DSSL_ENABLED
+        INCLUDES += $(SSL_INC_WIN32)
+        export
+    else
+        OCAML_LINK_FLAGS += -cclib -lcrypto -cclib -lssl
+        CFLAGS += -DSSL_ENABLED
+        INCLUDES += /usr/kerberos/include
+        export
+    export
+
+if $(READLINE_ENABLED)
+    CFLAGS += \
+        -DREADLINE\
+        -DRL_COMPLETION_MATCHES=rl_completion_matches\
+        -DRL_CP_TYPE=rl_compentry_func_t\
+        -DRL_CPP_TYPE=rl_completion_func_t
+    OCAML_LINK_FLAGS += -cclib -lreadline
+    export
+
+if $(NCURSES_ENABLED)
+    CFLAGS += -DNCURSES
+    OCAML_LINK_FLAGS += -cclib -lncurses
+    export
+
+if $(not $(defined MP_DEBUG))
+    MP_DEBUG = $(getenv MP_DEBUG, $(EMPTY))
+    export
+
+setenv(MP_DEBUG, $(MP_DEBUG))
+
+########################################################################
+# .PHONY targets that depend on all the subdirectories.
+#
+
+#
+# Dependencies are collected in these files
+#
+THEORIES_PATH = $(file $(EDITOR)/theories.dir)
+MLDEBUG_PATH  = $(file $(EDITOR)/mldebug.dir)
+
+$(THEORIES_PATH):
+    section eval
+        deps = $(dependencies $@)
+        deps = $(mapprefix -I, $(in $(EDITOR), $(deps)))
+        if $(equal $(OSTYPE), Win32)
+            fprintln($@, $(string $(deps)))
+        else
+            fprintln($@, $'INCLUDES='$(quote-argv $(deps)))
+
+$(MLDEBUG_PATH):
+    section eval
+        deps = $(project-directories) $(CAMLLIB) $(CAMLP4LIB)
+        deps = $(mapprefix -I, $(in $(EDITOR), $(deps)))
+        if $(equal $(OSTYPE), Win32)
+            fprintln($@, $(string $(deps)))
+        else
+            fprintln($@, $'DEBUGINCLUDES='$(quote-argv $(deps)))
+
+########################################################################
+# Default clean command line
+#
+
+MLZFILES =
+MLPFILES =
+CLEAN = $`(RM) $`(file *.opt *.run *.o *.obj *.lib *.cm* *.a *~ .*~ .\#* *.ppo *.p4i *.p4o .version.* *.omc $`(addsuffix .ml, $(MLZFILES)) $`(addsuffix .mli, $(MLZFILES)) $`(addsuffix .ml, $(MLPFILES)))
+
+clean:
+    $(CLEAN) $(file bin/ocamldep$(EXE) lib/camlp4* bin/convert$(EXE) bin/proxyedit$(EXE) bin/genmagic$(EXE) bin/gen_int_bench$(EXE) lib/*.cm* lib/*.ml* lib/*.txt lib/*.dat lib/*.a lib/macrop* bin/prlc* lib/*.html lib/*.js lib/*.css lib/*.gif lib/*.pem lib/metaprl-ssl.config mk/*.omc) $(THEORIES_PATH) $(MLDEBUG_PATH)
+
+if $(not $(defined FORCE_REALCLEAN))
+    FORCE_REALCLEAN = false
+    export
+
+realclean: clean
+    # XXX: HACK: What we really want is
+    #    -$`(RM) $(find -name *.prlb)
+    # But this is way too slow because of http://bugzilla.metaprl.org/show_bug.cgi?id=533
+    -$`(RM) $(file theories/*/*.prlb theories/*/*/*.prlb theories/*/*/*/*.prlb theories/*/*/*/*/*.prlb)
+    # cvs_realclean $(if $(FORCE_REALCLEAN), -f) -i .omakedb -i .omakedb.lock -i mk/config -i mk/config.local
+    println(The realclean target is not yet reimplemented for subversion)
+    exit 1

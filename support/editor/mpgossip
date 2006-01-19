@@ -1,0 +1,13 @@
+#!/bin/sh
+
+chdir `dirname $0`
+
+#
+# Configure Ensemble
+#
+. ./mpconfig
+
+#
+# Run gossip server
+#
+exec $ENSROOT/demo/gossip $*

@@ -8,11 +8,6 @@ OCAMLINCLUDES[] +=
     ../term_ds
 
 #
-# Rewriter library
-#
-OCamlLibraryInstall(all, $(LIB), rewrite, $(REWRITE_FILES))
-
-#
 # Clean up
 #
 clean:

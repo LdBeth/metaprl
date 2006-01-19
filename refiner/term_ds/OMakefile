@@ -7,8 +7,5 @@ OCAMLINCLUDES[] +=
 
 OCAMLFLAGS += -rectypes
 
-OCamlLibraryInstall(all, $(LIB), termds, $(TERM_DS_FILES))
-
 clean:
     $(CLEAN)
-

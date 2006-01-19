@@ -1,0 +1,13 @@
+#!/bin/sh
+
+cd `dirname $0`
+
+#
+# Configuration
+#
+. ./mpconfig
+
+#
+# Start the executable.
+#
+exec ocamldebug $DEBUGINCLUDES ./mp.top $INCLUDES $*

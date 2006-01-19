@@ -18,8 +18,6 @@ ocamldep$(EXT_OBJ) ocamldep.cmx ocamldep.cmo ocamldep.cmi:
 #
 # Phony targets
 #
-install: $(BINDEP)
-
 clean:
     $(CLEAN) *.cm* *~ ocamldep.ml *.o *.exe Makefile.dep ocamldep ocamldep.opt ocamldep.run macropp macroprint
 

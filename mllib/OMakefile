@@ -36,10 +36,10 @@ FILES[] =
 
 # MACROPPOPTS = -D DEBUG_WEAK_MEMO
 
-OCamlLibraryInstall($(MPINSTALL), $(LIB), util, $(FILES))
+OCamlLibraryInstall($(MPINSTALL) lib, $(LIB), util, $(FILES))
 
-InstallMliFiles($(FILES))
-InstallLibFiles(util)
+# InstallMliFiles($(FILES))
+# InstallLibFiles(util)
 
 #
 # Clean up

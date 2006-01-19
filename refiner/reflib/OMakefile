@@ -9,7 +9,5 @@ OCAMLINCLUDES[] +=
     ../term_ds
     ../term_gen
 
-OCamlLibraryInstall(all, $(LIB), reflib, $(REFLIB_FILES))
-
 clean:
     $(CLEAN)

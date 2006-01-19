@@ -1,0 +1,261 @@
+########################################################################
+# Theory building
+#
+
+#
+# Unset NATIVE_ENABLED if we are in the mixed compilation mode.
+#
+NATIVE_ENABLED = $(mem $(COMPILATION_MODE), native both)
+
+#
+# When using native code profiling, no need to build theories to bytecode.
+#
+if $(NATIVE_PROFILING_ENABLED)
+   BYTE_ENABLED = false
+   export
+
+#
+# Commands to compile theory files
+#
+CAMLP4N = $(file $(LIB)/camlp4n$(EXE))
+CAMLP4O = $(file $(LIB)/camlp4o$(EXE))
+CONVERT = $(file $(BIN)/convert$(EXE))
+MPTIME =
+CAMLP4FLAGS[] =
+
+#
+# Other helper files
+#
+declare THEORYDESCR THEORYNAME
+
+include $(MK)/prlcomp
+
+# Dependency analysis uses -prl flag by default
+OCAMLDEPFLAGS += -prl
+
+#
+# Make sure we do not try falling back to an OCaml rule for an .ml without an .mli
+# See also:
+#   http://bugzilla.metaprl.org/show_bug.cgi?id=90
+#   http://bugzilla.metaprl.org/show_bug.cgi?id=420
+#
+%.cmx %.o: %.ml
+   @echo $(quote *** Error: MetaPRL file $(in $(ROOT), $(file $<)) $'does not have
+***        a corresponding' $(in $(ROOT), $(file $*.mli)))
+   exit 1
+
+#
+# For theory files, generate intermediate .ppo files
+#
+%.ppo %.cmoz: %.ml %.cmiz :optional: %.prla :effects: %.prlb :scanner: scan-ocaml-%.ml :value: $(prlc-deps)
+   $(WrapC $(CAMLP4N)) $(CAMLP4FLAGS) -o $*.ppo $*.ml
+
+%.cmi %.cmiz: %.mli :scanner: scan-ocaml-%.mli
+   $(PrlC $(OCAMLC)) $(OCAMLFLAGS) $(OCAMLCFLAGS) $(OCAMLPPFLAGS) $(PREFIXED_OCAMLINCLUDES) -c $<
+
+%.cmo: %.ppo :scanner: scan-ocaml-%.ml
+   $(OCAMLC) $(OCAMLFLAGS) $(OCAMLCFLAGS) $(PREFIXED_OCAMLINCLUDES) -c -impl $<
+
+%.cmx %$(EXT_OBJ): %.ppo :scanner: scan-ocaml-%.ml
+   $(OCAMLOPT) $(OCAMLFLAGS) $(OCAMLOPTFLAGS) $(PREFIXED_OCAMLINCLUDES) -c -impl $<
+
+if $(SLOPPY_DEPENDENCIES)
+   %.cmi %.cmiz:  :squash: $(CAMLP4N)
+   %.ppo %.cmoz:  :squash: $(CAMLP4N)
+
+else
+   %.cmi %.cmiz: $(CAMLP4N)
+   %.ppo %.cmoz: $(CAMLP4N)
+
+%.p4i: %.mli $(CAMLP4O) :value: $(prlc-deps)
+   $(WrapC $(CAMLP4O)) $(CAMLP4FLAGS) $*.mli > $@
+
+%.p4: %.ml $(CAMLP4O) :value: $(prlc-deps)
+   $(WrapC $(CAMLP4O)) $(CAMLP4FLAGS) $*.ml > $@
+
+if $(mem spell, $(split :, $(MP_DEBUG)))
+    LIBWORDS = $(file lib/words)
+    %.ppo: $(LIBWORDS)
+    %.p4: $(LIBWORDS)
+    export
+
+#
+# Add the extra dependencies.  If sloppy dependencies
+# is set, squash the dependency chain by using an
+# intermediate file.
+#
+if $(SLOPPY_DEPENDENCIES)
+   MPFILTER = $(file .sloppy)
+   $(MPFILTER): $(CAMLP4N)
+      echo "Sloppy filter dependencies" > $@
+
+   %.cmi %.cmiz: $(MPFILTER)
+   %.ppo %.cmoz: $(MPFILTER)
+
+   export
+else
+   %.cmi %.cmiz: $(CAMLP4N)
+   %.ppo %.cmoz: $(CAMLP4N)
+   export
+
+########################################################################
+# LaTeX documentation
+#
+
+#
+# Add the inputs directory to the search path.
+#
+INPUTSDIR = $(dir doc/latex/inputs)
+TEXINPUTS += $(INPUTSDIR)
+
+#
+# Directory that store the .ps and .pdf files
+#
+DOCDIR = $(dir doc/ps/theories)
+
+#
+# Assume these files are always dependencies.
+#
+TEXDEPS += $(file $(INPUTSDIR)/rc.bib $(INPUTSDIR)/metaprl.tex)
+
+#
+# MetaPRL command
+#
+MP_SCRIPT = $(file $(EDITOR)/mp$(if $(equal $(OSTYPE), Win32), .bat))
+MP_BIN = $(file $(EDITOR)/mp.$(if $(NATIVE_ENABLED), opt, top))
+
+MP_PREREQS[] =
+    $(MP_SCRIPT)
+    $(MP_BIN)
+    $(file $(EDITOR)/mpconfig)
+    $(THEORIES_PATH)
+    $(MLDEBUG_PATH)
+
+#
+# Build a theory document locally.
+# The main goal is to get MetaPRL to generate the TeX files.
+#
+TheoryDocument(docname, theories) =
+    CMOZFILES = $(file $(addsuffix .cmoz, $(theories)))
+    THEORIES = $(basename $(theories))
+
+    CMDLINE = $"""set_tex_file "$(absname $(docname).tex)";;
+$(concat $(nl), $(add-wrapper $'print_theory "', $'";;', $(THEORIES)))"""
+    #
+    # Contents of the print.ml file
+    #
+    $(docname)_print.ml:
+        echo $(quote $(CMDLINE)) > $@
+
+    #
+    # Get MetaPRL to generate the .tex files
+    #
+    $(docname).tex $(docname)-body.tex: $(MP_PREREQS) $(CMOZFILES) $(docname)_print.ml
+        $(MP_SCRIPT) -batch $(absname $(docname)_print.ml)
+
+#
+# Format the document and copy it to the DOCDIR directory.
+#
+TheoryDocumentInstall(name, theories) =
+    TheoryDocument(theory, $(theories))
+    LaTeXDocumentInstall(tex, $(DOCDIR), $(name), theory, theory-body)
+
+#
+# Also clean up the TeX files in the subdirectories
+#
+CLEAN += $`(file *.log *.aux *.idx *.ilg *.ind *.pdf *.ps *.dvi *.blg *.bbl *.out *.toc *.fls)
+
+########################################################################
+# Subdirectories to build
+#
+
+#
+# These directories use prlc
+#
+THEORIES[] = $(split ' ', $(THEORIES))
+THEORIES[] = $(if $(mem all, $(THEORIES)), $(THEORIES_ALL) $(filter-out all, $(THEORIES)), $(THEORIES))
+
+THEORY_DIR = $(dir theories)
+
+THEORY_DEPS[] =
+
+Theory(files) =
+    # XXX: the bool expression is more complex than it has to be because of the Issue 545.
+    # if $(not $(and $(THEORYNAME), $(THEORYDESCR)))
+    if $(or $(not $(THEORYNAME)), $(not $(THEORYDESCR)))
+        eprintln($"!!! ERROR: in $(in $(ROOT), $(CWD)) :")
+        if $(not $(THEORYNAME))
+            eprintln($"!!!        The THEORYNAME variable is not defined")
+        if $(not $(THEORYDESCR))
+            eprintln($"!!!        The THEORYDESCR variable is not defined")
+        exit(1)
+    OCAMLINCLUDES[] += $(addprefix $(THEORY_DIR)/, $(THEORY_DEPS))
+    OCamlLibrary(theory, $(files))
+    .DEFAULT: $(addsuffix .cmoz, $(files))
+    $(THEORIES_PATH): $(CWD)
+    export
+
+section
+    # Default theory for those directories that do not override it
+    # Set to empty to force each theory to define its own values.
+    THEORYNAME = misc
+    THEORYDESCR = Miscellaneous Theories
+
+    OCAMLINCLUDES[] += $(LIB)
+
+    # Theories that we need, including recursive theory dependencies.
+    COLLECTED_THEORIES[] =
+
+    PENDING_THEORIES[] =
+
+    # Always use -linkall on Theory libraries
+    OCAML_LIB_FLAGS += -linkall
+
+    # Collect the theories that need to be built, paying attention
+    # to the value of the THEORY_DEPS variable in each theory.
+    TheorySubDir(theories, source) =
+        foreach (thy, $(theories))
+            thydir = $(dir $(THEORY_DIR)/$(thy))
+            if $(not $(mem $(thydir), $(COLLECTED_THEORIES)))
+                if $(not $(file-exists $(thydir)))
+                    eprintln($"!!! ERROR: $(in $(ROOT)/theories, $(thydir)) (referenced by the $(source)):")
+                    eprintln($"!!!        theory directory $(in $(ROOT), $(thydir)) does not exist")
+                    exit (1)
+                if $(not $(file-exists $(thydir)/OMakefile))
+                    eprintln($"!!! ERROR: $(in $(ROOT)/theories, $(thydir)) (referenced by the $(source)):")
+                    eprintln($"!!!        theory does not have an OMakefile")
+                    exit (1)
+                public.VirtualTheory(subdirs) =
+                    VIRTUAL_THEORY = true
+                    THEORY_DEPS = $(addprefix $(thy)/, $(subdirs))
+                    export
+
+                # Every theory depends on the base theory
+                THEORY_DEPS[] = $(BASE)
+                VIRTUAL_THEORY = false
+
+                # Actually include the theory.
+                PENDING_THEORIES[] += $(thydir)
+                .SUBDIRS: $(thydir)
+                    include OMakefile
+                    export THEORY_DEPS VIRTUAL_THEORY
+
+                THEORY_DEPS_DIRS = $(dir $(addprefix $(THEORY_DIR)/, $(THEORY_DEPS)))
+                if $(intersects $(PENDING_THEORIES), $(THEORY_DEPS_DIRS))
+                    eprintln($"!!! ERROR: in $(in $(ROOT), $(thydir)):")
+                    eprintln($"!!!        theory dependency ``$(thy): $(intersection $(PENDING_THEORIES), $(THEORY_DEPS_DIRS))'' creates a dependency loop")
+                    exit(1)
+                TheorySubDir($(THEORY_DEPS), OMakefile in $(in $(ROOT), $(thydir)))
+                if $(not $(VIRTUAL_THEORY))
+                    COLLECTED_THEORIES += $(thydir)
+                    export COLLECTED_THEORIES
+                export COLLECTED_THEORIES
+            export COLLECTED_THEORIES
+        export COLLECTED_THEORIES
+
+    # Start the theory collection process with $(THEORIES)
+    TheorySubDir($(THEORIES), THEORIES variable in $(MK)/config)
+    export COLLECTED_THEORIES
+
+MP_DIRS[] =
+   $(COLLECTED_THEORIES)

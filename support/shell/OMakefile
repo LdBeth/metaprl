@@ -30,6 +30,8 @@ MPFILES[] =
     browser_resource
     shell_theory
 
+InstallCmizFiles($(MPFILES))
+
 # All library files
 include Files
 

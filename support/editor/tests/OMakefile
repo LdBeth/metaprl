@@ -1,0 +1,12 @@
+MPFILES[] =
+   test
+   prop-pigeon
+
+OCAMLINCLUDES[] +=
+    ../../../theories/itt/core
+    ../../../theories/tptp
+
+$(THEORIES_PATH): $(CWD)
+
+clean:
+   $(CLEAN)

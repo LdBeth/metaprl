@@ -3,494 +3,27 @@
 #
 OMakeVersion(0.9.6.5)
 
-########################################################################
-# Begin real makefile.
 #
-LIB     = $(dir lib)
-BIN     = $(dir bin)
-ROOT    = $(dir .)
-
-########################################################################
-# Exporting a standalone version of MetaPRL.
+# Locations of the source tree.
 #
-# Location of the standalone directoryx
-#
-EXPORTDIR = $(dir export)
-
-.PHONY: export
-
-LIB_SUFFIXES[] =
-if $(NATIVE_ENABLED)
-    if $(equal $(OSTYPE), Win32)
-        LIB_SUFFIXES += .cmxa .lib
-        export
-    else
-        LIB_SUFFIXES += .cmxa .a
-        export
-if $(BYTE_ENABLED)
-    LIB_SUFFIXES += .cma
-    export
-
-InstallFiles(lib, files) =
-    DIR = $(EXPORTDIR)/$(lib)/
-
-    # A rule for each file
-    foreach(file_src, $(files))
-        file_dst = $(file $(addprefix $(DIR), $(basename $(file_src))))
-        $(file_dst): $(file_src) :scanner: /scan-dummy
-           cp $< $@
-
-    $(file export): $(file $(addprefix $(DIR), $(basename $(files))))
-
-InstallLibFiles(files) =
-    LIBFILES  = $(addsuffixes $(LIB_SUFFIXES), $(files))
-    InstallFiles(lib, $(LIBFILES))
-
-InstallLibExeFiles(files) =
-    FILES  = $(addsuffix $(EXE), $(files))
-    InstallFiles(lib, $(FILES))
-
-InstallBinExeFiles(files) =
-    FILES  = $(addsuffix $(EXE), $(files))
-    InstallFiles(bin, $(FILES))
-
-InstallMliFiles(files) =
-    MLIFILES  = $(filter-targets $(addsuffix .mli, $(files)))
-    CMIFILES  = $(addsuffix .cmi, $(files))
-    InstallFiles(lib, $(MLIFILES) $(CMIFILES))
-
-########################################################################
-# General config
-#
-
-#
-# Simplify the machine name
-#
-ARCH = $(MACHINE)
-
-if $(equal $(ARCH), Power Macintosh)
-    ARCH = ppc
-    export
-
-if $(mem $(ARCH), x86 i386 i486 i586 i686)
-    ARCH = x86
-    export
-
-#
-# Default compile options are to be quiet
-# and print a progress bar.
-#
-if $(not $(defined VERBOSE))
-    VERBOSE = false
-    export
-
-if $(not $(VERBOSE))
-    OMakeFlags(-S --progress)
-    export
-
-#
-# omake options
-#
-ABORT_ON_DEPENDENCY_ERRORS = true
-OCAMLDEPFLAGS =
-USE_OCAMLFIND = false
-SCANNER_MODE = error
-
-#
-# Configuration defaults
-#
-include mk/defaults
-
-#
-# Configuration file
-#
-include mk/make_config
-
-#
-# Include config if it exist
-#
-if $(file-exists mk/config)
-    include mk/config
-    export
-else
-    protected.fullname = $(MakeConfig mk/config)
-    eprintln($"!!!!! A new config file $(fullname) was created for you.
-!!!!! In that file, we filled in a number of default values for you.
-!!!!! In particular, by default only the following theories will be compiled in:
-!!!!!     $(THEORIES)
-!!!!! You may want to edit the $(fullname) file before continuing.
-!!!!!
-!!!!! After you are done, run omake again to continue the build process.")
-    exit(0)
-
-#
-# Things that can not be enabled on Win32.
-#
-if $(equal $(OSTYPE), Win32)
-    READLINE_ENABLED = false
-    NCURSES_ENABLED = false
-    NATIVE_PROFILING_ENABLED = false
-    export
-
-#
-# Canonize boolean flags
-# This helps in keeping mk/config nice, but can be omitted.
-#
-Bool(arg) =
-    return $(not $(not $(arg)))
-
-SSL_ENABLED = $(Bool $(SSL_ENABLED))
-THREADS_ENABLED = $(Bool $(THREADS_ENABLED))
-READLINE_ENABLED = $(and $(READLINE_ENABLED), $(NCURSES_ENABLED))
-NCURSES_ENABLED = $(Bool $(NCURSES_ENABLED))
-NATIVE_PROFILING_ENABLED = $(Bool $(NATIVE_PROFILING_ENABLED))
-TESTS_ENABLED = $(Bool $(TESTS_ENABLED))
-SLOPPY_DEPENDENCIES = $(Bool $(SLOPPY_DEPENDENCIES))
-MPRUN_ENABLED = $(Bool $(MPRUN_ENABLED))
-
-if $(equal $(COMPILATION_MODE), bytecode)
-    COMPILATION_MODE = byte
-    export
-
-#
-# Create a fresh copy if it is out-of-date
-#
-.INCLUDE: mk/config: mk/make_config
-    section eval
-       MakeConfig(mk/config)
-
-#
-# Local config
-#
-.INCLUDE: mk/config.local
-    $(CP) $(file mk/config.local.empty) $(file mk/config.local)
-
-#
-# Win32-specific config.
-#
-if $(equal $(OSTYPE), Win32)
-   #
-   # Compile C files with threads
-   #
-   CFLAGS += /MT
-
-   #
-   # CAMLLIB should be set in the environment
-   #
-   CAMLLIB = $(dir $(string $(getenv OCAMLLIB, $(CAMLLIB_DEFAULT))))
-   CAMLP4LIB = $(dir $(CAMLLIB)/camlp4)
-   export
-
-else
-   #
-   # Location of OCaml root
-   #
-   if $(not $(defined CAMLLIB))
-      CAMLLIB = $(dir $(getenv CAMLLIB, $(getenv OCAMLLIB, $(CAMLLIB_DEFAULT))))
-      export
-
-   if $(not $(defined CAMLP4LIB))
-      CAMLP4LIB = $(dir $(getenv CAMLP4LIB, $(CAMLLIB)/camlp4))
-      export
-
-   export
-
-if $(not $(defined CAMLP4R))
-   CAMLP4R = camlp4r$(EXE)
-   export
-
-if $(not $(defined CAMLP4O))
-   CAMLP4O = camlp4o$(EXE)
-   export
-
-#
-# Inline more aggressively
-#
-if $(not $(NATIVE_PROFILING_ENABLED))
-   OCAMLOPTFLAGS += -inline $(OCAMLOPT_INLINE)
-   export
-
-#
-# Do not compile MetaPRL with threads.
-#
-THREADSLIB[] =
-OPTTHREADSLIB[] =
-OCAML_OTHER_LIBS += unix
-
-if $(THREADS_ENABLED)
-    OCAMLFLAGS += -thread
-    OCAML_OTHER_LIBS += threads
-    THREADSLIB = $(CAMLLIB)/threads/threads.cma
-    OPTTHREADSLIB = $(CAMLLIB)/threads/threads.cmxa
-    export
-
-#
-# For native code profiling, we need both versions of the filter libraries.
-#
-if $(NATIVE_PROFILING_ENABLED)
-   COMPILATION_MODE = both
-   OCAMLOPTFLAGS += -p -inline 0
-   CFLAGS += -p -DPROF
-   if $(equal $(NATIVE_PROFILING_ENABLED), compact)
-      OCAMLOPTFLAGS += -compact
-      export
-   export
-
-#
-# Check the configuration
-#
-CheckVar(name, val, valid) =
-    if $(not $(mem $(val), $(valid)))
-        valid = $(array $(valid))
-        valid = $(concat $', ', $(valid.map $(quote)))
-        eprintln($"""!!! ERROR: The $(name) variable is currently set to an invalid value "$(val)".""")
-        eprintln($"""!!!        Valid values for $(name) are: $(valid).""")
-        eprintln($"""!!!        Please fix it in the mk/config file.""")
-        exit(1)
-
-CheckVar(COMPILATION_MODE, $(COMPILATION_MODE), native byte mixed both)
-
-NATIVE_ENABLED = $(mem $(COMPILATION_MODE), native mixed both)
-BYTE_ENABLED = $(mem $(COMPILATION_MODE), byte mixed both)
-
-if $(file-exists $(CAMLLIB)/../compiler-lib/parsetree.cmi)
-   OCAMLINCLUDES += $(dir $(CAMLLIB)/../compiler-lib)
-   export
-else
-   if $(and $(BYTE_ENABLED) $(not $(file-exists $(CAMLLIB)/parsetree.cmi)))
-      eprintln(!!! The file $(CAMLLIB)/parsetree.cmi does not exist \(or is not readable\))
-      eprintln(!!!)
-      eprintln(!!! Please consult doc/htmlman/mp-install.html \(http://metaprl.org/install.html\))
-      eprintln(!!! for instructions on compiling OCaml and setting the CAMLLIB variable)
-      eprintln(!!!)
-      exit(1)
-
-if $(BYTE_ENABLED)
-   if $(not $(and $(file-exists $(CAMLP4LIB)/camlp4.cma), $(file-exists $(CAMLP4LIB)/pa_op.cmo)))
-      eprintln(!!! One of the files)
-      eprintln(!!!    $(CAMLP4LIB)/camlp4.cma)
-      eprintln(!!!    $(CAMLP4LIB)/pa_op.cmo)
-      eprintln(!!! does not exist \(or is not readable\))
-      eprintln(!!!)
-      eprintln(!!! Please consult doc/htmlman/mp-install.html \(http://metaprl.org/install.html\))
-      eprintln(!!! for instructions on compiling OCaml and setting the CAMLP4LIB variable)
-      eprintln(!!!)
-      exit(1)
-
-if $(NATIVE_ENABLED)
-   if $(not $(and $(file-exists $(CAMLP4LIB)/camlp4.cmxa), $(file-exists $(CAMLP4LIB)/pa_op.cmx)))
-      eprintln(!!! One of the files)
-      eprintln(!!!    $(CAMLP4LIB)/camlp4.cmxa)
-      eprintln(!!!    $(CAMLP4LIB)/pa_op.cmx)
-      eprintln(!!! does not exist \(or is not readable\))
-      eprintln(!!!)
-      eprintln(!!! Please consult doc/htmlman/mp-install.html \(http://metaprl.org/install.html\))
-      eprintln(!!! for instructions on compiling OCaml and setting the CAMLP4LIB variable)
-      eprintln(!!!)
-      exit(1)
-
-CheckVar(TERMS, $(TERMS), std ds both)
-CheckVar(REFINER, $(REFINER), SIMPLE VERBOSE)
-CheckVar(SEQ_SET, $(SEQ_SET), Lm_array Lm_splay)
-CheckVar(DEFAULT_UI, $(DEFAULT_UI), browser cli)
-
-if $(equal $(OSTYPE), Win32)
-    if $(SSL_ENABLED)
-        if $(not $(and $(file-exists $(SSL_LIB_WIN32)/ssleay32.lib), $(file-exists $(SSL_LIB_WIN32)/libeay32.lib), $(file-exists $(SSL_INC_WIN32)/openssl/ssl.h)))
-            eprintln(!!! One of the files)
-            eprintln(!!!    $(SSL_LIB_WIN32)/ssleay32.lib)
-            eprintln(!!!    $(SSL_LIB_WIN32)/libeay32.lib)
-            eprintln(!!!    $(SSL_INC_WIN32)/openssl/ssl.h)
-            eprintln(!!! does not exist \(or is not readable\))
-            eprintln(!!!)
-            eprintln(!!! Please either:)
-            eprintln(!!!  - Make sure your OpenSSL installation is complete and)
-            eprintln(!!!    the SSL_LIB_WIN32 and SSL_INC_WIN32 variables in mk/config.local)
-            eprintln(!!!    point to the correct locations)
-            eprintln(!!!  - Set SSL_ENABLED to false in mk/config)
-            eprintln(!!!    Note that SSL is currently required for the browser interface to work)
-
-#
-# Different version files
-#
-OCAMLC_VERSION     = $(file .version.ocamlc)
-OCAMLOPT_VERSION   = $(file .version.ocamlopt)
-CAMLP4_VERSION     = $(file .version.camlp4)
-CAMLP4R_VERSION    = $(file .version.camlp4r)
-CAMLP4O_VERSION    = $(file .version.camlp4o)
-OCAMLMKTOP_VERSION = $(file .version.ocamlmktop)
-
-#
-# Generate the rule for version checking.
-#
-VersionCheck(versionfile, command) =
-    fullcommand = $(which $(command))
-
-    $(versionfile): $(fullcommand)
-        section eval
-            version = $(concat _, $(shell $(command) -version))
-            if $(mem $(version), $(CAML_VERSIONS))
-                fd = $(fopen $(versionfile), w)
-                fprintln($(fd), $(version))
-                close($(fd))
-            else
-                eprintln(!!! Wrong CAML version.)
-                eprintln(!!! $(command) -version produced the version string $(version))
-                eprintln(!!! You need this version to be compatible with MetaPRL\,)
-                eprintln(!!! which is only known to work with versions $(CAML_VERSIONS).)
-                eprintln(!!! If you believe that this list of versions is incorrect\, edit)
-                eprintln(!!! the CAML_VERSIONS variable in the mk/defaults file.)
-                exit(1)
-
-VersionCheck($(OCAMLC_VERSION),     $(OCAMLC))
-VersionCheck($(OCAMLOPT_VERSION),   $(OCAMLOPT))
-VersionCheck($(OCAMLMKTOP_VERSION), $(OCAMLMKTOP))
-VersionCheck($(CAMLP4_VERSION),     $(CAMLP4))
-VersionCheck($(CAMLP4R_VERSION),    $(CAMLP4R))
-VersionCheck($(CAMLP4O_VERSION),    $(CAMLP4O))
-
-#
-# XXX: This is here to make sure that Camlp4 3.08 acts the same way as 3.09
-# (in 3.08 the default value is loc, but in 3.09 it's _loc).
-#
-LOC = -loc _loc
-
-%.cmo %.cmi: $(OCAMLC_VERSION)
-%.cmx: $(OCAMLOPT_VERSION)
-
-#
-# Library suffix
-#
-if $(NATIVE_ENABLED)
-   LIB_SUFFIX = .cmxa
-   OBJ_SUFFIX = .opt
-   export
-else
-   LIB_SUFFIX = .cma
-   OBJ_SUFFIX = .top
-   export
-
-#
-# Whether to compile a distributed version or not
-#
-if $(equal $(ENSROOT), undefined)
-   ENSEMBLE_DIR = tactics/null
-   export
-else
-   ENSEMBLE_DIR = tactics/ensemble
-   export
-
-#
-# Include the generic caml library
-#
-INCLUDES += $(CAMLLIB)
-
-#
-# Generic phony targets
-#
-.PHONY: all install clean realclean depend tex doc
-
-#
-# Phony target for installing libraries
-#
-INSTALL_INTERFACES = true
-MPINSTALL = mp.install
-LMINSTALL = $(MPINSTALL)
-
-.PHONY: $(MPINSTALL)
-
-if $(SSL_ENABLED)
-    if $(equal $(OSTYPE), Win32)
-        OCAML_LINK_FLAGS += -cclib $(SSL_LIB_WIN32)/ssleay32.lib -cclib $(SSL_LIB_WIN32)/libeay32.lib
-        CFLAGS += /DSSL_ENABLED
-        INCLUDES += $(SSL_INC_WIN32)
-        export
-    else
-        OCAML_LINK_FLAGS += -cclib -lcrypto -cclib -lssl
-        CFLAGS += -DSSL_ENABLED
-        INCLUDES += /usr/kerberos/include
-        export
-    export
-
-if $(READLINE_ENABLED)
-    CFLAGS += \
-        -DREADLINE\
-        -DRL_COMPLETION_MATCHES=rl_completion_matches\
-        -DRL_CP_TYPE=rl_compentry_func_t\
-        -DRL_CPP_TYPE=rl_completion_func_t
-    OCAML_LINK_FLAGS += -cclib -lreadline
-    export
-
-if $(NCURSES_ENABLED)
-    CFLAGS += -DNCURSES
-    OCAML_LINK_FLAGS += -cclib -lncurses
-    export
-
-if $(not $(defined MP_DEBUG))
-    MP_DEBUG = $(getenv MP_DEBUG, $(EMPTY))
-    export
-
-setenv(MP_DEBUG, $(MP_DEBUG))
-
-########################################################################
-# .PHONY targets that depend on all the subdirectories.
-#
-
-#
-# Dependencies are collected in these files
-#
-THEORIES_PATH = $(file editor/ml/theories.dir)
-MLDEBUG_PATH  = $(file editor/ml/mldebug.dir)
-
-$(THEORIES_PATH):
-    section eval
-        deps = $(dependencies $@)
-        deps = $(mapprefix -I, $(in editor/ml, $(deps)))
-        if $(equal $(OSTYPE), Win32)
-            fprintln($@, $(string $(deps)))
-        else
-            fprintln($@, $'INCLUDES='$(quote-argv $(deps)))
-
-$(MLDEBUG_PATH):
-    section eval
-        deps = $(project-directories) $(CAMLLIB) $(CAMLP4LIB)
-        deps = $(mapprefix -I, $(in editor/ml, $(deps)))
-        if $(equal $(OSTYPE), Win32)
-            fprintln($@, $(string $(deps)))
-        else
-            fprintln($@, $'DEBUGINCLUDES='$(quote-argv $(deps)))
-
-########################################################################
-# Default clean line
-
-MLZFILES =
-MLPFILES =
-CLEAN = $`(RM) $`(file *.opt *.run *.o *.obj *.lib *.cm* *.a *~ .*~ .\#* *.ppo *.p4i *.p4o .version.* *.omc $`(addsuffix .ml, $(MLZFILES)) $`(addsuffix .mli, $(MLZFILES)) $`(addsuffix .ml, $(MLPFILES)))
-
-clean:
-    $(CLEAN) $(file bin/ocamldep$(EXE) lib/camlp4* bin/convert$(EXE) bin/proxyedit$(EXE) bin/genmagic$(EXE) bin/gen_int_bench$(EXE) lib/*.cm* lib/*.ml* lib/*.txt lib/*.dat lib/*.a lib/macrop* bin/prlc* lib/*.html lib/*.js lib/*.css lib/*.gif lib/*.pem lib/metaprl-ssl.config mk/*.omc) $(THEORIES_PATH) $(MLDEBUG_PATH)
-
-if $(not $(defined FORCE_REALCLEAN))
-    FORCE_REALCLEAN = false
-    export
-
-realclean: clean
-    # XXX: HACK: What we really want is
-    #    -$`(RM) $(find -name *.prlb)
-    # But this is way too slow because of http://bugzilla.metaprl.org/show_bug.cgi?id=533
-    -$`(RM) $(file theories/*/*.prlb theories/*/*/*.prlb theories/*/*/*/*.prlb theories/*/*/*/*/*.prlb)
-    # cvs_realclean $(if $(FORCE_REALCLEAN), -f) -i .omakedb -i .omakedb.lock -i mk/config -i mk/config.local
-    println(The realclean target is not yet reimplemented for subversion)
-    exit 1
+LIB      = $(dir lib)
+BIN      = $(dir bin)
+MK       = $(dir mk)
+ROOT     = $(dir .)
+EDITOR   = $(dir editor/ml)
+BOOT     =
+
+include OMakefile_config
+include OMakefile_common
 
 ########################################################################
 # Directories needing only the standard config
-
+#
 .SUBDIRS: clib util
 
 ########################################################################
 # For the rest of MetaPRL, use our custom scanner.
-
+#
 OCAMLDEP = $(file bin/ocamldep$(EXE))
 
 OCAMLDEPFLAGS += -omake
@@ -504,9 +37,6 @@ OCAMLDEPFLAGS += -omake
 .SUBDIRS: libmojave
 
 OCAMLINCLUDES += $(dir libmojave/stdlib libmojave/util libmojave/unix)
-
-LIBMOJAVE = $(file libmojave/lm)
-LIBMOJAVE_CLIB = $(file libmojave/cutil/liblmcutil)
 
 ########################################################################
 # Refiner building
@@ -560,6 +90,10 @@ OCAMLINCLUDES += $(dir library tactics/proof)
 
 OCAMLINCLUDES += $(dir filter/base filter/filter)
 
+########################################################################
+# Theory building
+#
+
 #
 # Capture the current environment so that some files can use it
 # in some places.
@@ -567,277 +101,62 @@ OCAMLINCLUDES += $(dir filter/base filter/filter)
 STANDARD_BUILD_ENV =
     export rules
 
-########################################################################
-# Theory building
 #
-
+# Include the support directories
 #
-# Unset NATIVE_ENABLED if we are in the mixed compilation mode.
-#
-NATIVE_ENABLED = $(mem $(COMPILATION_MODE), native both)
+SUPPORT = $(dir support)
+SUPPORT_DIRS = $(dir support/display support/shell support/tactics support/doc)
+OCAMLINCLUDES[] += $(SUPPORT_DIRS)
 
 #
-# When using native code profiling, no need to build theories to bytecode.
+# The base theories will install themselves
 #
-if $(NATIVE_PROFILING_ENABLED)
-   BYTE_ENABLED = false
-   export
+InstallTheoryFiles(files) =
+    files = $(addprefix $(LIB)/theories/, $(filter-targets $(addsuffixes .cmi .cmiz .mli .prla, $(files))))
 
-#
-# Commands to compile theory files
-#
-CAMLP4N = $(file $(LIB)/camlp4n$(EXE))
-CAMLP4O = $(file $(LIB)/camlp4o$(EXE))
-CONVERT = $(file $(BIN)/convert$(EXE))
-MPTIME =
-CAMLP4FLAGS[] =
+    $(files): $(LIB)/theories/%: % :scanner: /scan-dummy
+        $(symlink $<, $@)
 
-#
-# Other helper files
-#
-declare THEORYDESCR THEORYNAME
+    $(MPINSTALL): $(files)
 
-.INCLUDE: mk/prlcomp
+    if $(NATIVE_ENABLED)
+        $(LIB)/theories/theory.cmxa: theory.cmxa
+            $(symlink $<, $@)
 
-# Dependency analysis uses -prl flag by default
-OCAMLDEPFLAGS += -prl
+        $(LIB)/theories/theory$(EXT_LIB): theory$(EXT_LIB)
+            $(symlink $<, $@)
 
-#
-# Make sure we do not try falling back to an OCaml rule for an .ml without an .mli
-# See also:
-#   http://bugzilla.metaprl.org/show_bug.cgi?id=90
-#   http://bugzilla.metaprl.org/show_bug.cgi?id=420
-#
-%.cmx %.o: %.ml
-   @echo $(quote *** Error: MetaPRL file $(in $(ROOT), $(file $<)) $'does not have
-***        a corresponding' $(in $(ROOT), $(file $*.mli)))
-   exit 1
+        $(MPINSTALL): $(LIB)/theories/theory.cmxa $(LIB)/theories/theory$(EXT_LIB)
+
+    if $(BYTE_ENABLED)
+        $(LIB)/theories/theory.cma: theory.cma
+            $(symlink $<, $@)
+
+        $(MPINSTALL): $(LIB)/theories/theory$(EXT_LIB)
 
 #
-# For theory files, generate intermediate .ppo files
+# Config for building theories
 #
-%.ppo %.cmoz: %.ml %.cmiz :optional: %.prla :effects: %.prlb :scanner: scan-ocaml-%.ml :value: $(prlc-deps)
-   $(WrapC $(CAMLP4N)) $(CAMLP4FLAGS) -o $*.ppo $*.ml
+BASE = meta/base
 
-%.cmi %.cmiz: %.mli :scanner: scan-ocaml-%.mli
-   $(PrlC $(OCAMLC)) $(OCAMLFLAGS) $(OCAMLCFLAGS) $(OCAMLPPFLAGS) $(PREFIXED_OCAMLINCLUDES) -c $<
-
-%.cmo: %.ppo :scanner: scan-ocaml-%.ml
-   $(OCAMLC) $(OCAMLFLAGS) $(OCAMLCFLAGS) $(PREFIXED_OCAMLINCLUDES) -c -impl $<
-
-%.cmx %$(EXT_OBJ): %.ppo :scanner: scan-ocaml-%.ml
-   $(OCAMLOPT) $(OCAMLFLAGS) $(OCAMLOPTFLAGS) $(PREFIXED_OCAMLINCLUDES) -c -impl $<
-
-if $(SLOPPY_DEPENDENCIES)
-   %.cmi %.cmiz:  :squash: $(CAMLP4N)
-   %.ppo %.cmoz:  :squash: $(CAMLP4N)
-
-else
-   %.cmi %.cmiz: $(CAMLP4N)
-   %.ppo %.cmoz: $(CAMLP4N)
-
-%.p4i: %.mli $(CAMLP4O) :value: $(prlc-deps)
-   $(WrapC $(CAMLP4O)) $(CAMLP4FLAGS) $*.mli > $@
-
-%.p4: %.ml $(CAMLP4O) :value: $(prlc-deps)
-   $(WrapC $(CAMLP4O)) $(CAMLP4FLAGS) $*.ml > $@
-
-if $(mem spell, $(split :, $(MP_DEBUG)))
-    LIBWORDS = $(file lib/words)
-    %.ppo: $(LIBWORDS)
-    %.p4: $(LIBWORDS)
-    export
+include OMakefile_theories
 
 #
-# Add the extra dependencies.  If sloppy dependencies
-# is set, squash the dependency chain by using an
-# intermediate file.
-#
-if $(SLOPPY_DEPENDENCIES)
-   MPFILTER = $(file .sloppy)
-   $(MPFILTER): $(CAMLP4N)
-      echo "Sloppy filter dependencies" > $@
-
-   %.cmi %.cmiz: $(MPFILTER)
-   %.ppo %.cmoz: $(MPFILTER)
-
-   export
-else
-   %.cmi %.cmiz: $(CAMLP4N)
-   %.ppo %.cmoz: $(CAMLP4N)
-   export
-
-########################################################################
-# LaTeX documentation
-#
-
-#
-# Add the inputs directory to the search path.
-#
-INPUTSDIR = $(dir doc/latex/inputs)
-TEXINPUTS += $(INPUTSDIR)
-
-#
-# Directory that store the .ps and .pdf files
-#
-DOCDIR = $(dir doc/ps/theories)
-
-#
-# Assume these files are always dependencies.
-#
-TEXDEPS += $(file $(INPUTSDIR)/rc.bib) $(file $(INPUTSDIR)/metaprl.tex)
-
-#
-# MetaPRL command
-#
-MP_SCRIPT = $(file editor/ml/mp$(if $(equal $(OSTYPE), Win32), .bat))
-MP_BIN = $(file editor/ml/mp.$(if $(NATIVE_ENABLED), opt, top))
-
-MP_PREREQS[] =
-    $(MP_SCRIPT)
-    $(MP_BIN)
-    $(file editor/ml/mpconfig)
-    $(THEORIES_PATH)
-    $(MLDEBUG_PATH)
-
-#
-# Build a theory document locally.
-# The main goal is to get MetaPRL to generate the TeX files.
-#
-TheoryDocument(docname, theories) =
-    CMOZFILES = $(file $(addsuffix .cmoz, $(theories)))
-    THEORIES = $(basename $(theories))
-
-    CMDLINE = $"""set_tex_file "$(absname $(docname).tex)";;
-$(concat $(nl), $(add-wrapper $'print_theory "', $'";;', $(THEORIES)))"""
-    #
-    # Contents of the print.ml file
-    #
-    $(docname)_print.ml:
-        echo $(quote $(CMDLINE)) > $@
-
-    #
-    # Get MetaPRL to generate the .tex files
-    #
-    $(docname).tex $(docname)-body.tex: $(MP_PREREQS) $(CMOZFILES) $(docname)_print.ml
-        $(MP_SCRIPT) -batch $(absname $(docname)_print.ml)
-
-#
-# Format the document and copy it to the DOCDIR directory.
-#
-TheoryDocumentInstall(name, theories) =
-    TheoryDocument(theory, $(theories))
-    LaTeXDocumentInstall(tex, $(DOCDIR), $(name), theory, theory-body)
-
-#
-# Also clean up the TeX files in the subdirectories
-#
-CLEAN += $`(file *.log *.aux *.idx *.ilg *.ind *.pdf *.ps *.dvi *.blg *.bbl *.out *.toc *.fls)
-
-########################################################################
-# Subdirectories to build
+# Also build documentation
 #
 .SUBDIRS: doc
 
-# These directories use prlc
-
-SUPPORT = $(dir support)
-SUPPORT_DIRS = $(dir $(addprefix $(SUPPORT)/, $(array display, shell, tactics, doc)))
-
-THEORIES[] = $(split ' ', $(THEORIES))
-THEORIES[] = $(if $(mem all, $(THEORIES)), $(THEORIES_ALL) $(filter-out all, $(THEORIES)), $(THEORIES))
-
-THEORY_DIR = $(dir theories)
-
-THEORY_DEPS[] =
-
-Theory(files) =
-    # XXX: the bool expression is more complex than it has to be because of the Issue 545.
-    # if $(not $(and $(THEORYNAME), $(THEORYDESCR)))
-    if $(or $(not $(THEORYNAME)), $(not $(THEORYDESCR)))
-        eprintln($"!!! ERROR: in $(in $(ROOT), $(CWD)) :")
-        if $(not $(THEORYNAME))
-            eprintln($"!!!        The THEORYNAME variable is not defined")
-        if $(not $(THEORYDESCR))
-            eprintln($"!!!        The THEORYDESCR variable is not defined")
-        exit(1)
-    OCAMLINCLUDES[] += $(addprefix $(THEORY_DIR)/, $(THEORY_DEPS))
-    OCamlLibrary(theory, $(files))
-    .DEFAULT: $(addsuffix .cmoz, $(files))
-    $(THEORIES_PATH): $(CWD)
-    export
-
-section
-    # Default theory for those directories that do not override it
-    # Set to empty to force each theory to define its own values.
-    THEORYNAME = misc
-    THEORYDESCR = Miscellaneous Theories
-
-    OCAMLINCLUDES[] += $(SUPPORT_DIRS)
-
-    # Theories that we need, including recursive theory dependencies.
-    COLLECTED_THEORIES[] =
-
-    PENDING_THEORIES[] =
-
-    # Always use -linkall on Theory libraries
-    OCAML_LIB_FLAGS += -linkall
-
-    # Collect the theories that need to be built, paying attention
-    # to the value of the THEORY_DEPS variable in each theory.
-    TheorySubDir(theories, source) =
-        foreach (thy, $(theories))
-            thydir = $(dir $(THEORY_DIR)/$(thy))
-            if $(not $(mem $(thydir), $(COLLECTED_THEORIES)))
-                if $(not $(file-exists $(thydir)))
-                    eprintln($"!!! ERROR: $(in $(ROOT)/theories, $(thydir)) (referenced by the $(source)):")
-                    eprintln($"!!!        theory directory $(in $(ROOT), $(thydir)) does not exist")
-                    exit (1)
-                if $(not $(file-exists $(thydir)/OMakefile))
-                    eprintln($"!!! ERROR: $(in $(ROOT)/theories, $(thydir)) (referenced by the $(source)):")
-                    eprintln($"!!!        theory does not have an OMakefile")
-                    exit (1)
-                public.VirtualTheory(subdirs) =
-                    VIRTUAL_THEORY = true
-                    THEORY_DEPS = $(addprefix $(thy)/, $(subdirs))
-                    export
-
-                # By default, every theory depends on the base theory.
-                THEORY_DEPS = meta/base
-                VIRTUAL_THEORY = false
-
-                # Actually include the theory.
-                PENDING_THEORIES[] += $(thydir)
-                .SUBDIRS: $(thydir)
-                    include OMakefile
-                    export THEORY_DEPS VIRTUAL_THEORY
-                        
-                THEORY_DEPS_DIRS = $(dir $(addprefix $(THEORY_DIR)/, $(THEORY_DEPS)))
-                if $(intersects $(PENDING_THEORIES), $(THEORY_DEPS_DIRS))
-                    eprintln($"!!! ERROR: in $(in $(ROOT), $(thydir)):")
-                    eprintln($"!!!        theory dependency ``$(thy): $(intersection $(PENDING_THEORIES), $(THEORY_DEPS_DIRS))'' creates a dependency loop")
-                    exit(1)
-                TheorySubDir($(THEORY_DEPS), OMakefile in $(in $(ROOT), $(thydir)))
-                if $(not $(VIRTUAL_THEORY))
-                    COLLECTED_THEORIES += $(thydir)
-                    export COLLECTED_THEORIES
-                export COLLECTED_THEORIES
-            export COLLECTED_THEORIES
-        export COLLECTED_THEORIES
-
-    # Start the theory collection process with $(THEORIES)
-    TheorySubDir($(THEORIES), THEORIES variable in mk/config)
-    export COLLECTED_THEORIES
-
-MP_DIRS[] =
-   $(SUPPORT_DIRS)
-   $(COLLECTED_THEORIES)
-
+#
+# Additional theories
+#
 section
    THEORYNAME = support
    THEORYDESCR = MetaPRL Internal "Helper" Modules
    .SUBDIRS: support editor/ml
 
+########################################################################
+# Check-status
+#
 .PHONY: check-status core-incompletes
 
 if $(NATIVE_ENABLED)
@@ -856,3 +175,33 @@ else
 !!!
 !!! Set COMPILATION_MODE to native or both in mk/config, if you need check-status.""")
         exit 1
+
+########################################################################
+# Installation
+#
+INSTALLDIR = $(dir export)
+
+#
+# Extra files to install in lib/mk/
+#
+InstallNamedFile(dst, src) =
+    $(LIB)/mk/$(dst): $(src)
+        $(symlink $<, $@)
+
+    $(MPINSTALL): $(LIB)/mk/$(dst)
+
+InstallFiles(files) =
+    foreach(src, $(files))
+        InstallNamedFile($(basename $(src)), $(src))
+
+InstallNamedFile(OMakeroot, OMakeroot_install)
+InstallNamedFile(OMakefile_editor, editor/ml/OMakefile)
+InstallFiles(OMakefile_common OMakefile_theories mk/prlcomp mk/config mk/defaults)
+
+#
+# Install everything
+#
+install: $(MPINSTALL)
+    mkdir -p $(INSTALLDIR)/lib $(INSTALLDIR)/bin
+    /bin/cp -L -r --remove-destination bin $(INSTALLDIR)
+    /bin/cp -L -r --remove-destination lib $(INSTALLDIR)

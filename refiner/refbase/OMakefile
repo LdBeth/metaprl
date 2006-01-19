@@ -1,5 +1,3 @@
-OCamlLibraryInstall(all, $(LIB), refbase, $(REFBASE_FILES))
-
 #
 # Clean up
 #

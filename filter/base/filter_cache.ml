@@ -129,7 +129,7 @@ let set_raw _ _ v =
 
 let _ = Env_arg.bool "raw"    false "Use the raw filesystem"  set_raw
 let _ = Env_arg.bool "file"   false "Use the term filesystem" set_file
-let _ = Env_arg.bool "lib"    true  "Use the Nuprl5 library"  set_lib
+let _ = Env_arg.bool "lib5"   true  "Use the Nuprl5 library"  set_lib
 
 let set_raw () =
    nofile := true;
