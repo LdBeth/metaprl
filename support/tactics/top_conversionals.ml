@@ -409,7 +409,7 @@ doc <:doc<
 
    @docoff
 >>
-type reduce_conv = conv
+type reduce_conv = conv * (Option_sig.option_table -> conv)
 type reduce_info = rule_labels * conv
 type reduce_entry = term * reduce_info
 
@@ -442,7 +442,25 @@ let extract_data =
                eprintf "Conversionals: applying %a%t" debug_print t eflush;
             conv)
    in
-      rw
+   let hrw tbl options = 
+      let rec hrw t =
+         let recrw = allSubC (termC hrw) in
+         let conv =
+            try
+               (* Find and apply the right tactic *)
+               if !debug_reduce then
+                  eprintf "Conversionals: lookup %a%t" debug_print t eflush;
+               snd (Term_match_table.lookup tbl (select_option options) t) orelseC recrw
+            with
+               Not_found ->
+                  recrw
+         in
+            if !debug_reduce then
+               eprintf "Conversionals: applying %a%t" debug_print t eflush;
+            conv
+      in termC hrw
+   in
+      (fun tbl -> rw tbl, hrw tbl)
 
 (*
  * Resource.
@@ -451,16 +469,17 @@ let resource (reduce_entry, reduce_conv) reduce =
    table_resource_info extract_data
 
 let reduceTopC_env e =
-   get_resource_arg (env_arg e) get_reduce_resource
+   fst (get_resource_arg (env_arg e) get_reduce_resource)
 
 let reduceTopC = funC reduceTopC_env
 
 let reduceC =
-   funC (fun e -> repeatC (higherC (reduceTopC_env e)))
+   funC (fun e -> 
+      let p = env_arg e in repeatC (snd (get_resource_arg p get_reduce_resource) (get_options p)))
 
 let reduceT = funT (fun p ->
-   let reduceTopC = get_resource_arg p get_reduce_resource in
-      rwAll (repeatC (higherC reduceTopC)))
+   let reduceHigherC = snd (get_resource_arg p get_reduce_resource) (get_options p) in
+      rwAll (repeatC reduceHigherC))
 
 let rec wrap_addrs conv = function
    [] -> conv
