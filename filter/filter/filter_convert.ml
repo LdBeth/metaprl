@@ -94,15 +94,11 @@ let rec remove_suffix name = function
  * Compile from a pre-parsed file.
  *)
 module MakeConvert (FilterCache : SummaryCacheSig
-                                  with type select = select_type
                                   with type arg = unit) =
 struct
    let convert kind name input_suffix =
       let cache = FilterCache.create !include_path in
       let info = FilterCache.load cache () name kind InterfaceType input_suffix in
-      let check () =
-         FilterCache.check info () InterfaceType
-      in
          FilterCache.save info () !output_suffix
 end
 

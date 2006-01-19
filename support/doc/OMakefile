@@ -6,8 +6,9 @@ OCAMLINCLUDES[] +=
 OCAML_LIB_FLAGS += -linkall
 
 # Library files
-MPFILES[] =
-    doc_declare
+include Files
+
+MPFILES = $(DOC_FILES)
 
 Theory($(MPFILES))
 

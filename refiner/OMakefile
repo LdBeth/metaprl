@@ -37,6 +37,8 @@ FILES[] =
 OCamlLibrary(refiner, $(FILES))
 OCamlLibraryCopy($(MPINSTALL), $(LIB), refiner, $(EMPTY))
 
+InstallMliFiles($(FILES))
+
 #
 # Subdirectories
 #

@@ -38,6 +38,9 @@ FILES[] =
 
 OCamlLibraryInstall($(MPINSTALL), $(LIB), util, $(FILES))
 
+InstallMliFiles($(FILES))
+InstallLibFiles(util)
+
 #
 # Clean up
 #

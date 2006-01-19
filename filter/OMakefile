@@ -30,6 +30,9 @@ SUB_FILES[] =
 OCamlLibrary($(MAINLIB), $(SUB_FILES))
 OCamlLibraryCopy($(MPINSTALL), $(LIB), $(MAINLIB), $(EMPTY))
 
+InstallMliFiles($(SUB_FILES))
+InstallLibFiles($(MAINLIB))
+
 ########################################################################
 # MAIN PROGRAMS
 ########################################################################
@@ -107,21 +110,21 @@ section
 
     OCamlProgramInstall($(MPINSTALL), $(LIB), camlp4n, $(CAMLP4N_FILES))
     OCamlProgramInstall($(MPINSTALL), $(LIB), camlp4o, $(CAMLP4O_FILES))
-    LIB_PROGS = camlp4n camlp40
+
+    LIB_PROGS = camlp4n camlp4o
+
+    InstallLibExeFiles($(LIB_PROGS))
+
     export LIB_PROGS
 
 section
     OCAML_LIBS[] +=
         $(STANDARD_LIBS)
 
-    PRLCOMP_FILES[] =
-        filter/prlcomp
-
     #
     # Files for binary compiler.
     #
     PRLC_FILES[] =
-        $(PRLCOMP_FILES)
         filter/filter_prog
         filter/filter_bin
 
@@ -133,21 +136,24 @@ section
         $(CAMLP4LIB)/pr_o
         $(PRLC_FILES)
 
-    OCamlProgramInstall($(MPINSTALL), $(BIN), prlcn, $(PRLCN_FILES))
-    OCamlProgramInstall($(MPINSTALL), $(BIN), prlco, $(PRLCO_FILES))
+    # OCamlProgramInstall($(MPINSTALL), $(BIN), prlcn, $(PRLCN_FILES))
+    # OCamlProgramInstall($(MPINSTALL), $(BIN), prlco, $(PRLCO_FILES))
 
     #
     # File format conversion
     #
-    OCamlProgramInstall($(MPINSTALL), $(BIN), convert, filter/filter_convert)
+    # OCamlProgramInstall($(MPINSTALL), $(BIN), convert, filter/filter_convert)
     OCamlProgramInstall($(MPINSTALL), $(BIN), merge_prla, filter/filter_merge_prla)
 
     #
     # Main program
     #
-    OCamlProgramInstall($(MPINSTALL), $(BIN), prlc, $(PRLCOMP_FILES))
-    
-    BIN_PROGS = prlcn prlco convert prlc
+    #OCamlProgramInstall($(MPINSTALL), $(BIN), prlc, $(PRLCOMP_FILES))
+
+    BIN_PROGS =
+
+    InstallBinExeFiles($(BIN_PROGS))
+
     export BIN_PROGS
 
 #

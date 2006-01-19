@@ -31,39 +31,9 @@ MPFILES[] =
     shell_theory
 
 # All library files
-FILES[] =
-    shell_util
-    browser_syscall
-    session_sig
-    session_io
-    session_current
-    session
-    shell_sig
-    browser_sig
-    browser_state
-    browser_copy
-    browser_edit
-    shell_tex
-    proof_edit
-    proof_initialize
-    package_info
-    shell_syscall_sig
-    mptop
-    shell_internal_sig
-    shell_rule
-    shell_package
-    shell_root
-    shell_fs
-    shell_state
-    shell_core
-    shell_command
-    shell_current
-    shell_syscall
-    shell_p4_sig
-    shell
-    browser_resource
-    shell_browser
-    shell_theory
+include Files
+
+FILES = $(SHELL_FILES)
 
 if $(equal $(DEFAULT_UI), browser)
     CAMLP4FLAGS[] += -D BROWSER_DEFAULT

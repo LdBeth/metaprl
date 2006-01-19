@@ -1,0 +1,35 @@
+#
+# Include files from subdirectories
+#
+include display/Files
+include shell/Files
+include tactics/Files
+include doc/Files
+
+DISPLAY_FILES  = $(file $(addprefix display/,  $(DISPLAY_FILES)))
+SHELL_FILES    = $(file $(addprefix shell/,    $(SHELL_FILES)))
+TACTICS_FILES  = $(file $(addprefix tactics/,  $(TACTICS_FILES)))
+DOC_FILES      = $(file $(addprefix doc/,      $(DOC_FILES)))
+
+FILES[] =
+    $(DISPLAY_FILES)
+    $(SHELL_FILES)
+    $(TACTICS_FILES)
+    $(DOC_FILES)
+
+OCamlLibrary(support, $(FILES))
+OCamlLibraryCopy($(MPINSTALL), $(LIB), support, $(EMPTY))
+
+InstallMliFiles($(FILES))
+InstallLibFiles(support)
+
+#
+# Subdirectories
+#
+.SUBDIRS: display shell tactics doc
+
+#
+# Clean up
+#
+clean:
+    $(CLEAN)

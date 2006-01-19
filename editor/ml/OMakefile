@@ -229,7 +229,7 @@ if $(and $(file-exists $(ROOT)/.svn/entries), $(file-exists $(ROOT)/libmojave/.s
 
     svnversion.txt: $(MLDEBUG_PATH) :value: $(digest-deps)
         svnversion $(ROOT) > $@
-        
+
 else
     svnversion.txt:
         fprintln($@, unknown)
@@ -291,3 +291,14 @@ clean:
 # All defaults
 #
 all: .DEFAULT
+
+########################################################################
+# For standalone MetaPRL installation
+#
+
+#
+# Build the opt into a library
+#
+OCamlLibrary(editor, $(TOPFILES))
+InstallMliFiles($(TOPFILES))
+InstallLibFiles(editor)

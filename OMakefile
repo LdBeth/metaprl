@@ -10,6 +10,59 @@ LIB     = $(dir lib)
 BIN     = $(dir bin)
 ROOT    = $(dir .)
 
+########################################################################
+# Exporting a standalone version of MetaPRL.
+#
+# Location of the standalone directoryx
+#
+EXPORTDIR = $(dir export)
+
+.PHONY: export
+
+LIB_SUFFIXES[] =
+if $(NATIVE_ENABLED)
+    if $(equal $(OSTYPE), Win32)
+        LIB_SUFFIXES += .cmxa .lib
+        export
+    else
+        LIB_SUFFIXES += .cmxa .a
+        export
+if $(BYTE_ENABLED)
+    LIB_SUFFIXES += .cma
+    export
+
+InstallFiles(lib, files) =
+    DIR = $(EXPORTDIR)/$(lib)/
+
+    # A rule for each file
+    foreach(file_src, $(files))
+        file_dst = $(file $(addprefix $(DIR), $(basename $(file_src))))
+        $(file_dst): $(file_src) :scanner: /scan-dummy
+           cp $< $@
+
+    $(file export): $(file $(addprefix $(DIR), $(basename $(files))))
+
+InstallLibFiles(files) =
+    LIBFILES  = $(addsuffixes $(LIB_SUFFIXES), $(files))
+    InstallFiles(lib, $(LIBFILES))
+
+InstallLibExeFiles(files) =
+    FILES  = $(addsuffix $(EXE), $(files))
+    InstallFiles(lib, $(FILES))
+
+InstallBinExeFiles(files) =
+    FILES  = $(addsuffix $(EXE), $(files))
+    InstallFiles(bin, $(FILES))
+
+InstallMliFiles(files) =
+    MLIFILES  = $(filter-targets $(addsuffix .mli, $(files)))
+    CMIFILES  = $(addsuffix .cmi, $(files))
+    InstallFiles(lib, $(MLIFILES) $(CMIFILES))
+
+########################################################################
+# General config
+#
+
 #
 # Simplify the machine name
 #
@@ -783,7 +836,7 @@ MP_DIRS[] =
 section
    THEORYNAME = support
    THEORYDESCR = MetaPRL Internal "Helper" Modules
-   .SUBDIRS: $(SUPPORT_DIRS) editor/ml
+   .SUBDIRS: support editor/ml
 
 .PHONY: check-status core-incompletes
 

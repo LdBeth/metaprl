@@ -1,0 +1,14 @@
+TACTICS_FILES[] =
+    tactic_cache
+    base_cache
+    var
+    top_resource
+    top_options
+    top_tacticals
+    top_conversionals
+    simp_typeinf
+    typeinf
+    auto_tactic
+    dtactic
+    forward
+    basic_tactics
