@@ -68,11 +68,8 @@ struct
    (*
     * Get the term of the environment.
     *)
-   let env_term (arg, i, addr) =
-      term_subterm (Sequent.nth_assum arg i) addr
-
-   let env_arg (arg, i, addr) =
-      arg
+   let env_term = snd
+   let env_arg = fst
 
    (*
     * Create a conversion from a basic rewrite.
@@ -261,7 +258,7 @@ struct
    let cutC t =
       CutConv t
 
-   let rec apply assum addr = function
+   let rec apply assum addr t = function
       RewriteConv rw ->
          if !debug_rewrite then
             eprintf "Rewrite_type.apply: Rewrite%t" eflush;
@@ -273,16 +270,21 @@ struct
     | ComposeConv clist ->
          if !debug_rewrite then
             eprintf "Rewrite_type.apply: Compose%t" eflush;
-         composeT assum addr (Flist.tree_of_list clist)
+         composeT assum addr t (Flist.tree_of_list clist)
     | ChooseConv clist ->
          if !debug_rewrite then
             eprintf "Rewrite_type.apply: Choose%t" eflush;
-         chooseT assum addr (Flist.tree_of_list clist)
+         chooseT assum addr t (Flist.tree_of_list clist)
     | AddressConv (addr', conv) ->
          let addr = compose_address addr addr' in
+         let t =
+            match t with
+               None -> None
+             | Some t -> Some (term_subterm t addr')
+         in
             if !debug_rewrite then
                eprintf "Rewrite_type.apply: Address %s%t" (string_of_address addr') eflush;
-            apply assum addr conv
+            apply assum addr t conv
     | IdentityConv ->
          if !debug_rewrite then
             eprintf "Rewrite_type.apply: Identity%t" eflush;
@@ -290,24 +292,37 @@ struct
     | FunConv f ->
          if !debug_rewrite then
             eprintf "Rewrite_type.apply: Fun%t" eflush;
-         funT (fun p -> apply assum addr (f (p, assum, addr)))
+         funT (fun p ->
+            let t = term_subterm (Sequent.nth_assum p assum) addr in
+               apply assum addr (Some t) (f (p, t)))
+    | (HigherConv _ | AllSubConv _) as conv when t = None ->
+         funT (fun p -> apply assum addr (Some (term_subterm (Sequent.nth_assum p assum) addr)) conv)
     | (HigherConv conv) as hconv ->
          if !debug_rewrite then
             eprintf "Rewrite_type.apply: Higher%t" eflush;
-         prefix_orelseT (apply assum addr conv) (apply assum addr (AllSubConv hconv))
+         prefix_orelseT (apply assum addr t conv) (funT (fun _ -> apply assum addr t (AllSubConv hconv)))
     | AllSubConv conv ->
          if !debug_rewrite then
             eprintf "Rewrite_type.apply: AllSub%t" eflush;
-         funT (fun p ->
-            let t = term_subterm (Sequent.nth_assum p assum) addr in
-               match subterm_addresses t with
-                  [] -> idT
-                | addr' :: addrs ->
-                     List.fold_left (**)
-                        (fun tac addr' -> 
-                           prefix_then_OnFirstT (apply assum (compose_address addr addr') conv) tac)
-                        (apply assum (compose_address addr addr') conv)
-                        addrs)
+         let t' =
+            match t with
+               None -> raise(Invalid_argument "Rewrite_boot.apply: internal error")
+             | Some t -> t
+         in
+         (*
+          * We assume that applications of conv on subterms will not interfere,
+          * so it's OK to reuse the same t even after the success of the first conv
+          * makes it outdated.
+          *)
+         begin match subterm_addresses t' with
+            [] -> idT
+          | addr' :: addrs ->
+               List.fold_left (**)
+                  (fun tac addr' ->
+                     prefix_then_OnFirstT (apply assum addr t (AddressConv (addr', conv))) tac)
+                  (apply assum addr t (AddressConv (addr', conv)))
+                  addrs
+         end
     | FoldConv (t, conv) ->
          if !debug_rewrite then
             eprintf "Rewrite_type.apply: Fold%t" eflush;
@@ -319,7 +334,7 @@ struct
     | ThenTC (conv, tac) ->
          if !debug_rewrite then
             printf "Rewrite_type.apply: ThenTC%t" eflush;
-         applyThenTC assum addr conv tac
+         applyThenTC assum addr t conv tac
     | TacticConv tac ->
          if !debug_rewrite then
             printf "Rewrite_type.apply: TacticConv%t" eflush;
@@ -327,23 +342,23 @@ struct
             raise (RefineError ("rw", StringError "tacticC conversion can not be applied to an assumption"));
          tac addr
     | ForceConv (debug, conv) ->
-         forceT debug (apply assum addr conv)
+         forceT debug (apply assum addr t conv)
 
-   and composeT assum addr = function
+   and composeT assum addr t = function
       Flist.Empty ->
          idT
     | Flist.Leaf conv ->
-         apply assum addr conv
+         apply assum addr t conv
     | Flist.Append (tree1, tree2) ->
-         (prefix_then_OnFirstT (composeT assum addr tree1) (composeT assum addr tree2))
+         (prefix_then_OnFirstT (composeT assum addr t tree1) (composeT assum addr None tree2))
 
-   and chooseT assum addr = function
+   and chooseT assum addr t = function
       Flist.Empty ->
          idT
     | Flist.Leaf conv ->
-         apply assum addr conv
+         apply assum addr t conv
     | Flist.Append (tree1, tree2) ->
-         (prefix_orelseT (chooseT assum addr tree1) (chooseT assum addr tree2))
+         (prefix_orelseT (chooseT assum addr t tree1) (chooseT assum addr t tree2))
 
    and rwcutT assum addr t =
       funT (fun p ->
@@ -362,23 +377,23 @@ struct
    and solveCutT addr conv =
       funT (fun p ->
       let len = List.length (snd (Refine.dest_msequent (Sequent.msequent p))) in
-         (prefix_thenMT (apply len addr conv) (nthAssumT len)))
+         (prefix_thenMT (apply len addr None conv) (nthAssumT len)))
 
    and applyThenTC_aux tac = function
       [] -> []
     | _ :: tl -> idT :: (List.map (fun _ -> tac) tl)
 
-   and applyThenTC assum addr conv tac =
-      prefix_thenFLT (apply assum addr conv) (applyThenTC_aux tac)
+   and applyThenTC assum addr t conv tac =
+      prefix_thenFLT (apply assum addr t conv) (applyThenTC_aux tac)
 
    (*
     * Apply the rewrite.
     *)
    let rw =
       if !debug_profile_tactics then
-         fun conv assum addr -> timing_wrap "rw" (apply assum addr conv)
+         fun conv assum addr -> timing_wrap "rw" (apply assum addr None conv)
       else
-         fun conv assum addr -> apply assum addr conv
+         fun conv assum addr -> apply assum addr None conv
 
    (*
     * Create an input form.
@@ -398,7 +413,7 @@ struct
     *)
    let apply_rewrite bookmark conv t =
       let arg = TacticInternal.debug_arg bookmark t in
-      let tac = apply 0 zero_addr conv in
+      let tac = apply 0 zero_addr None conv in
       let res = fst (TacticInternal.refine tac arg) in
       let goal, _ = Refine.dest_msequent (List.hd res).ref_goal in
          goal

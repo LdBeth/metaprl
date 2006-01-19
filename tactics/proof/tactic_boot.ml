@@ -219,7 +219,7 @@ struct
    (*
     * Conversions are used by the rewrite module.
     *)
-   and env = tactic_arg * int * address
+   and env = tactic_arg * term
 
    and conv =
       RewriteConv of rw
