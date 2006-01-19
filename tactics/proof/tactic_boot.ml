@@ -14,9 +14,6 @@
  * current refinement.  This allows is to use chaining while
  * retaining the traditional search mechanisms.
  *
- * A tactic has two parts:
- *    1. It contains a Refine.tactic
- *
  * ----------------------------------------------------------------
  *
  * This file is part of MetaPRL, a modular, higher order
@@ -26,7 +23,8 @@
  * See the file doc/htmlman/default.html or visit http://metaprl.org/
  * for more information.
  *
- * Copyright (C) 1998 Jason Hickey, Cornell University
+ * Copyright (C) 1998-2006 MetaPRL Group, Cornell University and California
+ * Institute of Technology
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -42,8 +40,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified by: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 open Lm_debug
 open Lm_printf
@@ -233,6 +231,7 @@ struct
     | CutConv of term
     | FunConv of (env -> conv)
     | HigherConv of conv
+    | AllSubConv of conv
     | ThenTC of conv * tactic
     | IdentityConv
     | TacticConv of (address -> tactic)

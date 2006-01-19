@@ -11,7 +11,8 @@
  * See the file doc/htmlman/default.html or visit http://metaprl.org/
  * for more information.
  *
- * Copyright (C) 1998 Jason Hickey, Cornell University
+ * Copyright (C) 1998-2006 MetaPRL Group, Cornell University and California
+ * Institute of Technology
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -27,8 +28,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified by: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 open Lm_debug
 open Lm_printf
@@ -182,6 +183,9 @@ struct
    let addrC addr =
       addrLiteralC (make_address addr)
 
+   let allSubC conv =
+      AllSubConv conv
+
    (*
     * Apply the conversion at the highest addresses.
     *)
@@ -192,21 +196,10 @@ struct
    *| CondRewriteConv crw ->
    *     CondRewriteConv (crwhigher crw)
    *)
+    | (HigherConv _) as conv ->
+         conv
     | conv ->
          HigherConv conv
-
-   let allSubC =
-      let allSubCE conv env =
-         let addrs = subterm_addresses (env_term env) in
-            List.fold_left (fun conv' addr -> prefix_thenC (addrLiteralC addr conv) conv') idC addrs
-      in
-         fun conv -> funC (allSubCE conv)
-
-   let higherLC rw =
-      let rec higherCE rw env =
-         (prefix_orelseC rw (allSubC (funC (higherCE rw))))
-      in
-         funC (higherCE rw)
 
    (*
     * Reverse the conversion at the specified address.
@@ -298,10 +291,23 @@ struct
          if !debug_rewrite then
             eprintf "Rewrite_type.apply: Fun%t" eflush;
          funT (fun p -> apply assum addr (f (p, assum, addr)))
-    | HigherConv conv ->
+    | (HigherConv conv) as hconv ->
          if !debug_rewrite then
             eprintf "Rewrite_type.apply: Higher%t" eflush;
-         apply assum addr (higherLC conv)
+         prefix_orelseT (apply assum addr conv) (apply assum addr (AllSubConv hconv))
+    | AllSubConv conv ->
+         if !debug_rewrite then
+            eprintf "Rewrite_type.apply: AllSub%t" eflush;
+         funT (fun p ->
+            let t = term_subterm (Sequent.nth_assum p assum) addr in
+               match subterm_addresses t with
+                  [] -> idT
+                | addr' :: addrs ->
+                     List.fold_left (**)
+                        (fun tac addr' -> 
+                           prefix_then_OnFirstT (apply assum (compose_address addr addr') conv) tac)
+                        (apply assum (compose_address addr addr') conv)
+                        addrs)
     | FoldConv (t, conv) ->
          if !debug_rewrite then
             eprintf "Rewrite_type.apply: Fold%t" eflush;
