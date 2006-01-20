@@ -147,7 +147,7 @@ if $(MPRUN_ENABLED)
     $(MP).run: $(BYTE_DEPS) $(OCAMLMKTOP_VERSION) $(RCMAMPLIBS)
         $(RM) $@
         $(OCAMLMKTOP) $(OCAMLFLAGS) $(OCAMLCFLAGS) -o $@ -custom \
-            $(CMOBJS) $(RCMAMPLIBS) $(LIBS) $(OCAML_LINK_FLAGS)
+            $(CMOBJS) $(RCMAMPLIBS) $(BYTE_CCLIBS) $(LIBS) $(OCAML_LINK_FLAGS)
 
 $(MP).top: $(TOP_DEPS) $(TCMAMPLIBS)
     $(RM) $@

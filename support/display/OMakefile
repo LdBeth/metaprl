@@ -6,6 +6,8 @@ MLZFILES[] =
 # Library files
 include Files
 
+OCAMLDEPFLAGS += -notopval
+
 MPFILES = $(DISPLAY_FILES)
 
 InstallCmizFiles($(MPFILES))
