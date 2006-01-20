@@ -186,7 +186,7 @@ InstallTheoryFiles(files) =
     if $(BYTE_ENABLED)
         LibSubInstall($(DIR), theory.cma)
 
-    $(LIB)/$(DIR)/MetaprlInfo: MetaprlInfo
+    $(LIB)/$(DIR)/MetaprlInfo: MetaprlInfo $(LIB)/$(DIR)
         cat $< > $@
         echo "READONLY = true" >> $@
 

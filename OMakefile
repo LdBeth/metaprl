@@ -11,7 +11,7 @@ BIN      = $(dir bin)
 MK       = $(dir mk)
 ROOT     = $(dir .)
 EDITOR   = $(dir editor/ml)
-BOOT     =
+MPROOT   = $(ROOT)
 
 include mk/load_config
 include OMakefile_common
@@ -21,15 +21,18 @@ include OMakefile_common
 #
 
 # XXX: HACK: this already exists in OMake on Subversion
-.SCANNER: /scan-dummy
-    @
+if $(not $(defined NOSCANNER))
+    NOSCANNER = /scan-dummy
+    .SCANNER: $(NOSCANNER)
+        @
+    export
 
 LibInstallDir(subdir) =
     $(LIB)/$(subdir):
         mkdir -p $@
 
 LibSubInstallNamed(subdir, dst, src) =
-    $(LIB)/$(subdir)/$(dst): $(src) $(LIB)/$(subdir) :scanner: /scan-dummy
+    $(LIB)/$(subdir)/$(dst): $(src) $(LIB)/$(subdir) :scanner: $(NOSCANNER)
         $(symlink $<, $@)
 
     $(MPINSTALL): $(LIB)/$(subdir)/$(dst)
@@ -179,20 +182,29 @@ else
 ########################################################################
 # Installation
 #
-INSTALLDIR = $(dir export)
 
 #
 # Extra files to install in lib/mk/
 #
 LibInstallDir(mk)
-LibSubInstallNamed(mk, OMakeroot, OMakeroot_install)
 LibSubInstallNamed(mk, OMakefile_editor, editor/ml/OMakefile)
 LibSubInstall(mk, OMakefile_common OMakefile_theories mk/prlcomp mk/config mk/defaults)
+
+#
+# Generate the OMakeroot file for read-only clients
+#
+include mk/gen_omakeroot
+
+$(LIB)/OMakeroot:
+    fprint($@, $(OMakeroot))
+
+$(MPINSTALL): $(LIB)/OMakeroot
 
 #
 # Install everything
 #
 install: $(MPINSTALL)
-    mkdir -p $(INSTALLDIR)/lib $(INSTALLDIR)/bin
-    /bin/cp -L -r --remove-destination bin $(INSTALLDIR)
-    /bin/cp -L -r --remove-destination lib $(INSTALLDIR)
+    rm -rf $(INSTALL_DIR)
+    mkdir -p $(INSTALL_DIR)/lib $(INSTALL_DIR)/bin
+    /bin/cp -L -r --remove-destination bin $(INSTALL_DIR)
+    /bin/cp -L -r --remove-destination lib $(INSTALL_DIR)

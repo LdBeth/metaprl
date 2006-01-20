@@ -1,0 +1,30 @@
+# .mlz files
+MLZFILES[] =
+    session_sig
+    shell_sig
+    shell_internal_sig
+    shell_syscall_sig
+    shell_p4_sig
+    browser_sig
+    shell_theory
+
+# MetaPRL Files
+MPFILES[] =
+    proof_edit
+    proof_initialize
+    mptop
+    shell_command
+    shell_package
+    shell_root
+    shell_fs
+    shell_current
+    shell_syscall
+    shell_state
+    shell
+    browser_resource
+    shell_theory
+
+# All library files
+include Files
+
+FILES = $(SHELL_FILES)

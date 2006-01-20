@@ -71,6 +71,17 @@ DEFAULT_UI = browser
 OCAMLOPT_INLINE = 3
 
 #
+# Default installation path: check the environment (and the registry on Windows).
+# On Unix, use /usr/local/lib/metaprl by default.
+#
+INSTALL_DIR =
+    getenv(INSTALL_DIR)
+        get-registry(HKEY_CURRENT_USER, Software\MetaPRL, INSTALLDIR)
+            get-registry(HKEY_LOCAL_MACHINE, Software\MetaPRL, INSTALLDIR)
+                get-registry(HKEY_LOCAL_MACHINE, Software\Microsoft\Windows\CurrentVersion, ProgramFilesDir)
+                    value $(if $(equal $(OSTYPE), Win32), $'C:\MetaPRL', /usr/local/lib/metaprl)
+
+#
 # Location of OpenSSL on Windows. If your OpenSSL is installed in a different place,
 # please use mk/config.local to override.
 #

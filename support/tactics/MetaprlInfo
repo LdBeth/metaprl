@@ -1,0 +1,12 @@
+# Common files
+MLZFILES[] =
+   top_resource.mlz
+
+# Library files
+include Files
+
+MPFILES = $(TACTICS_FILES)
+
+# Files using the normal OCaml compiler
+MLFILES[] =
+    basic_tactics

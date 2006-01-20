@@ -35,10 +35,6 @@ PRLC_ARS   = $(addsuffix $(EXT_LIB), $(PRLC_LIBS))
 PRLC_CMAS  = $(addsuffix .cma, $(PRLC_LIBS))
 PRLC_CMXAS = $(addsuffix .cmxa, $(PRLC_LIBS))
 
-BOOT_ARS   = $(addsuffix $(EXT_LIB), $(BOOT))
-BOOT_CMAS  = $(addsuffix .cma, $(BOOT))
-BOOT_CMXAS = $(addsuffix .cmxa, $(BOOT))
-
 ########################################################################
 # LIBRARIES
 ########################################################################
@@ -86,13 +82,11 @@ CMXADEPS[] =
     $(CAMLP4LIB)/pa_o$(PROF_EXT).cmx
     $(CAMLP4LIB)/pa_op$(PROF_EXT).cmx
     $(PRLC_CMXAS)
-    $(BOOT_CMXAS)
     $(addsuffix /theory.cmxa, $(MP_DIRS))
 
 ARDEPS[] =
     $(BASE_ARS)
     $(PRLC_ARS)
-    $(BOOT_ARS)
     $(addsuffix /theory$(EXT_LIB), $(MP_DIRS))
 
 CMADEPS[] =
@@ -106,7 +100,6 @@ CMADEPS[] =
     $(CAMLP4LIB)/pa_o.cmo
     $(CAMLP4LIB)/pa_op.cmo
     $(PRLC_CMAS)
-    $(BOOT_CMAS)
     $(addsuffix /theory.cma, $(MP_DIRS))
 
 TCMADEPS[] =
@@ -119,7 +112,6 @@ TCMADEPS[] =
     $(CAMLP4LIB)/pa_o.cmo
     $(CAMLP4LIB)/pa_op.cmo
     $(PRLC_CMAS)
-    $(BOOT_CMAS)
     $(addsuffix /theory.cma, $(MP_DIRS))
 
 CMALIBS  = $(CMADEPS)
@@ -208,6 +200,68 @@ done: .test-metaprl-startup
 ****** Run $(in $(ROOT), $(MP_SCRIPT)) to start the interactive prover.
 ******
 ")
+
+########################################################################
+# Generate the mpconfig if it does not exist
+#
+#
+# Configure Ensemble
+#
+mpconfig = $"""\
+ENS_PORT=7474
+ENS_MODES="DEERING:UDP"
+ENS_DEERING_PORT=7472
+ENS_GOSSIP_PORT=7470
+ENS_GOSSIP_HOSTS=tulare
+ENS_ID=$$USER
+ENS_DOMAIN_PORT=7473
+
+export ENS_PORT ENS_MODES ENS_DEERING_PORT ENS_GOSSIP_PORT ENS_GOSSIP_HOSTS ENS_ID ENS_DOMAIN_PORT
+
+#
+# Root directory is two directories up
+#
+export MP_ROOT=$(MPROOT)
+
+#
+# TPTP libraries
+#
+TPTP=$$MP_ROOT/../TPTP
+if [ -d $$TPTP ]; then
+   MP_TPTP=`echo . $$TPTP $$TPTP/Problems/* | sed -e 's, ,:,g'`
+   export MP_TPTP
+fi
+export TPTP
+
+#
+# Use the local copy of the library
+#
+MPLIB=$$MP_ROOT/lib
+export MPLIB
+
+#
+# Work in Unicode locale.
+#
+LC_ALL=en_US.UTF-8
+export LC_ALL
+
+#
+# Camlp4 directory
+#
+if [ -z "$$CAMLP4LIB" ]; then
+   CAMLP4LIB=`ocamlc -where`/camlp4
+fi
+
+. ./mldebug.dir
+. ./theories.dir
+
+export INCLUDES DEBUGINCLUDES
+"""
+
+mpconfig:
+    fprint(mpconfig, $(mpconfig))
+
+.DEFAULT: mpconfig
 
 #
 # Clean up

@@ -1,0 +1,4 @@
+# Library files
+include Files
+
+MPFILES = $(DOC_FILES)

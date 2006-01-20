@@ -1,0 +1,24 @@
+# Common files
+MLZFILES[] =
+    proof_sig
+    display_sig
+    nuprl_sig
+
+RUNFILES[] =
+    mp_version
+    shell_mp
+    shell_p4
+    nuprl_sig
+    nuprl_eval
+    nuprl_jprover
+    nuprl_run
+    mp
+
+TOPFILES[] =
+    mp_version
+    shell_mp
+    nuprl_sig
+    nuprl_eval
+    nuprl_jprover
+    nuprl_run
+    mp_top
