@@ -1,4 +1,32 @@
 ########################################################################
+# Installation into $(LIB)
+#
+
+# XXX: HACK: this already exists in OMake on Subversion
+if $(not $(defined NOSCANNER))
+    NOSCANNER = /scan-dummy
+    .SCANNER: $(NOSCANNER)
+        @
+    export
+
+LibInstallDir(subdir) =
+    $(LIB)/$(subdir):
+        mkdir -p $@
+
+LibSubInstallNamed(subdir, dst, src) =
+    $(LIB)/$(subdir)/$(dst): $(src) $(LIB)/$(subdir) :scanner: $(NOSCANNER)
+        $(symlink $<, $@)
+
+    $(MPINSTALL): $(LIB)/$(subdir)/$(dst)
+
+LibSubInstall(subdir, files) =
+    foreach(src, $(files))
+        LibSubInstallNamed($(subdir), $(basename $(src)), $(src))
+
+LibInstall(files) =
+    LibSubInstall($(EMPTY), $(files))
+
+########################################################################
 # General config
 #
 

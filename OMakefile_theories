@@ -200,6 +200,38 @@ THEORIES[] = $(if $(mem all, $(THEORIES)), $(THEORIES_ALL) $(filter-out all, $(T
 
 THEORY_DEPS[] =
 
+#
+# Find a theory in the theory path
+# XXX: JYH: we should probably build this kind of search into
+# omake.
+#
+find-theory(name) =
+    THEORYNAME = false
+    foreach(d, $(THEORYPATH))
+        if $(and $(not $(THEORYNAME)), $(file-exists $(d)/$(name)))
+            THEORYNAME = $(d)/$(name)
+            export
+        export
+    if $(not $(THEORYNAME))
+        eprintln($"!!! ERROR: $(in $(ROOT)/theories, $(thydir)) (referenced by the $(source)):")
+        eprintln($"!!!        theory directory $(in $(ROOT), $(thydir)) does not exist")
+        eprintln($"!!! The current search path is the following:")
+        eprintvln($(THEORYPATH))
+        exit (1)
+    return $(dir $(THEORYNAME))
+
+#
+# XXX: JYH: even more, this is very inefficient.
+#
+find-theories(names) =
+    dirs =
+        foreach(name, $(names))
+            find-theory($(name))
+    return $(dirs)
+
+#
+# Compile an entire theory.
+#
 Theory(files) =
     # XXX: the bool expression is more complex than it has to be because of the Issue 545.
     # if $(not $(and $(THEORYNAME), $(THEORYDESCR)))
@@ -211,7 +243,7 @@ Theory(files) =
             eprintln($"!!!        The THEORYDESCR variable is not defined")
         exit(1)
 
-    OCAMLINCLUDES[] += $(addprefix $(THEORY_DIR)/, $(THEORY_DEPS))
+    OCAMLINCLUDES[] += $(find-theories $(THEORY_DEPS))
     OCamlLibrary(theory, $(files))
 
     .DEFAULT: $(addsuffix .cmoz, $(files))
@@ -221,24 +253,6 @@ Theory(files) =
     InstallTheoryFiles($(files))
 
     export
-
-#
-# Find a theory in the theory path
-# XXX: JYH: we should probably build this kind of search into
-# omake.
-#
-find-theory(name) =
-    THEORYNAME = false
-    foreach(dir, $(THEORYPATH))
-        if $(and $(not $(THEORYNAME)), $(file-exists $(dir)/$(name)))
-            THEORYNAME = $(dir)/$(name)
-            export
-        export
-    if $(not $(THEORYNAME))
-        eprintln($"!!! ERROR: $(in $(ROOT)/theories, $(thydir)) (referenced by the $(source)):")
-        eprintln($"!!!        theory directory $(in $(ROOT), $(thydir)) does not exist")
-        exit (1)
-    return $(THEORYNAME)
 
 #
 # Search the set of theories that are desired

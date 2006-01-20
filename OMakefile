@@ -17,34 +17,6 @@ include mk/load_config
 include OMakefile_common
 
 ########################################################################
-# Installation into $(LIB)
-#
-
-# XXX: HACK: this already exists in OMake on Subversion
-if $(not $(defined NOSCANNER))
-    NOSCANNER = /scan-dummy
-    .SCANNER: $(NOSCANNER)
-        @
-    export
-
-LibInstallDir(subdir) =
-    $(LIB)/$(subdir):
-        mkdir -p $@
-
-LibSubInstallNamed(subdir, dst, src) =
-    $(LIB)/$(subdir)/$(dst): $(src) $(LIB)/$(subdir) :scanner: $(NOSCANNER)
-        $(symlink $<, $@)
-
-    $(MPINSTALL): $(LIB)/$(subdir)/$(dst)
-
-LibSubInstall(subdir, files) =
-    foreach(src, $(files))
-        LibSubInstallNamed($(subdir), $(basename $(src)), $(src))
-
-LibInstall(files) =
-    LibSubInstall($(EMPTY), $(files))
-
-########################################################################
 # Directories needing only the standard config
 #
 .SUBDIRS: clib util

@@ -24,9 +24,7 @@ MP_ROOT = $$(dir $(INSTALL_DIR))
 MP_LIB  = $$(dir $$(MP_ROOT)/lib)
 LIB     = $$(MP_LIB)
 MK      = $$(dir $$(MP_LIB)/mk)
-BASE    =
 EDITOR  = $$(dir .)
-BOOT    = $$(MP_LIB)/theories/theory
 MPROOT  = $$(LIB)
 
 PATH[]  =
@@ -51,7 +49,6 @@ include OMakefile
 
 OCAMLINCLUDES[] +=
     $$(MP_LIB)
-    $$(MP_LIB)/theories
 
 include $$(MK)/OMakefile_theories
 include $$(MK)/OMakefile_editor
