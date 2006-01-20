@@ -178,7 +178,7 @@ InstallTheoryFiles(files) =
     DIR = theories/$(string $(in $(THEORY_DIR), $(CWD)))
 
     LibInstallDir($(DIR))
-    LibSubInstall($(DIR), $(filter-targets $(addsuffixes .cmi .cmiz .cmoz .mli .prla, $(files))))
+    LibSubInstall($(DIR), $(filter-targets $(addsuffixes .cmi .cmiz .cmoz .mli, $(files))))
 
     if $(NATIVE_ENABLED)
         LibSubInstall($(DIR), theory.cmxa theory$(EXT_LIB))
