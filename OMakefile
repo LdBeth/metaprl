@@ -13,8 +13,24 @@ ROOT     = $(dir .)
 EDITOR   = $(dir editor/ml)
 BOOT     =
 
-include OMakefile_config
+include mk/load_config
 include OMakefile_common
+
+########################################################################
+# Installation into $(LIB)
+#
+LibSubInstallNamed(subdir, dst, src) =
+    $(LIB)/$(subdir)/$(dst): $(src)
+        $(symlink $<, $@)
+
+    $(MPINSTALL): $(LIB)/$(subdir)/$(dst)
+
+LibSubInstall(subdir, files) =
+    foreach(src, $(files))
+        LibSubInstallNamed($(subdir), $(basename $(src)), $(src))
+
+LibInstall(files) =
+    LibSubInstall($(EMPTY), $(files))
 
 ########################################################################
 # Directories needing only the standard config
@@ -112,27 +128,13 @@ OCAMLINCLUDES[] += $(SUPPORT_DIRS)
 # The base theories will install themselves
 #
 InstallTheoryFiles(files) =
-    files = $(addprefix $(LIB)/theories/, $(filter-targets $(addsuffixes .cmi .cmiz .mli .prla, $(files))))
-
-    $(files): $(LIB)/theories/%: % :scanner: /scan-dummy
-        $(symlink $<, $@)
-
-    $(MPINSTALL): $(files)
+    LibSubInstall(theories, $(addsuffixes .cmi .cmiz .mli .prla, $(files)))
 
     if $(NATIVE_ENABLED)
-        $(LIB)/theories/theory.cmxa: theory.cmxa
-            $(symlink $<, $@)
-
-        $(LIB)/theories/theory$(EXT_LIB): theory$(EXT_LIB)
-            $(symlink $<, $@)
-
-        $(MPINSTALL): $(LIB)/theories/theory.cmxa $(LIB)/theories/theory$(EXT_LIB)
+        LibSubInstall(theories, theory.cmxa theory$(EXT_LIB))
 
     if $(BYTE_ENABLED)
-        $(LIB)/theories/theory.cma: theory.cma
-            $(symlink $<, $@)
-
-        $(MPINSTALL): $(LIB)/theories/theory$(EXT_LIB)
+        LibSubInstall(theories, theory.cma)
 
 #
 # Config for building theories
@@ -160,7 +162,7 @@ section
 .PHONY: check-status core-incompletes
 
 if $(NATIVE_ENABLED)
-   check-status core-incompletes: util/check-status util/check-status.sh $(MP_PREREQS) editor/ml/svnversion.txt
+   check-status core-incompletes: util/check-status util/check-status.sh $(MP_PREREQS) support/editor/svnversion.txt
 
    check-status:
       util/check-status nomake
@@ -184,19 +186,9 @@ INSTALLDIR = $(dir export)
 #
 # Extra files to install in lib/mk/
 #
-InstallNamedFile(dst, src) =
-    $(LIB)/mk/$(dst): $(src)
-        $(symlink $<, $@)
-
-    $(MPINSTALL): $(LIB)/mk/$(dst)
-
-InstallFiles(files) =
-    foreach(src, $(files))
-        InstallNamedFile($(basename $(src)), $(src))
-
-InstallNamedFile(OMakeroot, OMakeroot_install)
-InstallNamedFile(OMakefile_editor, editor/ml/OMakefile)
-InstallFiles(OMakefile_common OMakefile_theories mk/prlcomp mk/config mk/defaults)
+LibSubInstallNamed(mk, OMakeroot, OMakeroot_install)
+LibSubInstallNamed(mk, OMakefile_editor, editor/ml/OMakefile)
+LibSubInstall(mk, OMakefile_common OMakefile_theories mk/prlcomp mk/config mk/defaults)
 
 #
 # Install everything

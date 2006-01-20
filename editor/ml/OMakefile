@@ -12,26 +12,6 @@ TCMAMPLIBS  = $(LIB)/libmptop.cma
 TCMXAMPLIBS = $(LIB)/libmptop.cmxa
 TCMXAMPDEPS = $(LIB)/libmptop.cmxa $(LIB)/libmptop$(EXT_LIB)
 
-########################################################################
-# Tests
-#
-TESTFILES[] =
-
-if $(TESTS_ENABLED)
-   TESTFILES[] =
-   if $(or $(mem itt/core, $(THEORIES)), $(mem itt, $(THEORIES)))
-      TESTFILES[] +=
-         $(file tests/test)
-         $(file tests/prop-pigeon)
-      export
-   if $(TESTFILES)
-      .SUBDIRS: tests
-   export
-
-CMOFILES = $(addsuffix .cmo, $(TESTFILES))
-CMXFILES = $(addsuffix .cmx, $(TESTFILES))
-OBJFILES = $(addsuffix $(EXT_OBJ), $(TESTFILES))
-
 BASE_LIBS[] =
    lm
    util
@@ -83,7 +63,7 @@ if $(defined Options.MCC)
 # Profiling
 #
 if $(NATIVE_PROFILING_ENABLED)
-   gmon.out: mp.opt mpopt mpconfig svnversion.txt
+   gmon.out: mp.opt mpopt mpconfig $(LIB)/svnversion.txt
       echo 'restart_gmon();; status_all();;' | ./mpopt >& /dev/null
 
    native_profile.txt: mp.opt gmon.out
@@ -172,20 +152,20 @@ if $(NATIVE_ENABLED)
     export
 
 if $(MPRUN_ENABLED)
-    $(MP).run: $(BYTE_DEPS) $(CMOFILES) $(OCAMLMKTOP_VERSION) $(RCMAMPLIBS)
+    $(MP).run: $(BYTE_DEPS) $(OCAMLMKTOP_VERSION) $(RCMAMPLIBS)
         $(RM) $@
         $(OCAMLMKTOP) $(OCAMLFLAGS) $(OCAMLCFLAGS) -o $@ -custom \
-            $(CMOBJS) $(RCMAMPLIBS) $(CMOFILES) $(BYTE_CCLIBS) $(LIBS) $(OCAML_LINK_FLAGS)
+            $(CMOBJS) $(RCMAMPLIBS) $(LIBS) $(OCAML_LINK_FLAGS)
 
-$(MP).top: $(TOP_DEPS) $(CMOFILES) $(TCMAMPLIBS)
+$(MP).top: $(TOP_DEPS) $(TCMAMPLIBS)
     $(RM) $@
     $(OCAMLLINK) $(OCAMLFLAGS) $(OCAMLCFLAGS) -o $@ -custom \
-        $(TCMOBJS) $(TCMAMPLIBS) $(CMOFILES) $(BYTE_CCLIBS) $(LIBS) $(OCAML_LINK_FLAGS)
+        $(TCMOBJS) $(TCMAMPLIBS) $(BYTE_CCLIBS) $(LIBS) $(OCAML_LINK_FLAGS)
 
-$(MP).opt: $(OPT_DEPS) $(CMXFILES) $(OBJFILES) $(TCMXAMPDEPS)
+$(MP).opt: $(OPT_DEPS) $(TCMXAMPDEPS)
     $(RM) $@
     $(OCAMLOPTLINK) $(OCAMLFLAGS) $(OCAMLOPTFLAGS) -o $@ \
-        $(CMXOBJS) $(TCMXAMPLIBS) $(CMXFILES) $(NATIVE_CCLIBS) $(LIBS) $(OCAML_LINK_FLAGS)
+        $(CMXOBJS) $(TCMXAMPLIBS) $(NATIVE_CCLIBS) $(LIBS) $(OCAML_LINK_FLAGS)
 
 #
 # Defaults

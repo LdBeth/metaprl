@@ -1,5 +1,0 @@
-#!/bin/sh
-
-. ./mpconfig
-
-exec ../../ensemble/mpserver.run

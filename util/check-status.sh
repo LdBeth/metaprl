@@ -27,11 +27,11 @@ REMOTE_LOGS=$REMOTE_DIR$ST_NAME
 if [ -z "$LOGNAME" ]; then
    LOGNAME=`whoami`
 fi
-if [ ! -e editor/ml/svnversion.txt ]; then
-   echo editor/ml/svnversion.txt does not exist!
+if [ ! -e support/editor/svnversion.txt ]; then
+   echo support/editor/svnversion.txt does not exist!
    exit 1
 fi
-MYREV="`cat editor/ml/svnversion.txt| sed -e 's/.*://' -e 's/M//'`"
+MYREV="`cat support/editor/svnversion.txt| sed -e 's/.*://' -e 's/M//'`"
 REV=$MYREV
 until [ -n "$LOG" -a -f "$LOG" -a -s "$LOG" ]; do
    if [ "$REV" -lt 8410 ]; then
@@ -111,5 +111,5 @@ done > $TEMP 2>&1
       echo ""
       echo BUILD FAILED!
    fi
-) 2>&1 ) | mail -s "MetaPRL $SUBJECT (`hostname -s`, `pwd`, rev $REV->`cat editor/ml/svnversion.txt`)" "$LOGNAME"
+) 2>&1 ) | mail -s "MetaPRL $SUBJECT (`hostname -s`, `pwd`, rev $REV->`cat support/editor/svnversion.txt`)" "$LOGNAME"
 rm -rf $TMPDIR

@@ -81,6 +81,7 @@ OCamlLibrary($(MP)run, $(RUNFILES))
 OCamlLibrary($(MP)top, $(TOPFILES))
 OCamlLibraryCopy($(MPINSTALL), $(LIB), $(MP)run, $(set $(RUNFILES) $(TOPFILES)))
 OCamlLibraryCopy($(MPINSTALL), $(LIB), $(MP)top, $(EMPTY))
+LibInstall(svnversion.txt)
 
 #
 # Clean up

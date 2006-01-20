@@ -38,5 +38,5 @@ if [ -f editor/ml/mp.opt ]; then
 else
    echo ""
    echo BUILD FAILED!
-fi) 2>&1 ) | mail -s "MetaPRL full status check (`hostname -s`, `pwd`, rev `cat editor/ml/svnversion.txt`)" "$LOGNAME"
+fi) 2>&1 ) | mail -s "MetaPRL full status check (`hostname -s`, `pwd`, rev `cat support/editor/svnversion.txt`)" "$LOGNAME"
 

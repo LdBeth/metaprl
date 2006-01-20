@@ -1,7 +1,7 @@
 #
 # Make sure omake is up-to-date
 #
-OMakeVersion(0.9.4.21)
+OMakeVersion(0.9.6.7)
 
 #
 # Include the standard installed configuration files.

@@ -52,14 +52,8 @@ if $(SSL_ENABLED)
 #
 # Copy the files in inputs
 #
-LIBINPUTS = $(addprefix $(LIB)/, $(INPUTS))
-
-$(LIBINPUTS): $(LIB)/%: %
-        $(symlink $<, $@)
-
-$(MPINSTALL): $(LIBINPUTS)
-
-.DEFAULT: $(LIBINPUTS)
+LibInstall($(INPUTS))
+.DEFAULT: $(addprefix $(LIB)/, $(INPUTS))
 
 clean:
    $(CLEAN) *.pem

@@ -25,12 +25,7 @@ OCamlLibraryInstall($(MPINSTALL), $(LIB), support, $(FILES))
 # Install .cmiz files
 #
 InstallCmizFiles(files) =
-    files = $(addprefix $(LIB)/, $(addsuffix .cmiz, $(files)))
-
-    $(files): $(LIB)/%.cmiz: %.cmiz
-        $(symlink $<, $@)
-
-    $(MPINSTALL): $(files)
+    LibInstall($(addsuffix .cmiz, $(files)))
 
 #
 # Subdirectories

@@ -1,5 +1,0 @@
-#!/bin/sh
-cd "`dirname $0`"
-. ./mpconfig
-FONT="-misc-fixed-medium-r-normal--20-200-75-75-c-100-iso10646-1"
-konsole -fn $FONT -e ./mpopt
