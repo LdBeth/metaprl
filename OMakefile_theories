@@ -276,7 +276,11 @@ section
                                 export
                             if $(defined PRINT_THEORIES)
                                 TheoryDocumentInstall($(basename $(thy)), $(PRINT_THEORIES))
+                                CLEAN += theory.tex theory-body.tex theory_print.ml
+                                export CLEAN
                             all: theory$(LIB_SUFFIX)
+                            clean:
+                                $(CLEAN)
                             export
                         export
                     export THEORY_DEPS VIRTUAL_THEORY
