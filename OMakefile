@@ -165,9 +165,11 @@ LibSubInstall(mk, OMakefile_common OMakefile_theories mk/prlcomp mk/config mk/de
 #
 # Generate the OMakeroot file for read-only clients
 #
-include mk/gen_omakeroot
+GENROOT = mk/gen_omakeroot
 
-$(LIB)/mk/OMakeroot:
+include $(GENROOT)
+
+$(LIB)/mk/OMakeroot: $(GENROOT)
     fprint($@, $(OMakeroot))
 
 $(MPINSTALL): $(LIB)/mk/OMakeroot

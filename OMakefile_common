@@ -348,7 +348,7 @@ THEORIES_PATH = $(file $(EDITOR)/theories.dir)
 MLDEBUG_PATH  = $(file $(EDITOR)/mldebug.dir)
 
 $(THEORIES_PATH):
-    section eval
+    section
         deps = $(dependencies $@)
         deps = $(mapprefix -I, $(in $(EDITOR), $(deps)))
         if $(equal $(OSTYPE), Win32)
@@ -357,7 +357,7 @@ $(THEORIES_PATH):
             fprintln($@, $'INCLUDES='$(quote-argv $(deps)))
 
 $(MLDEBUG_PATH):
-    section eval
+    section
         deps = $(project-directories) $(CAMLLIB) $(CAMLP4LIB)
         deps = $(mapprefix -I, $(in $(EDITOR), $(deps)))
         if $(equal $(OSTYPE), Win32)

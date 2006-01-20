@@ -49,6 +49,18 @@ include OMakefile
 OCAMLINCLUDES[] +=
     $$(MP_LIB)
 
+#
+# Build the theories
+#
 include $$(MK)/OMakefile_theories
+
+#
+# Hardcode basic dependencies
+#
+$$(THEORIES_PATH): $$(LIB) $$(find-theory meta/base)
+
+#
+# Build the toploop
+#
 include $$(MK)/OMakefile_editor
 """
