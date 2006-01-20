@@ -19,8 +19,12 @@ include OMakefile_common
 ########################################################################
 # Installation into $(LIB)
 #
+LibInstallDir(subdir) =
+    $(LIB)/$(subdir):
+        mkdir -p $@
+
 LibSubInstallNamed(subdir, dst, src) =
-    $(LIB)/$(subdir)/$(dst): $(src)
+    $(LIB)/$(subdir)/$(dst): $(src) $(LIB)/$(subdir) :scanner: /scan-dummy
         $(symlink $<, $@)
 
     $(MPINSTALL): $(LIB)/$(subdir)/$(dst)
@@ -125,18 +129,6 @@ SUPPORT_DIRS = $(dir support/display support/shell support/tactics support/doc)
 OCAMLINCLUDES[] += $(SUPPORT_DIRS)
 
 #
-# The base theories will install themselves
-#
-InstallTheoryFiles(files) =
-    LibSubInstall(theories, $(addsuffixes .cmi .cmiz .mli .prla, $(files)))
-
-    if $(NATIVE_ENABLED)
-        LibSubInstall(theories, theory.cmxa theory$(EXT_LIB))
-
-    if $(BYTE_ENABLED)
-        LibSubInstall(theories, theory.cma)
-
-#
 # Config for building theories
 #
 BASE = meta/base
@@ -186,6 +178,7 @@ INSTALLDIR = $(dir export)
 #
 # Extra files to install in lib/mk/
 #
+LibInstallDir(mk)
 LibSubInstallNamed(mk, OMakeroot, OMakeroot_install)
 LibSubInstallNamed(mk, OMakefile_editor, editor/ml/OMakefile)
 LibSubInstall(mk, OMakefile_common OMakefile_theories mk/prlcomp mk/config mk/defaults)
