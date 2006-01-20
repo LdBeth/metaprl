@@ -6,8 +6,6 @@ OCAMLINCLUDES[] +=
    ../shell
    ../tactics
 
-OCAML_LIB_FLAGS += -linkall
-
 # Name of main libraries
 MP = libmp
 

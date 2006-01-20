@@ -3,8 +3,6 @@ OCAMLINCLUDES[] +=
     ../shell
     ../tactics
 
-OCAML_LIB_FLAGS += -linkall
-
 # Library files
 include Files
 

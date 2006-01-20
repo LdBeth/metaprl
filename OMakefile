@@ -149,9 +149,10 @@ include OMakefile_theories
 # Additional theories
 #
 section
+   OCAML_LIB_FLAGS += -linkall
    THEORYNAME = support
    THEORYDESCR = MetaPRL Internal "Helper" Modules
-   .SUBDIRS: support editor/ml
+   .SUBDIRS: $(SUPPORT) editor/ml
 
 ########################################################################
 # Check-status

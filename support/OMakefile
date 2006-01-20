@@ -17,8 +17,6 @@ FILES[] =
     $(TACTICS_FILES)
     $(DOC_FILES)
 
-OCAML_LIB_FLAGS += -linkall
-
 OCamlLibraryInstall($(MPINSTALL), $(LIB), support, $(FILES))
 
 #
