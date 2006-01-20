@@ -30,6 +30,9 @@ else
 !!!!! After you are done, run omake again to continue the build process.")
     exit(0)
 
+INSTALL_DIR = $(dir $(INSTALL_DIR))
+THEORYPATH[] = $(dir $(THEORYPATH))
+
 #
 # Things that can not be enabled on Win32.
 #
