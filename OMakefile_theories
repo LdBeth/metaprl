@@ -222,6 +222,27 @@ Theory(files) =
 
     export
 
+#
+# Find a theory in the theory path
+# XXX: JYH: we should probably build this kind of search into
+# omake.
+#
+find-theory(name) =
+    THEORYNAME = false
+    foreach(dir, $(THEORYPATH))
+        if $(and $(not $(THEORYNAME)), $(file-exists $(dir)/$(name)))
+            THEORYNAME = $(dir)/$(name)
+            export
+        export
+    if $(not $(THEORYNAME))
+        eprintln($"!!! ERROR: $(in $(ROOT)/theories, $(thydir)) (referenced by the $(source)):")
+        eprintln($"!!!        theory directory $(in $(ROOT), $(thydir)) does not exist")
+        exit (1)
+    return $(THEORYNAME)
+
+#
+# Search the set of theories that are desired
+#
 section
     # Default theory for those directories that do not override it
     # Set to empty to force each theory to define its own values.
@@ -241,13 +262,9 @@ section
     # Collect the theories that need to be built, paying attention
     # to the value of the THEORY_DEPS variable in each theory.
     TheorySubDir(theories, source) =
-        foreach (thy, $(theories))
-            thydir = $(dir $(THEORY_DIR)/$(thy))
+        foreach(thy, $(theories))
+            thydir = $(find-theory $(thy))
             if $(not $(mem $(thydir), $(COLLECTED_THEORIES)))
-                if $(not $(file-exists $(thydir)))
-                    eprintln($"!!! ERROR: $(in $(ROOT)/theories, $(thydir)) (referenced by the $(source)):")
-                    eprintln($"!!!        theory directory $(in $(ROOT), $(thydir)) does not exist")
-                    exit (1)
                 if $(not $(file-exists $(thydir)/MetaprlInfo))
                     eprintln($"!!! ERROR: $(in $(ROOT)/theories, $(thydir)) (referenced by the $(source)):")
                     eprintln($"!!!        theory does not have a MetaprlInfo")

@@ -81,6 +81,8 @@ INSTALL_DIR =
                 get-registry(HKEY_LOCAL_MACHINE, Software\Microsoft\Windows\CurrentVersion, ProgramFilesDir)
                     value $(if $(equal $(OSTYPE), Win32), $'C:\MetaPRL', /usr/local/lib/metaprl)
 
+THEORYPATH = $(dir theories)
+
 #
 # Location of OpenSSL on Windows. If your OpenSSL is installed in a different place,
 # please use mk/config.local to override.

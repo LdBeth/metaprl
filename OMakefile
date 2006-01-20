@@ -195,10 +195,10 @@ LibSubInstall(mk, OMakefile_common OMakefile_theories mk/prlcomp mk/config mk/de
 #
 include mk/gen_omakeroot
 
-$(LIB)/OMakeroot:
+$(LIB)/mk/OMakeroot:
     fprint($@, $(OMakeroot))
 
-$(MPINSTALL): $(LIB)/OMakeroot
+$(MPINSTALL): $(LIB)/mk/OMakeroot
 
 #
 # Install everything
