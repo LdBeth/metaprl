@@ -186,6 +186,12 @@ InstallTheoryFiles(files) =
     if $(BYTE_ENABLED)
         LibSubInstall($(DIR), theory.cma)
 
+    $(LIB)/$(DIR)/MetaprlInfo: MetaprlInfo
+        cat $< > $@
+        echo "READONLY = true" >> $@
+
+    $(MPINSTALL): $(LIB)/$(DIR)/MetaprlInfo
+
 #
 # These directories use prlc
 #
@@ -242,9 +248,9 @@ section
                     eprintln($"!!! ERROR: $(in $(ROOT)/theories, $(thydir)) (referenced by the $(source)):")
                     eprintln($"!!!        theory directory $(in $(ROOT), $(thydir)) does not exist")
                     exit (1)
-                if $(not $(file-exists $(thydir)/OMakefile))
+                if $(not $(file-exists $(thydir)/MetaprlInfo))
                     eprintln($"!!! ERROR: $(in $(ROOT)/theories, $(thydir)) (referenced by the $(source)):")
-                    eprintln($"!!!        theory does not have an OMakefile")
+                    eprintln($"!!!        theory does not have a MetaprlInfo")
                     exit (1)
                 public.VirtualTheory(subdirs) =
                     VIRTUAL_THEORY = true
@@ -252,13 +258,27 @@ section
                     export
 
                 # Every theory depends on the base theory
-                THEORY_DEPS[] = $(BASE)
+                THEORY_DEPS[] = meta/base
                 VIRTUAL_THEORY = false
 
                 # Actually include the theory.
+                READONLY = false
                 PENDING_THEORIES[] += $(thydir)
                 .SUBDIRS: $(thydir)
-                    include OMakefile
+                    include MetaprlInfo
+                    if $(not $(READONLY))
+                        if $(file-exists OMakefile)
+                            include OMakefile
+                            export
+                        else
+                            if $(defined MPFILES)
+                                Theory($(MPFILES))
+                                export
+                            if $(defined PRINT_THEORIES)
+                                TheoryDocumentInstall($(basename $(thy)), $(PRINT_THEORIES))
+                            all: theory$(LIB_SUFFIX)
+                            export
+                        export
                     export THEORY_DEPS VIRTUAL_THEORY
 
                 THEORY_DEPS_DIRS = $(dir $(addprefix $(THEORY_DIR)/, $(THEORY_DEPS)))
@@ -278,5 +298,4 @@ section
     TheorySubDir($(THEORIES), THEORIES variable in $(MK)/config)
     export COLLECTED_THEORIES
 
-MP_DIRS[] =
-   $(COLLECTED_THEORIES)
+MP_DIRS[] = $(COLLECTED_THEORIES)
