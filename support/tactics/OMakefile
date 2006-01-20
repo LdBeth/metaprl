@@ -7,7 +7,7 @@ OCAMLINCLUDES[] +=
 
 # Common files
 MLZFILES[] =
-   top_resource.mlz
+   top_resource
 
 # Library files
 include Files

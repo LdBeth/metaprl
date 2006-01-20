@@ -1,15 +1,14 @@
 QUICK START WITH PROOF EDITOR
 
-Toploops to use:
+Starting MetaPRL:
+  Default interface:
+     editor/ml/mp     
 
-for native code --
-  editor/ml/mpxterm  (will start mpopt in a new xterm using a correct font)
-  editor/ml/mpopt
-for bytecode --
-  editor/ml/mptop
-for interactive tactic development (bytecode)--
-  editor/ml/mp   (with   #use "x.ml";; as the first command,
-                  not recommended for beginners)
+  Custom interfaces:
+     editor/ml/mpxterm  (will start MetaPRL CLI in a new xterm using a correct font)
+     editor/ml/mpopt    (starts native code MetaPRL with default UI)
+     editor/ml/mptop    (starts bytecode MetaPRL with default UI)
+     editor/ml/mprun    (starts debugging toploop; not recommended for beginners)
 
 Navigation:
 
