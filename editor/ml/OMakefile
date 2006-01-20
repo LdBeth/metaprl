@@ -221,7 +221,7 @@ export ENS_PORT ENS_MODES ENS_DEERING_PORT ENS_GOSSIP_PORT ENS_GOSSIP_HOSTS ENS_
 #
 # Root directory is two directories up
 #
-export MP_ROOT=$(MPROOT)
+export MP_ROOT=$(MP_ROOT)
 
 #
 # TPTP libraries

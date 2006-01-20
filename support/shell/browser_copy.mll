@@ -349,7 +349,7 @@ let print_translated_file_to_channel out table name =
       Buffer.output_buffer out buf
    in
    let print_error_page out code =
-      raise (Invalid_argument ("File not found: " ^ name))
+      raise (Invalid_argument ("Browser_copy.print_translated_file_to_channel: file not found: " ^ name ^ " lib = " ^ Setup.lib ()))
    in
       print_translated_file print_success_page print_error_page out table name
 

@@ -22,7 +22,6 @@
  * Authors: Jason Hickey <jyh@cs.caltech.edu>
  *          Aleksey Nogin <nogin@cs.caltech.edu>
  *)
-
 open Unix
 open Lm_printf
 open Lm_thread
@@ -70,16 +69,14 @@ let lib =
       let name = environ_prefix ^ "LIB" in
          try Sys.getenv name with
             Not_found ->
-               begin
-                  (* Fall back to $(MP_ROOT)/lib, but only if directory exists and is accessible *)
-                  let lib = Filename.concat (root ()) "lib" in
+               (* Fall back to $(MP_ROOT)/lib, but only if directory exists and is accessible *)
+               let lib = Filename.concat (root ()) "lib" in
                   try
                      closedir(opendir lib);
                      lib
                   with
                      _ ->
                         raise (Invalid_argument ("Setup: " ^ name ^ " environment variable must be defined"))
-               end
    in
       delay "Setup.lib" writer
 

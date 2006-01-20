@@ -17,10 +17,13 @@ MakeConfig(name) =
           return $(ROOT)
        else
           value $d
+
     THEORYPATH[] = 
         $(EMPTY)
         $(sequence-map $(map-path), $(array $(THEORYPATH)))
+
     THEORYPATH = $(concat $"$(nl)    ", $(THEORYPATH))
+
     CONFIG1 = $"""
 # Main MetaPRL configuration file.
 

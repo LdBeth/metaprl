@@ -25,14 +25,13 @@ MP_LIB  = $$(dir $$(MP_ROOT)/lib)
 LIB     = $$(MP_LIB)
 MK      = $$(dir $$(MP_LIB)/mk)
 EDITOR  = $$(dir .)
-MPROOT  = $$(LIB)
 
 PATH[]  =
     $$(dir $$(MP_ROOT)/bin)
     $$(PATH)
 
 setenv(MP_ROOT, $$(MP_ROOT))
-setenv(MP_LIB,  $$(MP_LIB))
+setenv(MPLIB,   $$(MP_LIB))
 
 include $$(MK)/defaults
 include $$(MK)/config
