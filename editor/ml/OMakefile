@@ -272,4 +272,13 @@ clean:
 #
 # All defaults
 #
+
+#
+# Temporarily, link mpopt.
+#
+mpopt: $(LIB)/mpopt
+    $(symlink $<, $@)
+
+.DEFAULT: mpopt
+
 all: .DEFAULT
