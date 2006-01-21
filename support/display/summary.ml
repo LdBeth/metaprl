@@ -668,7 +668,7 @@ dform improve_df : "improve"[name]{'flag; 'expr} =
    szone{'expr} ezone popm
 
 dform public_df : "public" = info["public"]
-dform private_df : "public" = info["private"]
+dform private_df : "private" = info["private"]
 
 dform infix_df : "infix"[name:s] =
    info["infix"] " " slot[name:s]
