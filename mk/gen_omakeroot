@@ -26,6 +26,8 @@ LIB     = $$(MP_LIB)
 MK      = $$(dir $$(MP_LIB)/mk)
 EDITOR  = $$(dir .)
 
+SHARED_MODE = true
+
 PATH[]  =
     $$(dir $$(MP_ROOT)/bin)
     $$(PATH)

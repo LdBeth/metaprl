@@ -13,6 +13,8 @@ ROOT     = $(dir .)
 EDITOR   = $(dir editor/ml)
 MP_ROOT  = $(ROOT)
 
+SHARED_MODE = false
+
 include mk/load_config
 include OMakefile_common
 
@@ -172,7 +174,11 @@ include $(GENROOT)
 $(LIB)/mk/OMakeroot: $(GENROOT)
     fprint($@, $(OMakeroot))
 
-$(MPINSTALL): $(LIB)/mk/OMakeroot
+$(LIB)/mk/Ocaml_version: $(where ocamlc)
+    fprint($@, $"CAML_VERSIONS = ")
+    ocamlc -version >> $@
+
+$(MPINSTALL): $(LIB)/mk/OMakeroot $(LIB)/mk/Ocaml_version
 
 #
 # Install everything
