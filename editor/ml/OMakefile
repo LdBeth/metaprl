@@ -174,7 +174,7 @@ if $(BYTE_ENABLED)
     if $(MPRUN_ENABLED)
         .test-metaprl-startup: $(MP).run
 
-$(MP_SCRIPT): $(MP)$(if $(NATIVE_ENABLED), opt, top)$(if $(equal $(OSTYPE), Win32), .bat)
+$(MP_SCRIPT): $(LIB)/$(MP)$(if $(NATIVE_ENABLED), opt, top)$(if $(equal $(OSTYPE), Win32), .bat)
     $(symlink $<, $@)
 
 run: $(MP_PREREQS)
