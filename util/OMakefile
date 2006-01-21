@@ -13,7 +13,7 @@ BINDEP   = $(file $(BIN)/ocamldep$(EXE))
 #
 OCamlProgramInstall($(MPINSTALL), $(BIN), ocamldep, ocamldep)
 
-ocamldep$(EXT_OBJ) ocamldep.cmx ocamldep.cmo ocamldep.cmi:
+ocamldep$(EXT_OBJ) ocamldep.cmx ocamldep.cmo ocamldep.cmi: $(BIN)
 
 #
 # Phony targets

@@ -8,6 +8,7 @@ OMakeVersion(0.9.6.5)
 #
 LIB      = $(dir lib)
 BIN      = $(dir bin)
+EXPORT   = $(dir export)
 MK       = $(dir mk)
 ROOT     = $(dir .)
 EDITOR   = $(dir editor/ml)
@@ -26,7 +27,7 @@ include OMakefile_common
 ########################################################################
 # For the rest of MetaPRL, use our custom scanner.
 #
-OCAMLDEP = $(file bin/ocamldep$(EXE))
+OCAMLDEP = $(file $(BIN)/ocamldep$(EXE))
 
 OCAMLDEPFLAGS += -omake
 
@@ -45,8 +46,8 @@ OCAMLINCLUDES += $(dir libmojave/stdlib libmojave/util libmojave/unix)
 #
 
 # Macro preprocess
-MACROPP = $(file lib/macropp$(EXE))
-MACROPRINT = $(file lib/macroprint$(EXE))
+MACROPP = $(file $(LIB)/macropp$(EXE))
+MACROPRINT = $(file $(LIB)/macroprint$(EXE))
 
 #
 # For the refiner and mllib directories,
@@ -113,8 +114,6 @@ OCAMLINCLUDES[] += $(SUPPORT_DIRS)
 #
 # Config for building theories
 #
-BASE = meta/base
-
 include OMakefile_theories
 
 #
@@ -160,9 +159,9 @@ else
 #
 # Extra files to install in lib/mk/
 #
-LibInstallDir(mk)
-LibSubInstallNamed(mk, OMakefile_editor, editor/ml/OMakefile)
-LibSubInstall(mk, OMakefile_common OMakefile_theories mk/prlcomp mk/config mk/defaults)
+ExportInstallDir(mk)
+ExportSubInstallNamed(mk, OMakefile_editor, editor/ml/OMakefile)
+ExportSubInstall(mk, OMakefile_common OMakefile_theories mk/prlcomp mk/config mk/defaults)
 
 #
 # Generate the OMakeroot file for read-only clients
@@ -171,20 +170,22 @@ GENROOT = mk/gen_omakeroot
 
 include $(GENROOT)
 
-$(LIB)/mk/OMakeroot: $(GENROOT)
+$(EXPORT)/mk/OMakeroot: $(GENROOT) $(EXPORT)/mk
     fprint($@, $(OMakeroot))
 
-$(LIB)/mk/Ocaml_version: $(where ocamlc)
+$(EXPORT)/mk/OCaml_version: $(where ocamlc) $(EXPORT)/mk
     fprint($@, $"CAML_VERSIONS = ")
     ocamlc -version >> $@
 
-$(MPINSTALL): $(LIB)/mk/OMakeroot $(LIB)/mk/Ocaml_version
+$(MPINSTALL): $(EXPORT)/mk/OMakeroot $(EXPORT)/mk/OCaml_version
 
 #
 # Install everything
 #
 install: $(MPINSTALL)
     rm -rf $(INSTALL_DIR)
-    mkdir -p $(INSTALL_DIR)/lib $(INSTALL_DIR)/bin
-    /bin/cp -L -r --remove-destination bin $(INSTALL_DIR)
-    /bin/cp -L -r --remove-destination lib $(INSTALL_DIR)
+    mkdir -p $(INSTALL_DIR)
+    /bin/cp -L -r --remove-destination $(LIB) $(INSTALL_DIR)
+    /bin/cp -L -r --remove-destination $(BIN) $(INSTALL_DIR)
+    /bin/cp -L -r --remove-destination $(EXPORT)/mk $(INSTALL_DIR)
+    /bin/cp -L -r --remove-destination $(EXPORT)/theories $(INSTALL_DIR)

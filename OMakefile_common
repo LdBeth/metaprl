@@ -9,6 +9,22 @@ if $(not $(defined NOSCANNER))
         @
     export
 
+#
+# Copy into the $(BIN) directory
+#
+$(BIN):
+    mkdir -p $(BIN)
+
+BinInstall(files) =
+    foreach(src, $(files))
+        $(BIN)/$(src): $(src) $(BIN)
+            $(symlink $<, $@)
+
+    $(MPINSTALL): $(addprefix $(BIN)/, $(files))
+
+#
+# Install into the $(LIB) directory.
+#
 LibInstallDir(subdir) =
     $(LIB)/$(subdir):
         mkdir -p $@
@@ -25,6 +41,26 @@ LibSubInstall(subdir, files) =
 
 LibInstall(files) =
     LibSubInstall($(EMPTY), $(files))
+
+#
+# Install into the $(EXPORT) directory.
+#
+ExportInstallDir(subdir) =
+    $(EXPORT)/$(subdir):
+        mkdir -p $@
+
+ExportSubInstallNamed(subdir, dst, src) =
+    $(EXPORT)/$(subdir)/$(dst): $(src) $(EXPORT)/$(subdir) :scanner: $(NOSCANNER)
+        $(symlink $<, $@)
+
+    $(MPINSTALL): $(EXPORT)/$(subdir)/$(dst)
+
+ExportSubInstall(subdir, files) =
+    foreach(src, $(files))
+        ExportSubInstallNamed($(subdir), $(basename $(src)), $(src))
+
+ExportInstall(files) =
+    ExportSubInstall($(EMPTY), $(files))
 
 ########################################################################
 # General config
@@ -385,7 +421,7 @@ MLPFILES =
 CLEAN = $`(RM) $`(file *.opt *.run *.o *.obj *.lib *.cm* *.a *~ .*~ .\#* *.ppo *.p4i *.p4o .version.* *.omc $`(addsuffix .ml, $(MLZFILES)) $`(addsuffix .mli, $(MLZFILES)) $`(addsuffix .ml, $(MLPFILES)))
 
 clean:
-    $(CLEAN) $(file bin/ocamldep$(EXE) lib/camlp4* bin/convert$(EXE) bin/proxyedit$(EXE) bin/genmagic$(EXE) bin/gen_int_bench$(EXE) lib/*.cm* lib/*.ml* lib/*.txt lib/*.dat lib/*.a lib/macrop* bin/prlc* lib/*.html lib/*.js lib/*.css lib/*.gif lib/*.pem lib/metaprl-ssl.config mk/*.omc) $(THEORIES_PATH) $(MLDEBUG_PATH) $(LIB)/mk $(LIB)/theories
+    $(CLEAN) $(LIB) $(BIN) $(file mk/*.omc) $(THEORIES_PATH) $(MLDEBUG_PATH) $(LIB)/mk $(LIB)/theories
 
 if $(not $(defined FORCE_REALCLEAN))
     FORCE_REALCLEAN = false

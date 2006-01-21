@@ -177,20 +177,20 @@ THEORY_DIR = $(dir theories)
 InstallTheoryFiles(files) =
     DIR = theories/$(string $(in $(THEORY_DIR), $(CWD)))
 
-    LibInstallDir($(DIR))
-    LibSubInstall($(DIR), $(filter-targets $(addsuffixes .cmi .cmiz .cmoz .mli, $(files))))
+    ExportInstallDir($(DIR))
+    ExportSubInstall($(DIR), $(filter-targets $(addsuffixes .cmi .cmiz .cmoz .mli, $(files))))
 
     if $(NATIVE_ENABLED)
-        LibSubInstall($(DIR), theory.cmxa theory$(EXT_LIB))
+        ExportSubInstall($(DIR), theory.cmxa theory$(EXT_LIB))
 
     if $(BYTE_ENABLED)
-        LibSubInstall($(DIR), theory.cma)
+        ExportSubInstall($(DIR), theory.cma)
 
-    $(LIB)/$(DIR)/MetaprlInfo: MetaprlInfo $(LIB)/$(DIR)
+    $(EXPORT)/$(DIR)/MetaprlInfo: MetaprlInfo $(EXPORT)/$(DIR)
         cat $< > $@
         echo "READONLY = true" >> $@
 
-    $(MPINSTALL): $(LIB)/$(DIR)/MetaprlInfo
+    $(MPINSTALL): $(EXPORT)/$(DIR)/MetaprlInfo
 
 #
 # These directories use prlc
@@ -297,24 +297,26 @@ section
                 PENDING_THEORIES[] += $(thydir)
                 .SUBDIRS: $(thydir)
                     include MetaprlInfo
-                    if $(not $(READONLY))
-                        if $(file-exists OMakefile)
-                            include OMakefile
-                            export
-                        else
-                            if $(defined MPFILES)
-                                Theory($(MPFILES))
-                                export
-                            if $(defined PRINT_THEORIES)
-                                TheoryDocumentInstall($(basename $(thy)), $(PRINT_THEORIES))
-                                CLEAN += theory.tex theory-body.tex theory_print.ml
-                                export CLEAN
-                            all: theory$(LIB_SUFFIX)
-                            clean:
-                                $(CLEAN)
-                            export
+                    if $(READONLY)
+                        # Do not include this directory in the build
+                        remove-project-directories(.)
                         export
-                    export THEORY_DEPS VIRTUAL_THEORY
+                    elseif $(file-exists OMakefile)
+                        include OMakefile
+                        export
+                    else
+                        if $(defined MPFILES)
+                            Theory($(MPFILES))
+                            export
+                        if $(defined PRINT_THEORIES)
+                            TheoryDocumentInstall($(basename $(thy)), $(PRINT_THEORIES))
+                            CLEAN += theory.tex theory-body.tex theory_print.ml
+                            export CLEAN
+                        all: theory$(LIB_SUFFIX)
+                        clean:
+                            $(CLEAN)
+                        export
+                    export READONLY THEORY_DEPS VIRTUAL_THEORY
 
                 THEORY_DEPS_DIRS = $(dir $(addprefix $(THEORY_DIR)/, $(THEORY_DEPS)))
                 if $(intersects $(PENDING_THEORIES), $(THEORY_DEPS_DIRS))

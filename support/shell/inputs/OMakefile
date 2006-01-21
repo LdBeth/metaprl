@@ -53,6 +53,7 @@ if $(SSL_ENABLED)
 # Copy the files in inputs
 #
 LibInstall($(INPUTS))
+
 .DEFAULT: $(addprefix $(LIB)/, $(INPUTS))
 
 clean:

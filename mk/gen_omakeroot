@@ -23,8 +23,9 @@ DefineCommandVars()
 MP_ROOT = $$(dir $(INSTALL_DIR))
 MP_LIB  = $$(dir $$(MP_ROOT)/lib)
 LIB     = $$(MP_LIB)
-MK      = $$(dir $$(MP_LIB)/mk)
+MK      = $$(dir $$(MP_ROOT)/mk)
 EDITOR  = $$(dir .)
+EXPORT  = /dev/null
 
 SHARED_MODE = true
 
@@ -49,6 +50,8 @@ THEORIES[] =
 include OMakefile
 
 OCAMLINCLUDES[] +=
+    $$(CAMLLIB)
+    $$(CAMLP4LIB)
     $$(MP_LIB)
 
 #

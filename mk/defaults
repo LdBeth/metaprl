@@ -13,11 +13,11 @@ MP_VERSION = 0.9.6.5+
 CAML_VERSIONS = 3.08.2 3.08.3 3.08.4 3.09.0 3.09.1
 
 if $(SHARED_MODE)
-   if $(not $(file-exists $(MP_ROOT)/mk/Ocaml_version))
-      eprintf ($"!!! Your MetaPRL installation is incomplete:")
-      eprintf ($"!!! $(MP_ROOT)/Ocaml_version) is missing")
+   if $(not $(file-exists $(MP_ROOT)/mk/OCaml_version))
+      eprintln($"!!! Your MetaPRL installation is incomplete:")
+      eprintln($"!!! $(MP_ROOT)/mk/OCaml_version) is missing")
       exit(0)
-   include $(MP_ROOT)/mk/Ocaml_version)
+   include $(MP_ROOT)/mk/OCaml_version
    export CAML_VERSIONS
 
 CAMLP4_VERSIONS = $(CAML_VERSIONS)
@@ -90,7 +90,7 @@ INSTALL_DIR =
                 get-registry(HKEY_LOCAL_MACHINE, Software\Microsoft\Windows\CurrentVersion, ProgramFilesDir)
                     value $(if $(equal $(OSTYPE), Win32), $'C:\MetaPRL', /usr/local/lib/metaprl)
 
-THEORYPATH[] = $(dir theories) $(ROOT) $(INSTALL_DIR)
+THEORYPATH[] = $(dir theories) $(ROOT) $(INSTALL_DIR)/theories
 
 #
 # Location of OpenSSL on Windows. If your OpenSSL is installed in a different place,
