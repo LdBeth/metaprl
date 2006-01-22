@@ -124,10 +124,55 @@ TEXDEPS += $(file $(INPUTSDIR)/rc.bib $(INPUTSDIR)/metaprl.tex)
 MP_SCRIPT = $(file $(EDITOR)/mp$(if $(equal $(OSTYPE), Win32), .bat))
 MP_BIN = $(file $(EDITOR)/mp.$(if $(NATIVE_ENABLED), opt, top))
 
+MP_DIRECT_SCRIPTS[] =
+
+if $(NATIVE_ENABLED) 
+    MP_DIRECT_SCRIPTS[] += 
+        mpopt
+    export
+
+if $(BYTE_ENABLED)
+    MP_DIRECT_SCRIPTS[] +=
+        mptop
+    if $(MPRUN_ENABLED)
+        MP_DIRECT_SCRIPTS[] +=
+            mprun
+        export
+    export
+
+if $(equal $(OSTYPE), Win32)
+    MP_DIRECT_SCRIPTS = $(addsuffix .bat $(MP_DIRECT_SCRIPTS))
+    export
+
+else
+    MP_DIRECT_SCRIPTS[] +=
+        mpxterm
+        mpxterm-large
+        mpkonsole
+        mpkonsole-large
+        mpshell
+    if $(not $(equal $(ENSROOT), undefined))
+        MP_DIRECT_SCRIPTS[] +=
+            mpserver
+            mpgossip
+        export
+    if $(BYTE_ENABLED)
+        MP_DIRECT_SCRIPTS[] +=
+            mpdebug-top
+        if $(MPRUN_ENABLED)
+            MP_DIRECT_SCRIPTS[] +=
+                mpdebug
+            export
+        export
+    export
+
+MP_DIRECT_SCRIPTS[] = $(file $(addprefix $(EDITOR)/, $(MP_DIRECT_SCRIPTS)))
+
 MP_PREREQS[] =
     $(MP_SCRIPT)
     $(MP_BIN)
     $(file $(EDITOR)/mpconfig)
+    $(MP_DIRECT_SCRIPTS)
     $(THEORIES_PATH)
     $(MLDEBUG_PATH)
 

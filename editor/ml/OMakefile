@@ -59,8 +59,8 @@ if $(defined Options.MCC)
 # Profiling
 #
 if $(NATIVE_PROFILING_ENABLED)
-   gmon.out: mp.opt mpopt mpconfig $(LIB)/svnversion.txt
-      echo 'restart_gmon();; status_all();;' | ./mpopt >& /dev/null
+   gmon.out: $(MP_PREREQS) $(LIB)/svnversion.txt
+      echo 'restart_gmon();; status_all();;' | ../../support/editor/mpopt >& /dev/null
 
    native_profile.txt: mp.opt gmon.out
       gprof $< > $@
@@ -261,24 +261,18 @@ export INCLUDES DEBUGINCLUDES
 mpconfig:
     fprint(mpconfig, $(mpconfig))
 
+$(MP_DIRECT_SCRIPTS): %: $(LIB)/%
+    $(symlink $<, $@)
+
 .DEFAULT: mpconfig
 
 #
 # Clean up
 #
 clean:
-    $(CLEAN) $(MP_SCRIPT) $(MP).top native_profile.txt .test-metaprl-startup
+    $(CLEAN) $(MP_SCRIPT) $(MP).top native_profile.txt .test-metaprl-startup mpopt mptop
 
 #
 # All defaults
 #
-
-#
-# Temporarily, link mpopt.
-#
-mpopt: $(LIB)/mpopt
-    $(symlink $<, $@)
-
-.DEFAULT: mpopt
-
 all: .DEFAULT
