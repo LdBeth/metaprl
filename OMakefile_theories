@@ -349,7 +349,8 @@ section
                 .SUBDIRS: $(thydir)
                     include MetaprlInfo
                     if $(READONLY)
-                        # Do not include this directory in the build
+                        # Do not include this directory in the build, but sitll include in the search path
+                        $(THEORIES_PATH): $(CWD)
                         remove-project-directories(.)
                         export
                     elseif $(file-exists OMakefile)
