@@ -270,7 +270,7 @@ $(MP_DIRECT_SCRIPTS): %: $(LIB)/%
 # Clean up
 #
 clean:
-    $(CLEAN) $(MP_SCRIPT) $(MP).top native_profile.txt .test-metaprl-startup mpopt mptop
+    $(CLEAN) $(MP_SCRIPT) $(MP).top native_profile.txt .test-metaprl-startup $(MP_DIRECT_SCRIPTS)
 
 #
 # All defaults
