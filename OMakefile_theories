@@ -253,12 +253,18 @@ THEORY_DEPS[] =
 find-theory(name) =
     THEORYNAME = false
     foreach(d, $(THEORYPATH))
-        if $(and $(not $(THEORYNAME)), $(file-exists $(d)/$(name)))
+        if $(and $(not $(THEORYNAME)), $(file-exists $(d)/$(name)/MetaprlInfo))
             THEORYNAME = $(d)/$(name)
             export
         export
     if $(not $(THEORYNAME))
-        eprintln($"!!! ERROR: $(in $(ROOT)/theories, $(thydir)) (referenced by the $(source)):")
+        if $(not $(defined thydir))
+           thydir = unknown
+           export
+        if $(not $(defined source))
+           source = unknown
+           export
+        eprintln($"!!! ERROR: $(name) ($(in $(ROOT)/theories, $(thydir))) (referenced by the $(source)):")
         eprintln($"!!!        theory directory $(in $(ROOT), $(thydir)) does not exist")
         eprintln($"!!! The current search path is the following:")
         eprintvln($(THEORYPATH))
