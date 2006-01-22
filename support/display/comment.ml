@@ -788,9 +788,9 @@ declare iverbatim[text:s] : Dform
 doc docoff
 
 dform iverbatim_df1 : mode[tex] :: iverbatim[s:s] =
-   izone `"\n\n\\begin{quote}\\renewcommand\\baselinestretch{1.0}\\begin{minipage}{3in}\\begin{verbatim}\n"
+   izone `"\n\n\\begin{shadebox}\\renewcommand\\baselinestretch{1.0}\\begin{verbatim}\n"
    slot["raw", s:s]
-   `"\n\\end{verbatim}\\end{minipage}\\end{quote}\n\n" ezone
+   `"\n\\end{verbatim}\\end{shadebox}\n\n" ezone
 
 dform iverbatim_df2 : except_mode[tex] :: iverbatim[s:s] =
    tt[s:s]
@@ -1652,6 +1652,7 @@ declare tabular[tags]{'t : Dform} : Dform
 declare line{'t : Dform} : Dform
 declare cr : Dform
 declare hline : Dform
+declare cline[s] : Dform
 declare arraystretch{'e : Dform} : Dform
 declare multicolumn[cols,align]{'t : Dform} : Dform
 
@@ -1663,6 +1664,7 @@ declare math_line{'t : Dform} : Dform
 declare math_item{'t : Dform} : Dform
 declare math_cr : Dform
 declare math_hline : Dform
+declare math_cline[s] : Dform
 declare math_arraystretch{'e : Dform} : Dform
 declare math_multicolumn[cols,align]{'t : Dform} : Dform
 doc docoff
@@ -1754,6 +1756,12 @@ dform tex_array_lines_xnil_df4 : tex_array_lines{xcons{hline; xnil}} =
 dform tex_array_lines_xnil_df5 : tex_array_lines{xcons{math_hline; xnil}} =
    math_hline
 
+dform tex_array_lines_xnil_df6 : tex_array_lines{xcons{cline[s]; xnil}} =
+   cline[s]
+
+dform tex_array_lines_xnil_df7 : tex_array_lines{xcons{math_cline[s]; xnil}} =
+   math_cline[s]
+
 dform tex_array_lines_cons_df1 : tex_array_lines{xcons{line{'l}; xcons{'h; 't}}} =
    tex_strip_white{xnil; 'l; tex_array_ln}
    izone `"\\\\" ezone
@@ -1775,6 +1783,14 @@ dform tex_array_lines_cons_df4 : tex_array_lines{xcons{hline; xcons{'h; 't}}} =
 
 dform tex_array_lines_cons_df5 : tex_array_lines{xcons{math_hline; xcons{'h; 't}}} =
    math_hline
+   tex_array_lines{xcons{'h; 't}}
+
+dform tex_array_lines_cons_df5 : tex_array_lines{xcons{cline[s]; xcons{'h; 't}}} =
+   cline[s]
+   tex_array_lines{xcons{'h; 't}}
+
+dform tex_array_lines_cons_df6 : tex_array_lines{xcons{math_cline[s]; xcons{'h; 't}}} =
+   math_cline[s]
    tex_array_lines{xcons{'h; 't}}
 
 dform tex_array_lines_df : tex_array_lines{xnil} =
@@ -1830,11 +1846,17 @@ dform math_cr : mode[tex] :: math_cr =
 dform math_hline : mode[tex] :: math_hline =
    izone `"\\hline " ezone
 
+dform math_hline : mode[tex] :: math_cline[s] =
+   izone `"\\cline{" slot[s:s] `"}" ezone
+
 dform cr_df : mode[tex] :: cr =
    izone `"\\\\" ezone
 
 dform hline_df : mode[tex] :: hline =
    izone `"\\hline " ezone
+
+dform hline_df : mode[tex] :: cline[s] =
+   izone `"\\cline{" slot[s:s] `"}" ezone
 
 dform arraystretch_df1 : mode[tex] :: arraystretch{'e} =
    izone `"\\renewcommand{\\arraystretch}{" ezone
@@ -1869,13 +1891,19 @@ dform normal_math_item_df1 : except_mode[tex] :: math_item{'l} =
 dform normal_math_cr_df1 : except_mode[tex] :: math_cr =
    hspace
 
-dform normal_math_hline_df1 : except_mode[tex] :: math_hline =
-   `"===="
-
 dform normal_math_cr_df1 : except_mode[tex] :: cr =
    hspace
 
+dform normal_math_hline_df1 : except_mode[tex] :: math_hline =
+   `"===="
+
 dform normal_math_hline_df1 : except_mode[tex] :: hline =
+   `"===="
+
+dform normal_math_cline_df1 : except_mode[tex] :: math_cline[s] =
+   `"===="
+
+dform normal_math_cline_df1 : except_mode[tex] :: cline[s] =
    `"===="
 
 doc <:doc<
@@ -2074,6 +2102,8 @@ dform cr_sp     : slot["decl"]{cr} = special
 dform cr_sp     : slot["decl"]{math_cr} = special
 dform hline_sp  : slot["decl"]{hline} = special
 dform hline_sp  : slot["decl"]{math_hline} = special
+dform cline_sp  : slot["decl"]{cline[s]} = special
+dform cline_sp  : slot["decl"]{math_cline[s]} = special
 dform multi_sp  : slot["decl"]{multicolumn[s1,s2]{'t}} = special
 dform multi_sp  : slot["decl"]{math_multicolumn[s1,s2]{'t}} = special
 dform array_sp  : slot["decl"]{math_array[s]{'t}} = special

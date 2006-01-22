@@ -335,6 +335,7 @@ declare tabular[tags]{'t : Dform} : Dform
 declare line{'t : Dform} : Dform
 declare cr : Dform
 declare hline : Dform
+declare cline[s] : Dform
 declare arraystretch{'e : Dform} : Dform
 declare multicolumn[cols,align]{'t : Dform} : Dform
 
@@ -346,6 +347,7 @@ declare math_line{'t : Dform} : Dform
 declare math_item{'t : Dform} : Dform
 declare math_cr : Dform
 declare math_hline : Dform
+declare math_cline[s] : Dform
 declare math_arraystretch{'e : Dform} : Dform
 declare math_multicolumn[cols,align]{'t : Dform} : Dform
 
