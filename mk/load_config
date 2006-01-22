@@ -21,13 +21,13 @@ if $(file-exists mk/config)
     export
 else
     protected.fullname = $(MakeConfig mk/config)
-    eprintln($"!!!!! A new config file $(fullname) was created for you.
-!!!!! In that file, we filled in a number of default values for you.
-!!!!! In particular, by default only the following theories will be compiled in:
-!!!!!     $(THEORIES)
-!!!!! You may want to edit the $(fullname) file before continuing.
-!!!!!
-!!!!! After you are done, run omake again to continue the build process.")
+    eprintln($"!!! A new config file $(fullname) was created for you.
+!!! In that file, we filled in a number of default values for you.
+!!! In particular, by default only the following theories will be compiled in:
+!!!     $(THEORIES)
+!!! You may want to edit the $(fullname) file before continuing.
+!!!
+!!! After you are done, run omake again to continue the build process.")
     exit(0)
 
 INSTALL_DIR = $(dir $(INSTALL_DIR))
