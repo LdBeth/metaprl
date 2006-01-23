@@ -445,19 +445,17 @@ let extract_data =
    let hrw tbl options = 
       let rec hrw t =
          let recrw = allSubC (termC hrw) in
-         let conv =
             try
                (* Find and apply the right tactic *)
                if !debug_reduce then
                   eprintf "Conversionals: lookup %a%t" debug_print t eflush;
-               snd (Term_match_table.lookup tbl (select_option options) t) orelseC recrw
+               let conv = snd (Term_match_table.lookup tbl (select_option options) t) in
+                  if !debug_reduce then
+                     eprintf "Conversionals: applying %a%t" debug_print t eflush;
+                  conv orelseC recrw
             with
                Not_found ->
                   recrw
-         in
-            if !debug_reduce then
-               eprintf "Conversionals: applying %a%t" debug_print t eflush;
-            conv
       in termC hrw
    in
       (fun tbl -> rw tbl, hrw tbl)

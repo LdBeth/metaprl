@@ -1,13 +1,11 @@
-########################################################################
-# Installation into $(LIB)
 #
+# Make sure omake is up-to-date
+#
+OMakeVersion(0.9.6.8)
 
-# XXX: HACK: this already exists in OMake on Subversion
-if $(not $(defined NOSCANNER))
-    NOSCANNER = /scan-dummy
-    .SCANNER: $(NOSCANNER)
-        @
-    export
+########################################################################
+# Installation into $(LIB) and $(BIN)
+#
 
 #
 # Copy into the $(BIN) directory

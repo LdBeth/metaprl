@@ -1,9 +1,4 @@
 #
-# Make sure omake is up-to-date
-#
-OMakeVersion(0.9.6.5)
-
-#
 # Locations of the source tree.
 #
 LIB      = $(dir lib)
