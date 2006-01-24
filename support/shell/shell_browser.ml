@@ -1175,7 +1175,12 @@ struct
          InputURI filename ->
             print_raw_file_to_http outx filename
        | ManualURI filename ->
-            print_metaprl_file_to_http outx ( "/doc/htmlman/" ^ filename )
+            begin match Setup.doc_dir () with
+               Some dir ->
+                  print_metaprl_file_to_http outx ( dir ^ filename )
+             | None ->
+                  print_redirect_page outx MovedPermCode ( "http://metaprl.org/" ^ filename )
+            end
        | WelcomeURI ->
             print_welcome_page outx state
        | LoginURI key ->

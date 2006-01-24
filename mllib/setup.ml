@@ -72,6 +72,31 @@ let lib =
    in
       delay "Setup.lib" writer
 
+(* "/doc/htmlman/" *)
+let doc_dir =
+   let shared_state = State.shared_val "Setup.doc_dir" (ref None) in
+   let writer ref =
+      match !ref with
+         Some dir -> dir
+       | None ->
+            let root = root () in
+            let dir = Filename.concat root "/doc/htmlman/" in
+            let dir =
+               if
+                  try 
+                     (Unix.stat dir).st_kind = S_DIR
+                  with _ ->
+                     false
+               then
+                  Some "/doc/htmlman/"
+               else
+                  None
+            in
+               ref := Some dir;
+               dir
+   in
+      fun () -> State.write shared_state writer
+
 (*
  * Make sure directory exists and is writable (creating it, if necessary).
  * Returns true if a new directory was created.

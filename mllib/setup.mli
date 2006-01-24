@@ -26,6 +26,7 @@
 val environ_prefix : string  (* MP *)
 val root : unit -> string    (* $(MP_ROOT); must be defined *)
 val lib : unit -> string     (* $(MPLIB) - when defined, or $(MP_ROOT)/lib - when directory exists *)
+val doc_dir : unit -> string option (* relative to root; Some "/doc/htmlman/", when exists *)
 
 (*
  * $(HOME)/.metaprl directory (uses C:\metaprl or /tmp/metaprl-<uid>, when
