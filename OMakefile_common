@@ -4,66 +4,6 @@
 OMakeVersion(0.9.6.8)
 
 ########################################################################
-# Installation into $(LIB) and $(BIN)
-#
-
-$(BIN)/%: $(BIN)
-$(LIB)/%: $(LIB)
-
-$(BIN) $(LIB):
-    mkdir -p $@
-
-#
-# Copy into the $(BIN) directory
-#
-BinInstall(files) =
-    foreach(src, $(files))
-        $(BIN)/$(src): $(src) $(BIN)
-            $(symlink $<, $@)
-
-    $(MPINSTALL): $(addprefix $(BIN)/, $(files))
-
-#
-# Install into the $(LIB) directory.
-#
-LibInstallDir(subdir) =
-    $(LIB)/$(subdir):
-        mkdir -p $@
-
-LibSubInstallNamed(subdir, dst, src) =
-    $(LIB)/$(subdir)/$(dst): $(src) $(LIB)/$(subdir) :scanner: $(NOSCANNER)
-        $(symlink $<, $@)
-
-    $(MPINSTALL): $(LIB)/$(subdir)/$(dst)
-
-LibSubInstall(subdir, files) =
-    foreach(src, $(files))
-        LibSubInstallNamed($(subdir), $(basename $(src)), $(src))
-
-LibInstall(files) =
-    LibSubInstall($(EMPTY), $(files))
-
-#
-# Install into the $(EXPORT) directory.
-#
-ExportInstallDir(subdir) =
-    $(EXPORT)/$(subdir):
-        mkdir -p $@
-
-ExportSubInstallNamed(subdir, dst, src) =
-    $(EXPORT)/$(subdir)/$(dst): $(src) $(EXPORT)/$(subdir) :scanner: $(NOSCANNER)
-        $(symlink $<, $@)
-
-    $(MPINSTALL): $(EXPORT)/$(subdir)/$(dst)
-
-ExportSubInstall(subdir, files) =
-    foreach(src, $(files))
-        ExportSubInstallNamed($(subdir), $(basename $(src)), $(src))
-
-ExportInstall(files) =
-    ExportSubInstall($(EMPTY), $(files))
-
-########################################################################
 # General config
 #
 
@@ -306,6 +246,60 @@ LOC = -loc _loc
 
 %.cmo %.cmi: $(OCAMLC_VERSION)
 %.cmx: $(OCAMLOPT_VERSION)
+
+########################################################################
+# Installation into $(LIB) and $(BIN)
+#
+
+#
+# Copy into the $(BIN) directory
+#
+BinInstall(files) =
+    foreach(src, $(files))
+        $(BIN)/$(src): $(src) $(BIN)
+            $(symlink $<, $@)
+
+    $(MPINSTALL): $(addprefix $(BIN)/, $(files))
+
+#
+# Install into the $(LIB) directory.
+#
+LibInstallDir(subdir) =
+    $(LIB)/$(subdir):
+        mkdir -p $@
+
+LibSubInstallNamed(subdir, dst, src) =
+    $(LIB)/$(subdir)/$(dst): $(src) $(LIB)/$(subdir) :scanner: $(NOSCANNER)
+        $(symlink $<, $@)
+
+    $(MPINSTALL): $(LIB)/$(subdir)/$(dst)
+
+LibSubInstall(subdir, files) =
+    foreach(src, $(files))
+        LibSubInstallNamed($(subdir), $(basename $(src)), $(src))
+
+LibInstall(files) =
+    LibSubInstall($(EMPTY), $(files))
+
+#
+# Install into the $(EXPORT) directory.
+#
+ExportInstallDir(subdir) =
+    $(EXPORT)/$(subdir):
+        mkdir -p $@
+
+ExportSubInstallNamed(subdir, dst, src) =
+    $(EXPORT)/$(subdir)/$(dst): $(src) $(EXPORT)/$(subdir) :scanner: $(NOSCANNER)
+        $(symlink $<, $@)
+
+    $(MPINSTALL): $(EXPORT)/$(subdir)/$(dst)
+
+ExportSubInstall(subdir, files) =
+    foreach(src, $(files))
+        ExportSubInstallNamed($(subdir), $(basename $(src)), $(src))
+
+ExportInstall(files) =
+    ExportSubInstall($(EMPTY), $(files))
 
 ########################################################################
 # MetaPRL-specific config cleaning
