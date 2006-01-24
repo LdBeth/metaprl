@@ -74,6 +74,12 @@ topval withExcludeOptionT : term -> tactic -> tactic
 topval withoutOptionT : term -> tactic -> tactic
 topval removeOptionT : term -> tactic
 
+(*
+ * Conversions.
+ *)
+topval withOptionC : term -> string -> conv -> conv
+topval withoutOptionC : term -> conv -> conv
+
 (*!
  * @docoff
  *

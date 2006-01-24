@@ -195,6 +195,8 @@ sig
     | IdentityConv
     | TacticConv of (address -> tactic)
     | ForceConv of string * conv
+    | WithOptionConv of opname * option_info * conv
+    | WithoutOptionConv of opname * conv
 
    type pre_tactic
    type prim_tactic = Refiner.Refiner.Refine.prim_tactic
@@ -1057,8 +1059,13 @@ sig
     * Pull out the argument.
     *)
    val funC : (env -> conv) -> conv
-
    val termC : (term -> conv) -> conv
+
+   (*
+    * Options management.
+    *)
+   val withOptionC : opname -> option_info -> conv -> conv
+   val withoutOptionC : opname -> conv -> conv
 
    (*
     * Apply a tactic at the current address
@@ -1198,6 +1205,12 @@ sig
     * This just raises a special exception if the rewrite does not work.
     *)
    val forceC : string -> conv -> conv
+
+   (*
+    * Option management.
+    *)
+   val withOptionC : opname -> option_info -> conv -> conv
+   val withoutOptionC : opname -> conv -> conv
 
    (*
     * Progress

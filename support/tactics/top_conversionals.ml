@@ -473,7 +473,8 @@ let reduceTopC = funC reduceTopC_env
 
 let reduceC =
    funC (fun e ->
-      let p = env_arg e in repeatC (snd (get_resource_arg p get_reduce_resource) (get_options p)))
+      let p = env_arg e in
+         repeatC (snd (get_resource_arg p get_reduce_resource) (get_options p)))
 
 let reduceT = funT (fun p ->
    let reduceHigherC = snd (get_resource_arg p get_reduce_resource) (get_options p) in

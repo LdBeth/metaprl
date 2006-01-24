@@ -41,6 +41,8 @@ open Refiner.Refiner.RefineError
 open Refiner.Refiner.Rewrite
 open Refiner.Refiner.Refine
 
+open Opname
+open Option_sig
 open Tactic_boot
 open Sequent_boot
 open Tacticals_boot.Tacticals
@@ -165,6 +167,12 @@ struct
 
    let forceC debug conv =
       ForceConv (debug, conv)
+
+   let withOptionC opname option conv =
+      WithOptionConv (opname, option, conv)
+
+   let withoutOptionC opname conv =
+      WithoutOptionConv (opname, conv)
 
    (*
     * Apply the conversion at the specified address.
@@ -295,6 +303,14 @@ struct
          funT (fun p ->
             let t = term_subterm (Sequent.nth_assum p assum) addr in
                apply assum addr (Some t) (f (p, t)))
+    | WithOptionConv (opname, option, c) ->
+         if !debug_rewrite then
+            eprintf "Rewrite_type.apply: WithOption (%s, %s)@." (string_of_opname opname) (string_of_option option);
+         withOptionT opname option (apply assum addr t c)
+    | WithoutOptionConv (opname, c) ->
+         if !debug_rewrite then
+            eprintf "Rewrite_type.apply: WithOption %s@." (string_of_opname opname);
+         withoutOptionT opname (apply assum addr t c)
     | (HigherConv _ | AllSubConv _) as conv when t = None ->
          funT (fun p -> apply assum addr (Some (term_subterm (Sequent.nth_assum p assum) addr)) conv)
     | (HigherConv conv) as hconv ->

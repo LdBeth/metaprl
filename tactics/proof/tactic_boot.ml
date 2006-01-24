@@ -236,6 +236,8 @@ struct
     | IdentityConv
     | TacticConv of (address -> tactic)
     | ForceConv of string * conv
+    | WithOptionConv of opname * option_info * conv
+    | WithoutOptionConv of opname * conv
 
    (*
     * Resources.

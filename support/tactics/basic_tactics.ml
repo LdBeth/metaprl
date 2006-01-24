@@ -18,7 +18,6 @@ include Refiner.Refiner.RefineError
 include Option_sig
 include Mp_resource
 include Top_resource
-include Top_options
 include Top_tacticals
 include Top_conversionals
 include Tactic_type.Tactic
@@ -32,3 +31,4 @@ include Typeinf
 include Auto_tactic
 include Dtactic
 include Forward
+include Top_options

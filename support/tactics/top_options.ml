@@ -187,10 +187,11 @@ let printOptionT t =
                 eprintf "<unbound>@.");
          idT)
 
-(************************************************************************
- * Get the complete set of options for the current proof.
- * We *assume* that the tactics here are the ones that manipulate options.
- *)
+let withOptionC t s =
+   Conversionals.withOptionC (opname_of_term t) (option_of_string s)
+
+let withoutOptionC t =
+   Conversionals.withoutOptionC (opname_of_term t)
 
 (*!
  * @docoff

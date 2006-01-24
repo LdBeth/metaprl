@@ -93,6 +93,8 @@ struct
    let allSubC = Rewrite.allSubC
    let prefix_thenTC = Rewrite.prefix_thenTC
    let forceC = Rewrite.forceC
+   let withOptionC = Rewrite.withOptionC
+   let withoutOptionC = Rewrite.withoutOptionC
 
    (************************************************************************
     * SEARCH                                                               *
