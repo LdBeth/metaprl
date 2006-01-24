@@ -139,16 +139,15 @@ sig
    val mk_add_term            : t -> term -> term -> term
    val mk_BTerm2_term         : t -> term -> term
    val mk_CVar_term           : t -> term -> term
-   val mk_ProofStep_term      : t -> term -> term
    val mk_proof_step_term     : t -> term -> term -> term
    val mk_beq_proof_step_term : t -> term -> term -> term
-   val mk_ProofRule_term      : t -> term -> term
+   val mk_ProofRule_term      : t -> term
    val mk_sequent_arg_term    : t -> term
    val mk_Provable_term       : t -> term -> term -> term
    val mk_Sequent_term        : t -> term
    val mk_meta_type_term      : t -> term
    val mk_meta_member_term    : t -> term -> term -> term
-   val mk_Logic_term          : t -> term -> term
+   val mk_Logic_term          : t -> term
    val mk_type_term           : t -> term -> term
    val mk_assert_term         : t -> term -> term
    val mk_let_cvar_term       : t -> var -> term -> term -> int -> term -> term
@@ -159,8 +158,8 @@ sig
    val mk_empty_logic_term    : t -> term
    val mk_rules_logic_term    : t -> term -> term -> term
    val mk_union_logic_term    : t -> term -> term -> term
-   val mk_SubLogic_term       : t -> term -> term -> term -> term
-   val mk_MemLogic_term       : t -> term -> term -> term -> term
+   val mk_SubLogic_term       : t -> term -> term -> term
+   val mk_MemLogic_term       : t -> term -> term -> term
    val mk_it_term             : t -> term
    val mk_xconcl_term         : t -> term
    val mk_hyplist_term        : t -> seq_hyps -> term
@@ -183,9 +182,8 @@ struct
 
    let info_BTerm2            = hash ("BTerm",          [], [0])
    let info_CVar              = hash ("CVar",           [], [0])
-   let info_Logic             = hash ("Logic",          [], [0])
-   let info_ProofRule         = hash ("ProofRule",      [], [0])
-   let info_ProofStep         = hash ("ProofStep",      [], [0])
+   let info_Logic             = hash ("Logic",          [], [])
+   let info_ProofRule         = hash ("ProofRule",      [], [])
    let info_Provable          = hash ("Provable",       [], [0; 0])
    let info_Sequent           = hash ("Sequent",        [], [])
    let info_add               = hash ("add",            [], [0; 0])
@@ -224,8 +222,8 @@ struct
    let info_empty_logic       = hash ("empty_logic",    [], [])
    let info_rules_logic       = hash ("rules_logic",    [], [0; 0])
    let info_union_logic       = hash ("union_logic",    [], [0; 0])
-   let info_SubLogic          = hash ("SubLogic",       [], [0; 0; 0])
-   let info_MemLogic          = hash ("MemLogic",       [], [0; 0; 0])
+   let info_SubLogic          = hash ("SubLogic",       [], [0; 0])
+   let info_MemLogic          = hash ("MemLogic",       [], [0; 0])
    let info_it                = hash ("it",             [], [])
    let info_xconcl            = hash ("xconcl",         [], [])
    let info_hyplist           = hash ("hyplist",        [], [])
@@ -372,17 +370,14 @@ struct
    let mk_CVar_term info t =
       mk_dep0_term (find_opname info info_CVar) t
 
-   let mk_ProofStep_term info t =
-      mk_dep0_term (find_opname info info_ProofStep) t
-
    let mk_proof_step_term info t1 t2 =
       mk_dep0_dep0_term (find_opname info info_proof_step) t1 t2
 
    let mk_beq_proof_step_term info t1 t2 =
       mk_dep0_dep0_term (find_opname info info_beq_proof_step) t1 t2
 
-   let mk_ProofRule_term info t =
-      mk_dep0_term (find_opname info info_ProofRule) t
+   let mk_ProofRule_term info =
+      mk_simple_term (find_opname info info_ProofRule) []
 
    let mk_sequent_arg_term info =
       mk_simple_term (find_opname info info_sequent_arg) []
@@ -390,8 +385,8 @@ struct
    let mk_Sequent_term info =
       mk_simple_term (find_opname info info_Sequent) []
 
-   let mk_Logic_term info t =
-      mk_dep0_term (find_opname info info_Logic) t
+   let mk_Logic_term info =
+      mk_simple_term (find_opname info info_Logic) []
 
    let mk_Provable_term info t1 t2 =
       mk_dep0_dep0_term (find_opname info info_Provable) t1 t2
@@ -456,11 +451,11 @@ struct
    let mk_union_logic_term info t1 t2 =
       mk_dep0_dep0_term (find_opname info info_union_logic) t1 t2
 
-   let mk_SubLogic_term info t1 t2 t3 =
-      mk_dep0_dep0_dep0_term (find_opname info info_SubLogic) t1 t2 t3
+   let mk_SubLogic_term info t1 t2 =
+      mk_dep0_dep0_term (find_opname info info_SubLogic) t1 t2
 
-   let mk_MemLogic_term info t1 t2 t3 =
-      mk_dep0_dep0_dep0_term (find_opname info info_MemLogic) t1 t2 t3
+   let mk_MemLogic_term info t1 t2 =
+      mk_dep0_dep0_term (find_opname info info_MemLogic) t1 t2
 
    let mk_it_term info =
       mk_simple_term (find_opname info info_it) []
@@ -958,8 +953,7 @@ let mk_rule_term info t =
  *    <H> >- t IN ProofRule
  *)
 let mk_rule_wf_thm info t =
-   let seq = Reflect.mk_Sequent_term info in
-   let ty = Reflect.mk_ProofRule_term info seq in
+   let ty = Reflect.mk_ProofRule_term info in
    let t = Reflect.mk_equal_term info t t ty in
    let h = Context (var_H, [], []) in
    let info =
@@ -979,8 +973,7 @@ let mk_rule_wf_thm info t =
  *    <H> >- t IN Logic
  *)
 let mk_logic_wf_thm info t =
-   let seq = Reflect.mk_Sequent_term info in
-   let ty = Reflect.mk_Logic_term info seq in
+   let ty = Reflect.mk_Logic_term info in
    let t = Reflect.mk_equal_term info t t ty in
    let h = Context (var_H, [], []) in
    let info =
@@ -1235,13 +1228,12 @@ let mk_infer_thm info t_logic t =
    let t_goal = mk_provable_sequent_term info h_v logic_t goal in
 
    (* The logic should be a Logic{Sequent} *)
-   let t_seq = Reflect.mk_Sequent_term info in
-   let t_Logic = Reflect.mk_Logic_term info t_seq in
+   let t_Logic = Reflect.mk_Logic_term info in
    let t_logic_wf = Reflect.mk_equal_term info logic_t logic_t t_Logic in
    let logic_premise = mk_normal_sequent_term info h_v t_logic_wf in
 
    (* Add the SubLogic constraint *)
-   let t_sublogic = Reflect.mk_SubLogic_term info t_seq t_logic logic_t in
+   let t_sublogic = Reflect.mk_SubLogic_term info t_logic logic_t in
    let sublogic_premise = mk_normal_sequent_term info h_v t_sublogic in
 
    (* Add the well-formedness subgoals *)
@@ -1260,26 +1252,25 @@ let mk_infer_thm info t_logic t =
 
 (*
  * Make the logic membership term.
- *    <H> >- SubLogic{Sequent; t_logic; 'logic} -->
- *    <H> >- MemLogic{Sequent; t_rule; 'logic}
+ *    <H> >- SubLogic{t_logic; 'logic} -->
+ *    <H> >- MemLogic{t_rule; 'logic}
  *)
 let mk_mem_logic_thm info t_logic t_rule =
    let fv = all_vars_terms [t_logic; t_rule] in
    let h_v = maybe_new_var var_H fv in
    let logic_v = maybe_new_var var_logic fv in
    let logic_t = mk_var_term logic_v in
-   let t_seq = Reflect.mk_Sequent_term info in
-   let ty_logic = Reflect.mk_Logic_term info t_seq in
+   let ty_logic = Reflect.mk_Logic_term info in
 
    (* Premises *)
    let t = Reflect.mk_equal_term info logic_t logic_t ty_logic in
    let wf_premise = mk_normal_sequent_term info h_v t in
 
-   let t = Reflect.mk_SubLogic_term info t_seq t_logic logic_t in
+   let t = Reflect.mk_SubLogic_term info t_logic logic_t in
    let sub_premise = mk_normal_sequent_term info h_v t in
 
    (* Goal term *)
-   let t = Reflect.mk_MemLogic_term info t_seq t_rule logic_t in
+   let t = Reflect.mk_MemLogic_term info t_rule logic_t in
    let goal = mk_normal_sequent_term info h_v t in
       zip_mimplies [wf_premise; sub_premise] goal
 
