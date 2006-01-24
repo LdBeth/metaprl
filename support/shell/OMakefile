@@ -46,6 +46,8 @@ shell_state.mlh: :value: $(DEFAULT_UI) $(BROWSER_COMMAND)
     else
         fprintln($@, DEFINE DEFAULT_BROWSER_COMMAND = None)
 
+.SCANNER: scan-ocaml-shell_state.ml: shell_state.mlh
+
 #
 # Some of these files should use the normal OCaml compiler
 #
