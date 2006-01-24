@@ -126,6 +126,13 @@ section
    .SUBDIRS: $(SUPPORT) editor/ml
 
 ########################################################################
+# Cleaning
+#
+clean:
+     $(CLEAN) $(file mk/*.omc) $(THEORIES_PATH) $(MLDEBUG_PATH) $(LIB)/mk $(LIB)/theories
+    rm -rf $(LIB) $(BIN)
+
+########################################################################
 # Check-status
 #
 .PHONY: check-status core-incompletes

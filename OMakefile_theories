@@ -74,7 +74,7 @@ else
    $(WrapC $(CAMLP4O)) $(CAMLP4FLAGS) $*.ml > $@
 
 if $(mem spell, $(split :, $(MP_DEBUG)))
-    LIBWORDS = $(file lib/words)
+    LIBWORDS = $(file $(LIB)/words)
     %.ppo: $(LIBWORDS)
     %.p4: $(LIBWORDS)
     export

@@ -7,12 +7,15 @@ OMakeVersion(0.9.6.8)
 # Installation into $(LIB) and $(BIN)
 #
 
+$(BIN)/%: $(BIN)
+$(LIB)/%: $(LIB)
+
+$(BIN) $(LIB):
+    mkdir -p $@
+
 #
 # Copy into the $(BIN) directory
 #
-$(BIN):
-    mkdir -p $(BIN)
-
 BinInstall(files) =
     foreach(src, $(files))
         $(BIN)/$(src): $(src) $(BIN)

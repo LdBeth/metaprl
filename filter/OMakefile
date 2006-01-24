@@ -152,6 +152,8 @@ PROGS = $(LIB_PROGS) $(BIN_PROGS)
 all: $(PROGS)
 opt: $(PROGS)
 
+LibInstall(words)
+
 #
 # Clean up
 #
