@@ -508,8 +508,10 @@ struct
        | FOVar v, _ ->
             begin try
                let tm1 = List.assoc v subst in
-                  if equal_term bvars tm1 tm2 then subst
-                     else RAISE_GENERIC_EXN
+                  if equal_term bvars tm1 tm2 then
+                     subst
+                  else
+                     RAISE_GENERIC_EXN
             with
                Not_found ->
                   check_bvars (free_vars_set tm2) bvars;

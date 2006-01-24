@@ -442,7 +442,7 @@ let extract_data =
                eprintf "Conversionals: applying %a%t" debug_print t eflush;
             conv)
    in
-   let hrw tbl options = 
+   let hrw tbl options =
       let rec hrw t =
          let recrw = allSubC (termC hrw) in
             try
@@ -472,7 +472,7 @@ let reduceTopC_env e =
 let reduceTopC = funC reduceTopC_env
 
 let reduceC =
-   funC (fun e -> 
+   funC (fun e ->
       let p = env_arg e in repeatC (snd (get_resource_arg p get_reduce_resource) (get_options p)))
 
 let reduceT = funT (fun p ->
@@ -498,6 +498,30 @@ let find_conds tbl t _ =
 
 let process_reduce_resource_rw_annotation ?labels name redex contractum assums addrs args loc rw =
    let conv = rewrite_of_pre_rewrite rw empty_rw_args [] in
+
+   (*
+    * If the contractum is potentially an instance of the redex,
+    * add progressC to make sure we don't stop too early.
+    *)
+   let conv =
+      let instanceof =
+         try
+            let redex = compile_redex Strict addrs redex in
+               test_redex_applicability redex empty_rw_args contractum [];
+               true
+         with
+            RefineError _
+          | Not_found ->
+               false
+      in
+         if instanceof then begin
+            if !debug_reduce then
+               eprintf "%s: contractum is an instance of the redex@." name;
+            progressC conv
+         end
+         else
+            conv
+   in
       match addrs, args with
          { spec_ints = [||]; spec_addrs = [||] }, [] ->
             (*

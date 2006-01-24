@@ -1,5 +1,5 @@
 (*
- * Substitution, alpha equality, unification.
+ * Substitution, alpha equality, simple matching.
  *
  * ----------------------------------------------------------------
  *
@@ -37,9 +37,6 @@ sig
    module SubstTypes : Term_sig.TermSig
    open SubstTypes
 
-   (*
-    * Substitution, matching, unification.
-    *)
    type term_subst = (var * term) list
 
    (************************************************************************

@@ -201,6 +201,11 @@ done: .test-metaprl-startup
 ******
 ")
 
+#
+# Check the startup even during installs
+#
+$(MPINSTALL): .test-metaprl-startup
+
 ########################################################################
 # Generate the mpconfig if it does not exist
 #
