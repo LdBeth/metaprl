@@ -275,7 +275,7 @@ $(MP_DIRECT_SCRIPTS): %: $(LIB)/%
 # Clean up
 #
 clean:
-    $(CLEAN) $(MP_SCRIPT) $(MP).top native_profile.txt .test-metaprl-startup $(MP_DIRECT_SCRIPTS) $(THEORIES_PATH) $(MLDEBUG_PATH)
+    $(CLEAN) $(MP_SCRIPT) $(MP).top native_profile.txt .test-metaprl-startup $(MP_DIRECT_SCRIPTS) $(THEORIES_PATH) $(MLDEBUG_PATH) mpconfig
 
 #
 # All defaults
