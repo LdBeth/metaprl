@@ -110,63 +110,64 @@ module type ReflectSig =
 sig
    type t
 
-   val create                 : parse_state -> t
-   val mk_lambda_term         : t -> var -> term -> term
-   val mk_bind_term           : t -> var -> term -> term
-   val mk_bind_vec_term       : t -> term -> var -> term -> term
-   val mk_rev_bind_terms      : t -> hypothesis list -> term -> term
-   val mk_mk_bterm_term       : t -> term -> term -> term -> term
-   val mk_mk_term_term        : t -> term -> term -> term
-   val mk_operator_term       : t -> param op_param -> term
-   val mk_nil_term            : t -> term
-   val mk_cons_term           : t -> term -> term -> term
-   val mk_list_term           : t -> term list -> term
-   val mk_pair_term           : t -> term -> term -> term
-   val mk_length_term         : t -> term -> term
-   val mk_append_term         : t -> term -> term -> term
-   val mk_append_list_term    : t -> term list -> term
-   val mk_sequent_term        : t -> term -> term -> term -> term
-   val mk_ty_list_term        : t -> term -> term
-   val mk_exists_term         : t -> var -> term -> term -> term
-   val mk_equal_term          : t -> term -> term -> term -> term
-   val mk_number_term         : t -> int -> term
-   val mk_ty_nat              : t -> term
-   val mk_subst_term          : t -> term -> term -> term
-   val mk_soapply_term        : t -> term -> term list -> term
-   val mk_substl_term         : t -> term -> term -> term
-   val mk_capply_term         : t -> term -> var list -> term
-   val mk_map_term            : t -> var -> term -> term -> term
-   val mk_add_term            : t -> term -> term -> term
-   val mk_BTerm2_term         : t -> term -> term
-   val mk_CVar_term           : t -> term -> term
-   val mk_proof_step_term     : t -> term -> term -> term
-   val mk_beq_proof_step_term : t -> term -> term -> term
-   val mk_ProofRule_term      : t -> term
-   val mk_sequent_arg_term    : t -> term
-   val mk_Provable_term       : t -> term -> term -> term
-   val mk_Sequent_term        : t -> term
-   val mk_meta_type_term      : t -> term
-   val mk_meta_member_term    : t -> term -> term -> term
-   val mk_Logic_term          : t -> term
-   val mk_type_term           : t -> term -> term
-   val mk_assert_term         : t -> term -> term
-   val mk_let_cvar_term       : t -> var -> term -> term -> int -> term -> term
-   val mk_let_sovar_term      : t -> var -> term -> term -> int -> term -> term
-   val mk_spread_term         : t -> term -> var -> var -> term -> term
-   val mk_sequent_bterm_term  : t -> term -> term
-   val mk_vsequent_term       : t -> term -> term list -> term -> term
-   val mk_bsequent_term       : t -> term -> SeqHyp.t -> term -> term
-   val mk_empty_logic_term    : t -> term
-   val mk_rules_logic_term    : t -> term -> term -> term
-   val mk_union_logic_term    : t -> term -> term -> term
-   val mk_SubLogic_term       : t -> term -> term -> term
-   val mk_MemLogic_term       : t -> term -> term -> term
-   val mk_it_term             : t -> term
-   val mk_xconcl_term         : t -> term
-   val mk_hyplist_term        : t -> seq_hyps -> term
-   val mk_vlist_term          : t -> seq_hyps -> term
-   val mk_hyp_context_term    : t -> seq_hyps -> term -> term
-   val mk_vbind_term          : t -> seq_hyps -> term -> term
+   val create                  : parse_state -> t
+   val mk_lambda_term          : t -> var -> term -> term
+   val mk_bind_term            : t -> var -> term -> term
+   val mk_bind_vec_term        : t -> term -> var -> term -> term
+   val mk_rev_bind_terms       : t -> hypothesis list -> term -> term
+   val mk_mk_bterm_term        : t -> term -> term -> term -> term
+   val mk_mk_term_term         : t -> term -> term -> term
+   val mk_operator_term        : t -> param op_param -> term
+   val mk_nil_term             : t -> term
+   val mk_cons_term            : t -> term -> term -> term
+   val mk_list_term            : t -> term list -> term
+   val mk_pair_term            : t -> term -> term -> term
+   val mk_length_term          : t -> term -> term
+   val mk_append_term          : t -> term -> term -> term
+   val mk_append_list_term     : t -> term list -> term
+   val mk_sequent_term         : t -> term -> term -> term -> term
+   val mk_ty_list_term         : t -> term -> term
+   val mk_exists_term          : t -> var -> term -> term -> term
+   val mk_equal_term           : t -> term -> term -> term -> term
+   val mk_number_term          : t -> int -> term
+   val mk_ty_nat               : t -> term
+   val mk_subst_term           : t -> term -> term -> term
+   val mk_soapply_term         : t -> term -> term list -> term
+   val mk_substl_term          : t -> term -> term -> term
+   val mk_capply_term          : t -> term -> var list -> term
+   val mk_map_term             : t -> var -> term -> term -> term
+   val mk_add_term             : t -> term -> term -> term
+   val mk_BTerm2_term          : t -> term -> term
+   val mk_CVar_term            : t -> term -> term
+   val mk_proof_step_term      : t -> term -> term -> term
+   val mk_beq_proof_step_term  : t -> term -> term -> term
+   val mk_ProofRule_term       : t -> term
+   val mk_sequent_arg_term     : t -> term
+   val mk_Provable_term        : t -> term -> term -> term
+   val mk_ProvableSequent_term : t -> term -> term -> term
+   val mk_Sequent_term         : t -> term
+   val mk_meta_type_term       : t -> term
+   val mk_meta_member_term     : t -> term -> term -> term
+   val mk_Logic_term           : t -> term
+   val mk_type_term            : t -> term -> term
+   val mk_assert_term          : t -> term -> term
+   val mk_let_cvar_term        : t -> var -> term -> term -> int -> term -> term
+   val mk_let_sovar_term       : t -> var -> term -> term -> int -> term -> term
+   val mk_spread_term          : t -> term -> var -> var -> term -> term
+   val mk_sequent_bterm_term   : t -> term -> term
+   val mk_vsequent_term        : t -> term -> term list -> term -> term
+   val mk_bsequent_term        : t -> term -> SeqHyp.t -> term -> term
+   val mk_empty_logic_term     : t -> term
+   val mk_rules_logic_term     : t -> term -> term -> term
+   val mk_union_logic_term     : t -> term -> term -> term
+   val mk_SubLogic_term        : t -> term -> term -> term
+   val mk_MemLogic_term        : t -> term -> term -> term
+   val mk_it_term              : t -> term
+   val mk_xconcl_term          : t -> term
+   val mk_hyplist_term         : t -> seq_hyps -> term
+   val mk_vlist_term           : t -> seq_hyps -> term
+   val mk_hyp_context_term     : t -> seq_hyps -> term -> term
+   val mk_vbind_term           : t -> seq_hyps -> term -> term
 end;;
 
 module Reflect : ReflectSig =
@@ -181,57 +182,58 @@ struct
          incr hash_index;
          index, info
 
-   let info_BTerm2            = hash ("BTerm",          [], [0])
-   let info_CVar              = hash ("CVar",           [], [0])
-   let info_Logic             = hash ("Logic",          [], [])
-   let info_ProofRule         = hash ("ProofRule",      [], [])
-   let info_Provable          = hash ("Provable",       [], [0; 0])
-   let info_Sequent           = hash ("Sequent",        [], [])
-   let info_add               = hash ("add",            [], [0; 0])
-   let info_append            = hash ("append",         [], [0; 0])
-   let info_assert            = hash ("assert",         [], [0])
-   let info_beq_proof_step    = hash ("beq_proof_step", [], [0; 0])
-   let info_bind_vec          = hash ("bind",           [], [0; 1])
-   let info_bind              = hash ("bind",           [], [1])
-   let info_cons              = hash ("cons",           [], [0; 0])
-   let info_equal             = hash ("equal",          [], [0; 0; 0])
-   let info_exists            = hash ("exists",         [], [0; 1])
-   let info_lambda            = hash ("lambda",         [], [1])
-   let info_length            = hash ("length",         [], [0])
-   let info_let_cvar          = hash ("let_cvar",       [ShapeString], [0; 0; 0; 1])
-   let info_let_sovar         = hash ("let_sovar",      [ShapeString], [0; 0; 0; 1])
-   let info_list              = hash ("list",           [], [0])
-   let info_map               = hash ("map",            [], [1; 0])
-   let info_meta_member       = hash ("meta_member",    [], [0; 0])
-   let info_meta_type         = hash ("meta_type",      [], [])
-   let info_mk_bterm          = hash ("mk_bterm",       [], [0; 0; 0])
-   let info_mk_term           = hash ("mk_term",        [], [0; 0])
-   let info_nat               = hash ("nat",            [], [])
-   let info_nil               = hash ("nil",            [], [])
-   let info_number            = hash ("number",         [ShapeNumber], [])
-   let info_operator          = hash ("operator",       [ShapeOperator], [])
-   let info_pair              = hash ("pair",           [], [0; 0])
-   let info_proof_step        = hash ("proof_step",     [], [0; 0])
-   let info_sequent           = hash ("sequent",        [], [0; 0; 0])
-   let info_sequent_arg       = hash ("sequent_arg",    [], [])
-   let info_spread            = hash ("spread",         [], [0; 2])
-   let info_subst             = hash ("subst",          [], [0; 0])
-   let info_substl            = hash ("substl",         [], [0; 0])
-   let info_type              = hash ("type",           [], [0])
-   let info_sequent_bterm     = hash ("sequent_bterm",  [], [0])
-   let info_vsequent          = hash ("vsequent",       [], [0])
-   let info_bsequent          = hash ("bsequent",       [], [0])
-   let info_empty_logic       = hash ("empty_logic",    [], [])
-   let info_rules_logic       = hash ("rules_logic",    [], [0; 0])
-   let info_union_logic       = hash ("union_logic",    [], [0; 0])
-   let info_SubLogic          = hash ("SubLogic",       [], [0; 0])
-   let info_MemLogic          = hash ("MemLogic",       [], [0; 0])
-   let info_it                = hash ("it",             [], [])
-   let info_xconcl            = hash ("xconcl",         [], [])
-   let info_hyplist           = hash ("hyplist",        [], [])
-   let info_vlist             = hash ("vlist",          [], [])
-   let info_hyp_context       = hash ("hyp_context",    [], [])
-   let info_vbind             = hash ("vbind",          [], [])
+   let info_BTerm2            = hash ("BTerm",           [],  [0])
+   let info_CVar              = hash ("CVar",            [],  [0])
+   let info_Logic             = hash ("Logic",           [],  [])
+   let info_ProofRule         = hash ("ProofRule",       [],  [])
+   let info_Provable          = hash ("Provable",        [],  [0; 0])
+   let info_ProvableSequent   = hash ("ProvableSequent", [],  [0; 0])
+   let info_Sequent           = hash ("Sequent",         [],  [])
+   let info_add               = hash ("add",             [],  [0; 0])
+   let info_append            = hash ("append",          [],  [0; 0])
+   let info_assert            = hash ("assert",          [],  [0])
+   let info_beq_proof_step    = hash ("beq_proof_step",  [],  [0; 0])
+   let info_bind_vec          = hash ("bind",            [],  [0; 1])
+   let info_bind              = hash ("bind",            [],  [1])
+   let info_cons              = hash ("cons",            [],  [0; 0])
+   let info_equal             = hash ("equal",           [],  [0; 0; 0])
+   let info_exists            = hash ("exists",          [],  [0; 1])
+   let info_lambda            = hash ("lambda",          [],  [1])
+   let info_length            = hash ("length",          [],  [0])
+   let info_let_cvar          = hash ("let_cvar",        [ShapeString],  [0; 0; 0; 1])
+   let info_let_sovar         = hash ("let_sovar",       [ShapeString],  [0; 0; 0; 1])
+   let info_list              = hash ("list",            [],  [0])
+   let info_map               = hash ("map",             [],  [1; 0])
+   let info_meta_member       = hash ("meta_member",     [],  [0; 0])
+   let info_meta_type         = hash ("meta_type",       [],  [])
+   let info_mk_bterm          = hash ("mk_bterm",        [],  [0; 0; 0])
+   let info_mk_term           = hash ("mk_term",         [],  [0; 0])
+   let info_nat               = hash ("nat",             [],  [])
+   let info_nil               = hash ("nil",             [],  [])
+   let info_number            = hash ("number",          [ShapeNumber],  [])
+   let info_operator          = hash ("operator",        [ShapeOperator],  [])
+   let info_pair              = hash ("pair",            [],  [0; 0])
+   let info_proof_step        = hash ("proof_step",      [],  [0; 0])
+   let info_sequent           = hash ("sequent",         [],  [0; 0; 0])
+   let info_sequent_arg       = hash ("sequent_arg",     [],  [])
+   let info_spread            = hash ("spread",          [],  [0; 2])
+   let info_subst             = hash ("subst",           [],  [0; 0])
+   let info_substl            = hash ("substl",          [],  [0; 0])
+   let info_type              = hash ("type",            [],  [0])
+   let info_sequent_bterm     = hash ("sequent_bterm",   [],  [0])
+   let info_vsequent          = hash ("vsequent",        [],  [0])
+   let info_bsequent          = hash ("bsequent",        [],  [0])
+   let info_empty_logic       = hash ("empty_logic",     [],  [])
+   let info_rules_logic       = hash ("rules_logic",     [],  [0; 0])
+   let info_union_logic       = hash ("union_logic",     [],  [0; 0])
+   let info_SubLogic          = hash ("SubLogic",        [],  [0; 0])
+   let info_MemLogic          = hash ("MemLogic",        [],  [0; 0])
+   let info_it                = hash ("it",              [],  [])
+   let info_xconcl            = hash ("xconcl",          [],  [])
+   let info_hyplist           = hash ("hyplist",         [],  [])
+   let info_vlist             = hash ("vlist",           [],  [])
+   let info_hyp_context       = hash ("hyp_context",     [],  [])
+   let info_vbind             = hash ("vbind",           [],  [])
 
    (*
     * Lazy opname creation.
@@ -392,6 +394,9 @@ struct
 
    let mk_Provable_term info t1 t2 =
       mk_dep0_dep0_term (find_opname info info_Provable) t1 t2
+
+   let mk_ProvableSequent_term info t1 t2 =
+      mk_dep0_dep0_term (find_opname info info_ProvableSequent) t1 t2
 
    let mk_meta_member_term info t1 t2 =
       mk_dep0_dep0_term (find_opname info info_meta_member) t1 t2
@@ -1200,7 +1205,7 @@ let mk_infer_socvars_info socvars =
  *     <H> >- Provable{goal}
  *)
 let mk_provable_sequent_term info h_v t_logic t =
-   let t = Reflect.mk_Provable_term info t_logic t in
+   let t = Reflect.mk_ProvableSequent_term info t_logic t in
       mk_normal_sequent_term info h_v t
 
 let mk_infer_thm info t_logic t =
