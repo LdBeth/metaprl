@@ -382,8 +382,11 @@ struct
    (*
     * Modify the argument.
     *)
+   let set_msequent arg mseq =
+      { arg with ref_goal = mseq }
+
    let set_goal arg goal =
-      { arg with ref_goal = mk_msequent goal (snd (dest_msequent arg.ref_goal)) }
+      set_msequent arg (mk_msequent goal (snd (dest_msequent arg.ref_goal)))
 
    let set_concl arg concl =
       let goal, hyps = dest_msequent arg.ref_goal in

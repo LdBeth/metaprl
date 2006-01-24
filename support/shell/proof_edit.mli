@@ -57,6 +57,7 @@ type ped
 val create : tactic_arg -> ped
 val ped_of_proof : Proof.proof -> ped
 val set_goal : ped -> Refine.msequent -> unit
+val initialize_goal : ped -> Refine.msequent -> (tactic_arg -> tactic_arg) -> unit
 
 val edit_info_of_ped : ped -> Proof.address -> edit_info
 

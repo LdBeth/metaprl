@@ -1434,7 +1434,7 @@ struct
       let mt, _, _ = mterms_of_parsed_mterms (fun _ -> true) mt [] in
       let tac =
          Printf.sprintf "mem_logic_trans << %s >>
-thenLT [idT; idT; idT; idT; idT; rwh unfold_%s 0 thenT mem_rules_logic]
+then_OnLastT (rwh unfold_%s 0 thenT mem_rules_logic)
 thenT autoT" (**)
             logic_name logic_name
       in
@@ -2374,7 +2374,7 @@ EXTEND
            | None -> no_resources
       ]];
 
-   updresource: 
+   updresource:
       [[ flag = opt_pvt_flag; e = expr LEVEL "expr1" ->
             let rec split_application tl expr =
                match expr with
@@ -2387,7 +2387,7 @@ EXTEND
             in
                split_application [] e
       ]];
-            
+
    updresources:
       [[ "{|"; res = LIST1 updresource SEP ";" ; "|}" ->
          { item_item = res; item_bindings = get_unchecked_bindings () }

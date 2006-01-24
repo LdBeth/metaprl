@@ -65,7 +65,6 @@ val rule_labels_not_allowed  : MLast.loc -> term list option -> unit
 topval addOptionT : term -> string -> tactic
 topval allowOptionT : term -> tactic
 topval excludeOptionT : term -> tactic
-topval printOptionT : term -> tactic
 
 topval withOptionT : term -> string -> tactic -> tactic
 topval withAllowOptionT : term -> tactic -> tactic
@@ -73,6 +72,12 @@ topval withExcludeOptionT : term -> tactic -> tactic
 
 topval withoutOptionT : term -> tactic -> tactic
 topval removeOptionT : term -> tactic
+
+(*
+ * Printing.
+ *)
+topval printOptionT : term -> tactic
+topval printOptionsT : tactic
 
 (*
  * Conversions.

@@ -692,7 +692,7 @@ let ped_of_proof pack_info arg proof goal =
                   let bookmark = find_bookmark name name' in
                   let proof' = Proof.proof_of_io_proof [] sentinal bookmark parse eval proof' in
                   let ped = Proof_edit.ped_of_proof proof' in
-                     Proof_edit.set_goal ped goal;
+                     Proof_edit.initialize_goal ped goal Proof_initialize.initialize_arg;
                      proof := ProofEdit (arg, ped);
                      ped
          end)

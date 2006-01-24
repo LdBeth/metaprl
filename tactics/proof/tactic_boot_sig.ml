@@ -356,9 +356,10 @@ sig
     * Modification of the argument.
     * These are functional.
     *)
-   val set_goal    : tactic_arg -> term -> tactic_arg
-   val set_concl   : tactic_arg -> term -> tactic_arg
-   val set_label   : tactic_arg -> string -> tactic_arg
+   val set_msequent : tactic_arg -> msequent -> tactic_arg
+   val set_goal     : tactic_arg -> term -> tactic_arg
+   val set_concl    : tactic_arg -> term -> tactic_arg
+   val set_label    : tactic_arg -> string -> tactic_arg
 
    (*
     * Fetch attributes.
@@ -615,6 +616,11 @@ sig
     * Set the goal of the proof.
     *)
    val set_goal : update_fun -> proof -> address -> msequent -> proof
+
+   (*
+    * Initialize the arg.
+    *)
+   val initialize_goal : update_fun -> proof -> address -> msequent -> (tactic_arg -> tactic_arg) -> proof
 
    (*
     * Copy a proof node from one location to another.

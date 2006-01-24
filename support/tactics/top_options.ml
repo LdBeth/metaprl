@@ -50,6 +50,12 @@ open Tactic_type.Tacticals
 type rule_labels = OpnameSet.t
 
 (*
+ * Option printing.
+ *)
+let pp_print_option_info buf info =
+   pp_print_string buf (string_of_option info)
+
+(*
  * The options are collected in a list.
  * For efficiency, squash the entries in the list when
  * the resource is extracted.
@@ -144,9 +150,6 @@ let rule_labels_not_allowed loc labels =
 (************************************************************************
  * Tacticals for option handling.
  *)
-let pp_print_option_info buf info =
-   pp_print_string buf (string_of_option info)
-
 let addOptionInfoT t info =
    Tacticals.addOptionT (opname_of_term t) info
 
@@ -185,6 +188,14 @@ let printOptionT t =
          (try eprintf "%a@." pp_print_option_info (List.assoc opname options) with
              Not_found ->
                 eprintf "<unbound>@.");
+         idT)
+
+let printOptionsT =
+   funT (fun p -> (**)
+      let options = get_options p in
+         eprintf "Total options: %d@." (List.length options);
+         List.iter (fun (opname, info) ->
+               eprintf "Option %s -> %a@." (string_of_opname opname) pp_print_option_info info) options;
          idT)
 
 let withOptionC t s =

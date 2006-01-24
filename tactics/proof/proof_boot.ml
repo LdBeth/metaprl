@@ -754,7 +754,10 @@ struct
 
    let norm_goal goal =
       let mseq = TermNorm.normalize_msequent goal.ref_goal in
-         if mseq == goal.ref_goal then goal else {goal with ref_goal = mseq}
+         if mseq == goal.ref_goal then
+            goal
+         else
+            { goal with ref_goal = mseq }
 
    (*
     * Replace the current goal of a node.
@@ -763,11 +766,11 @@ struct
       Goal _ ->
          Goal goal
     | RuleBox rb ->
-         RuleBox { rb with
-            rule_status = LazyStatusDelayed;
-            rule_extract_normalized = true;
-            rule_extract = replace_goal_ext goal rb.rule_extract
-         }
+         RuleBox (**)
+            { rb with rule_status = LazyStatusDelayed;
+                      rule_extract_normalized = true;
+                      rule_extract = replace_goal_ext goal rb.rule_extract
+            }
     | node ->
          Unjustified (goal, leaves_ext node)
 
@@ -1079,10 +1082,20 @@ struct
     * Set the goal of the current node.
     *)
    let set_goal_ext node mseq =
-      replace_goal_ext { (goal_ext node) with ref_goal = mseq } node
+      replace_goal_ext { goal_ext node with ref_goal = mseq } node
 
    let set_goal postf pf addr mseq =
       let node = set_goal_ext (index pf addr) mseq in
+         fold_proof postf pf addr node
+
+   (*
+    * Initializer.
+    *)
+   let initialize_goal_ext node mseq init =
+      replace_goal_ext (init { goal_ext node with ref_goal = mseq }) node
+
+   let initialize_goal postf pf addr mseq init =
+      let node = initialize_goal_ext (index pf addr) mseq init in
          fold_proof postf pf addr node
 
    (*
@@ -1237,7 +1250,7 @@ struct
          Array.concat [name; ints; addrs; params]
 
    let rwarg = StringArg "rw"
-         
+
    let make_extract_expr ext =
       let arglist =
          match Refine.describe_extract ext with
@@ -1827,18 +1840,18 @@ struct
             List.assq arg !parents
          with
             Not_found ->
-               let { simp_goal = goal;
-                     simp_label = label;
+               let { simp_goal       = goal;
+                     simp_label      = label;
                      simp_attributes = args
                    } = arg
                in
                let args = update_attributes args raw_attributes in
                let arg' =
-                  { ref_goal = goal;
-                    ref_label = label;
+                  { ref_goal       = goal;
+                    ref_label      = label;
                     ref_attributes = args;
-                    ref_bookmark = bookmark;
-                    ref_sentinal = sentinal
+                    ref_bookmark   = bookmark;
+                    ref_sentinal   = sentinal
                   }
                in
                   parents := (arg, arg') :: !parents;

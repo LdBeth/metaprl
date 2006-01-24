@@ -235,8 +235,7 @@ let term_of_incomplete proof =
  * Constructors.
  *)
 let ped_of_proof proof =
-   {
-     ped_undo = [];
+   { ped_undo = [];
      ped_redo = [];
      ped_proof = proof;
    }
@@ -340,7 +339,11 @@ let edit_info_of_ped ped addr =
  *)
 let set_goal ped mseq =
    let proof = proof_of_ped ped in
-      ignore(push_proof ped (Proof.set_goal (update_fun ped []) proof [] mseq) [])
+      ignore (push_proof ped (Proof.set_goal (update_fun ped []) proof [] mseq) [])
+
+let initialize_goal ped mseq init =
+   let proof = proof_of_ped ped in
+      ignore (push_proof ped (Proof.initialize_goal (update_fun ped []) proof [] mseq init) [])
 
 (*
  * Move down the undo stack.
