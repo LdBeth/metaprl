@@ -38,13 +38,15 @@ include Files
 FILES = $(SHELL_FILES)
 
 shell_state.mlh: :value: $(DEFAULT_UI) $(BROWSER_COMMAND)
-    rm -f $@
-    if $(equal $(DEFAULT_UI), browser)
-        fprintln($@, DEFINE DEFAULT_BROWSER)
-    if $(BROWSER_COMMAND)
-        fprintln($@, DEFINE DEFAULT_BROWSER_COMMAND = Some "$(BROWSER_COMMAND)")
-    else
-        fprintln($@, DEFINE DEFAULT_BROWSER_COMMAND = None)
+    section eval
+        TEXT[] =
+        if $(equal $(DEFAULT_UI), browser)
+            TEXT[] +=
+                DEFINE BROWSER_DEFAULT
+            export
+        TEXT[] +=
+            DEFINE DEFAULT_BROWSER_COMMAND = $(if $(BROWSER_COMMAND), Some "$(BROWSER_COMMAND)", None)
+        fprintln($@, $(concat $(nl), $(TEXT)))
 
 .SCANNER: scan-ocaml-shell_state.ml: shell_state.mlh
 
