@@ -1586,7 +1586,25 @@ struct
                   Top.set_dftype DisplayBrowser;
                   Top.refresh ();
                   State.write session_entry maybe_invalidate_directory) ();
-            serve_http http_start http_connect state !browser_port;
+            let serve () =
+               let port = !browser_port in
+                  if port = 0 then
+                     let rec serve port = 
+                        try
+                           serve_http http_start http_connect state port
+                        with
+                           Unix.Unix_error(Unix.EADDRINUSE, _, _) ->
+                              serve (port + 1)
+                     in
+                        serve 60000
+                  else
+                     serve_http http_start http_connect state port
+            in
+            begin try 
+               Filter_exn.print_exn Dform.null_base (Some "Shell_browser.main: Uncaught exception from serve_http: ") serve ()
+            with _ ->
+               exit 1
+            end;
             eprintf "Browser service finished@."
 end
 

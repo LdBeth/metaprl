@@ -58,17 +58,16 @@ let format_exn db buf = function
  | Unix.Unix_error (errno, funinfo, arginfo) ->
       format_string buf "UnixError:";
       format_hspace buf;
-      format_string buf (Unix.error_message errno);
-      format_hspace buf;
-      format_string buf ": ";
       format_string buf funinfo;
-      if arginfo <> "" then
-         begin
-            format_hspace buf;
-            format_string buf "(";
-            format_string buf arginfo;
-            format_string buf ")"
-         end
+      if arginfo <> "" then begin
+         format_hspace buf;
+         format_string buf "(";
+         format_string buf arginfo;
+         format_string buf ")"
+      end;
+      format_string buf ":";
+      format_hspace buf;
+      format_string buf (Unix.error_message errno)
  | exn ->
       Refine_exn.format_exn db buf exn
 

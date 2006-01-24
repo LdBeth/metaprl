@@ -198,7 +198,8 @@ let format_message buf s =
     | Some s ->
          format_pushm buf 3;
          format_string buf s;
-         format_szone buf
+         format_szone buf;
+         format_space buf
 
 let print_exn db s f x =
    if Refine_exn.backtrace then

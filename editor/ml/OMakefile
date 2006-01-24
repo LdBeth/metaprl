@@ -197,7 +197,7 @@ done: .test-metaprl-startup
     println($"
 ******
 ****** MetaPRL ($(if $(NATIVE_ENABLED), $"native code"$(if $(BYTE_ENABLED), $" and "))$(if $(BYTE_ENABLED), bytecode)) compiled successfully!
-****** Run $(in $(ROOT), $(MP_SCRIPT)) to start the interactive prover.
+****** Run .$(DIRSEP)$(in $(ROOT), $(MP_SCRIPT)) to start the interactive prover.
 ******
 ")
 
