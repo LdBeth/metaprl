@@ -3,7 +3,7 @@
  *
  * ----------------------------------------------------------------
  *
- * Copyright (C) 2004 MetaPRL Group, Caltech
+ * Copyright (C) 2004-2006 MetaPRL Group, Caltech
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -32,14 +32,6 @@ open Lm_thread
 let environ_prefix = "MP"
 
 let confname = "metaprl"
-
-let default_browser_string () =
-   if Sys.file_exists "/usr/bin/htmlview" then
-      Some "/usr/bin/htmlview"
-   else if Sys.file_exists "/usr/bin/mozilla" then
-      Some "/usr/bin/mozilla"
-   else
-      None
 
 let shared_state = State.shared_val "Setup" (Hashtbl.create 5)
 

@@ -2077,7 +2077,7 @@ EXTEND
            in
               handle_exn f ("resource " ^ name) _loc;
               empty_str_item _loc
-        | flag = opt_pvt_flag; "let"; "resource"; name = LIDENT; "+=" ; code = expr ->
+        | "let"; "resource"; flag = opt_pvt_flag; name = LIDENT; "+=" ; code = expr ->
            let f () =
               let proc = StrFilter.get_proc _loc in
                  StrFilter.improve_resource proc _loc (**)

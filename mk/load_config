@@ -8,6 +8,22 @@
 #
 include mk/defaults
 
+FindBrowser() =
+   foreach(browser, $(DEFAULT_BROWSER_COMMANDS))
+      if $(CheckProg $(browser))
+         return $(which $(browser))
+   return $(EMPTY)
+
+static.=
+   println($"--- Looking for a browser command to use...")
+   DEFAULT_BROWSER_COMMAND = $(FindBrowser)
+   if $(DEFAULT_BROWSER_COMMAND)
+      println($"--> Default browser command: $(DEFAULT_BROWSER_COMMAND)")
+   else
+      println($"--> No browser found")
+
+BROWSER_COMMAND = $(DEFAULT_BROWSER_COMMAND)
+
 #
 # Configuration file
 #

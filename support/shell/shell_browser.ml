@@ -1486,7 +1486,7 @@ struct
             match !browser_string with
                Some browser when browser <> "" ->
                   start_browser server state browser file_url;
-                  "Browsing service started and your browser should start up momentarily.",
+                  "Browsing service started and your browser \"" ^ browser ^ "\" should start up momentarily.",
                   "If the browser fails to start automatically, manually point"
              | _ ->
                   "Browsing service started.", "Point"

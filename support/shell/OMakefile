@@ -37,10 +37,14 @@ include Files
 
 FILES = $(SHELL_FILES)
 
-if $(equal $(DEFAULT_UI), browser)
-    CAMLP4FLAGS[] += -D BROWSER_DEFAULT
-    shell_state.ppo shell_state.cmoz:
-    shell_state.p4:
+shell_state.mlh: :value: $(DEFAULT_UI) $(BROWSER_COMMAND)
+    rm -f $@
+    if $(equal $(DEFAULT_UI), browser)
+        fprintln($@, DEFINE DEFAULT_BROWSER)
+    if $(BROWSER_COMMAND)
+        fprintln($@, DEFINE DEFAULT_BROWSER_COMMAND = Some "$(BROWSER_COMMAND)")
+    else
+        fprintln($@, DEFINE DEFAULT_BROWSER_COMMAND = None)
 
 #
 # Some of these files should use the normal OCaml compiler
@@ -61,7 +65,7 @@ OCamlGeneratedFiles(browser_copy.ml browser_session_io.ml session_io.ml)
 # Clean up
 #
 clean:
-    $(CLEAN) browser_copy.ml browser_session_io.ml session_io.ml
+    $(CLEAN) browser_copy.ml browser_session_io.ml session_io.ml shell_state.mlh
 
 all: theory$(LIB_SUFFIX)
 

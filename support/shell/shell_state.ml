@@ -10,7 +10,8 @@
  * See the file doc/htmlman/default.html or visit http://metaprl.org/
  * for more information.
  *
- * Copyright (C) 1999-2005 MetaPRL Group
+ * Copyright (C) 1999-2006 MetaPRL Group, Cornell University and California
+ * Instutute of Technology
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -50,6 +51,8 @@ open Filter_util
 open Term_grammar
 
 open Shell_sig
+
+INCLUDE "shell_state.mlh"
 
 let debug_full_terms =
    create_debug {
@@ -100,7 +103,7 @@ let browser_port      = Env_arg.int "port" 0 "start browser services on this por
 
 let browser_name     = "browser_command"
 let browser_string   =
-   Env_arg.string "browser_command" (Setup.default_browser_string ()) "browser to start on MetaPRL startup" Env_arg.set_string_option_string
+   Env_arg.string "browser_command" DEFAULT_BROWSER_COMMAND "browser to start on MetaPRL startup" Env_arg.set_string_option_string
 
 let challenge_name   = "challenge"
 let challenge_string = Env_arg.string challenge_name None "HTTP challenge (internal)" Env_arg.set_string_option_string

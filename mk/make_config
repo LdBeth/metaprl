@@ -13,6 +13,8 @@ MakeConfig(name) =
           return $$(dir theories)
        elseif $(equal $d, $(INSTALL_DIR)/theories)
           return $$(dir $$(INSTALL_DIR)/theories)
+       elseif $(equal $d, $(INSTALL_DIR))
+          return $$(dir $$(INSTALL_DIR))
        elseif $(equal $d, $(ROOT))
           return $(ROOT)
        else
@@ -99,6 +101,15 @@ COMPILATION_MODE = $(COMPILATION_MODE)
 # given to MetaPRL on startup.
 #
 DEFAULT_UI = $(DEFAULT_UI)
+
+#
+# When using the browser interface, should MetaPRL start up the browser automatically?
+# If so, give the browser command line here; otherwise, leave empty.
+#
+# This is the compile-time default; you can override it by setting the MP_BROWSER_COMMAND
+# environment variable or by passing MetaPRL the -browser_command option on startup.
+#
+BROWSER_COMMAND = $(BROWSER_COMMAND)
 
 #
 # The OpenSSL package (available in Linux at least) (true/false)

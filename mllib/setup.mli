@@ -57,12 +57,6 @@ val dh_pem : unit -> string
 val client_pem : unit -> string
 
 (*
- * Browser command to use by default.
- * /usr/bin/htmlview, if exists, otherwise /usr/bin/mozilla, if exists, otherwise None
- *)
-val default_browser_string : unit -> string option
-
-(*
  * -*-
  * Local Variables:
  * Caml-master: "compile"

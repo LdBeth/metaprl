@@ -35,6 +35,15 @@ THEORIES_ALL = meta ocaml_doc itt ocaml_sos fol czf sil tptp fir experimental/co
 #
 
 #
+# Browser commands to try
+#
+DEFAULT_BROWSER_COMMANDS[] =
+   htmlview
+   firefox
+   mozilla-firefox
+   mozilla
+
+#
 # Location of OCAML libraries
 #
 if $(equal $(OSTYPE), Win32)

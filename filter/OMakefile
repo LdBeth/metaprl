@@ -73,9 +73,13 @@ section
         $(STANDARD_LIBS)
 
     CAMLP4_FILES[] =
+        $(CAMLP4LIB)/pa_o
+        $(CAMLP4LIB)/pa_extend
+        $(CAMLP4LIB)/q_MLast
         filter/filter_patt
         filter/filter_prog
         filter/filter_parse
+        $(ROOT)/util/pa_macro
         filter/filter_main
 
     # XXX: http://caml.inria.fr/bin/caml-bugs?selectid=3439 workaround
@@ -89,19 +93,11 @@ section
         export
 
     CAMLP4N_FILES[] =
-        $(CAMLP4LIB)/pa_o
-        $(ROOT)/util/pa_macro
         $(CAMLP4LIB)/pr_dump
-        $(CAMLP4LIB)/pa_extend
-        $(CAMLP4LIB)/q_MLast
         $(CAMLP4_FILES)
 
     CAMLP4O_FILES[] =
-        $(CAMLP4LIB)/pa_o
-        $(ROOT)/util/pa_macro
         $(CAMLP4LIB)/pr_o
-        $(CAMLP4LIB)/pa_extend
-        $(CAMLP4LIB)/q_MLast
         $(CAMLP4_FILES)
 
     OCamlProgramInstall($(MPINSTALL), $(LIB), camlp4n, $(CAMLP4N_FILES))
