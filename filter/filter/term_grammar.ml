@@ -1079,12 +1079,6 @@ struct
    let mk_parsed_meta_term mt =
       mt
 
-   (*
-    * Reflection
-    *)
-   let parse_proof_rule_term mt =
-      TermMeta.mterms_of_parsed_mterms (fun _ -> true) mt []
-
    (************************************************
     * !!! WARNING !!!
     * !!! The following functions bypass either the

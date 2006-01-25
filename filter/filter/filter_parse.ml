@@ -1403,7 +1403,7 @@ struct
          }
       in
       let sc = shape_normal in
-      let def, _, _ = TermGrammar.parse_proof_rule_term def in
+      let _, def, _, _ = TermGrammar.parse_rule loc name def [] in
       let def = Filter_reflection.mk_rule_term info def in
       let def = TermGrammar.mk_parsed_term def in
       let () = StrFilter.declare_define_term proc sc (parse_define_redex loc quote) in

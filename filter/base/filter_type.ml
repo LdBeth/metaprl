@@ -452,9 +452,6 @@ sig
    val parsed_term       : term Grammar.Entry.e
    val parsed_bound_term : term poly_aterm Grammar.Entry.e
 
-   (* Reflection *)
-   val parse_proof_rule_term : parsed_meta_term -> meta_term * term list * (term -> term)
-
    (************************************************
     * !!! WARNING, UNSAFE !!!
     * !!! The following functions bypass
