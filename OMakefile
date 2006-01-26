@@ -142,7 +142,7 @@ section
 #
 clean:
     $(CLEAN) $(file mk/*.omc) $(THEORIES_PATH) $(MLDEBUG_PATH) $(LIB)/mk $(LIB)/theories
-    rm -rf $(LIB) $(BIN)
+    rm -rf $(LIB) $(BIN) $(EXPORT)
 
 ########################################################################
 # Check-status
