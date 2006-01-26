@@ -98,8 +98,11 @@ if $(file-exists $(ROOT)/.svn/entries)
             else
                 value unknown
 
+        write_svnversion(file) =
+            fprintln($(file), $(svnrevision $(get-entries)))
+
         svnversion.txt: $(MLDEBUG_PATH) :value: $(digest-deps)
-            fprintln($@, $(svnrevision $(get-entries)))
+            write_svnversion($@)
 
 else
     svnversion.txt:
