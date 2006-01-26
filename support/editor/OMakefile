@@ -47,11 +47,11 @@ make_mp_version$(EXE): make_mp_version.ml
 static.=
     SVNVERSION_AVAILABLE = $(CheckProg svnversion)
 
-if $(and $(SVNVERSION_AVAILABLE), $(file-exists $(ROOT)/.svn/entries))
+if $(file-exists $(ROOT)/.svn/entries)
     #
     # XXX: BUG: nogin: for some reason, extracting dependencies gives an empty set here :-(
     #
-    digest-deps() =
+    get-entries() =
         # dirs = $(dependencies $(MLDEBUG_PATH))
         FS=$'"'
         awk($(MLDEBUG_PATH))
@@ -61,10 +61,45 @@ if $(and $(SVNVERSION_AVAILABLE), $(file-exists $(ROOT)/.svn/entries))
         case $'^-I'
             dirs = $(filter-out -I, $(array $0))
             export
-        return $(digest-optional $(addsuffix /.svn/entries, $(dirs)))
+        return $(addsuffix /.svn/entries, $(dirs))
 
-    svnversion.txt: $(MLDEBUG_PATH) :value: $(digest-deps)
-        svnversion $(ROOT) > $@
+    digest-deps() =
+        return $(digest-optional $(get-entries))
+
+    if $(SVNVERSION_AVAILABLE)
+        svnversion.txt: $(MLDEBUG_PATH) :value: $(digest-deps)
+            svnversion $(ROOT) > $@
+
+    else
+        svnrevision(args) =
+            hi = false
+            lo =
+            FS=$'"'
+            foreach(ent, $(args))
+                if $(file-exists $(ent))
+                    awk($(ent))
+                    case $'[ \t]*revision="[0-9]*"/>$'
+                        if $(hi)
+                            hi = $(if $(gt $(hi), $2), $(hi), $2)
+                            lo = $(if $(gt $(lo), $2), $2, $(lo))
+                            export
+                        else
+                            hi = $2
+                            lo = $2
+                            export
+                        export
+                    export
+                export
+            if $(hi)
+                if $(eq $(hi), $(lo))
+                    value $(hi)
+                else
+                    value $"$(lo):$(hi)"
+            else
+                value unknown
+
+        svnversion.txt: $(MLDEBUG_PATH) :value: $(digest-deps)
+            fprintln($@, $(svnrevision $(get-entries)))
 
 else
     svnversion.txt:
