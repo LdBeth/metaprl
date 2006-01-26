@@ -44,7 +44,10 @@ TOPFILES[] =
 make_mp_version$(EXE): make_mp_version.ml
     $(OCAMLC) $(OCAMLCFLAGS) -o $@ unix.cma $<
 
-if $(and $(file-exists $(ROOT)/.svn/entries), $(file-exists $(ROOT)/libmojave/.svn/entries), $(where svnversion))
+static.=
+    SVNVERSION_AVAILABLE = $(CheckProg svnversion)
+
+if $(and $(SVNVERSION_AVAILABLE), $(file-exists $(ROOT)/.svn/entries))
     #
     # XXX: BUG: nogin: for some reason, extracting dependencies gives an empty set here :-(
     #
