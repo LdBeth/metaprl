@@ -1611,6 +1611,16 @@ EXTEND
           let f () =
              let proc = SigFilter.get_proc _loc in
              let id = SigFilter.hash proc in
+             (*
+              * XXX: HACK: make sure nambers stay small enough so that 64-bin .prla can
+              * still be read on 32-bit machines.
+              *)
+             let id = 
+                match Sys.word_size with
+                   64 -> (id + (id lsl 32)) asr 32
+                 | 32 -> id
+                 | _ -> raise (Invalid_argument "Filter_parse: unknown work size")
+             in
                 SigFilter.add_command proc (Id id, dummy_loc);
                 SigFilter.save proc AnySuffix;
                 SigFilter.extract () proc
