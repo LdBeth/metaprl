@@ -1,12 +1,10 @@
 (*
  * Define a resource for select arguments.
- * XXX: JYH: we want this resource to be scoped within a theory.
- * That will take a little extra work.
  *
  * ----------------------------------------------------------------
  *
  * @begin[license]
- * Copyright (C) 2005 Mojave Group, Caltech
+ * Copyright (C) 2005-2006 Mojave Group, Caltech
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -22,8 +20,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * @email{jyh@cs.caltech.edu}
+ * Author: Jason Hickey @email{jyh@cs.caltech.edu}
+ * Modified by: Aleksey Nogin @email{nogin@cs.caltech.edu}
  * @end[license]
  *)
 extends Mptop
@@ -39,15 +37,10 @@ open Refiner.Refiner.Term
 open Refiner.Refiner.RefineError
 open Mp_resource
 open Top_resource
-open Option_sig
+open Options_boot
 
 open Tactic_type
 open Tactic_type.Tacticals
-
-(*
- * A rule is labeled with positive and negative arguments.
- *)
-type rule_labels = OpnameSet.t
 
 (*
  * Option printing.
@@ -61,27 +54,13 @@ let pp_print_option_info buf info =
  * the resource is extracted.
  *)
 let add_data options (t, info) =
-   (opname_of_term t, info) :: options
+   add_option options (opname_of_term t) info
 
-let extract_data options =
-   let _, options =
-      List.fold_left (fun (found, options) info ->
-            match info with
-               (opname, OptionIgnore) ->
-                  OpnameSet.add found opname, options
-             | (opname, _) ->
-                  if OpnameSet.mem found opname then
-                     found, options
-                  else
-                     let found = OpnameSet.add found opname in
-                     let options = info :: options in
-                        found, options) (OpnameSet.empty, []) options
-   in
-      List.rev options
+let extract_data options = options
 
 let resource_info =
    Functional (**)
-      { fp_empty    = [];
+      { fp_empty    = options_empty;
         fp_add      = add_data;
         fp_retr     = extract_data
       }
@@ -99,53 +78,20 @@ let initialize_arg p =
 
 let resource proof_initialize += initialize_arg
 
-let get_options = Sequent.get_option_args
-
-(************************************************************************
- * Check whether the options on the rule/rewrite are allowed.
- *
- * XXX: JYH: this could be more efficient.
- *)
-let rec test_rule_labels options labels =
-   match options with
-      (opname, OptionAllow) :: options ->
-         OpnameSet.mem labels opname || test_rule_labels options labels
-    | (opname, OptionExclude) :: options ->
-         not (OpnameSet.mem labels opname) && test_rule_labels options labels
-    | (opname, OptionIgnore) :: options ->
-         test_rule_labels options (OpnameSet.remove labels opname)
-    | [] ->
-         true
-
-let rec rule_labels_are_allowed options labels =
-   OpnameSet.is_empty labels || test_rule_labels options labels
-
-let rule_labels_are_allowed_arg p labels =
-   rule_labels_are_allowed (get_options p) labels
-
 (************************************************************************
  * Utilities.
  *)
-let rule_labels_empty = OpnameSet.empty
-
-let rule_labels_of_terms labels =
-   List.fold_left (fun opnames t ->
-         OpnameSet.add opnames (opname_of_term t)) OpnameSet.empty labels
-
-let rule_labels_of_opt_terms labels =
-   let labels =
-      match labels with
-         Some labels -> labels
-       | None -> []
-   in
-      rule_labels_of_terms labels
-
 let rule_labels_not_allowed loc labels =
    match labels with
       None ->
          ()
     | Some _ ->
          Stdpp.raise_with_loc loc (RefineError ("option check", StringError "rule labels are not allowed, or the annotation processor has not been updated"))
+
+let get_options = Sequent.get_option_args
+
+let rule_labels_are_allowed_arg p labels =
+   rule_labels_are_allowed (get_options p) labels
 
 (************************************************************************
  * Tacticals for option handling.
@@ -183,7 +129,7 @@ let withoutOptionT t tac =
 let printOptionT t =
    funT (fun p -> (**)
       let opname = opname_of_term t in
-      let options = get_options p in
+      let options = list_options (get_options p) in
          eprintf "Option: %s = " (string_of_opname opname);
          (try eprintf "%a@." pp_print_option_info (List.assoc opname options) with
              Not_found ->
@@ -192,7 +138,7 @@ let printOptionT t =
 
 let printOptionsT =
    funT (fun p -> (**)
-      let options = get_options p in
+      let options = list_options (get_options p) in
          eprintf "Total options: %d@." (List.length options);
          List.iter (fun (opname, info) ->
                eprintf "Option %s -> %a@." (string_of_opname opname) pp_print_option_info info) options;

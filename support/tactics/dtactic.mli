@@ -39,7 +39,7 @@ open Tactic_type.Tactic
 
 open Mp_resource
 open Top_resource
-open Top_options
+open Options_boot
 open Auto_tactic
 
 type intro_option =

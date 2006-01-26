@@ -81,10 +81,11 @@ open File_type_base
  * Rev 27: added "const" annotation to 0-arity "declare"/"define"
  * Rev 28: added "private" resource annotations
  * Rev 29: added "RawOption" raw attribute
+ * Rev 30: changed the options_table type; changed the string encoding of option_info
  *)
-let raw_versions = List.map (pack_version 1 0) [29;28]
+let raw_versions = List.map (pack_version 1 0) [30]
 
-let term_versions = List.map (pack_version 1 0) [29;28;27;25;24]
+let term_versions = List.map (pack_version 1 0) [30;29;28;27;25;24]
 
 (*
  * ASCII IO format revision history:
@@ -116,6 +117,7 @@ let term_versions = List.map (pack_version 1 0) [29;28;27;25;24]
  * Rev 24: added "const" annotation to 0-arity "declare"/"define"
  * Rev 25: added "private" resource annotations
  * Rev 26: added options to the tactic_arg
+ * Rev 27: changed the stging encoding of option_info
  *
  * Ascii_io has a HACK needed to read some rev 0-5 files
  * Ascii_io has another set of HACKs to read sequents in rev 0-6 files
@@ -133,8 +135,9 @@ let term_versions = List.map (pack_version 1 0) [29;28;27;25;24]
  * Filter_summary has another HACK needed to read some rev 0-20 files.
  * Filter_summary has another HACK needed to read some rev 21-23 files.
  * Filter_summary has another HACK needed to read some rev 0-24 files.
+ * Options_boot has a HACK needed to read some rev 25-26 files.
  *)
-let ascii_versions = List.map (pack_version 1 0) [26;25;24;23;22;21;20;19;18;17;16;15;14;13;12;11;10;9;8;7;6;5;4;3;2;1;0]
+let ascii_versions = List.map (pack_version 1 0) [27;26;25;24;23;22;21;20;19;18;17;16;15;14;13;12;11;10;9;8;7;6;5;4;3;2;1;0]
 
 (************************************************************************
  * Magic numbers for interactive files                                  *

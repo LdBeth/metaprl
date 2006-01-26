@@ -42,7 +42,7 @@ open Refiner.Refiner.Rewrite
 open Refiner.Refiner.Refine
 
 open Opname
-open Option_sig
+open Options_boot
 open Tactic_boot
 open Sequent_boot
 open Tacticals_boot.Tacticals

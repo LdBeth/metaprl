@@ -59,7 +59,7 @@ open Refiner.Refiner.Refine
 
 open Tactic_boot_sig
 open Rewrite_sig
-open Option_sig
+open Options_boot
 open Theory
 
 (*
@@ -309,7 +309,7 @@ struct
         attr_ints       = [];
         attr_bools      = [];
         attr_strings    = [];
-        attr_options    = [];
+        attr_options    = options_empty;
         attr_keys       = []
       }
 
@@ -326,10 +326,12 @@ struct
         attr_bools      = Lm_list_util.some_map (function (name, RawBool b)     -> Some (name, b) | _ -> None) attributes;
         attr_strings    = Lm_list_util.some_map (function (name, RawString s)   -> Some (name, s) | _ -> None) attributes;
         attr_keys       = Lm_list_util.some_map (function (name, RawSentinal k) -> Some (name, k) | _ -> None) attributes;
-        attr_options    = Lm_list_util.some_map (
-           function 
-              (name, RawOption op) -> Some (op, option_of_string name)
-            | _ -> None) attributes
+        attr_options    =
+           List.fold_right (fun attr options ->
+                 match attr with
+                    opt, RawOption op -> add_option options op (option_of_string opt)
+                  | _ -> options) (**)
+              attributes options_empty
       }
 
    let squash_attributes attrs =
@@ -567,7 +569,7 @@ struct
       @ (List.map (fun (name, i) -> name, IntArg i) ints)
       @ (List.map (fun (name, b) -> name, BoolArg b) bools)
       @ (List.map (fun (name, s) -> name, StringArg s) strings)
-      @ (List.map (fun (op, kind) -> string_of_option kind, TermArg (mk_term (mk_op op []) []))) options
+      @ (List.map (fun (op, kind) -> string_of_option kind, TermArg (mk_term (mk_op op []) []))) (list_options options)
 
    let raw_attributes { ref_attributes = { attr_terms = terms;
                                            attr_term_lists = term_lists;
@@ -585,7 +587,7 @@ struct
       @ (List.map (fun (name, b) -> name, RawBool b) bools)
       @ (List.map (fun (name, s) -> name, RawString s) strings)
       @ (List.map (fun (name, t) -> name, RawSentinal t) keys)
-      @ (List.map (fun (op, kind) -> string_of_option kind, RawOption op) options)
+      @ (List.map (fun (op, kind) -> string_of_option kind, RawOption op) (list_options options))
 
    (************************************************************************
     * PROOF PRINTING                                                       *
@@ -916,7 +918,7 @@ struct
          && assoc_equal ints1 ints2 eq
          && assoc_equal bools1 bools2 eq
          && assoc_equal strings1 strings2 equal
-         && opname_assoc_equal options1 options2 eq
+         && options_eq options1 options2
 
    (*
     * Two args are equal if their goals are equal.
@@ -1259,7 +1261,7 @@ struct
       addT (fun attr -> { attr with attr_strings = (name, s) :: attr.attr_strings })
 
    let addOptionT name code =
-      addT (fun attr -> { attr with attr_options = (name, code) :: attr.attr_options  })
+      addT (fun attr -> { attr with attr_options = add_option attr.attr_options name code })
 
    (*
     * Add a temporary argument.
@@ -1295,7 +1297,7 @@ struct
       withT (fun attr -> { attr with attr_strings = (name, s) :: attr.attr_strings })
 
    let withOptionT name s =
-      withT (fun attr -> { attr with attr_options = (name, s) :: attr.attr_options })
+      withT (fun attr -> { attr with attr_options = add_option attr.attr_options name s })
 
    (*
     * Remove an argument permanently.
@@ -1324,7 +1326,7 @@ struct
       removeT (fun attr -> { attr with attr_strings = Lm_list_util.remove (name, s) attr.attr_strings })
 
    let removeOptionT name =
-      removeT (fun attr -> { attr with attr_options = List.remove_assoc name attr.attr_options })
+      removeT (fun attr -> { attr with attr_options = add_option attr.attr_options name OptionIgnore })
 
    (*
     * Remove an argument permanently.
@@ -1353,7 +1355,7 @@ struct
       withoutT (fun attr -> { attr with attr_strings = Lm_list_util.remove (name, s) attr.attr_strings })
 
    let withoutOptionT name =
-      withoutT (fun attr -> { attr with attr_options = List.remove_assoc name attr.attr_options })
+      withoutT (fun attr -> { attr with attr_options = add_option attr.attr_options name OptionIgnore })
 
    (*
     * Time the tactic.

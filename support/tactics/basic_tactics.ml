@@ -15,7 +15,7 @@ include Refiner.Refiner.TermOp
 include Refiner.Refiner.TermSubst
 include Refiner.Refiner.Rewrite
 include Refiner.Refiner.RefineError
-include Option_sig
+include Options_boot
 include Mp_resource
 include Top_resource
 include Top_tacticals

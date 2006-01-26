@@ -90,6 +90,7 @@ open Tactic_type.Tactic
 open Tactic_type.Conversionals
 open Tactic_type.Sequent
 
+open Options_boot
 open Top_options
 
 (*
@@ -409,7 +410,7 @@ doc <:doc<
 
    @docoff
 >>
-type reduce_conv = conv * (Option_sig.option_table -> conv)
+type reduce_conv = conv * (option_table -> conv)
 type reduce_info = rule_labels * conv
 type reduce_entry = term * reduce_info
 

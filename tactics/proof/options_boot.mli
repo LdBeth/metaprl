@@ -4,7 +4,7 @@
  * ----------------------------------------------------------------
  *
  * @begin[license]
- * Copyright (C) 2005 Mojave Group, Caltech
+ * Copyright (C) 2005-2006 Mojave Group, Caltech
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -20,12 +20,12 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * @email{jyh@cs.caltech.edu}
+ * Author: Jason Hickey @email{jyh@cs.caltech.edu}
+ * Modified by: Aleksey Nogin @email{nogin@cs.caltech.edu}
  * @end[license]
  *)
 open Opname
-open Refiner.Refiner.RefineError
+open Refiner.Refiner.TermType
 
 (*
  * Flags associated with options.
@@ -35,34 +35,40 @@ type option_info =
  | OptionExclude
  | OptionIgnore
 
-type option_table =
-   (opname * option_info) list
+val string_of_option : option_info -> string
+val option_of_string : string -> option_info
+val is_option_string : string -> bool
 
-let string_of_option = function
-   OptionAllow -> "allow"
- | OptionExclude -> "exclude"
- | OptionIgnore -> "ignore"
+(*
+ * Options decision table
+ *)
+type option_table
 
-let option_of_string = function
-   "allow" -> OptionAllow
- | "exclude" -> OptionExclude
- | "ignore" -> OptionIgnore
- | s -> raise (RefineError ("option_of_string", StringError (Printf.sprintf "illegal option string '%s': legal values are 'allow', 'exclude', 'ignore'" s)))
+val options_empty : option_table
+val add_option : option_table -> opname -> option_info -> option_table
+val list_options : option_table -> (opname * option_info) list
+val options_eq : option_table -> option_table -> bool
 
-let is_option_string = function
-   "allow"
- | "exclude"
- | "ignore" ->
-      true
- | _ ->
-      false
+(*
+ * Labels for a rule.
+ *)
+type rule_labels
 
-(*!
- * @docoff
- *
+(*
+ * Check whether an options set is allowed.
+ *)
+val rule_labels_are_allowed : option_table -> rule_labels -> bool
+
+(*
+ * Utilities.
+ *)
+val rule_labels_empty        : rule_labels
+val rule_labels_of_terms     : term list -> rule_labels
+val rule_labels_of_opt_terms : term list option -> rule_labels
+
+(*
  * -*-
  * Local Variables:
- * Caml-master: "compile"
  * End:
  * -*-
  *)

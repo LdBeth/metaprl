@@ -181,6 +181,7 @@ open Tactic_type
 open Tactic_type.Tactic
 open Tactic_type.Tacticals
 
+open Options_boot
 open Top_options
 
 open Auto_tactic
@@ -267,7 +268,9 @@ let in_auto p =
          false
 
 let extract_intro_data =
-   let select_intro p options in_auto_type (_, sel, opts, auto_type, _) =
+   let select_intro p options in_auto_type (name, sel, opts, auto_type, _) =
+      if !debug_dtactic then
+         eprintf "Dtactic: intro: potential match found: %s; will test for selection%t" name eflush;
       (match in_auto_type, auto_type with
           Some 0, AutoTrivial
         | Some 1, AutoNormal
@@ -291,7 +294,8 @@ let extract_intro_data =
    in
    let extract (name, _, _, _, tac) =
       if !debug_dtactic then
-         eprintf "Dtactic: intro: found %s%t" name eflush; tac
+         eprintf "Dtactic: intro: found %s%t" name eflush;
+      tac
    in
       (fun tbl ->
             funT (fun p ->
@@ -307,13 +311,10 @@ let extract_intro_data =
                            let msg =
                               match get_sel_arg p with
                                  Some _ ->
-                                    "dT tactic failed: the select argument may be out of range"
+                                    "dT: nothing appropriate found: the select argument may be out of range"
                                | None ->
-                                    match options with
-                                       _ :: _ ->
-                                          "dT tactic failed: the option arguments may not be valid"
-                                     | [] ->
-                                          "dT tactic failed"
+                                    (* "dT: nothing appropriate found: the option arguments may not be valid" *)
+                                    "dT: nothing appropriate found"
                            in
                               raise (RefineError ("extract_intro_data", StringTermError (msg, t)))
                   in

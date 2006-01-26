@@ -45,7 +45,7 @@ open Rewrite_sig
 open Refiner_sig
 open Refiner_io
 open Mp_resource
-open Option_sig
+open Options_boot
 
 (* Visible types.  *)
 

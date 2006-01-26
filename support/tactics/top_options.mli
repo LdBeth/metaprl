@@ -1,12 +1,10 @@
 (*
  * Define a resource for select arguments.
- * XXX: JYH: we want this resource to be scoped within a theory.
- * That will take a little extra work.
  *
  * ----------------------------------------------------------------
  *
  * @begin[license]
- * Copyright (C) 2005 Mojave Group, Caltech
+ * Copyright (C) 2005-2006 Mojave Group, Caltech
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -22,8 +20,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * @email{jyh@cs.caltech.edu}
+ * Author: Jason Hickey @email{jyh@cs.caltech.edu}
+ * Modified by: Aleksey Nogin @email{nogin@cs.caltech.edu}
  * @end[license]
  *)
 extends Mptop
@@ -33,31 +31,11 @@ open Tactic_boot_sig
 open Refiner.Refiner.Refine
 open Mp_resource
 open Top_resource
-open Option_sig
+open Options_boot
 
 open Tactic_type.Tactic
 
 resource (term * option_info, option_table) select
-
-(*
- * Labels for a rule.
- *)
-type rule_labels
-
-(*
- * Check whether an options set is allowed.
- *)
-val get_options : tactic_arg -> option_table
-val rule_labels_are_allowed : option_table -> rule_labels -> bool
-val rule_labels_are_allowed_arg : tactic_arg -> rule_labels -> bool
-
-(*
- * Utilities.
- *)
-val rule_labels_empty        : rule_labels
-val rule_labels_of_terms     : term list -> rule_labels
-val rule_labels_of_opt_terms : term list option -> rule_labels
-val rule_labels_not_allowed  : MLast.loc -> term list option -> unit
 
 (*
  * Tactics.
@@ -85,12 +63,16 @@ topval printOptionsT : tactic
 topval withOptionC : term -> string -> conv -> conv
 topval withoutOptionC : term -> conv -> conv
 
-(*!
- * @docoff
- *
+(*
+ * Utilities
+ *)
+val get_options : tactic_arg -> option_table
+val rule_labels_are_allowed_arg : tactic_arg -> rule_labels -> bool
+val rule_labels_not_allowed  : MLast.loc -> term list option -> unit
+
+(*
  * -*-
  * Local Variables:
- * Caml-master: "compile"
  * End:
  * -*-
  *)
