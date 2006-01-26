@@ -124,6 +124,7 @@ struct
     | RawInt of int
     | RawString of string
     | RawSentinal of sentinal
+    | RawOption of opname
 
    and raw_attribute = string * raw_attribute_info
 
@@ -325,13 +326,10 @@ struct
         attr_bools      = Lm_list_util.some_map (function (name, RawBool b)     -> Some (name, b) | _ -> None) attributes;
         attr_strings    = Lm_list_util.some_map (function (name, RawString s)   -> Some (name, s) | _ -> None) attributes;
         attr_keys       = Lm_list_util.some_map (function (name, RawSentinal k) -> Some (name, k) | _ -> None) attributes;
-        attr_options    =
-           Lm_list_util.some_map (fun attr ->
-                 match attr with
-                    (opt, RawTerm t) when is_option_string opt ->
-                       Some (opname_of_term t, option_of_string opt)
-                  | _ ->
-                       None) attributes
+        attr_options    = Lm_list_util.some_map (
+           function 
+              (name, RawOption op) -> Some (op, option_of_string name)
+            | _ -> None) attributes
       }
 
    let squash_attributes attrs =
@@ -587,7 +585,7 @@ struct
       @ (List.map (fun (name, b) -> name, RawBool b) bools)
       @ (List.map (fun (name, s) -> name, RawString s) strings)
       @ (List.map (fun (name, t) -> name, RawSentinal t) keys)
-      @ (List.map (fun (op, kind) -> string_of_option kind, RawTerm (mk_term (mk_op op []) []))) options
+      @ (List.map (fun (op, kind) -> string_of_option kind, RawOption op) options)
 
    (************************************************************************
     * PROOF PRINTING                                                       *
@@ -804,7 +802,8 @@ struct
     * Lazy attribute generation for keys.
     *)
    let term_attribute name t =
-      name, RawTerm t
+      (* XXX HACK! *)
+      name, (if is_option_string name then RawOption (opname_of_term t) else RawTerm t)
 
    let term_list_attribute name tl =
       name, RawTermList tl

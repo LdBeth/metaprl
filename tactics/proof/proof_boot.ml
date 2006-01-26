@@ -1374,7 +1374,7 @@ struct
          info
 
    let rec find_subgoal_aux p addr node arg =
-      let test ext = tactic_arg_alpha_equal_with_attributes arg (goal_ext ext) in
+      let test ext = tactic_arg_alpha_equal arg (goal_ext ext) in
       if test node then
          if addr = [] then
             []
@@ -1382,7 +1382,7 @@ struct
             let addr = fst (Lm_list_util.split_last addr) in
                find_subgoal_aux p addr (index p addr) arg
       else
-         let test_subgoal ext = List.exists (tactic_arg_alpha_equal_with_attributes arg) (leaves_ext ext) in
+         let test_subgoal ext = List.exists (tactic_arg_alpha_equal arg) (leaves_ext ext) in
          let rec comp_aux rb addr goal subgoals =
             if List.exists test subgoals then
                aux (if rb then 0::addr else addr) goal
