@@ -72,9 +72,10 @@ val create_parse_info : parse_state -> parse_info
 val mk_rule_term      : parse_info -> meta_term -> term
 val mk_rule_wf_thm    : parse_info -> term -> meta_term
 val mk_logic_wf_thm   : parse_info -> term -> meta_term
-val mk_infer_thm      : parse_info -> term -> meta_term -> socvars_info * meta_term
+val mk_intro_thm      : parse_info -> term -> meta_term -> socvars_info * meta_term
 val mk_type_check_thm : parse_info -> (term, term) poly_ty_term -> meta_term
 val mk_mem_logic_thm  : parse_info -> term -> term -> meta_term
+val mk_elim_thm       : parse_info -> term -> meta_term list -> var * meta_term
 
 (*
  * Various constructors for logics.

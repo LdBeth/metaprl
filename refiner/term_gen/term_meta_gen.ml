@@ -254,6 +254,22 @@ let () = ();;
    let free_vars_mterm = free_vars_mterm SymbolSet.empty
 
    (*
+    * All free variables.
+    *)
+   let rec all_vars_mterm vars = function
+      MetaTheorem t ->
+         SymbolSet.union vars (all_vars t)
+    | MetaLabeled (_, mt) ->
+         all_vars_mterm vars mt
+    | MetaImplies (a, b)
+    | MetaIff (a, b) ->
+         all_vars_mterm (all_vars_mterm vars a) b
+    | MetaFunction (t, a, b) ->
+         all_vars_mterm (all_vars_mterm (SymbolSet.union vars (all_vars t)) a) b
+
+   let all_vars_mterm = all_vars_mterm SymbolSet.empty
+
+   (*
     * Context vars.
     *)
    let rec context_vars_info vars = function
@@ -461,7 +477,7 @@ let () = ();;
                   StringVarError("The < C<|#|> > construct should not be used when the sequent argument is already declared with a meta-type that does not allow bindings.",v)))
        | _ ->
             (if allow_bindings then v :: bconts else bconts), conts
-   
+
    let context_of_parsed_contexts allow_bindings bconts v conts =
       let bconts', conts = parse_contexts allow_bindings bconts v conts in
       let conts =

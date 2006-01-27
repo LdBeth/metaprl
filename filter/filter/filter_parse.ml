@@ -1454,9 +1454,30 @@ thenT autoT" (**)
       in
       let rule_name = "intro_" ^ name in
       let cvars, mt, params, res = parse_rule loc rule_name mt params res in
-      let _, mt = Filter_reflection.mk_infer_thm info t_logic mt in
+      let _, mt = Filter_reflection.mk_intro_thm info t_logic mt in
       let mt, params, _ = mterms_of_parsed_mterms (fun _ -> true) mt params in
       let tac = Printf.sprintf "provableRuleT << %s >> unfold_%s" name name in
+         define_thm proc loc rule_name params mt tac res
+
+   (*
+    * Add an elimination rule for proof induction.
+    *)
+   let add_elim proc info loc name t_logic items =
+      let rule_name = "elim_" ^ name in
+
+      (* TODO: add to elim resource *)
+      let res = no_resources in
+
+      (* Build the rule *)
+      let rules = List.map (fun (_loc, item) -> raw_meta_term_of_parsed_meta_term item.ref_rule_term) items in
+      let h_v, mt = Filter_reflection.mk_elim_thm info t_logic rules in
+      let params = [mk_parsed_term (mk_var_term h_v)] in
+      let mt = mk_parsed_meta_term mt in
+      let _, mt, params, res = parse_rule loc rule_name mt params res in
+
+      (* TODO: more accurate tactic *)
+      let tac = "elimRuleT" in
+
          define_thm proc loc rule_name params mt tac res
 
    (************************************************************************
@@ -1542,7 +1563,10 @@ thenT autoT" (**)
          List.iter (add_mem_logic proc info name t_logic) items;
 
          (* Add an introduction form for each of the rules *)
-         List.iter (add_intro proc info t_logic) items
+         List.iter (add_intro proc info t_logic) items;
+
+         (* Add an elimination rule for the entire logic *)
+         add_elim proc info loc name t_logic items
 
    (************************************************************************
     * General handlers.
@@ -1615,7 +1639,7 @@ EXTEND
               * XXX: HACK: make sure nambers stay small enough so that 64-bin .prla can
               * still be read on 32-bit machines.
               *)
-             let id = 
+             let id =
                 match Sys.word_size with
                    64 -> (id + (id lsl 32)) asr 32
                  | 32 -> id

@@ -119,8 +119,7 @@ let extract_params (ivars, avars) =
          let v, conts, terms = dest_so_var h in
             if terms = [] && SymbolSet.mem ivars v then
                IntParam v
-            else
-            if terms = [] && SymbolSet.mem avars v then
+            else if terms = [] && SymbolSet.mem avars v then
                AddrParam v
             else
                TermParam h

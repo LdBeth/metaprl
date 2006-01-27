@@ -56,6 +56,7 @@ sig
     * Some operations on meta_term.
     *)
    val free_vars_mterm : meta_term -> SymbolSet.t
+   val all_vars_mterm : meta_term -> SymbolSet.t
    val context_vars : meta_term -> SymbolSet.t * SymbolSet.t
    val context_vars_info : (bool * int * int) SymbolTable.t -> meta_term -> (bool * int * int) SymbolTable.t
    val so_vars_info :  (int * int) SymbolTable.t -> meta_term -> (int * int) SymbolTable.t

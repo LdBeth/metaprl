@@ -79,7 +79,12 @@ let perv_opname       = mk_opname "Perv" nil_opname
 (*
  * Variables.
  *)
+let var_A       = Lm_symbol.add "A"
+let var_C       = Lm_symbol.add "C"
 let var_H       = Lm_symbol.add "H"
+let var_J       = Lm_symbol.add "J"
+let var_u       = Lm_symbol.add "u"
+let var_U       = Lm_symbol.add "U"
 let var_x       = Lm_symbol.add "x"
 let var_z       = Lm_symbol.add "z"
 let var_step    = Lm_symbol.add "step"
@@ -1208,7 +1213,7 @@ let mk_provable_sequent_term info h_v t_logic t =
    let t = Reflect.mk_ProvableSequent_term info t_logic t in
       mk_normal_sequent_term info h_v t
 
-let mk_infer_thm info t_logic t =
+let mk_intro_thm info t_logic t =
    (* Convert the terms in the rule *)
    let premises, goal = unzip_mfunction t in
    let premises = List.map (fun (_, _, premise) -> premise) premises in
@@ -1260,6 +1265,138 @@ let mk_infer_thm info t_logic t =
    let socvars_all = SymbolTable.fold SymbolTable.add socvars_premises socvars_goal in
    let socvars_info = mk_infer_socvars_info socvars_all in
       socvars_info, mt
+
+(************************************************************************
+ * Elimination.
+ *
+ * Notes: the h_v choice is wrong.
+ * We need to compute the var based on *all* the assumptions.
+ *)
+type elim_info =
+   { elim_h_v     : var;
+     elim_j_v     : var;
+     elim_u_v     : var;
+     elim_u_ty    : term;
+     elim_x_v     : var;
+     elim_hyp_t   : term;
+     elim_concl_t : term
+   }
+
+(*
+ * Make an elimination assumption.
+ * Given a rule:
+ *     T1 --> ... --> Tn
+ * The elim clause is:
+ *     true
+ *)
+let mk_elim_assum info einfo t_logic t =
+   let { elim_h_v     = h_v;
+         elim_j_v     = j_v;
+         elim_u_v     = u_v;
+         elim_u_ty    = u_ty;
+         elim_x_v     = x_v;
+         elim_hyp_t   = hyp_t;
+         elim_concl_t = concl_t
+       } = einfo
+   in
+
+   (* Convert the terms in the rule *)
+   let premises, goal = unzip_mfunction t in
+   let premises = List.map (fun (_, _, premise) -> premise) premises in
+
+   (* Convert the terms *)
+   let _premises =
+      List.fold_left (fun premises premise ->
+            let _, premise = sweep_min_rulequote_term info h_v SymbolTable.empty premise in
+            let premise = Reflect.mk_ProvableSequent_term info t_logic premise in
+            let premise = Hypothesis (x_v, premise) in
+               premise :: premises) [] premises
+   in
+   let _, goal = sweep_min_rulequote_term info h_v SymbolTable.empty goal in
+   let _goal = Reflect.mk_ProvableSequent_term info t_logic goal in
+   let premises =
+      Context (h_v, [], [])
+      :: Hypothesis (u_v, u_ty)
+      :: Hypothesis (x_v, hyp_t)
+      :: Context (j_v, [h_v], [])
+      :: []  (* TODO: this is wrong, need to fix arity errors *)
+   in
+   let seq =
+      { sequent_args  = Reflect.mk_sequent_arg_term info;
+        sequent_hyps  = SeqHyp.of_list premises;
+        sequent_concl = concl_t
+      }
+   in
+      mk_sequent_term seq
+
+(*
+ * Make the elimination goal.
+ *)
+let mk_elim_goal info einfo t_logic =
+   let { elim_h_v     = h_v;
+         elim_j_v     = j_v;
+         elim_u_v     = u_v;
+         elim_u_ty    = u_ty;
+         elim_x_v     = x_v;
+         elim_hyp_t   = hyp_t;
+         elim_concl_t = concl_t
+       } = einfo
+   in
+   let hyps =
+      SeqHyp.of_list (**)
+         [Context (h_v, [], []);
+          Hypothesis (u_v, u_ty);
+          Hypothesis (x_v, hyp_t);
+          Context (j_v, [h_v], [])]
+   in
+   let seq =
+      { sequent_args  = Reflect.mk_sequent_arg_term info;
+        sequent_hyps  = hyps;
+        sequent_concl = concl_t
+      }
+   in
+      mk_sequent_term seq
+
+(*
+ * Make the elimination theorem.
+ *)
+let mk_elim_thm info t_logic premises =
+   let it = Reflect.mk_it_term info in
+
+   (* Variable calculations *)
+   let mt_all = List.fold_left (fun mt t -> MetaImplies (t, mt)) (MetaTheorem it) premises in
+   let fv = all_vars_mterm mt_all in
+
+   (* NOTE: make sure all the calls to new_var have distinct x *)
+   let new_var x =
+      Lm_symbol.new_name x (SymbolSet.mem fv)
+   in
+   let h_v     = new_var var_H in
+   let j_v     = new_var var_J in
+   let u_v     = new_var var_u in
+   let u_ty    = mk_so_var_term (new_var var_U) [h_v] [] in
+   let x_v     = new_var var_x in
+   let hyp_t   = mk_so_var_term (new_var var_A) [h_v] [mk_var_term u_v] in
+   let concl_t = mk_so_var_term (new_var var_C) [h_v; j_v] [mk_var_term u_v; mk_var_term x_v] in
+   let einfo =
+      { elim_h_v     = h_v;
+        elim_j_v     = j_v;
+        elim_u_v     = u_v;
+        elim_u_ty    = u_ty;
+        elim_x_v     = x_v;
+        elim_hyp_t   = hyp_t;
+        elim_concl_t = concl_t
+      }
+   in
+
+   (* Build the premises *)
+   let premises = List.map (mk_elim_assum info einfo t_logic) premises in
+   let goal = mk_elim_goal info einfo t_logic in
+      h_v, zip_mimplies premises goal
+
+(************************************************************************
+ * Logic membership.
+ *)
 
 (*
  * Make the logic membership term.
