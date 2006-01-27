@@ -85,6 +85,8 @@ let var_H       = Lm_symbol.add "H"
 let var_J       = Lm_symbol.add "J"
 let var_u       = Lm_symbol.add "u"
 let var_U       = Lm_symbol.add "U"
+let var_v       = Lm_symbol.add "v"
+let var_w       = Lm_symbol.add "w"
 let var_x       = Lm_symbol.add "x"
 let var_z       = Lm_symbol.add "z"
 let var_step    = Lm_symbol.add "step"
@@ -132,7 +134,9 @@ sig
    val mk_append_list_term     : t -> term list -> term
    val mk_sequent_term         : t -> term -> term -> term -> term
    val mk_ty_list_term         : t -> term -> term
+   val mk_implies_term         : t -> term -> term -> term
    val mk_exists_term          : t -> var -> term -> term -> term
+   val mk_all_term             : t -> var -> term -> term -> term
    val mk_equal_term           : t -> term -> term -> term -> term
    val mk_number_term          : t -> int -> term
    val mk_ty_nat               : t -> term
@@ -142,6 +146,7 @@ sig
    val mk_capply_term          : t -> term -> var list -> term
    val mk_map_term             : t -> var -> term -> term -> term
    val mk_add_term             : t -> term -> term -> term
+   val mk_BTerm_term           : t -> term
    val mk_BTerm2_term          : t -> term -> term
    val mk_CVar_term            : t -> term -> term
    val mk_proof_step_term      : t -> term -> term -> term
@@ -187,6 +192,7 @@ struct
          incr hash_index;
          index, info
 
+   let info_BTerm             = hash ("BTerm",           [],  [])
    let info_BTerm2            = hash ("BTerm",           [],  [0])
    let info_CVar              = hash ("CVar",            [],  [0])
    let info_Logic             = hash ("Logic",           [],  [])
@@ -202,7 +208,9 @@ struct
    let info_bind              = hash ("bind",            [],  [1])
    let info_cons              = hash ("cons",            [],  [0; 0])
    let info_equal             = hash ("equal",           [],  [0; 0; 0])
+   let info_implies           = hash ("implies",         [],  [0; 0])
    let info_exists            = hash ("exists",          [],  [0; 1])
+   let info_all               = hash ("all",             [],  [0; 1])
    let info_lambda            = hash ("lambda",          [],  [1])
    let info_length            = hash ("length",          [],  [0])
    let info_let_cvar          = hash ("let_cvar",        [ShapeString],  [0; 0; 0; 1])
@@ -335,8 +343,14 @@ struct
    let mk_ty_list_term info t =
       mk_simple_term (find_opname info info_list) [t]
 
+   let mk_implies_term info t1 t2 =
+      mk_dep0_dep0_term (find_opname info info_implies) t1 t2
+
    let mk_exists_term info v t1 t2 =
       mk_dep0_dep1_term (find_opname info info_exists) v t1 t2
+
+   let mk_all_term info v t1 t2 =
+      mk_dep0_dep1_term (find_opname info info_all) v t1 t2
 
    let mk_equal_term info t1 t2 t3 =
       mk_simple_term (find_opname info info_equal) [t3; t1; t2]
@@ -372,6 +386,9 @@ struct
 
    let mk_add_term info t1 t2 =
       mk_dep0_dep0_term (find_opname info info_add) t1 t2
+
+   let mk_BTerm_term info =
+      mk_simple_term (find_opname info info_BTerm2) []
 
    let mk_BTerm2_term info t =
       mk_dep0_term (find_opname info info_BTerm2) t
@@ -812,6 +829,25 @@ let rec quantify_socvars info t_witness socvars t =
             quantify_socvars info t_witness socvars t
     | [] ->
          t
+
+(*
+ * Universally quantify the free second-order and context variables.
+ *)
+let quantify_socvars_hyps info socvars hyps =
+   List.fold_left (fun hyps (v, i, b, cargs, arity) ->
+         let len = Reflect.mk_number_term info arity in
+         let len =
+            List.fold_left (fun len v ->
+                  Reflect.mk_add_term info (Reflect.mk_length_term info (mk_var_term v)) len) len cargs
+         in
+         let t =
+            if b then
+               Reflect.mk_CVar_term info len
+            else
+               Reflect.mk_BTerm2_term info len
+         in
+         let hyp = Hypothesis (v, t) in
+            hyp :: hyps) hyps socvars
 
 (*
  * Turn the socvars into wf subgoals.
@@ -1273,14 +1309,21 @@ let mk_intro_thm info t_logic t =
  * We need to compute the var based on *all* the assumptions.
  *)
 type elim_info =
-   { elim_h_v     : var;
-     elim_j_v     : var;
-     elim_u_v     : var;
-     elim_u_ty    : term;
-     elim_x_v     : var;
-     elim_hyp_t   : term;
-     elim_concl_t : term
+   { elim_h_v      : var;
+     elim_j_v      : var;
+     elim_u_v      : var;
+     elim_u_ty     : term;
+     elim_v_v      : var;
+     elim_x_v      : var;
+     elim_hyp_v    : var;
+     elim_concl_v  : var;
+     elim_all_vars : SymbolSet.t
    }
+
+let maybe_new_var var_x all_vars =
+   let x = Lm_symbol.new_name var_x (SymbolSet.mem all_vars) in
+   let all_vars = SymbolSet.add all_vars x in
+      x, all_vars
 
 (*
  * Make an elimination assumption.
@@ -1290,13 +1333,15 @@ type elim_info =
  *     true
  *)
 let mk_elim_assum info einfo t_logic t =
-   let { elim_h_v     = h_v;
-         elim_j_v     = j_v;
-         elim_u_v     = u_v;
-         elim_u_ty    = u_ty;
-         elim_x_v     = x_v;
-         elim_hyp_t   = hyp_t;
-         elim_concl_t = concl_t
+   let { elim_h_v      = h_v;
+         elim_j_v      = j_v;
+         elim_u_v      = u_v;
+         elim_u_ty     = u_ty;
+         elim_v_v      = v_v;
+         elim_x_v      = x_v;
+         elim_hyp_v    = hyp_v;
+         elim_concl_v  = concl_v;
+         elim_all_vars = all_vars
        } = einfo
    in
 
@@ -1304,27 +1349,56 @@ let mk_elim_assum info einfo t_logic t =
    let premises, goal = unzip_mfunction t in
    let premises = List.map (fun (_, _, premise) -> premise) premises in
 
-   (* Convert the terms *)
-   let _premises =
-      List.fold_left (fun premises premise ->
-            let _, premise = sweep_min_rulequote_term info h_v SymbolTable.empty premise in
-            let premise = Reflect.mk_ProvableSequent_term info t_logic premise in
-            let premise = Hypothesis (x_v, premise) in
-               premise :: premises) [] premises
+   (* Convert the goal equality *)
+   let socvars, goal = sweep_rulequote_term info SymbolTable.empty goal in
+   let w1_v, all_vars = maybe_new_var var_w all_vars in
+   let w2_v, all_vars = maybe_new_var var_w all_vars in
+   let hyp_goal = mk_so_var_term hyp_v [h_v] [mk_var_term v_v] in
+   let ty_bterm = Reflect.mk_BTerm_term info in
+   let clauses =
+      [Hypothesis (v_v, u_ty);
+       Hypothesis (w1_v, Reflect.mk_equal_term info hyp_goal goal ty_bterm);
+       Hypothesis (w2_v, Reflect.mk_ProvableSequent_term info t_logic hyp_goal)]
    in
-   let _, goal = sweep_min_rulequote_term info h_v SymbolTable.empty goal in
-   let _goal = Reflect.mk_ProvableSequent_term info t_logic goal in
+
+   (* Convert the premises and the goal *)
+   let socvars, _, clauses =
+      List.fold_left (fun (socvars, all_vars, clauses) premise ->
+            let socvars, premise = sweep_rulequote_term info socvars premise in
+
+            (* The subgoal *)
+            let premise1 = Reflect.mk_ProvableSequent_term info t_logic premise in
+            let w_v, all_vars = maybe_new_var var_w all_vars in
+            let premise1 = Hypothesis (w_v, premise1) in
+
+            (* The induction part *)
+            let u_v, all_vars = maybe_new_var var_u all_vars in
+            let h_t = mk_so_var_term hyp_v [h_v] [mk_var_term u_v] in
+            let t_equal = Reflect.mk_equal_term info h_t premise ty_bterm in
+            let t_concl = mk_so_var_term concl_v [h_v; j_v] [mk_var_term u_v; mk_var_term x_v] in
+            let t_implies = Reflect.mk_implies_term info t_equal t_concl in
+            let t_all = Reflect.mk_all_term info u_v u_ty t_implies in
+            let w_v, all_vars = maybe_new_var var_w all_vars in
+            let premise2 = Hypothesis (w_v, t_all) in
+               socvars, all_vars, premise1 :: premise2 :: clauses) (socvars, all_vars, clauses) (List.rev premises)
+   in
+
+   (* Universally quantify the variables *)
+   let socvars = sort_socvars socvars in
+   let clauses = quantify_socvars_hyps info socvars clauses in
+
+   (* Build the sequent *)
    let premises =
       Context (h_v, [], [])
       :: Hypothesis (u_v, u_ty)
-      :: Hypothesis (x_v, hyp_t)
-      :: Context (j_v, [h_v], [])
-      :: []  (* TODO: this is wrong, need to fix arity errors *)
+      :: Hypothesis (x_v, Reflect.mk_ProvableSequent_term info t_logic (mk_so_var_term hyp_v [h_v] [mk_var_term u_v]))
+      :: Context (j_v, [h_v], [mk_var_term u_v; mk_var_term x_v])
+      :: clauses
    in
    let seq =
       { sequent_args  = Reflect.mk_sequent_arg_term info;
         sequent_hyps  = SeqHyp.of_list premises;
-        sequent_concl = concl_t
+        sequent_concl = mk_so_var_term concl_v [h_v; j_v] [mk_var_term v_v; mk_var_term x_v]
       }
    in
       mk_sequent_term seq
@@ -1338,21 +1412,21 @@ let mk_elim_goal info einfo t_logic =
          elim_u_v     = u_v;
          elim_u_ty    = u_ty;
          elim_x_v     = x_v;
-         elim_hyp_t   = hyp_t;
-         elim_concl_t = concl_t
+         elim_hyp_v   = hyp_v;
+         elim_concl_v = concl_v
        } = einfo
    in
    let hyps =
       SeqHyp.of_list (**)
          [Context (h_v, [], []);
           Hypothesis (u_v, u_ty);
-          Hypothesis (x_v, hyp_t);
-          Context (j_v, [h_v], [])]
+          Hypothesis (x_v, Reflect.mk_ProvableSequent_term info t_logic (mk_so_var_term hyp_v [h_v] [mk_var_term u_v]));
+          Context (j_v, [h_v], [mk_var_term u_v; mk_var_term x_v])]
    in
    let seq =
       { sequent_args  = Reflect.mk_sequent_arg_term info;
         sequent_hyps  = hyps;
-        sequent_concl = concl_t
+        sequent_concl = mk_so_var_term concl_v [h_v; j_v] [mk_var_term u_v; mk_var_term x_v]
       }
    in
       mk_sequent_term seq
@@ -1365,27 +1439,23 @@ let mk_elim_thm info t_logic premises =
 
    (* Variable calculations *)
    let mt_all = List.fold_left (fun mt t -> MetaImplies (t, mt)) (MetaTheorem it) premises in
-   let fv = all_vars_mterm mt_all in
+   let all_vars = all_vars_mterm mt_all in
 
    (* NOTE: make sure all the calls to new_var have distinct x *)
    let new_var x =
-      Lm_symbol.new_name x (SymbolSet.mem fv)
+      Lm_symbol.new_name x (SymbolSet.mem all_vars)
    in
-   let h_v     = new_var var_H in
-   let j_v     = new_var var_J in
-   let u_v     = new_var var_u in
-   let u_ty    = mk_so_var_term (new_var var_U) [h_v] [] in
-   let x_v     = new_var var_x in
-   let hyp_t   = mk_so_var_term (new_var var_A) [h_v] [mk_var_term u_v] in
-   let concl_t = mk_so_var_term (new_var var_C) [h_v; j_v] [mk_var_term u_v; mk_var_term x_v] in
+   let h_v = new_var var_H in
    let einfo =
-      { elim_h_v     = h_v;
-        elim_j_v     = j_v;
-        elim_u_v     = u_v;
-        elim_u_ty    = u_ty;
-        elim_x_v     = x_v;
-        elim_hyp_t   = hyp_t;
-        elim_concl_t = concl_t
+      { elim_h_v      = h_v;
+        elim_j_v      = new_var var_J;
+        elim_u_v      = new_var var_u;
+        elim_u_ty     = mk_so_var_term (new_var var_U) [h_v] [];
+        elim_v_v      = new_var var_v;
+        elim_x_v      = new_var var_x;
+        elim_hyp_v    = new_var var_A;
+        elim_concl_v  = new_var var_C;
+        elim_all_vars = all_vars
       }
    in
 
@@ -1405,8 +1475,8 @@ let mk_elim_thm info t_logic premises =
  *)
 let mk_mem_logic_thm info t_logic t_rule =
    let fv = all_vars_terms [t_logic; t_rule] in
-   let h_v = maybe_new_var var_H fv in
-   let logic_v = maybe_new_var var_logic fv in
+   let h_v, fv = maybe_new_var var_H fv in
+   let logic_v, fv = maybe_new_var var_logic fv in
    let logic_t = mk_var_term logic_v in
    let ty_logic = Reflect.mk_Logic_term info in
 
