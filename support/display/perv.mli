@@ -104,6 +104,12 @@ declare type ty_sequent{'ty_hyp : ty_hyp; 'ty_concl : Ty; 'ty_seq : Ty} : ty_seq
 declare type ty_hyp{'ty_var : Ty; 'ty_hyp : Ty} : ty_hyp
 declare type ty_exists{'a : Ty; v : 'a. 'ty['v] : ty_hyp} : ty_hyp
 
+(*
+ * Selection option
+ *)
+declare typeclass SelectOption -> Token
+declare select[option : SelectOption]
+
 (************************************************************************
  * Builtin input forms.
  *)

@@ -124,7 +124,7 @@ struct
     | RawInt of int
     | RawString of string
     | RawSentinal of sentinal
-    | RawOption of opname
+    | RawOption of option_key
 
    and raw_attribute = string * raw_attribute_info
 
@@ -237,8 +237,8 @@ struct
     | IdentityConv
     | TacticConv of (address -> tactic)
     | ForceConv of string * conv
-    | WithOptionConv of opname * option_info * conv
-    | WithoutOptionConv of opname * conv
+    | WithOptionConv of option_key * option_info * conv
+    | WithoutOptionConv of option_key * conv
 
    (*
     * Resources.
@@ -569,7 +569,7 @@ struct
       @ (List.map (fun (name, i) -> name, IntArg i) ints)
       @ (List.map (fun (name, b) -> name, BoolArg b) bools)
       @ (List.map (fun (name, s) -> name, StringArg s) strings)
-      @ (List.map (fun (op, kind) -> string_of_option kind, TermArg (mk_term (mk_op op []) []))) (list_options options)
+      @ (List.map (fun (op, kind) -> string_of_option kind, TermArg op) (list_options options))
 
    let raw_attributes { ref_attributes = { attr_terms = terms;
                                            attr_term_lists = term_lists;
@@ -805,7 +805,7 @@ struct
     *)
    let term_attribute name t =
       (* XXX HACK! *)
-      name, (if is_option_string name then RawOption (opname_of_term t) else RawTerm t)
+      name, (if is_option_string name then RawOption t else RawTerm t)
 
    let term_list_attribute name tl =
       name, RawTermList tl

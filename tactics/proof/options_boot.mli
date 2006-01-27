@@ -35,6 +35,8 @@ type option_info =
  | OptionExclude
  | OptionIgnore
 
+type option_key = term
+
 val string_of_option : option_info -> string
 val option_of_string : string -> option_info
 val is_option_string : string -> bool
@@ -45,8 +47,8 @@ val is_option_string : string -> bool
 type option_table
 
 val options_empty : option_table
-val add_option : option_table -> opname -> option_info -> option_table
-val list_options : option_table -> (opname * option_info) list
+val add_option : option_table -> option_key -> option_info -> option_table
+val list_options : option_table -> (option_key * option_info) list
 val options_eq : option_table -> option_table -> bool
 
 (*

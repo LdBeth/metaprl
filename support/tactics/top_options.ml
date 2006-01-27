@@ -54,7 +54,7 @@ let pp_print_option_info buf info =
  * the resource is extracted.
  *)
 let add_data options (t, info) =
-   add_option options (opname_of_term t) info
+   add_option options t info
 
 let extract_data options = options
 
@@ -96,42 +96,22 @@ let rule_labels_are_allowed_arg p labels =
 (************************************************************************
  * Tacticals for option handling.
  *)
-let addOptionInfoT t info =
-   Tacticals.addOptionT (opname_of_term t) info
-
-let addOptionT t s =
-   addOptionInfoT t (option_of_string s)
-
-let allowOptionT t =
-   addOptionInfoT t OptionAllow
-
-let excludeOptionT t =
-   addOptionInfoT t OptionExclude
-
-let withOptionInfoT t info tac =
-   Tacticals.withOptionT (opname_of_term t) info tac
-
-let withOptionT t s =
-   withOptionInfoT t (option_of_string s)
-
-let withAllowOptionT t =
-   withOptionInfoT t OptionAllow
-
-let withExcludeOptionT t =
-   withOptionInfoT t OptionExclude
-
-let removeOptionT t =
-   Tacticals.removeOptionT (opname_of_term t)
-
-let withoutOptionT t tac =
-   Tacticals.withoutOptionT (opname_of_term t) tac
+let addOptionInfoT = Tacticals.addOptionT
+let addOptionT t s = addOptionInfoT t (option_of_string s)
+let allowOptionT t = addOptionInfoT t OptionAllow
+let excludeOptionT t = addOptionInfoT t OptionExclude
+let withOptionInfoT = Tacticals.withOptionT
+let withOptionT t s = withOptionInfoT t (option_of_string s)
+let withAllowOptionT t = withOptionInfoT t OptionAllow
+let withExcludeOptionT t = withOptionInfoT t OptionExclude
+let removeOptionT = Tacticals.removeOptionT
+let withoutOptionT = Tacticals.withoutOptionT
 
 let printOptionT t =
    funT (fun p -> (**)
-      let opname = opname_of_term t in
       let options = list_options (get_options p) in
-         eprintf "Option: %s = " (string_of_opname opname);
-         (try eprintf "%a@." pp_print_option_info (List.assoc opname options) with
+         eprintf "Option: %a = " print_term t;
+         (try eprintf "%a@." pp_print_option_info (List.assoc t options) with
              Not_found ->
                 eprintf "<unbound>@.");
          idT)
@@ -140,15 +120,14 @@ let printOptionsT =
    funT (fun p -> (**)
       let options = list_options (get_options p) in
          eprintf "Total options: %d@." (List.length options);
-         List.iter (fun (opname, info) ->
-               eprintf "Option %s -> %a@." (string_of_opname opname) pp_print_option_info info) options;
+         List.iter (fun (t, info) ->
+               eprintf "Option %a -> %a@." print_term t pp_print_option_info info) options;
          idT)
 
 let withOptionC t s =
-   Conversionals.withOptionC (opname_of_term t) (option_of_string s)
+   Conversionals.withOptionC t (option_of_string s)
 
-let withoutOptionC t =
-   Conversionals.withoutOptionC (opname_of_term t)
+let withoutOptionC = Conversionals.withoutOptionC
 
 (*!
  * @docoff

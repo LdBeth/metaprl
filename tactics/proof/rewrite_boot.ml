@@ -168,11 +168,11 @@ struct
    let forceC debug conv =
       ForceConv (debug, conv)
 
-   let withOptionC opname option conv =
-      WithOptionConv (opname, option, conv)
+   let withOptionC opt option conv =
+      WithOptionConv (opt, option, conv)
 
-   let withoutOptionC opname conv =
-      WithoutOptionConv (opname, conv)
+   let withoutOptionC opt conv =
+      WithoutOptionConv (opt, conv)
 
    (*
     * Apply the conversion at the specified address.
@@ -303,14 +303,14 @@ struct
          funT (fun p ->
             let t = term_subterm (Sequent.nth_assum p assum) addr in
                apply assum addr (Some t) (f (p, t)))
-    | WithOptionConv (opname, option, c) ->
+    | WithOptionConv (opt, option, c) ->
          if !debug_rewrite then
-            eprintf "Rewrite_type.apply: WithOption (%s, %s)@." (string_of_opname opname) (string_of_option option);
-         withOptionT opname option (apply assum addr t c)
-    | WithoutOptionConv (opname, c) ->
+            eprintf "Rewrite_type.apply: WithOption@.";
+         withOptionT opt option (apply assum addr t c)
+    | WithoutOptionConv (opt, c) ->
          if !debug_rewrite then
-            eprintf "Rewrite_type.apply: WithOption %s@." (string_of_opname opname);
-         withoutOptionT opname (apply assum addr t c)
+            eprintf "Rewrite_type.apply: WithOption@.";
+         withoutOptionT opt (apply assum addr t c)
     | (HigherConv _ | AllSubConv _) as conv when t = None ->
          funT (fun p -> apply assum addr (Some (term_subterm (Sequent.nth_assum p assum) addr)) conv)
     | (HigherConv conv) as hconv ->

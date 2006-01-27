@@ -195,8 +195,8 @@ sig
     | IdentityConv
     | TacticConv of (address -> tactic)
     | ForceConv of string * conv
-    | WithOptionConv of opname * option_info * conv
-    | WithoutOptionConv of opname * conv
+    | WithOptionConv of option_key * option_info * conv
+    | WithoutOptionConv of option_key * conv
 
    type pre_tactic
    type prim_tactic = Refiner.Refiner.Refine.prim_tactic
@@ -412,7 +412,7 @@ sig
    val addBoolT : string -> bool -> tactic
    val addIntT : string -> int -> tactic
    val addStringT : string -> string -> tactic
-   val addOptionT : opname -> option_info -> tactic
+   val addOptionT : option_key -> option_info -> tactic
 
    val withTermT : string -> term -> tactic -> tactic
    val withTermListT : string -> term list -> tactic -> tactic
@@ -420,7 +420,7 @@ sig
    val withBoolT : string -> bool -> tactic -> tactic
    val withIntT : string -> int -> tactic -> tactic
    val withStringT : string -> string -> tactic -> tactic
-   val withOptionT : opname -> option_info -> tactic -> tactic
+   val withOptionT : option_key -> option_info -> tactic -> tactic
 
    val removeTermT : string -> tactic
    val removeTermListT : string -> tactic
@@ -429,7 +429,7 @@ sig
    val removeIntT : string -> tactic
    val removeStringT : string -> tactic
    val removeStringValT : string -> string -> tactic
-   val removeOptionT : opname -> tactic
+   val removeOptionT : option_key -> tactic
 
    val withoutTermT : string -> tactic -> tactic
    val withoutTermListT : string -> tactic -> tactic
@@ -438,7 +438,7 @@ sig
    val withoutIntT : string -> tactic -> tactic
    val withoutStringT : string -> tactic -> tactic
    val withoutStringValT : string -> string -> tactic -> tactic
-   val withoutOptionT : opname -> tactic -> tactic
+   val withoutOptionT : option_key -> tactic -> tactic
 
    (*
     * Force an exception if the tactic fails.
@@ -976,7 +976,7 @@ sig
    val addBoolT : string -> bool -> tactic
    val addStringT : string -> string -> tactic
    val addIntT : string -> int -> tactic
-   val addOptionT : opname -> option_info -> tactic
+   val addOptionT : option_key -> option_info -> tactic
 
    (*
     * General argument functions that add a temporary annotation.
@@ -987,7 +987,7 @@ sig
    val withBoolT : string -> bool -> tactic -> tactic
    val withStringT : string -> string -> tactic -> tactic
    val withIntT : string -> int -> tactic -> tactic
-   val withOptionT : opname -> option_info -> tactic -> tactic
+   val withOptionT : option_key -> option_info -> tactic -> tactic
 
    (*
     * Argument functions that remove an annotation permanetly.
@@ -998,7 +998,7 @@ sig
    val removeBoolT : string -> tactic
    val removeStringT : string -> tactic
    val removeIntT : string -> tactic
-   val removeOptionT : opname -> tactic
+   val removeOptionT : option_key -> tactic
 
    (*
     * Argument functions that remove an annotation temporarily.
@@ -1009,7 +1009,7 @@ sig
    val withoutBoolT : string -> tactic -> tactic
    val withoutStringT : string -> tactic -> tactic
    val withoutIntT : string -> tactic -> tactic
-   val withoutOptionT : opname -> tactic -> tactic
+   val withoutOptionT : option_key -> tactic -> tactic
 
    (*
     * Specific argument functions.
@@ -1070,8 +1070,8 @@ sig
    (*
     * Options management.
     *)
-   val withOptionC : opname -> option_info -> conv -> conv
-   val withoutOptionC : opname -> conv -> conv
+   val withOptionC : option_key -> option_info -> conv -> conv
+   val withoutOptionC : option_key -> conv -> conv
 
    (*
     * Apply a tactic at the current address
@@ -1215,8 +1215,8 @@ sig
    (*
     * Option management.
     *)
-   val withOptionC : opname -> option_info -> conv -> conv
-   val withoutOptionC : opname -> conv -> conv
+   val withOptionC : option_key -> option_info -> conv -> conv
+   val withoutOptionC : option_key -> conv -> conv
 
    (*
     * Progress

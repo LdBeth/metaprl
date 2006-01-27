@@ -25,7 +25,9 @@
  * @end[license]
  *)
 open Opname
+open Refiner.Refiner.TermType
 open Refiner.Refiner.Term
+open Refiner.Refiner.TermOp
 open Refiner.Refiner.RefineError
 
 (*
@@ -38,6 +40,8 @@ type option_info =
 
 type option_table =
    (int * bool) OpnameTable.t * int
+
+type option_key = term
 
 let string_of_option = function
    OptionAllow -> "ййallow"
@@ -64,9 +68,14 @@ let is_option_string = function
  | _ ->
       false
 
+let select_opname = make_opname ["select"; "Perv"]
+let get_label = dest_token_term select_opname
+let mk_label_term = mk_token_term select_opname
+
 let options_empty = OpnameTable.empty, 0
 
-let add_option (options, i) op info =
+let add_option (options, i) t info =
+   let op = get_label t in
    let i = i + 1 in
    let options =
       match info with
@@ -83,7 +92,7 @@ let cmp ((i1:int), _) (i2, _) =
    Pervasives.compare i1 i2
 
 let list_options (options, _) =
-   let lst = OpnameTable.fold (fun l op (n, dec) -> (n, (op, if dec then OptionAllow else OptionExclude)) :: l) [] options in
+   let lst = OpnameTable.fold (fun l op (n, dec) -> (n, (mk_label_term op, if dec then OptionAllow else OptionExclude)) :: l) [] options in
       List.map snd (List.sort cmp lst)
 
 let eq ((i1:int), (b1: bool)) (i2, b2) =
@@ -115,7 +124,7 @@ let rec rule_labels_are_allowed (options, _) labels =
    snd (List.fold_left (test_rule_label options) empty_start labels)
 
 let rule_labels_of_terms =
-   List.map opname_of_term
+   List.map get_label
 
 let rule_labels_of_opt_terms labels =
    let labels =
