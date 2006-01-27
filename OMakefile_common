@@ -4,43 +4,6 @@
 OMakeVersion(0.9.6.8)
 
 ########################################################################
-# General config
-#
-
-#
-# Simplify the machine name
-#
-ARCH = $(MACHINE)
-
-if $(equal $(ARCH), Power Macintosh)
-    ARCH = ppc
-    export
-
-if $(mem $(ARCH), x86 i386 i486 i586 i686)
-    ARCH = x86
-    export
-
-#
-# Default compile options are to be quiet
-# and print a progress bar.
-#
-if $(not $(defined VERBOSE))
-    VERBOSE = false
-    export
-
-if $(not $(VERBOSE))
-    OMakeFlags(-S --progress)
-    export
-
-#
-# omake options
-#
-ABORT_ON_DEPENDENCY_ERRORS = true
-OCAMLDEPFLAGS =
-USE_OCAMLFIND = false
-SCANNER_MODE = error
-
-########################################################################
 # OS-specific config.
 #
 if $(equal $(OSTYPE), Win32)

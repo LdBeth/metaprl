@@ -109,3 +109,40 @@ THEORYPATH[] = $(dir theories) $(ROOT) $(INSTALL_DIR)/theories
 SSL_WIN32 = c:\OpenSSL
 SSL_LIB_WIN32 = $(SSL_WIN32)/lib/VC
 SSL_INC_WIN32 = $(SSL_WIN32)/include
+
+########################################################################
+# General config
+#
+
+#
+# Simplify the machine name
+#
+ARCH = $(MACHINE)
+
+if $(equal $(ARCH), Power Macintosh)
+    ARCH = ppc
+    export
+
+if $(mem $(ARCH), x86 i386 i486 i586 i686)
+    ARCH = x86
+    export
+
+#
+# Default compile options are to be quiet
+# and print a progress bar.
+#
+if $(not $(defined VERBOSE))
+    VERBOSE = false
+    export
+
+if $(not $(VERBOSE))
+    OMakeFlags(-S --progress)
+    export
+
+#
+# omake options
+#
+ABORT_ON_DEPENDENCY_ERRORS = true
+OCAMLDEPFLAGS =
+USE_OCAMLFIND = false
+SCANNER_MODE = error
