@@ -16,7 +16,7 @@ MakeConfig(name) =
        elseif $(equal $d, $(INSTALL_DIR))
           return $$(dir $$(INSTALL_DIR))
        elseif $(equal $d, $(ROOT))
-          return $(ROOT)
+          return $$(ROOT)
        else
           value $d
 
