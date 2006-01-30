@@ -428,6 +428,13 @@ let r12 eq =
     | _ ->
          false
 
+let r15 eq =
+	match eq with
+	 | _, v::_, _, v1::_ ->
+	 		is_var v && is_var v1 && not (var_le v v1)
+	 | _ ->
+	 		false
+
 let never _ = false
 
 let apply_r1 atom_set calculus eq state =
@@ -574,7 +581,7 @@ let apply_r11 atom_set calculus eq (rest_eq, sigma, ordering) =
 	 | _ ->
 	 		raise (Invalid_argument "Jtunify.apply_r11 applied to an incorrect equation")
 
-let apply_r12b atom_set calculus (atomnames, fs, ft, rt) (rest_eq, sigma, ordering) =
+let apply_r13 atom_set calculus (atomnames, fs, ft, rt) (rest_eq, sigma, ordering) =
 	if !debug_jtunify then
 		begin
 			print_eq (atomnames, fs, ft, rt);
@@ -610,6 +617,21 @@ let apply_r12 atom_set calculus (atomnames, fs, ft, rt) (rest_eq, sigma, orderin
 	 | _ ->
 	 		raise (Invalid_argument "Jtunify.apply_r12 applied to an incorrect equation")
 
+let apply_r15 atom_set calculus (atomnames, fs, ft, rt) (rest_eq, sigma, ordering) =
+   if !debug_jtunify then
+      begin
+         print_eq (atomnames, fs, ft, rt);
+         print_endline "r13";
+      end;
+   match rt with
+    | v1::t ->
+         let compose_vars,new_sigma = compose sigma (v1,[]) in
+         let new_rest_eq = apply_subst rest_eq v1 [] atomnames in
+         let new_ordering = build_ordering calculus (v1::compose_vars) [] ordering atom_set in
+         false, (atomnames, fs, ft, t), (new_rest_eq, new_sigma, new_ordering)
+    | _ ->
+         raise (Invalid_argument "Jtunify.apply_r13 applied to an incorrect equation")
+
 let t_rules = [|
    (r1,apply_r1,[]);
    (r2,apply_r2,[]);
@@ -621,13 +643,64 @@ let t_rules = [|
    (r8,apply_r8,[9]);
    (r9,apply_r9,[9]);
    (r10,apply_r10,[]);
+   (r15,apply_r15,[11;12;13]);
    (r11,apply_r11,[]);
-	(r12,apply_r12,[12]);
-	(never,apply_r12b,[])
+   (r12,apply_r12,[13]);
+   (never,apply_r13,[])
 |]
 
-let all_rules = [0; 1; 2; 3; 4; 5; 6; 7; 8; 9; 10; 11; 12]
+(*
+let index7 = 6
+let index10 = 9
+let index12 = 12
+let index13 = 13
+let index15 = 11
 
+let t_rules = [|
+   (r1,apply_r1,[]);
+   (r2,apply_r2,[]);
+   (r3,apply_r3,[]);
+   (r4,apply_r4,[]);
+   (r5,apply_r5,[]);
+   (r6,apply_r6,[index7;index10]);
+   (r7,apply_r7,[index10]);
+   (r8,apply_r8,[index10]);
+   (r9,apply_r9,[index10]);
+   (r10,apply_r10,[]);
+   (r11,apply_r11,[index15;index12;index13]);
+	(r15,apply_r15,[index12;index13]);
+   (r12,apply_r12,[index13]);
+   (never,apply_r13,[])
+|]
+*)
+
+let all_rules = [0; 1; 2; 3; 4; 5; 6; 7; 8; 9; 10; 11; 12; 13]
+
+(*
+let index6 = 6
+let index7 = 5
+let index8 = 7
+let index9 = 4
+let index11 = 3
+let index13 = 9
+
+let t_rules = [|
+   (r3,apply_r3,[]);
+	(r10,apply_r10,[index9;index7;index6;index8]);
+   (r15,apply_r15,[index11;index8]);(*[index11;index12;index13]);*)
+   (r11,apply_r11,[index8]);
+	(r9,apply_r9,[]);(*index10]);*)
+   (r7,apply_r7,[index6]);(*index10]);*)
+	(r6,apply_r6,[]);(*index7;index10]);*)
+   (r8,apply_r8,[]);(*index10]);*)
+   (r12,apply_r12,[index13]);
+   (never,apply_r13,[]);
+	(r4,apply_r4,[]);
+	(r5,apply_r5,[]);
+	(r2,apply_r2,[]);
+	(r1,apply_r1,[]);
+|]
+*)
 let apply_subst_list atom_names (n,sigma) new_eql =
 	List.fold_left
 		(fun eql (v,l) ->	apply_subst eql v l atom_names)
