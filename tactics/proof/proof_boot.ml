@@ -593,13 +593,23 @@ struct
          false
 
    let rec remove_duplicates found = function
-      hd :: tl ->
+      (hd :: tl) as l ->
          if search_arg hd found then
             remove_duplicates found tl
          else
-            hd :: remove_duplicates (hd :: found) tl
+            let tl' = remove_duplicates (hd :: found) tl in
+               if tl == tl' then l else hd :: tl'
     | [] ->
          []
+
+   let rec remove_duplicates_onto base = function
+      hd :: tl ->
+         if search_arg hd base then
+            remove_duplicates_onto base tl
+         else
+            hd :: (remove_duplicates_onto base tl)
+    | [] ->
+         base
 
    (*
     * Concatenate the subgoals of the proof.
@@ -614,29 +624,20 @@ struct
                [t]
           | Unjustified (_, leaves)
           | Extract (_, leaves, _) ->
-               leaves
+               remove_duplicates [] leaves
           | Wrapped (_, goal) ->
                leaves_ext goal
-          | Compose ({ comp_leaves = leaves; comp_subgoals = subgoals } as comp) ->
-               begin
-                  match leaves with
-                     LazyLeavesDelayed ->
-                        let leaves = collect_leaves subgoals in
-                           comp.comp_leaves <- LazyLeaves leaves;
-                           leaves
-                   | LazyLeaves leaves ->
-                        leaves
-               end
-          | RuleBox ({ rule_leaves = leaves; rule_subgoals = subgoals } as info) ->
-               begin
-                  match leaves with
-                     LazyLeavesDelayed ->
-                        let leaves = collect_leaves subgoals in
-                           info.rule_leaves <- LazyLeaves leaves;
-                           leaves
-                   | LazyLeaves leaves ->
-                        leaves
-               end
+          | Compose { comp_leaves = LazyLeaves leaves }
+          | RuleBox { rule_leaves = LazyLeaves leaves } ->
+               leaves
+          | Compose comp ->
+               let leaves = collect_leaves comp.comp_subgoals in
+                  comp.comp_leaves <- LazyLeaves leaves;
+                  leaves
+          | RuleBox ri ->
+               let leaves = collect_leaves ri.rule_subgoals in
+                  ri.rule_leaves <- LazyLeaves leaves;
+                  leaves
           | Pending f ->
                leaves_ext (f ())
           | Locked ext ->
@@ -661,13 +662,18 @@ struct
                prerr_rbuffer buf;
                eprintf "%t" eflush
          end;
-         remove_duplicates [] leaves
+         leaves
 
    and collect_leaves = function
       [goal] ->
          leaves_ext goal
     | goal :: subgoals ->
-         leaves_ext goal @ collect_leaves subgoals
+         let leaves_sg = collect_leaves subgoals in
+         let leaves_g = leaves_ext goal in
+            if leaves_sg == [] then 
+               leaves_g 
+            else
+               remove_duplicates_onto leaves_sg leaves_g
     | [] ->
          []
 
