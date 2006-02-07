@@ -272,13 +272,10 @@ struct
        | Compose ci ->
             let ext = ci.comp_goal in
             let res = replace_goal ext goal in
-            if res == ext then node else
-            Compose {
-               comp_status = ci.comp_status;
-               comp_goal = res;
-               comp_subgoals = ci.comp_subgoals;
-               comp_leaves = ci.comp_leaves;
-               comp_extras = ci.comp_extras }
+               if res == ext then 
+                  node 
+               else
+                  Compose { ci with comp_goal = res }
        | Locked ext ->
             let res = replace_goal ext goal in
             if res == ext then node else Locked res
@@ -318,14 +315,11 @@ struct
             if res == ext then gs, node else gs, Wrapped (args,res)
        | Compose ci ->
             let exts = ci.comp_subgoals in
-            let gs,res = replace_subg_list gs exts in
-            if res == exts then gs,node else
-            gs, Compose {
-               comp_status = ci.comp_status;
-               comp_goal = ci.comp_goal;
-               comp_subgoals = res;
-               comp_leaves = LazyLeavesDelayed;
-               comp_extras = ci.comp_extras }
+            let gs, res = replace_subg_list gs exts in
+               gs, (if res == exts then 
+                       node 
+                    else 
+                       Compose { ci with comp_subgoals = res; comp_leaves = LazyLeavesDelayed })
        | Locked ext ->
             let gs,res = replace_subg_aux gs ext in
             if res == ext then gs, node else gs, Locked res
