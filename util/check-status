@@ -8,7 +8,11 @@
 # the nightly run uses).
 #
 
-FOREGR=""
+if [ "$1" = "chdir" ]; then
+   cd "$2"
+   shift
+   shift
+fi
 
 if [ ! -d editor/ml ]; then
    echo "Should be ran from MetaPrl root"
@@ -18,6 +22,8 @@ if [ ! -f mk/config ]; then
    echo "You need a valid mk/config"
    exit 1
 fi
+
+FOREGR=""
 if [ "$1" = "foregr" ]; then
    FOREGR="yes"
    shift
@@ -36,6 +42,7 @@ fi
 if [ "$FOREGR" ]; then
    $SSH "$@" < /dev/null
 else
+   date "+%c: spawning check-status.sh in `pwd`"
    $SSH "$@" < /dev/null &
-   date "+%c: check-status.sh spawned, results should be emailed to you in a little while"
+   echo "results should be emailed to you in a little while"
 fi

@@ -189,20 +189,38 @@ struct
                let vars = SymbolSet.add_list (SymbolSet.union (SymbolSet.remove vars var) (free_vars_terms terms)) conts in
                   hyp_free_vars vars hyps min i
 
-   let rec hyp_compute_sub hyps all_bvars vars i count sub =
+   let rec hyp_clashes hyps vars i count clashes =
       if count = 0 then
-         sub
-      else match SeqHyp.get hyps i with
-         Hypothesis (v, _) ->
-            if SymbolSet.mem all_bvars v then
-               let v' = new_name v (SymbolSet.mem all_bvars) in
-                  hyp_compute_sub hyps (SymbolSet.add all_bvars v') vars (i+1) (count-1) ((v, mk_var_term v') ::sub)
-            else
-               hyp_compute_sub hyps (SymbolSet.add all_bvars v) vars (i+1) (count-1) sub
-       | Context (v, _, _) ->
-            if SymbolSet.mem vars v then
-               REF_RAISE(RefineError("Rewrite_match_redex.hyp_compute_sub", StringVarError("Context variable occures freely where it is not allowed", v)));
-            hyp_compute_sub hyps (SymbolSet.add all_bvars v) vars (i+1) (count-1) sub
+         clashes
+      else 
+         let clashes = 
+            match SeqHyp.get hyps i with
+               Hypothesis (v, _) ->
+                  if SymbolSet.mem vars v then v :: clashes else clashes
+          | Context (v, _, _) ->
+               if SymbolSet.mem vars v then
+                  REF_RAISE(RefineError("Rewrite_match_redex.hyp_clashes", StringVarError("Context variable occures freely where it is not allowed", v)));
+                  clashes
+         in
+            hyp_clashes hyps vars (i+1) (count-1) clashes
+
+   let rec hyp_compute_avoids hyps i len vars =
+      if i = len then
+         vars
+      else 
+         let v =
+            match SeqHyp.get hyps i with
+               Hypothesis (v, _)
+             | Context (v, _, _) ->
+                  v
+         in
+            hyp_compute_avoids hyps (i+1) len (SymbolSet.add vars v)
+
+   let rec gen_sub vars = function
+      [] -> []
+    | v :: vs ->
+         let v' = new_name v (SymbolSet.mem vars) in
+            (v, mk_var_term v') :: (gen_sub (SymbolSet.add vars v') vs)
 
    let check_instance_term vars t =
       if SymbolSet.intersectp vars (free_vars_set t) then
@@ -725,16 +743,23 @@ struct
                    | _ -> ()
                end;
                let bvars = extract_bvars stack l in
-               let sub =
+               let hyps, concl =
                   match stack.(j) with
-                     StackVoid -> []
+                     StackVoid ->
+                        hyps, concl
                    | StackContextRestrict (vars) ->
-                        hyp_compute_sub hyps (SymbolSet.union vars all_bvars) vars i count []
-                   | _ -> raise(Invalid_argument "Rewrite_match_redex.match_redex_sequent_hyps : internal error")
+                        let clashes = hyp_clashes hyps vars i count [] in
+                           if clashes == [] then
+                              hyps, concl
+                           else
+                              let avoids = hyp_compute_avoids hyps i len (SymbolSet.union vars all_bvars) in
+                              let sub = gen_sub avoids clashes in
+                              let hyps = SeqHyp.lazy_apply (hyp_apply_and_rename_subst sub) hyps in
+                              let concl = apply_subst sub concl in
+                                 hyps, concl
+                   | _ ->
+                         raise(Invalid_argument "Rewrite_match_redex.match_redex_sequent_hyps : internal error")
                in
-               (* XXX: BUG? hyp_apply_and_rename_subst is not exactly right :-( *)
-               let hyps = if sub = [] then hyps else SeqHyp.lazy_apply (hyp_apply_and_rename_subst sub) hyps in
-               let concl = if sub = [] then concl else apply_subst sub concl in
                let all_bvars = bvars_of_cont hyps all_bvars i count in
                   stack.(j) <- StackSeqContext (bvars, (i, count, hyps));
                   match_redex_sequent_hyps addrs stack concl' concl all_bvars hyps' hyps (i+count) len

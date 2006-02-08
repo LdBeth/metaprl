@@ -78,7 +78,7 @@ done > $TEMP 2>&1
    if [ "$RUN_OMAKE" ]; then
       rm -f editor/ml/mp.opt
       unset OMAKEFLAGS
-      omake VERBOSE=1 -S editor/ml/mp.opt
+      omake VERBOSE=1 -S -j4 editor/ml/mp.opt
       sleep 10
    fi
    if [ -f editor/ml/mp.opt ]; then
