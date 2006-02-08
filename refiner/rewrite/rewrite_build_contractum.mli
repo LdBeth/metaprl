@@ -66,9 +66,9 @@ module MakeRewriteBuildContractum
     * Main function to build the contractum.
     *
     * It should not ever raise any exceptions (unless it detects a bug).
-    * Modifies the entries in the string array argument!
+    * Modifies the entries in the stack array argument!
     *)
-   val build_contractum : var array -> SymbolSet.t -> stack array -> rwterm -> term
+   val build_contractum : SymbolSet.t -> stack array -> rwterm -> term
 end
 
 (*

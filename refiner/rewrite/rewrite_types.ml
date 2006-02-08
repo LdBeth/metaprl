@@ -143,8 +143,8 @@ struct
     | RWSeqFreeVarsContext of int list * int list * int * int * int list
 
    and varname =
-      StackName of int
-    | SaveName of int
+      StackName of int * var
+    | OldName of var
 
    (*
     * We keep arrays of hyps.
@@ -173,7 +173,7 @@ struct
     * or it can be a function to be called.
     *)
    type rwcontractum =
-      RWCTerm of rwterm list * var array
+      RWCTerm of rwterm list
     | RWCFunction of (term -> term)
 
    (*

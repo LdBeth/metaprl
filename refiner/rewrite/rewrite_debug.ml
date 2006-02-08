@@ -10,7 +10,7 @@
  * See the file doc/htmlman/default.html or visit http://metaprl.org/
  * for more information.
  *
- * Copyright (C) 1998-2005 MetaPRL Group, Cornell University and
+ * Copyright (C) 1998-2006 MetaPRL Group, Cornell University and
  * California Institute of Techlology
  *
  * This program is free software; you can redistribute it and/or
@@ -75,10 +75,10 @@ struct
     * Name in the stack.
     *)
    let print_varname out = function
-      StackName i ->
-         fprintf out "stack:%d" i
-    | SaveName i ->
-         fprintf out "save:%d" i
+      StackName (i, v) ->
+         fprintf out "stack:%d (default %a)" i output_symbol v
+    | OldName v ->
+         fprintf out "name:%a" output_symbol v
 
    let print_varname_list =
       print_any_list print_varname
@@ -370,8 +370,8 @@ struct
       match con with
          RWCFunction _ ->
             fprintf out "<function>"
-       | RWCTerm (progs, vars) ->
-            fprintf out "@[<v 3>[%a]" (print_any_array output_symbol) vars;
+       | RWCTerm (progs) ->
+            fprintf out "@[<v 3>";
             List.iter (fun prog -> fprintf out "@ %a" print_prog prog) progs;
             fprintf out "@]"
 end

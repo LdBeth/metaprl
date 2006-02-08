@@ -11,7 +11,7 @@
  * See the file doc/htmlman/default.html or visit http://metaprl.org/
  * for more information.
  *
- * Copyright (C) 1998-2005 MetaPRL Group, Cornell University and Caltech
+ * Copyright (C) 1998-2006 MetaPRL Group, Cornell University and Caltech
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -113,49 +113,37 @@ struct
     * bnames is the name of the current bound variables.
     * names is the list of argument names.
     *)
-   let build_bname =
-      let null_var = Lm_symbol.add "v" in
-      fun names bnames stack -> function
-      StackName i ->
-         begin
-            IFDEF VERBOSE_EXN THEN
-               if !debug_rewrite then
-                  eprintf "StackName %d (avoid [%a])%t" i output_symbol_set bnames eflush
-            ENDIF;
-            let v =
-               match stack.(i) with
+   let build_bname bnames stack name =
+      let v =
+         match name with
+            StackName (i, v) ->
+               IFDEF VERBOSE_EXN THEN
+                  if !debug_rewrite then
+                     eprintf "StackName %d (avoid [%a])%t" i output_symbol_set bnames eflush
+               ENDIF;
+               begin match stack.(i) with
                   StackString s -> Lm_symbol.add s
                 | StackVar v -> v
-                | StackVoid -> null_var
-                | _ ->
-                     raise(Invalid_argument("Rewrite_build_contractum.build_bname: stack entry is not a string"))
-            in
-               if SymbolSet.mem bnames v then
-                  let v = new_name v (SymbolSet.mem bnames) in
-                     stack.(i) <- StackVar v;
-                     v
-               else
-                  v
-         end
-    | SaveName i ->
-         IFDEF VERBOSE_EXN THEN
-            if !debug_rewrite then
-               eprintf "SaveName %d (%a, avoid [%a])%t" i output_symbol names.(i) output_symbol_set bnames eflush
-         ENDIF;
-         let v = names.(i) in
-            if SymbolSet.mem bnames v then
-               let v = new_name v (SymbolSet.mem bnames) in
-                  names.(i) <- v;
-                  v
-            else
-               v
+                | _ -> v
+               end
+       | OldName v ->
+            IFDEF VERBOSE_EXN THEN
+               if !debug_rewrite then
+                  eprintf "OldName %a (avoid [%a])%t" output_symbol v output_symbol_set bnames eflush
+            ENDIF;
+            v
+      in
+         if SymbolSet.mem bnames v then
+            new_name v (SymbolSet.mem bnames)
+         else
+            v
 
-   let rec build_bnames names bnames stack = function
+   let rec build_bnames bnames stack = function
       [] -> []
-    | [v] -> [build_bname names bnames stack v]
+    | [v] -> [build_bname bnames stack v]
     | v :: vs ->
-         let v = build_bname names bnames stack v in
-            v :: (build_bnames names (SymbolSet.add bnames v) stack vs)
+         let v = build_bname bnames stack v in
+            v :: (build_bnames (SymbolSet.add bnames v) stack vs)
 
    (*
     * Append the var array.
@@ -198,24 +186,23 @@ struct
 
    (*
     * Build the terms.
-    *    names: variable names provided by argument
     *    bnames: string list list of all the bound variables in the term
     *    stack: stack compiled from match_redex
     *    bvars: array of bound vars explicit in the contractum.
     *    con: the contractum being constructed.
     *)
-   let rec build_contractum_term names bnames stack bvars = function
+   let rec build_contractum_term bnames stack bvars = function
       RWComposite { rw_op = { rw_name = name; rw_params = params }; rw_bterms = bterms } ->
          (* Build a regular term from the parts *)
          mk_term (mk_op name (build_contractum_params stack params)) (**)
-            (build_contractum_bterms names bnames stack bvars bterms)
+            (build_contractum_bterms bnames stack bvars bterms)
     | RWCompositeSimple { rws_op = op; rws_bterms = bterms } ->
          (* Build a regular term from the parts *)
-         mk_term op (build_contractum_bterms names bnames stack bvars bterms)
+         mk_term op (build_contractum_bterms bnames stack bvars bterms)
     | RWSequent (arg, hyps, concl) ->
-         let arg = build_contractum_term names bnames stack bvars arg in
-         let bnames, bvars, hyps = build_contractum_sequent_hyps names bnames stack bvars [] hyps in
-         let concl = build_contractum_term names bnames stack bvars concl in
+         let arg = build_contractum_term bnames stack bvars arg in
+         let bnames, bvars, hyps = build_contractum_sequent_hyps bnames stack bvars [] hyps in
+         let concl = build_contractum_term bnames stack bvars concl in
          let seq =
             { sequent_args = arg;
               sequent_hyps = hyps;
@@ -238,7 +225,7 @@ struct
               * if necessary.
               *)
             let subst term vars =
-               let terms = List.map (build_contractum_term names bnames stack bvars) terms in
+               let terms = List.map (build_contractum_term bnames stack bvars) terms in
                IFDEF VERBOSE_EXN THEN
                   if !debug_subst then
                       begin
@@ -270,7 +257,7 @@ struct
          begin
             match stack.(i) with
                StackContext(ivars, term, addr, []) ->
-                  replace_subterm term addr (build_contractum_term names bnames stack bvars t)
+                  replace_subterm term addr (build_contractum_term bnames stack bvars t)
              | _ ->
                   raise(Invalid_argument("Rewrite_build_contractum.build_contractum_term: RWSOContextSubst[]: stack entry is not valid"))
          end
@@ -286,9 +273,9 @@ struct
                 StackContext(ivars, term, addr, ovars) ->
                    let term =
                       replace_subterm term addr (**)
-                         (build_contractum_term names bnames stack bvars t)
+                         (build_contractum_term bnames stack bvars t)
                    in
-                   let terms = List.map (build_contractum_term names bnames stack bvars) terms in
+                   let terms = List.map (build_contractum_term bnames stack bvars) terms in
                       IFDEF VERBOSE_EXN THEN
                          if !debug_subst then
                             begin
@@ -447,19 +434,19 @@ struct
       in
          List.map build_contractum_param' params
 
-   and build_contractum_bterm names bnames stack bvars = function
+   and build_contractum_bterm bnames stack bvars = function
       { rw_bnames = []; rw_bterm = term } ->
-            mk_bterm [] (build_contractum_term names bnames stack bvars term)
+            mk_bterm [] (build_contractum_term bnames stack bvars term)
     | { rw_bnames = vars; rw_bterm = term } ->
-         let vars' = build_bnames names bnames stack vars in
+         let vars' = build_bnames bnames stack vars in
          let bnames' = SymbolSet.add_list bnames vars' in
          let bvars' = append_vars bvars vars' in
-            mk_bterm vars' (build_contractum_term names bnames' stack bvars' term)
+            mk_bterm vars' (build_contractum_term bnames' stack bvars' term)
 
-   and build_contractum_bterms names bnames stack bvars =
-      List.map (build_contractum_bterm names bnames stack bvars)
+   and build_contractum_bterms bnames stack bvars =
+      List.map (build_contractum_bterm bnames stack bvars)
 
-   and build_contractum_sequent_hyps names bnames stack bvars parts = function
+   and build_contractum_sequent_hyps bnames stack bvars parts = function
       [] ->
          bnames, bvars, SeqHyp.collect (List.rev parts)
     | RWSeqContextInstance (j, terms) :: hyps ->
@@ -471,7 +458,7 @@ struct
             match stack.(j) with
                StackSeqContext(vars, hyps') ->
                   let terms =
-                     List.map (build_contractum_term names bnames stack bvars) terms
+                     List.map (build_contractum_term bnames stack bvars) terms
                   in
                      IFDEF VERBOSE_EXN THEN
                         if !debug_rewrite then
@@ -479,7 +466,7 @@ struct
                      ENDIF;
                      let i, len, hyps' = hyp_subst hyps' terms vars in
                      let part = Lm_array_util.ArrayArray (hyps', i, len) in
-                        build_contractum_sequent_hyps names bnames stack bvars (part :: parts) hyps
+                        build_contractum_sequent_hyps bnames stack bvars (part :: parts) hyps
              | _ ->
                   raise(Invalid_argument("Rewrite_build_contractum.build_contractum_sequent_hyps: stack entry is not valid"))
          end
@@ -488,7 +475,7 @@ struct
             if !debug_rewrite then
                eprintf "RWSeqHyp: (%a)%t" print_varname v eflush
          ENDIF;
-         let v = build_bname names bnames stack v in
+         let v = build_bname bnames stack v in
          let bnames = SymbolSet.add bnames v in
          (*
           * Strictly speaking, the build_contractum_term below should use the
@@ -496,21 +483,21 @@ struct
           * used to cause alpha-renaming of bterms, it does not hurt to pass the
           * v in there as well and avoid some potential name clashes.
           *)
-         let hyp = build_contractum_term names bnames stack bvars hyp in
+         let hyp = build_contractum_term bnames stack bvars hyp in
          let bvars = append_vars bvars [v] in
          let part = Lm_array_util.ArrayElement (Hypothesis (v, hyp)) in
-            build_contractum_sequent_hyps names bnames stack bvars (part :: parts) hyps
+            build_contractum_sequent_hyps bnames stack bvars (part :: parts) hyps
     | RWSeqContext _ :: _
     | RWSeqFreeVarsContext _ :: _ ->
          raise(Invalid_argument "Rewrite_build_contractum.build_contractum_sequent_hyps: found an invalid context")
 
-   let build_contractum names bnames stack prog =
+   let build_contractum bnames stack prog =
       IFDEF VERBOSE_EXN THEN
             if !debug_rewrite then begin
                   eprintf "Rewrite.build_contractum:\n%a%a%t" print_prog prog print_stack stack eflush;
                end
          ENDIF;
-      build_contractum_term names bnames stack [||] prog
+      build_contractum_term bnames stack [||] prog
 end
 
 (*

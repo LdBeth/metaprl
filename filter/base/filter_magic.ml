@@ -11,7 +11,8 @@
  * See the file doc/htmlman/default.html or visit http://metaprl.org/
  * for more information.
  *
- * Copyright (C) 1998 Jason Hickey, Cornell University
+ * Copyright (C) 1999-2006 MetaPRL Group, Cornell University and California
+ * Institute of Technology
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -38,7 +39,7 @@ open File_type_base
  ************************************************************************
  *
  * Current MD5 hash of the summary-related types (as computed by OMake):
- * FILTER_MD5: d3fad267f154a8c8d8360b7435a74241
+ * FILTER_MD5: 1f124ec76d5686d7cad2ddf5b760a5c0
  *
  * The arguments for pack_version are:
  *    major version number, minor sub-version number, revision number
@@ -82,10 +83,11 @@ open File_type_base
  * Rev 28: added "private" resource annotations
  * Rev 29: added "RawOption" raw attribute
  * Rev 30: changed the options_table type; changed the string encoding of option_info
+ * Rev 31: updated the variable name handling in the rewriter.
  *)
-let raw_versions = List.map (pack_version 1 0) [30]
+let raw_versions = List.map (pack_version 1 0) [31]
 
-let term_versions = List.map (pack_version 1 0) [30;29;28;27;25;24]
+let term_versions = List.map (pack_version 1 0) [31; 30;29;28;27;25;24]
 
 (*
  * ASCII IO format revision history:

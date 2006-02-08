@@ -14,7 +14,8 @@
  * See the file doc/htmlman/default.html or visit http://metaprl.org/
  * for more information.
  *
- * Copyright (C) 1998 Jason Hickey, Cornell University
+ * Copyright (C) 1998-2006 MetaPRL Group, Cornell University and
+ * California Institute of Technology
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -85,21 +86,13 @@ struct
 
    type rwterm = RewriteTypes.rwterm
 
-   let compile_bname strict enames stack n =
-      if array_rstack_fo_mem n stack then
-         enames, StackName (array_rstack_fo_index n stack)
-      else if strict = Relaxed && array_rstack_mem n stack then
-         enames, StackName (array_rstack_index n stack)
+   let compile_bname strict stack n =
+      if array_rstack_mem n stack then
+         StackName (array_rstack_index n stack, n)
       else
-         (n :: enames), SaveName (List.length enames)
+         OldName n
 
-   let rec compile_bnames strict enames stack = function
-      bname :: bnames ->
-         let enames, bname = compile_bname strict enames stack bname in
-         let enames, bnames = compile_bnames strict enames stack bnames in
-            enames, bname :: bnames
-    | [] ->
-         enames, []
+   let rec compile_bnames strict stack = List.map (compile_bname strict stack)
 
    let check_cont c bconts v =
       if not (List.mem v bconts) then
@@ -109,7 +102,6 @@ struct
 
    let rec compile_so_contractum_term
           (strict : strict)
-          (enames : var list)
           (stack : rstack array)
           (bconts : var list)
           (bvars : var list)
@@ -117,9 +109,9 @@ struct
       if is_var_term term then
          let v = dest_var term in
             if List.mem v bvars then
-               enames, RWCheckVar(Lm_list_util.find_rindex v bvars)
+               RWCheckVar(Lm_list_util.find_rindex v bvars)
             else if array_rstack_freefo_mem v stack then
-               enames, RWStackVar(array_rstack_freefo_index v stack)
+               RWStackVar(array_rstack_freefo_index v stack)
             else (* XXX: Abusing RewriteFreeSOVar here *)
                REF_RAISE(RefineError ("compile_so_redex_term", RewriteFreeSOVar v))
       else if is_so_var_term term then
@@ -134,8 +126,8 @@ struct
                if strict = Strict then List.iter (check_cont v bconts) conts;
                let index = array_rstack_so_index v stack in
                check_arity v conts (List.length subterms) stack.(index);
-               let enames, subterms = compile_so_contractum_terms strict enames stack bconts bvars subterms in
-                  enames, RWSOInstance(index, subterms)
+               let subterms = compile_so_contractum_terms strict stack bconts bvars subterms in
+                  RWSOInstance(index, subterms)
 
             end else if (strict = Relaxed) &&
                     (array_rstack_mem v stack) &&
@@ -144,7 +136,7 @@ struct
                 * Display forms:
                 * convert a stack element into a variable representation
                 *)
-               enames, RWStackVar (array_rstack_index v stack)
+               RWStackVar (array_rstack_index v stack)
 
             else
                (* This is a second order variable that is free *)
@@ -168,9 +160,9 @@ struct
                if strict = Strict then List.iter (check_cont v bconts) conts;
                let index = array_rstack_c_index v stack in
                check_arity v conts (List.length subterms) stack.(index);
-               let enames, term' = compile_so_contractum_term strict enames stack (v::bconts) bvars term' in
-               let enames, subterms = compile_so_contractum_terms strict enames stack bconts bvars subterms in
-                 enames, RWSOContextSubst(index, term', subterms)
+               let term' = compile_so_contractum_term strict stack (v::bconts) bvars term' in
+               let subterms = compile_so_contractum_terms strict stack bconts bvars subterms in
+                 RWSOContextSubst(index, term', subterms)
 
             end else
                (* Free second order context *)
@@ -178,28 +170,23 @@ struct
 
       else if is_sequent_term term then
          (* Sequents are handled specially *)
-         compile_so_contractum_sequent strict enames stack bconts bvars term
+         compile_so_contractum_sequent strict stack bconts bvars term
 
       else
          (* This is a normal term--not a var *)
          let { term_op = op; term_terms = bterms } = dest_term term in
          let { op_name = name; op_params = params } = dest_op op in
-         let enames, bterms' = compile_so_contractum_bterms strict enames stack bconts bvars bterms in
+         let bterms' = compile_so_contractum_bterms strict stack bconts bvars bterms in
          if are_sparams params then
-               enames, RWCompositeSimple { rws_op = op; rws_bterms = bterms' }
+               RWCompositeSimple { rws_op = op; rws_bterms = bterms' }
          else
             let params' = List.map (compile_so_contractum_param strict stack) params in
-               enames, RWComposite { rw_op = { rw_name = name; rw_params = params' };
+               RWComposite { rw_op = { rw_name = name; rw_params = params' };
                                      rw_bterms = bterms'
                                    }
 
-   and compile_so_contractum_terms strict enames stack bconts bvars = function
-      term :: terms ->
-         let enames, term = compile_so_contractum_term strict enames stack bconts bvars term in
-         let enames, terms = compile_so_contractum_terms strict enames stack bconts bvars terms in
-            enames, term :: terms
-    | [] ->
-         enames, []
+   and compile_so_contractum_terms strict stack bconts bvars = 
+      List.map (compile_so_contractum_term strict stack bconts bvars)
 
    (*
     * We also compile parameters, and bind meta-variables.
@@ -321,41 +308,36 @@ struct
    (*
     * In bterms, have to add these vars to the binding stack.
     *)
-   and compile_so_contractum_bterm strict enames stack bconts bvars bterm =
+   and compile_so_contractum_bterm strict stack bconts bvars bterm =
       let { bvars = vars; bterm = term } = dest_bterm bterm in
-      let enames, term' = compile_so_contractum_term strict enames stack bconts (bvars @ vars) term in
-      let enames, vars' = compile_bnames strict enames stack vars in
-         enames, { rw_bvars = List.length vars; rw_bnames = vars'; rw_bterm = term' }
+      let term' = compile_so_contractum_term strict stack bconts (bvars @ vars) term in
+      let vars' = compile_bnames strict stack vars in
+         { rw_bvars = List.length vars; rw_bnames = vars'; rw_bterm = term' }
 
-   and compile_so_contractum_bterms strict enames stack bconts bvars = function
-      bterm :: bterms ->
-         let enames, bterm = compile_so_contractum_bterm strict enames stack bconts bvars bterm in
-         let enames, bterms = compile_so_contractum_bterms strict enames stack bconts bvars bterms in
-            enames, bterm :: bterms
-    | [] ->
-         enames, []
+   and compile_so_contractum_bterms strict stack bconts bvars = 
+      List.map (compile_so_contractum_bterm strict stack bconts bvars)
 
    (*
     * Contexts are handled specially inside sequents.
     *)
-   and compile_so_contractum_sequent strict enames (stack : rstack array) bconts bvars term =
+   and compile_so_contractum_sequent strict (stack : rstack array) bconts bvars term =
       let { sequent_args = arg;
             sequent_hyps = hyps;
             sequent_concl = concl
           } = explode_sequent term
       in
-      let enames, arg = compile_so_contractum_term strict enames stack bconts bvars arg in
-      let enames, hyps, concl =
-         compile_so_contractum_sequent_inner strict enames stack bconts bvars 0 (SeqHyp.length hyps) hyps concl
+      let arg = compile_so_contractum_term strict stack bconts bvars arg in
+      let hyps, concl =
+         compile_so_contractum_sequent_inner strict stack bconts bvars 0 (SeqHyp.length hyps) hyps concl
       in
-         enames, RWSequent (arg, hyps, concl)
+         RWSequent (arg, hyps, concl)
 
-   and compile_so_contractum_sequent_inner strict enames stack bconts bvars i len hyps concl =
+   and compile_so_contractum_sequent_inner strict stack bconts bvars i len hyps concl =
       if i = len then
-         let enames, concl =
-            compile_so_contractum_term strict enames stack bconts bvars concl
+         let concl =
+            compile_so_contractum_term strict stack bconts bvars concl
          in
-            enames, [], concl
+            [], concl
       else
          match SeqHyp.get hyps i with
             Context (v, conts, subterms) ->
@@ -368,45 +350,33 @@ struct
                   let index = array_rstack_c_index v stack in
                   check_arity v conts (List.length subterms) stack.(index);
                   if strict = Strict then List.iter (check_cont v bconts) conts;
-                  let enames, subterms =
-                     compile_so_contractum_terms strict enames stack bconts bvars subterms
-                  in
+                  let subterms = compile_so_contractum_terms strict stack bconts bvars subterms in
                   let term = RWSeqContextInstance (index, subterms) in
-                  let enames, hyps, concl =
-                     compile_so_contractum_sequent_inner strict enames stack (v::bconts) bvars (i + 1) len hyps concl
+                  let hyps, concl =
+                     compile_so_contractum_sequent_inner strict stack (v::bconts) bvars (i + 1) len hyps concl
                   in
-                     enames, term :: hyps, concl
+                     term :: hyps, concl
                end else
                   (* Free second order context *)
                   REF_RAISE(RefineError ("Rewrite_compile_contractum.compile_so_contractum_hyp", RewriteFreeSOVar v))
 
           | Hypothesis (v, term) ->
-               let enames, term = compile_so_contractum_term strict enames stack bconts bvars term in
-               let enames, v' = compile_bname strict enames stack v in
-               let enames, hyps, concl =
-                  compile_so_contractum_sequent_inner strict enames stack bconts (bvars @ [v]) (i + 1) len hyps concl
+               let term = compile_so_contractum_term strict stack bconts bvars term in
+               let v' = compile_bname strict stack v in
+               let hyps, concl =
+                  compile_so_contractum_sequent_inner strict stack bconts (bvars @ [v]) (i + 1) len hyps concl
                in
                let hyp = RWSeqHyp (v', term) in
-                  enames, hyp :: hyps, concl
+                  hyp :: hyps, concl
 
    (*
     * Toplevel compilation.
     *)
    let compile_so_contractum strict stack term =
-      let enames, term = compile_so_contractum_term strict [] stack [] [] term in
-         Array.of_list (List.rev enames), term
+      compile_so_contractum_term strict stack [] [] term
 
    let compile_so_contracta strict stack terms =
-      let rec compile enames stack = function
-         term :: terms ->
-            let enames, term = compile_so_contractum_term strict enames stack [] [] term in
-            let enames, terms = compile enames stack terms in
-               enames, term :: terms
-       | [] ->
-            enames, []
-      in
-      let enames, terms = compile [] stack terms in
-         Array.of_list (List.rev enames), terms
+      List.map (compile_so_contractum_term strict stack [] []) terms
 end
 
 (*

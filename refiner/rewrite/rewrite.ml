@@ -191,7 +191,7 @@ struct
          match_redex addrs gstack bnames goal params rw.rr_redex;
          let result =
             match rw.rr_contractum with
-               RWCTerm (con, enames) ->
+               RWCTerm con ->
                   IFDEF VERBOSE_EXN THEN
                      if !debug_rewrite then
                         eprintf "Rewrite.apply_rewrite: build_contractum%t" eflush
@@ -199,7 +199,7 @@ struct
                   let bnames = if (rw.rr_strict==Strict) then
                      collect_bnames gstack bnames rw.rr_gstacksize 0
                      else SymbolSet.empty
-                  in List.map (build_contractum (Array.copy enames) bnames gstack) con
+                  in List.map (build_contractum bnames gstack) con
              | RWCFunction f ->
                   if params == [] then
                      [f goal]
@@ -347,10 +347,10 @@ struct
     * Compile redex and contractum, and form a rewrite rule.
     *)
    let term_rewrite strict addrs redex contracta =
-      let stack, redex' = compile_so_redex strict addrs redex in
-      let enames, contracta' = compile_so_contracta strict stack contracta in
-         { rr_redex = redex';
-           rr_contractum = RWCTerm (contracta', enames);
+      let stack, redex = compile_so_redex strict addrs redex in
+      let contracta = compile_so_contracta strict stack contracta in
+         { rr_redex = redex;
+           rr_contractum = RWCTerm (contracta);
            rr_gstacksize = Array.length stack;
            rr_strict = strict;
          }

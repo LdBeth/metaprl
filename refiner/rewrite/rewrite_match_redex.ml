@@ -249,7 +249,7 @@ struct
     * Assign the bvars.
     *)
    let set_bvar stack v = function
-      StackName i ->
+      StackName (i, _) ->
          IFDEF VERBOSE_EXN THEN
             if !debug_rewrite then
                eprintf "Rewrite.set_bvars: stack(%d)/%d with %a%t" i (Array.length stack) output_symbol v eflush

@@ -106,8 +106,8 @@ struct
                                         (* Output: "unwrapped" context instances in the current term *)
       }
 
-   let bname i _ =
-      StackName i
+   let bname i v =
+      StackName (i, v)
 
    let new_bvar_item (i: int) (v: var) =
       (v, i)
