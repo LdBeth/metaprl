@@ -121,6 +121,7 @@ open Tactic_type
 open Tactic_type.Sequent
 open Tactic_type.Tactic
 open Tactic_type.Tacticals
+open Tactic_type.Conversionals
 open Top_conversionals
 open Options_boot
 open Browser_resource
@@ -442,7 +443,15 @@ let prefix_twa tac =
 
 suffix twa
 
-let make_defT conv = rwhAllAll (conv thenC reduceC) (* BUG? : Should be reduceTopC ? *)
+let make_defT =
+   let mk_progress t =
+      termC (fun t' -> if alpha_equal t t' then failC else idC)
+   in
+   let progress_reduce conv =
+      termC (fun t -> conv thenC tryC (reduceC thenC mk_progress t))
+   in
+      fun conv -> rwhAllAll (progress_reduce conv)
+
 let byDefT conv = make_defT conv thenT autoT
 let byDefsT convs = seqT (List.map make_defT convs) thenT autoT
 
