@@ -433,7 +433,7 @@ let wrap_exn proc _loc name e =
          (* Wrap the body to catch exceptions *)
          try $e$ with
          $lid: exn_id$ ->
-            Refine_exn.stderr_exn $str: name$ $lid: exn_id$
+            Filter_exn.stderr_exn $str: name$ $lid: exn_id$
       }
    >>
 
@@ -948,11 +948,9 @@ let define_rewrite_resources proc _loc name redex contractum assums addrs params
       <:expr< () >>
    else
    let define_resource {res_loc = _loc; res_name = name'; res_flag = flag; res_args = args} =
-      let input, _ = find_res proc _loc name' in
       let processor = apply_annotation_processor _loc <:expr< $lid:"process_" ^ name' ^ "_resource_rw_annotation"$ >> args in
          impr_resource_list proc _loc flag name' <:expr<
-            ($processor$ $str:name$ : Top_resource.named_rw_annotation_processor $input$)
-               $redex$ $contractum$ $assums$ $addrs$ $params$ $expr_of_loc _loc$ $name_id_expr$
+            $processor$ $str:name$ $redex$ $contractum$ $assums$ $addrs$ $params$ $expr_of_loc _loc$ $name_id_expr$
          >>
    in
       bindings_let proc _loc resources <:expr< do { $list:List.map define_resource resources.item_item$ } >>
@@ -991,6 +989,14 @@ let define_rewrite want_checkpoint code proc _loc rw expr =
           toploop_rewrite proc _loc name []
        ]
 
+let add_crw_selector _loc res =
+   let rec add_crw = function
+      [] -> [ <:expr< ~labels:Perv.crw_labels >> ]
+    | <:expr< ~labels:$labels$ >> :: args -> <:expr< ~labels:[Perv.select_crw :: $labels$] >> :: args
+    | arg :: args -> arg :: (add_crw args)
+   in
+      { res with res_args = add_crw res.res_args }
+
 (*
  * Conditional rewrite is a little more complicated.
  *)
@@ -1016,6 +1022,12 @@ let define_cond_rewrite want_checkpoint code proc _loc crw expr =
             <:expr< $code$ $lid:local_refiner_id$ $str:name$ (**)
                $params_expr$ $subgoals_expr$ $redex$ $contractum$ >>
    in
+   let resources =
+      if crw.crw_assums == [] then
+         crw.crw_resources
+      else
+         { crw.crw_resources with item_item = List.map (add_crw_selector _loc) crw.crw_resources.item_item }
+   in
    let create_expr = <:expr<
       let $lid:args_id$ = $args_spec_expr _loc ivars avars$ in
       let $lid:params_id$ = $list_expr _loc (expr_of_term proc _loc) tparams$ in
@@ -1027,7 +1039,7 @@ let define_cond_rewrite want_checkpoint code proc _loc crw expr =
             $args_expr$ $params_expr$ $subgoals_expr$ $redex$ $contractum$
       in do {
          $prim_expr$;
-         $define_rewrite_resources proc _loc name redex contractum subgoals_expr args_expr params_expr crw.crw_resources rw_id_expr$;
+         $define_rewrite_resources proc _loc name redex contractum subgoals_expr args_expr params_expr resources rw_id_expr$;
          $rw_id_expr$
       }
     >> in
@@ -1161,11 +1173,9 @@ let define_ml_rewrite proc _loc mlrw rewrite_expr =
 let define_rule_resources proc _loc name args_id params_id assums_id resources name_rule_expr =
    if resources.item_item = [] then <:expr< () >> else
    let define_resource {res_loc = _loc; res_name = name'; res_flag = flag; res_args = args} =
-      let input, _ = find_res proc _loc name' in
       let processor = apply_annotation_processor _loc <:expr< $lid:"process_" ^ name' ^ "_resource_annotation"$ >> args in
          impr_resource_list proc _loc flag name' <:expr<
-            ($processor$ $str:name$ : Top_resource.named_annotation_processor $input$)
-               $lid:args_id$ $lid:params_id$ $lid:assums_id$ $expr_of_loc _loc$ $name_rule_expr$
+            $processor$ $str:name$ $lid:args_id$ $lid:params_id$ $lid:assums_id$ $expr_of_loc _loc$ $name_rule_expr$
          >>
    in
       bindings_let proc _loc resources <:expr< do { $list:List.map define_resource resources.item_item$ } >>

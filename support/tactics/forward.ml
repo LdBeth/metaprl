@@ -51,8 +51,7 @@ open Simple_print
 open Tactic_type
 open Tactic_type.Tactic
 open Tactic_type.Tacticals
-
-open Top_options
+open Options_boot
 
 let debug_forward =
    create_debug (**)

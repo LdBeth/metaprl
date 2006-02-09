@@ -107,23 +107,25 @@ type ('input, 'intermediate, 'output) resource_info =
 type global_resource = bookmark
 
 type ('pre_tactic, 'input) poly_annotation_processor =
-   string ->            (* Name of the new rule *)
-   rewrite_args_spec -> (* Names of the context vars parameters *)
-   term list ->         (* Term parameters *)
-   meta_term ->         (* Rule statement *)
-   MLast.loc ->         (* Location of the rule *)
-   'pre_tactic ->       (* Tactic.pre_tactic *)
+   ?labels: term list -> (* Rule labels *)
+   string ->             (* Name of the new rule *)
+   rewrite_args_spec ->  (* Names of the context vars parameters *)
+   term list ->          (* Term parameters *)
+   meta_term ->          (* Rule statement *)
+   MLast.loc ->          (* Location of the rule *)
+   'pre_tactic ->        (* Tactic.pre_tactic *)
    'input list
 
 type ('prim_rewrite, 'input) poly_rw_annotation_processor =
-   string ->            (* Name of the new rewrite *)
-   term ->              (* Redex *)
-   term ->              (* Contractum *)
-   term list ->         (* Assumptions *)
-   rewrite_args_spec -> (* Names of the context vars parameters *)
-   term list ->         (* Term arguments *)
-   MLast.loc ->         (* Location of the rewrite *)
-   'prim_rewrite ->     (* Refine.prim_rewrite *)
+   ?labels: term list -> (* Rewrite labels *)
+   string ->             (* Name of the new rewrite *)
+   term ->               (* Redex *)
+   term ->               (* Contractum *)
+   term list ->          (* Assumptions *)
+   rewrite_args_spec ->  (* Names of the context vars parameters *)
+   term list ->          (* Term arguments *)
+   MLast.loc ->          (* Location of the rewrite *)
+   'prim_rewrite ->      (* Refine.prim_rewrite *)
    'input list
 
 (*

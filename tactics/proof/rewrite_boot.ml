@@ -233,7 +233,7 @@ struct
                   begin try
                      Refine.refine any_sentinal tac mseq
                   with RefineError(n, err) ->
-                     Refine_exn.stderr_exn "" (RefineError("Rewrite_boot.makeFoldC", PairError("applying rewrite to the term failed", TermError contractum, n, err)))
+                     Refine_exn.stderr_exn (RefineError("Rewrite_boot.makeFoldC", PairError("applying rewrite to the term failed", TermError contractum, n, err)))
                   end
                with
                   [redex], _ ->
@@ -243,21 +243,21 @@ struct
                         try
                            term_rewrite Rewrite_sig.Strict empty_args_spec [redex] [contractum]
                         with RefineError(n, err) ->
-                           Refine_exn.stderr_exn "" (RefineError("Rewrite_boot.makeFoldC", PairError("creating a rewrite from term to term failed",TermPairError(redex,contractum), n, err)))
+                           Refine_exn.stderr_exn (RefineError("Rewrite_boot.makeFoldC", PairError("creating a rewrite from term to term failed",TermPairError(redex,contractum), n, err)))
                      in
                      let doCE env =
                         match apply_rewrite rw' empty_args (env_term env) [] with
                            [contractum] ->
                               FoldConv (contractum, conv)
                          | _ ->
-                              Refine_exn.stderr_exn "" (RefineError ("Rewrite_boot.makeFoldC", StringTermError ("rewrite failed", redex)))
+                              Refine_exn.stderr_exn (RefineError ("Rewrite_boot.makeFoldC", StringTermError ("rewrite failed", redex)))
                      in
                         FunConv doCE
                 | _ ->
-                     Refine_exn.stderr_exn "" (RefineError ("Rewrite_boot.makeFoldC", StringTermError ("fold failed", contractum)))
+                     Refine_exn.stderr_exn (RefineError ("Rewrite_boot.makeFoldC", StringTermError ("fold failed", contractum)))
             end
     | _ ->
-         Refine_exn.stderr_exn "" (RefineError ("Rewrite_boot.makeFoldC", StringTermError("can't fold nontrivial rewrites",contractum)))
+         Refine_exn.stderr_exn (RefineError ("Rewrite_boot.makeFoldC", StringTermError("can't fold nontrivial rewrites",contractum)))
 
    (*
     * Cut just replaces the term an generates a rewrite
@@ -434,7 +434,8 @@ struct
       let goal, _ = Refine.dest_msequent (List.hd res).ref_goal in
          goal
 
-   let redex_and_conv_of_rw_annotation name rwname redex _ _ addrs args loc rw =
+   let redex_and_conv_of_rw_annotation name ?labels rwname redex _ _ addrs args loc rw =
+      rule_labels_not_allowed loc labels;
       match addrs, args with
          { spec_ints = [||]; spec_addrs = [||] }, [] -> [redex, rewrite_of_pre_rewrite rw empty_rw_args []]
        | _ -> raise (Invalid_argument (sprintf "%s: rewrite %s: %s resource does not support annotations on rewrites that take arguments" (Simple_print.string_of_loc loc) rwname name))

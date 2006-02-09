@@ -420,6 +420,14 @@ let opnames_of_terms options =
 let wrap_reduce ?labels conv =
    rule_labels_of_opt_terms labels, conv
 
+let wrap_reduce_crw ?labels conv =
+   let labels =
+      match labels with
+         None -> Perv.crw_labels
+       | Some labels -> select_crw :: labels
+   in
+      rule_labels_of_opt_terms (Some labels), conv
+
 let extract_data =
    let select_option options (opts, _) =
       rule_labels_are_allowed options opts
@@ -480,6 +488,10 @@ let reduceC =
 let reduceT = funT (fun p ->
    let reduceHigherC = snd (get_resource_arg p get_reduce_resource) (get_options p) in
       rwAll (repeatC reduceHigherC))
+
+let simpleReduceTopC = withOptionInfoC Perv.select_crw OptionExclude reduceTopC
+let simpleReduceC = withOptionInfoC Perv.select_crw OptionExclude reduceC
+let simpleReduceT = withOptionInfoT Perv.select_crw OptionExclude reduceT
 
 let rec wrap_addrs conv = function
    [] -> conv

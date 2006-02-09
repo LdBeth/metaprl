@@ -44,6 +44,7 @@ topval addOptionT : term -> string -> tactic
 topval allowOptionT : term -> tactic
 topval excludeOptionT : term -> tactic
 
+val withOptionInfoT : term -> option_info -> tactic -> tactic
 topval withOptionT : term -> string -> tactic -> tactic
 topval withAllowOptionT : term -> tactic -> tactic
 topval withExcludeOptionT : term -> tactic -> tactic
@@ -60,6 +61,7 @@ topval printOptionsT : tactic
 (*
  * Conversions.
  *)
+val withOptionInfoC : term -> option_info -> conv -> conv
 topval withOptionC : term -> string -> conv -> conv
 topval withoutOptionC : term -> conv -> conv
 
@@ -68,7 +70,11 @@ topval withoutOptionC : term -> conv -> conv
  *)
 val get_options : tactic_arg -> option_table
 val rule_labels_are_allowed_arg : tactic_arg -> rule_labels -> bool
-val rule_labels_not_allowed  : MLast.loc -> term list option -> unit
+
+(*
+ * Specific "canonical" labels
+ *)
+topval select_crw : term
 
 (*
  * -*-

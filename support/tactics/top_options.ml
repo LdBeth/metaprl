@@ -81,13 +81,6 @@ let resource proof_initialize += initialize_arg
 (************************************************************************
  * Utilities.
  *)
-let rule_labels_not_allowed loc labels =
-   match labels with
-      None ->
-         ()
-    | Some _ ->
-         Stdpp.raise_with_loc loc (RefineError ("option check", StringError "rule labels are not allowed, or the annotation processor has not been updated"))
-
 let get_options = Sequent.get_option_args
 
 let rule_labels_are_allowed_arg p labels =
@@ -124,17 +117,15 @@ let printOptionsT =
                eprintf "Option %a -> %a@." print_term t pp_print_option_info info) options;
          idT)
 
-let withOptionC t s =
-   Conversionals.withOptionC t (option_of_string s)
-
+let withOptionInfoC = Conversionals.withOptionC
+let withOptionC t s = withOptionInfoC t (option_of_string s)
 let withoutOptionC = Conversionals.withoutOptionC
 
-(*!
- * @docoff
- *
+let select_crw = Perv.select_crw
+
+(*
  * -*-
  * Local Variables:
- * Caml-master: "compile"
  * End:
  * -*-
  *)

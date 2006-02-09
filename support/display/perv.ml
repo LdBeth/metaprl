@@ -205,6 +205,10 @@ let rewrite_opname = opname_of_term << "rewrite"{'t1; 't2} >>
 let mk_rewrite_term = mk_dep0_dep0_term rewrite_opname
 let dest_rewrite_term = dest_dep0_dep0_term rewrite_opname
 
+declare select_crw : SelectOption
+let select_crw = << select["select_crw":t] >>
+let crw_labels = [select_crw]
+
 (*
  * -*-
  * Local Variables:

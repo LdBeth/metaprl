@@ -110,6 +110,12 @@ declare type ty_exists{'a : Ty; v : 'a. 'ty['v] : ty_hyp} : ty_hyp
 declare typeclass SelectOption -> Token
 declare select[option : SelectOption]
 
+(*
+ * Filter_prog will add these on all the conditional rewrites
+ *)
+val select_crw : term
+val crw_labels : term list
+
 (************************************************************************
  * Builtin input forms.
  *)

@@ -39,7 +39,7 @@ val backtrace : bool
 val format_refine_error : dform_base -> buffer -> string -> refine_error -> unit
 val format_exn : dform_base -> buffer -> exn -> unit
 val print_exn : dform_base -> ('a -> 'b) -> 'a -> 'b
-val stderr_exn : string -> exn -> 'a
+val stderr_exn : exn -> 'a
 
 (*
  * -*-

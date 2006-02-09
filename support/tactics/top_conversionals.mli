@@ -112,10 +112,15 @@ resource (reduce_entry, reduce_conv) reduce
 val process_reduce_resource_rw_annotation : reduce_entry rw_annotation_processor
 
 val wrap_reduce : ?labels:term list -> conv -> reduce_info
+val wrap_reduce_crw : ?labels:term list -> conv -> reduce_info
 
 topval reduceTopC : conv
 topval reduceC : conv
 topval reduceT : tactic
+
+topval simpleReduceTopC : conv
+topval simpleReduceC : conv
+topval simpleReduceT : tactic
 
 (************************************************************************
  * DEBUGGING

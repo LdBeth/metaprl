@@ -31,44 +31,13 @@ open Mp_resource
 
 (*
  * Resource types.
- *
- * Split the annotation processor types into named versions
- * so that we can force choice of optional arguments.
  *)
-type 'input named_annotation_processor =
-   rewrite_args_spec ->         (* Names of the context vars parameters *)
-   term list ->                 (* Term parameters *)
-   meta_term ->                 (* Rule statement *)
-   MLast.loc ->                 (* Location of the rule *)
-   pre_tactic ->
-   'input list
+type 'input annotation_processor = (pre_tactic, 'input) poly_annotation_processor
+type 'input rw_annotation_processor = (prim_rewrite, 'input) poly_rw_annotation_processor
 
-type 'input annotation_processor =
-   ?labels: term list ->        (* Rule labels *)
-   string ->                    (* Name of the new rule *)
-   'input named_annotation_processor
-
-type 'input named_rw_annotation_processor =
-   term ->                      (* Redex *)
-   term ->                      (* Contractum *)
-   term list ->                 (* Assumptions *)
-   rewrite_args_spec ->         (* Names of the context vars parameters *)
-   term list ->                 (* Term arguments *)
-   MLast.loc ->                 (* Location of the rewrite *)
-   prim_rewrite ->
-   'input list
-
-type 'input rw_annotation_processor =
-   ?labels: term list ->        (* Rewrite labels *)
-   string ->                    (* Name of the new rewrite *)
-   'input named_rw_annotation_processor
-
-(*!
- * @docoff
- *
+(*
  * -*-
  * Local Variables:
- * Caml-master: "compile"
  * End:
  * -*-
  *)

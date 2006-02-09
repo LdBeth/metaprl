@@ -10,7 +10,8 @@
  * See the file doc/htmlman/default.html or visit http://metaprl.org/
  * for more information.
  *
- * Copyright (C) 1998 Jason Hickey, Cornell University
+ * Copyright (C) 1998-2006 MetaPRL Group, Cornell University and
+ * California Institute of Technology
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -201,27 +202,33 @@ let format_message buf s =
          format_szone buf;
          format_space buf
 
+let print_stderr_exn db s exn =
+   let buf = new_buffer () in
+      format_message buf s;
+      format_exn db buf exn;
+      format_ezone buf;
+      format_popm buf;
+      format_newline buf;
+      output_rbuffer stderr buf;
+      flush stderr;
+      begin
+         match exn with
+            RefineError(s, _) ->
+               raise(RefineError(s, ToploopIgnoreError))
+          | _ ->
+               raise (Refine_exn.ToploopIgnoreExn exn)
+      end
+
 let print_exn db s f x =
    if Refine_exn.backtrace then
       f x
    else
       try f x with
          exn ->
-            let buf = new_buffer () in
-               format_message buf s;
-               format_exn db buf exn;
-               format_ezone buf;
-               format_popm buf;
-               format_newline buf;
-               output_rbuffer stderr buf;
-               flush stderr;
-               begin
-                  match exn with
-                     RefineError(s, _) ->
-                        raise(RefineError(s, ToploopIgnoreError))
-                   | _ ->
-                        raise (Refine_exn.ToploopIgnoreExn exn)
-               end
+            print_stderr_exn db s exn
+
+let stderr_exn s exn =
+   print_stderr_exn Dform.null_base (Some s) exn
 
 let handle_exn db s loc f =
    if Refine_exn.backtrace then

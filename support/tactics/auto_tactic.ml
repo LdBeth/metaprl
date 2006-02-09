@@ -122,7 +122,7 @@ open Tactic_type.Sequent
 open Tactic_type.Tactic
 open Tactic_type.Tacticals
 open Top_conversionals
-open Top_options
+open Options_boot
 open Browser_resource
 
 (*
@@ -464,7 +464,12 @@ let resource auto += [{
    auto_prec = nth_hyp_prec;
    auto_tac = someNthHypT orelseT onSomeAssumT nthAssumT;
    auto_type = AutoTrivial;
-}; {
+}; (* {
+   auto_name = "simpleReduceT";
+   auto_prec = reduce_prec;
+   auto_tac = simpleReduceT;
+   auto_type = AutoNormal
+}; *) {
    auto_name = "reduceT";
    auto_prec = reduce_prec;
    auto_tac = reduceT;

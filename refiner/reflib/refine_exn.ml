@@ -472,12 +472,10 @@ let print_exn db f x =
                      raise (ToploopIgnoreExn exn)
             end
 
-let stderr_exn s exn =
+let stderr_exn exn =
    let buf = new_buffer () in
       format_szone buf;
-      format_pushm buf 4;
-      format_string buf s;
-      format_space buf;
+      format_pushm buf 3;
       format_exn Dform.null_base buf exn;
       format_popm buf;
       format_ezone buf;

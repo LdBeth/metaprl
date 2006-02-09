@@ -65,8 +65,10 @@ val rule_labels_are_allowed : option_table -> rule_labels -> bool
  * Utilities.
  *)
 val rule_labels_empty        : rule_labels
-val rule_labels_of_terms     : term list -> rule_labels
-val rule_labels_of_opt_terms : term list option -> rule_labels
+val rule_labels_of_terms     : option_key list -> rule_labels
+val rule_labels_of_opt_terms : option_key list option -> rule_labels
+
+val rule_labels_not_allowed  : MLast.loc -> option_key list option -> unit
 
 (*
  * -*-

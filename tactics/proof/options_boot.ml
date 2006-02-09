@@ -100,6 +100,26 @@ let eq ((i1:int), (b1: bool)) (i2, b2) =
 
 let options_eq ((t1, i1): option_table) (t2, i2) = (i1=i2) && OpnameTable.equal eq t1 t2
 
+(*
+ * XXX: HACK: tells whether a label was added by filter_prog or user
+ *)
+let automatic_labels = OpnameSet.of_list (List.map make_opname [
+   [ "select_crw"; "Perv" ];
+])
+
+let automatic_label key =
+   OpnameSet.mem automatic_labels (get_label key)
+
+let rule_labels_not_allowed loc labels =
+   match labels with
+      None ->
+         ()
+    | Some l when List.for_all automatic_label l ->
+         ()
+    | Some _ ->
+         Stdpp.raise_with_loc loc (RefineError ("option check", StringError "rule labels are not allowed, or the
+annotation processor has not been updated"))
+
 (************************************************************************
  * Rule labeling.
  *)

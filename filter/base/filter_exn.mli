@@ -10,7 +10,8 @@
  * See the file doc/htmlman/default.html or visit http://metaprl.org/
  * for more information.
  *
- * Copyright (C) 1998 Jason Hickey, Cornell University
+ * Copyright (C) 1998-2006 MetaPRL Group, Cornell University and
+ * California Institute of Tehcnology
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -34,6 +35,7 @@ open Dform
 val format_exn  : dform_base -> buffer -> exn -> unit
 val print_exn   : dform_base -> string option -> ('a -> 'b) -> 'a -> 'b
 val handle_exn  : dform_base -> string option -> Token.flocation -> (unit -> 'a) -> 'a
+val stderr_exn  : string -> exn -> 'a
 
 (*
  * -*-

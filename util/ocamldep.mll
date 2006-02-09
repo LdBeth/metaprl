@@ -54,7 +54,7 @@ let prl_cmi_names = [
 let prl_names = [
    "Obj";
    "Lm_debug";
-   "Refine_exn";
+   "Filter_exn";
    "Theory";
    "Dform";
    "Tactic_boot_sig";
@@ -76,6 +76,8 @@ let rule_names = [
    "Shell_command";
    "Lm_symbol";
    "Rewriter_sig";
+   "Perv";
+   "Top_resource";
 ]
 
 }
