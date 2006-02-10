@@ -141,7 +141,7 @@ if $(BYTE_ENABLED)
     export
 
 if $(equal $(OSTYPE), Win32)
-    MP_DIRECT_SCRIPTS = $(addsuffix .bat $(MP_DIRECT_SCRIPTS))
+    MP_DIRECT_SCRIPTS = $(addsuffix .bat, $(MP_DIRECT_SCRIPTS))
     export
 
 else
