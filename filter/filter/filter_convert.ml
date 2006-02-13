@@ -98,7 +98,7 @@ module MakeConvert (FilterCache : SummaryCacheSig
 struct
    let convert kind name input_suffix =
       let cache = FilterCache.create !include_path in
-      let info = FilterCache.load cache () name kind InterfaceType input_suffix in
+      let info = FilterCache.load cache () name kind input_suffix in
          FilterCache.save info () !output_suffix
 end
 
@@ -141,7 +141,7 @@ let spec =
  * process it.
  *)
 let _ =
-   Pcaml.input_file := "/dev/null";
+   Pcaml.input_file := "";
    Arg.parse spec process_file "Convert a MetaPRL binary file"
 
 (*
