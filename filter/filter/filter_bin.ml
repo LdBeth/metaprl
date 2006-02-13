@@ -208,7 +208,7 @@ let spec =
  * process it.
  *)
 let _ =
-   Pcaml.input_file := "/dev/null";
+   Pcaml.input_file := "";
    Arg.parse spec process_file "Compile a MetaPRL binary file"
 
 (*
