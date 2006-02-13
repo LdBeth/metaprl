@@ -126,8 +126,8 @@ section
         $(CAMLP4LIB)/pr_o
         $(PRLC_FILES)
 
-    # OCamlProgramInstall($(MPINSTALL), $(BIN), prlcn, $(PRLCN_FILES))
-    # OCamlProgramInstall($(MPINSTALL), $(BIN), prlco, $(PRLCO_FILES))
+    OCamlProgramInstall($(MPINSTALL), $(BIN), prlcn, $(PRLCN_FILES))
+    OCamlProgramInstall($(MPINSTALL), $(BIN), prlco, $(PRLCO_FILES))
 
     #
     # File format conversion

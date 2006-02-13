@@ -98,7 +98,6 @@ module MakeCompile (**)
     with type str_ctyp  = Info.ctyp
     with type str_item  = Info.str_item
     with type str_resource = Info.str_resource
-    with type select    = select_type
     with type arg       = unit) =
 struct
    let compile name =
@@ -115,11 +114,12 @@ struct
             raise (Failure "Filter_parse.compile: invalid suffix")
       in
       let cache = FilterCache.create !include_path in
-      let info = FilterCache.load cache () path kind InterfaceType AnySuffix in
+      let info = FilterCache.load cache () path kind AnySuffix in
       let check () =
          FilterCache.check info () InterfaceType
       in
-      let items = Info.extract check (FilterCache.info info) (FilterCache.resources info) (Filename.basename path) (theory_group ()) (theory_groupdsc ())
+      let items =
+         Info.extract check (FilterCache.info info) (FilterCache.resources info) (Filename.basename path) (theory_group ()) (theory_groupdsc ())
       in
          Info.compile items
 end

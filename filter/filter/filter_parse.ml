@@ -1368,7 +1368,8 @@ type ref_rewrite =
    }
 
 type ref_item =
-   RefRule of ref_rule
+   RefPrim of ref_rule
+ | RefInteractive of ref_rule
  | RefTypeClass of ref_typeclass
  | RefType of ref_type
  | RefRewrite of ref_rewrite
@@ -1420,7 +1421,10 @@ struct
       let () = define_thm proc loc name_wf [] mt tac res in
          (loc, item) :: rules
 
-   let add_rule proc info rules loc item =
+   let add_prim_rule proc info rules loc item =
+      add_define proc info rules loc item
+
+   let add_interactive_rule proc info rules loc item =
       add_define proc info rules loc item
 
    (*
@@ -1506,7 +1510,7 @@ thenT autoT" (**)
            ref_rule_term      = mt
          }
       in
-         add_rule proc info rules loc item
+         add_prim_rule proc info rules loc item
 
    (************************************************************************
     * Rewrites.
@@ -1573,8 +1577,10 @@ thenT autoT" (**)
     *)
    let process_item_exn proc info rules loc item =
       match item with
-         RefRule item ->
-            add_rule proc info rules loc item
+         RefPrim item ->
+            add_prim_rule proc info rules loc item
+       | RefInteractive item ->
+            add_interactive_rule proc info rules loc item
        | RefTypeClass item ->
             add_typeclass proc info rules loc item
        | RefType item ->
@@ -1596,8 +1602,7 @@ thenT autoT" (**)
       let rules = List.fold_left (process_item proc info) [] items in
       let rules = List.rev rules in
       let current = Filter_reflection.mk_empty_logic_term info in
-      let () = postprocess_rules proc info current loc name rules in
-         ()
+         postprocess_rules proc info current loc name rules
 end;;
 
 (*^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -2242,21 +2247,13 @@ EXTEND
              empty_str_item _loc
        ]];
 
-    opt_pvt_flag:
-       [[ flag = OPT pvt_flag ->
-             match flag with Some flag -> flag | None -> Public
-       ]];
-
-    pvt_flag:
-       [[ "public" -> Public | "private" -> Private ]];
-
     logic_items:
       [[ "struct"; items = LIST0 logic_item; "end" ->
             items
       ]];
 
     logic_item:
-      [[ "interactive"; name = LIDENT; res = optresources; params = optarglist; ":"; mt = bmterm ->
+      [[ "prim"; name = LIDENT; res = optresources; params = optarglist; ":"; mt = bmterm ->
           let item =
              { ref_rule_name      = name;
                ref_rule_resources = res;
@@ -2264,7 +2261,17 @@ EXTEND
                ref_rule_term      = mt
              }
           in
-             _loc, RefRule item
+             _loc, RefPrim item
+
+        | "interactive"; name = LIDENT; res = optresources; params = optarglist; ":"; mt = bmterm ->
+          let item =
+             { ref_rule_name      = name;
+               ref_rule_resources = res;
+               ref_rule_params    = params;
+               ref_rule_term      = mt
+             }
+          in
+             _loc, RefInteractive item
 
         | "declare"; "typeclass"; sc = shapeclasses; name = opname_name; typeclass_type = opt_typeclass_type; typeclass_parent = opt_typeclass_parent ->
           let f () =
@@ -2317,6 +2324,14 @@ EXTEND
      * This is for reflection processing.
      * Try to keep is separate in case we want to remove it later.
      ************************************************************************)
+
+    opt_pvt_flag:
+       [[ flag = OPT pvt_flag ->
+             match flag with Some flag -> flag | None -> Public
+       ]];
+
+    pvt_flag:
+       [[ "public" -> Public | "private" -> Private ]];
 
     declare_cases:
       [[ cases = LIST1 quote_term SEP "|" ->
