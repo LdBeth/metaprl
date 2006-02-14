@@ -1,5 +1,9 @@
 #!/usr/bin/perl
-chomp($log=`ls -1 ~mojave/public_html/metaprl/logs/incomplete_proofs-* | tail -1`);
+if ($#ARGV > 0) {
+    $log = "/home/mojave/public_html/metaprl/logs/incomplete_proofs-rev$ARGV[1].txt";
+} else {
+    chomp($log=`ls -1 ~mojave/public_html/metaprl/logs/incomplete_proofs-* | tail -1`);
+};
 $cmdline = 'grep \'incomplete proof\' ' . $ARGV[0] . ' | awk \'{print $2}\' | diff ' . $log . ' - | grep \'^>\' | colrm 1 2';
 #print("Executing: $cmdline\n");
 open(INC, "-|", $cmdline);
