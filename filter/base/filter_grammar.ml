@@ -860,9 +860,9 @@ let compile_iforms gram =
 let conv_of_iforms gram =
    let table = table_of_iforms gram in
    let rw t =
-      try Term_match_table.lookup table Term_match_table.select_all t with
-         Not_found ->
-            raise (RefineError ("Conversionals.extract_data", StringTermError ("no reduction for", t)))
+      match Term_match_table.lookup table Term_match_table.select_all t with
+         Some rw -> rw
+       | None -> raise (RefineError ("Conversionals.extract_data", StringTermError ("no reduction for", t)))
    in
       Conversionals.termC rw
 

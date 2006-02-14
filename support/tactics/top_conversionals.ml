@@ -40,7 +40,8 @@ doc <:doc<
    See the file doc/htmlman/default.html or visit http://metaprl.org/
    for more information.
 
-   Copyright (C) 1998 Jason Hickey, Cornell University
+   Copyright (C) 1998-2006 MetaPRL Group, Cornell University and
+   California Institute of Technology
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License
@@ -56,8 +57,8 @@ doc <:doc<
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-   Author: Jason Hickey
-   @email{jyh@cs.caltech.edu}
+   Author: Jason Hickey @email{jyh@cs.caltech.edu}
+   Modified by: Aleksey Nogin @email{nogin@cs.caltech.edu}
 
    @end[license]
 >>
@@ -437,33 +438,29 @@ let extract_data =
          let t = env_term e in
          let p = env_arg e in
          let options = get_options p in
-         let _, conv =
-            try
-               (* Find and apply the right tactic *)
-               if !debug_reduce then
-                  eprintf "Conversionals: lookup %a%t" debug_print t eflush;
-               Term_match_table.lookup tbl (select_option options) t
-            with
-               Not_found ->
-                  raise (RefineError ("Conversionals.extract_data", StringTermError ("no reduction for", t)))
-         in
+            (* Find and apply the right tactic *)
             if !debug_reduce then
-               eprintf "Conversionals: applying %a%t" debug_print t eflush;
-            conv)
+               eprintf "Conversionals: lookup %a%t" debug_print t eflush;
+            match Term_match_table.lookup tbl (select_option options) t with
+               Some (_, conv) ->
+                  if !debug_reduce then
+                     eprintf "Conversionals: applying %a%t" debug_print t eflush;
+                  conv
+             | None ->
+                  raise (RefineError ("Conversionals.extract_data", StringTermError ("no reduction for", t))))
    in
    let hrw tbl options =
       let rec hrw t =
          let recrw = allSubC (termC hrw) in
-            try
-               (* Find and apply the right tactic *)
-               if !debug_reduce then
-                  eprintf "Conversionals: lookup %a%t" debug_print t eflush;
-               let conv = snd (Term_match_table.lookup tbl (select_option options) t) in
+            (* Find and apply the right tactic *)
+            if !debug_reduce then
+               eprintf "Conversionals: lookup %a%t" debug_print t eflush;
+            match Term_match_table.lookup tbl (select_option options) t with
+               Some (_, conv) ->
                   if !debug_reduce then
                      eprintf "Conversionals: applying %a%t" debug_print t eflush;
                   conv orelseC recrw
-            with
-               Not_found ->
+             | None ->
                   recrw
       in termC hrw
    in

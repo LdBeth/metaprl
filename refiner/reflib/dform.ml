@@ -820,7 +820,11 @@ let format_term base =
       in
 
       (* Get the display form *)
-      let items, df = lookup t in
+      let items, df = 
+         match lookup t with
+            Some idf -> idf
+          | None -> raise Not_found
+      in
       let name = df.df_name in
 
       (* Get precedence of this display form, and whether it should be parenthesized *)

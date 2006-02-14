@@ -19,7 +19,7 @@
  * See the file doc/htmlman/default.html or visit http://metaprl.org/
  * for more information.
  *
- * Copyright (C) 1998 Jason Hickey, Cornell University
+ * Copyright (C) 2003-2006 MetaPRL Group, California Institute of Technology
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -113,12 +113,11 @@ type simp_typeinf_resource_info = term * simp_typeinf_comp
  *)
 let infer tbl =
    let rec infer_term consts tenv venv eqs t =
-      let inf =
-         try lookup tbl select_all t with
-            Not_found ->
-               raise (RefineError ("simp_typeinf", StringTermError ("Don't know how to infer type for", t)))
-      in
-         inf infer_term consts tenv venv eqs t
+      match lookup tbl select_all t with
+         Some inf ->
+            inf infer_term consts tenv venv eqs t
+       | None ->
+            raise (RefineError ("simp_typeinf", StringTermError ("Don't know how to infer type for", t)))
    in
       infer_term
 

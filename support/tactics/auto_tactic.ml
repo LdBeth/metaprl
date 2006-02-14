@@ -66,7 +66,8 @@ doc <:doc<
    See the file doc/htmlman/default.html or visit http://metaprl.org/
    for more information.
 
-   Copyright (C) 1998 Jason Hickey, Cornell University
+   Copyright (C) 1998-2006 MetaPRL Group, Cornell University and
+   California Institute of Technology
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License
@@ -204,23 +205,24 @@ let extract_nth_hyp_data =
    let err = RefineError ("extract_nth_hyp_data", StringError "nthHypT tactic doesn't have an entry for this hypothesis/conclusion combination") in
    let err_assum = RefineError ("Auto_tactic.matchAssumsT", StringError "lengths do not match") in
    let rec iter_assum cut assum i (c : nth_hyp_entry lazy_lookup) _ =
-      let tac, cont = c () in
-         (match tac with
-            NthImmediate tac -> cut assum thenLT [nthAssumT i; tac (-1)]
-          | NthStep tac -> tac thenT nthAssumT i
-          | NthStepTerm tac -> tac assum thenT nthAssumT i)
-         orelseT funT (iter_assum cut assum i cont)
+      match c () with
+         Some (NthImmediate tac, cont) ->
+            (cut assum thenLT [nthAssumT i; tac (-1)]) orelseT funT (iter_assum cut assum i cont)
+       | Some (NthStep tac, cont) ->
+            (tac thenT nthAssumT i) orelseT funT (iter_assum cut assum i cont)
+       | Some (NthStepTerm tac, cont) ->
+            (tac assum thenT nthAssumT i) orelseT funT (iter_assum cut assum i cont)
+       | None ->
+            raise err
    in
    let failT' _ = failT in
    (fun tbl ->
       let nth_hypT =
-         try
-            match Term_match_table.lookup tbl select_immediate self_term with
-               NthImmediate tac -> tac
-             | NthStep _
-             | NthStepTerm _ (* Can not happen *) -> raise Not_found
-         with
-            Not_found -> failT'
+         match Term_match_table.lookup tbl select_immediate self_term with
+            Some (NthImmediate tac) -> tac
+          | Some (NthStep _)
+          | Some (NthStepTerm _) (* Can not happen *) -> raise Not_found
+          | None -> failT'
       in
       let apply hyp i = function
          NthImmediate tac -> tac i
@@ -228,11 +230,9 @@ let extract_nth_hyp_data =
        | NthStepTerm tac -> tac hyp thenT nth_hypT i
       in
       let rec iterate hyp i (c : nth_hyp_entry lazy_lookup) _ =
-         try
-            let tac, cont = c () in apply hyp i tac orelseT funT (iterate hyp i cont)
-         with
-            Not_found ->
-               raise err
+         match c () with
+            Some (tac, cont) -> apply hyp i tac orelseT funT (iterate hyp i cont)
+          | None -> raise err
       in
       let rec somehyp hyps t i =
          if i = 0 then
@@ -248,11 +248,9 @@ let extract_nth_hyp_data =
                      else
                         iterate_some hyps h t i (Term_match_table.lookup_all tbl select_all t')
       and iterate_some hyps hyp t i c =
-         try
-            let tac, cont = c () in apply hyp i tac orelseT funT (keep_iterate_some hyps hyp t i cont)
-         with
-            Not_found ->
-               somehyp hyps t (i-1)
+         match c () with
+            Some (tac, cont) -> apply hyp i tac orelseT funT (keep_iterate_some hyps hyp t i cont)
+          | None -> somehyp hyps t (i-1)
       and keep_iterate_some hyps hyp t i cont _ =
          iterate_some hyps hyp t i cont
       in {
@@ -266,10 +264,9 @@ let extract_nth_hyp_data =
                      iterate hyp i (Term_match_table.lookup_all tbl select_all t) p);
          nth_hyp_fun = (fun t1 t2 ->
             let t = mk_nthhyp_pair_term t1 t2 in
-               try
-                  let _ = Term_match_table.lookup tbl select_all t in true
-               with Not_found ->
-                  false);
+               match Term_match_table.lookup tbl select_all t with
+                  Some _ -> true
+                | None -> false);
          some_nth_hyp = (fun p ->
             let goal = Sequent.explode_sequent_arg p in
                somehyp goal.sequent_hyps goal.sequent_concl (SeqHyp.length goal.sequent_hyps));

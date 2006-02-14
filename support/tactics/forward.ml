@@ -5,7 +5,7 @@
  * ----------------------------------------------------------------
  *
  * @begin[license]
- * Copyright (C) 2005 Mojave Group, Caltech
+ * Copyright (C) 2005-2006 Mojave Group, Caltech
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -122,11 +122,10 @@ let checkMainT loc tac =
  *)
 let extract_forward_data =
    let rec alliT i (cont : forward_info lazy_lookup) =
-      try
-         let { forward_loc = loc; forward_tac = tac }, cont = cont () in
+      match cont () with
+         Some ({ forward_loc = loc; forward_tac = tac }, cont) ->
             tryT (checkMainT loc (tac i)) thenMT alliT i cont
-      with
-         Not_found ->
+       | None ->
             idT
    in
    let step tbl =
@@ -136,14 +135,7 @@ let extract_forward_data =
                if !debug_forward then
                   eprintf "forwardT: elim: lookup %s%t" (SimplePrint.short_string_of_term t) eflush
             in
-            let tacs =
-               try
-                  lookup_all tbl select t
-               with
-                  Not_found ->
-                     raise (RefineError ("extract_forward_data", StringTermError ("forwardT doesn't know about", t)))
-            in
-               alliT i tacs)
+               alliT i (lookup_all tbl select t))
    in
       step
 

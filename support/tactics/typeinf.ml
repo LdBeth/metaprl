@@ -21,7 +21,8 @@
  * See the file doc/htmlman/default.html or visit http://metaprl.org/
  * for more information.
  *
- * Copyright (C) 1998 Jason Hickey, Cornell University
+ * Copyright (C) 1997-2006 MetaPRL Group, Cornell University and California
+ * Institute of Technology
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -109,9 +110,9 @@ type typeinf_resource_info = term * typeinf_comp
  * Infer the type of a term from the table.
  *)
 let collect tbl subst (so, t) =
-   try (lookup tbl select_all t) subst (so, t) with
-      Not_found ->
-         raise (RefineError ("Typeinf.collect", StringTermError ("can't collect type for", t)))
+   match lookup tbl select_all t with
+      Some f -> f subst (so, t)
+    | None -> raise (RefineError ("Typeinf.collect", StringTermError ("can't collect type for", t)))
 
 (*
  * Resource.
@@ -177,12 +178,11 @@ let infer tbl =
                Not_found ->
                   raise (RefineError ("typeinf", StringVarError ("Undeclared variable", v)))
       else
-         let inf =
-            try lookup tbl select_all t with
-               Not_found ->
-                  raise (RefineError ("typeinf", StringTermError ("Don't know how to infer type for", t)))
-         in
-            inf aux consts decls eqs opt_eqs defs t
+         match lookup tbl select_all t with
+            Some inf ->
+               inf aux consts decls eqs opt_eqs defs t
+          | None ->
+               raise (RefineError ("typeinf", StringTermError ("Don't know how to infer type for", t)))
    in
       aux
 

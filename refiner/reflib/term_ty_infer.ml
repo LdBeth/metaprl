@@ -996,12 +996,15 @@ let reduce_type tenv subst t =
    let t = subst_term subst t in
       try
          let t = subst_term subst t in
-         let rw = Term_match_table.lookup tenv.tenv_typereduce Term_match_table.select_all t in
-            match Rewrite.apply_rewrite rw empty_args t [] with
-               [contractum] ->
-                  Some contractum
-             | _ ->
-                  raise (Invalid_argument "Term_ty_infer.reduce_type: reduction produced multiple contracta")
+            match Term_match_table.lookup tenv.tenv_typereduce Term_match_table.select_all t with
+               Some rw ->
+                  begin match Rewrite.apply_rewrite rw empty_args t [] with
+                     [contractum] ->
+                        Some contractum
+                   | _ ->
+                        raise (Invalid_argument "Term_ty_infer.reduce_type: reduction produced multiple contracta")
+                  end
+             | None -> None
       with
          Not_found
        | RefineError _ ->

@@ -19,7 +19,8 @@
  * See the file doc/htmlman/default.html or visit http://metaprl.org/
  * for more information.
  *
- * Copyright (C) 1998 Jason Hickey, Cornell University
+ * Copyright (C) 1999-2006 MetaPRL Group, Cornell University and
+ * California Institute of Technology
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -133,7 +134,7 @@ type ('a, 'b) prog_step =
 (* Invariant: (c) has exactly one ProgAccept step - at the very end *)
 type ('a, 'b) term_prog = ('a, 'b) prog_step list
 
-type 'a lazy_lookup = unit -> ('a * 'a lazy_lookup)
+type 'a lazy_lookup = unit -> ('a * 'a lazy_lookup) option
 
 type 'a term_table = ('a, rewrite_redex) internal_term_table
 type 'a term_map_table = ('a, rewrite_rule) internal_term_table
@@ -374,7 +375,7 @@ and execute_fallback search = function
  | ((prog :: progs), stack) :: fallbacks ->
       execute search ((progs, stack) :: fallbacks) stack prog
  | [] ->
-      raise Not_found
+      None
 
 and execute_sequent search fallbacks old_stack hyps l stack = function
    [] ->
@@ -433,12 +434,16 @@ and execute_hyps_both search fallbacks tbl hyps stack lnum num last =
 let rec search_infos get f t fallbacks = function
    info :: tl when f info.info_value ->
       begin
-         try
-            get info f t tl fallbacks
+         match
+            try
+               get info f t tl fallbacks
+            with
+               RefineError _
+             | Not_found ->
+                  None
          with
-            RefineError _
-          | Not_found ->
-               search_infos get f t fallbacks tl
+            Some _ as found -> found
+          | None -> search_infos get f t fallbacks tl
       end
  | _ :: tl ->
       search_infos get f t fallbacks tl
@@ -450,13 +455,14 @@ let lookup_aux get tbl f t =
 
 let get_val info _ t _ _ =
    test_redex_applicability info.info_redex empty_rw_args t [];
-   info.info_value
+   Some info.info_value
 
 let get_val_rwi info _ t _ _ =
-   (apply_redex info.info_redex empty_rw_args t []), info.info_value
+   Some (((apply_redex info.info_redex empty_rw_args t []), info.info_value))
 
 let rec get_val_all info f t tl fallbacks =
-   (get_val info f t tl fallbacks), get_val_all_aux f t tl fallbacks
+   test_redex_applicability info.info_redex empty_rw_args t [];
+   Some ((info.info_value, get_val_all_aux f t tl fallbacks))
 
 and get_val_all_aux f t tl fallbacks () =
    search_infos get_val_all f t fallbacks tl
@@ -483,10 +489,10 @@ let rec get_val_bucket =
       (fun info f t tl fallbacks ->
             match aux f t (info :: tl) with
                [] -> execute_fallback (search_infos get_val_bucket f t) fallbacks
-             | l -> l)
+             | l -> Some l)
 
 let get_val_rmap info _ t _ _ =
-   apply_rewrite info.info_redex empty_args t [], info.info_value
+   Some ((apply_rewrite info.info_redex empty_args t [], info.info_value))
 
 let lookup tbl f t = lookup_aux get_val tbl f t
 let lookup_rwi tbl f t = lookup_aux get_val_rwi tbl f t

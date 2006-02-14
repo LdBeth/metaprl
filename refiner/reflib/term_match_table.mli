@@ -16,7 +16,8 @@
  * See the file doc/htmlman/default.html or visit http://metaprl.org/
  * for more information.
  *
- * Copyright (C) 1998 Jason Hickey, Cornell University
+ * Copyright (C) 1999-2006 MetaPRL Group, Cornell University and
+ * California Institute of Technology
  *
  * This term_program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -47,8 +48,7 @@ open Mp_resource
 type 'a term_table
 type 'a term_map_table
 
-(* Raises Not_found *)
-type 'a lazy_lookup = unit -> ('a * 'a lazy_lookup)
+type 'a lazy_lookup = unit -> ('a * 'a lazy_lookup) option
 
 (*
  * Debugging.
@@ -64,18 +64,16 @@ val empty_map_table : 'a term_map_table
 (*
  * Standard interface.
  *
- * Lookup functions raise Not_found (except for lookup_all, which is lazy)
  * Lookup functions take an additional selector function; only selected items
  * could be returned.
  * The lookup_bucket find the most specific _pattern_ that has matching entries
- * end returns all the matching entries for that pattern. The list is always
- * non-nil and the failure is still signalled by Not_found.
+ * end returns all the matching entries for that pattern. The list is always non-nil.
  *)
 val add_item : 'a term_table -> term -> 'a -> 'a term_table
-val lookup_rwi : 'a term_table -> ('a -> bool) -> term -> rewrite_item list * 'a
-val lookup : 'a term_table -> ('a -> bool) -> term -> 'a
+val lookup_rwi : 'a term_table -> ('a -> bool) -> term -> (rewrite_item list * 'a) option
+val lookup : 'a term_table -> ('a -> bool) -> term -> 'a option
 val lookup_all : 'a term_table -> ('a -> bool) -> term -> 'a lazy_lookup
-val lookup_bucket : 'a term_table -> ('a -> bool) -> term -> 'a list
+val lookup_bucket : 'a term_table -> ('a -> bool) -> term -> ('a list) option
 
 (*
  * Create a resource_info that can be used to create a resource As an input
@@ -88,7 +86,7 @@ val table_resource_info :
 
 (* term -> term  mappings *)
 val add_map : 'a term_map_table -> term -> term list -> 'a -> 'a term_map_table
-val lookup_rmap : 'a term_map_table -> ('a -> bool) -> term -> term list * 'a
+val lookup_rmap : 'a term_map_table -> ('a -> bool) -> term -> (term list * 'a) option
 
 val rmap_table_resource_info:
    ('a term_map_table -> 'b) ->
