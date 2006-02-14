@@ -230,8 +230,10 @@ let resource (term * term * (int -> tactic), (int -> tactic) * (term -> term -> 
       fp_retr = extract_nth_hyp_data;
    }
 
-let nthHypT =
-   argfunT (fun i p -> let tac, _, _ = get_resource_arg p get_nth_hyp_resource in tac i)
+let makeNthHypT i p =
+   let tac, _, _ = get_resource_arg p get_nth_hyp_resource in tac i
+
+let nthHypT = argfunT makeNthHypT
 
 let nth_hyp_mem p =
    let _, f, _ = get_resource_arg p get_nth_hyp_resource in f
@@ -251,7 +253,11 @@ let process_nth_hyp_resource_annotation ?labels name args term_args statement lo
          [| _ |], [||], [], [], ([ Context _; Hypothesis(_,t1); Context _ ], t2) ->
             [t1, t2, fun i -> Tactic_type.Tactic.tactic_of_rule pre_tactic { arg_ints = [| i |]; arg_addrs = [||] } []]
        | [||], [||], [], [ [Context _], t1 ], ( [Context _], t2) ->
-            [t1, t2, fun i -> Tactic_type.Tactic.tactic_of_rule pre_tactic empty_rw_args [] thenT nthHypT i]
+            [t1, t2, argfunT (fun i p ->
+               if alpha_equal (Sequent.concl p) (Sequent.nth_hyp p i) then
+                  failT
+               else
+                  (Tactic_type.Tactic.tactic_of_rule pre_tactic empty_rw_args [] thenT makeNthHypT i p))]
        | [||], [||], _, [ [Context _], t1 ], ( [Context _], t2) ->
             let addrs =
                try List.map (fun t -> List.hd (find_subterm t1 (fun t' _ -> alpha_equal t t'))) term_args with
@@ -261,8 +267,11 @@ let process_nth_hyp_resource_annotation ?labels name args term_args statement lo
             in
             let tac = argfunT (fun i p ->
                let hyp = nth_hyp p i in
-               let terms = List.map (term_subterm hyp) addrs in
-                  Tactic_type.Tactic.tactic_of_rule pre_tactic empty_rw_args terms thenT nthHypT i)
+                  if alpha_equal (Sequent.concl p) hyp then
+                     failT
+                  else
+                     let terms = List.map (term_subterm hyp) addrs in
+                        (Tactic_type.Tactic.tactic_of_rule pre_tactic empty_rw_args terms thenT makeNthHypT i p))
             in
                [t1, t2, tac]
        | _ ->

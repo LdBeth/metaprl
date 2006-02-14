@@ -512,7 +512,7 @@ let thinMatchT thin_many eq assum =
       (explode_sequent assum)
    in
    let rec tac i j =
-      if i = 0 then if j > 1 then thin_many 1 j else idT else
+      if i = 0 then if j > 1 then thin_many 1 j else Tacticals.idT else
          match index.(pred i) with
             Some _ ->
                let tac = tac (pred i) 1 in
@@ -530,7 +530,7 @@ let nameHypT i v =
       match SeqHyp.get eseq.sequent_hyps i with
          Hypothesis (v',hyp) ->
             if Lm_symbol.eq v' v then
-                idT
+                Tacticals.idT
             else
                let vt = mk_var_term v in
                let s1 t = subst1 t v' vt in
