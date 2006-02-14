@@ -166,6 +166,18 @@ and auto_type =
  | AutoNormal
  | AutoComplete
 
+type nth_hyp_entry =
+   NthImmediate of (int -> tactic)
+ | NthStep of tactic
+ | NthStepTerm of (term -> tactic)
+
+type nth_hyp_result = {
+   nth_hyp : int -> tactic_arg -> tactic;
+   nth_hyp_fun : term -> term -> bool; 
+   some_nth_hyp : tactic_arg -> tactic;
+   match_assums : (term -> tactic) -> int -> tactic_arg -> tactic;
+}
+   
 (************************************************************************
  * IMPLEMENTATION - nthHypT                                             *
  ************************************************************************)
@@ -178,16 +190,50 @@ declare nthhyp_pair{'hyp;'concl}
 let mk_nthhyp_pair_term =
    mk_dep0_dep0_term (opname_of_term <<nthhyp_pair{'hyp;'concl}>>)
 
+let wrap_nth_hyp tac =
+   NthImmediate tac
+
 let extract_nth_hyp_data =
-   let err = RefineError ("extract_nth_hyp_data", StringError "nthHypT tactic doesn't have an entry for this hypothesis/conclusion combination") in
-   let rec iterate i (c: (int -> tactic) lazy_lookup) _ =
-      try
-         let tac, cont = c () in tac i orelseT funT (iterate i cont)
-      with
-         Not_found ->
-            raise err
+   let select_immediate = function
+      NthImmediate _ -> true
+    | NthStep _
+    | NthStepTerm _ -> false
    in
+   let a = mk_var_term (Lm_symbol.add "t") in
+   let self_term = mk_nthhyp_pair_term a a in
+   let err = RefineError ("extract_nth_hyp_data", StringError "nthHypT tactic doesn't have an entry for this hypothesis/conclusion combination") in
+   let err_assum = RefineError ("Auto_tactic.matchAssumsT", StringError "lengths do not match") in
+   let rec iter_assum cut assum i (c : nth_hyp_entry lazy_lookup) _ =
+      let tac, cont = c () in
+         (match tac with
+            NthImmediate tac -> cut assum thenLT [nthAssumT i; tac (-1)]
+          | NthStep tac -> tac thenT nthAssumT i
+          | NthStepTerm tac -> tac assum thenT nthAssumT i)
+         orelseT funT (iter_assum cut assum i cont)
+   in
+   let failT' _ = failT in
    (fun tbl ->
+      let nth_hypT =
+         try
+            match Term_match_table.lookup tbl select_immediate self_term with
+               NthImmediate tac -> tac
+             | NthStep _
+             | NthStepTerm _ (* Can not happen *) -> raise Not_found
+         with
+            Not_found -> failT'
+      in
+      let apply hyp i = function
+         NthImmediate tac -> tac i
+       | NthStep tac -> tac thenT nth_hypT i
+       | NthStepTerm tac -> tac hyp thenT nth_hypT i
+      in
+      let rec iterate hyp i (c : nth_hyp_entry lazy_lookup) _ =
+         try
+            let tac, cont = c () in apply hyp i tac orelseT funT (iterate hyp i cont)
+         with
+            Not_found ->
+               raise err
+      in
       let rec somehyp hyps t i =
          if i = 0 then
             raise err
@@ -197,50 +243,81 @@ let extract_nth_hyp_data =
                   somehyp hyps t (i-1)
              | Hypothesis (_, h) ->
                   let t' = mk_nthhyp_pair_term h t in
-                     iterate_some hyps t i (Term_match_table.lookup_all tbl select_all t')
-      and iterate_some hyps t i c =
+                     if alpha_equal t' t then
+                        nth_hypT i
+                     else
+                        iterate_some hyps h t i (Term_match_table.lookup_all tbl select_all t')
+      and iterate_some hyps hyp t i c =
          try
-            let tac, cont = c () in tac i orelseT funT (keep_iterate_some hyps t i cont)
+            let tac, cont = c () in apply hyp i tac orelseT funT (keep_iterate_some hyps hyp t i cont)
          with
             Not_found ->
                somehyp hyps t (i-1)
-      and keep_iterate_some hyps t i cont _ =
-         iterate_some hyps t i cont
-      in
-         argfunT (fun i p ->
-            let t = mk_nthhyp_pair_term (Sequent.nth_hyp p i) (Sequent.concl p) in
-               iterate i (Term_match_table.lookup_all tbl select_all t) p),
-         (fun t1 t2 ->
+      and keep_iterate_some hyps hyp t i cont _ =
+         iterate_some hyps hyp t i cont
+      in {
+         nth_hyp = (fun i p ->
+            let hyp = Sequent.nth_hyp p i in
+            let concl = Sequent.concl p in
+               if alpha_equal hyp concl then
+                  nth_hypT i
+               else
+                  let t = mk_nthhyp_pair_term hyp concl in
+                     iterate hyp i (Term_match_table.lookup_all tbl select_all t) p);
+         nth_hyp_fun = (fun t1 t2 ->
             let t = mk_nthhyp_pair_term t1 t2 in
                try
                   let _ = Term_match_table.lookup tbl select_all t in true
                with Not_found ->
-                  false),
-         fun p ->
+                  false);
+         some_nth_hyp = (fun p ->
             let goal = Sequent.explode_sequent_arg p in
-               somehyp goal.sequent_hyps goal.sequent_concl (SeqHyp.length goal.sequent_hyps))
+               somehyp goal.sequent_hyps goal.sequent_concl (SeqHyp.length goal.sequent_hyps));
+         match_assums = (fun cut i p ->
+            let assum = TermMan.explode_sequent (Sequent.nth_assum p i) in
+            let goal = Sequent.explode_sequent_arg p in
+            let len = SeqHyp.length goal.sequent_hyps in
+            let () = if len <> SeqHyp.length assum.sequent_hyps then raise err_assum in
+            let rec vars subst i =
+               if i = len then
+                  subst
+               else
+                  match SeqHyp.get goal.sequent_hyps i, SeqHyp.get assum.sequent_hyps i with
+                     Hypothesis (v, _), Hypothesis (v', _) ->
+                        vars ((v', mk_var_term v)::subst) (i + 1)
+                   | _ ->
+                        vars subst (i + 1)
+            in
+            let assum = apply_subst (vars [] 0) assum.sequent_concl in
+            let concl = goal.sequent_concl in
+               if alpha_equal assum concl then
+                  nthAssumT i
+               else
+                  let t = mk_nthhyp_pair_term assum concl in
+                     iter_assum cut assum i (Term_match_table.lookup_all tbl select_all t) p);
+      })
 
 let add_nth_hyp_data tbl (hyp,concl,tac) =
    add_item tbl (mk_nthhyp_pair_term hyp concl) tac
 
-let resource (term * term * (int -> tactic), (int -> tactic) * (term -> term -> bool) * (tactic_arg -> tactic)) nth_hyp =
+let resource (term * term * nth_hyp_entry, nth_hyp_result) nth_hyp =
    Functional {
       fp_empty = empty_table;
       fp_add = add_nth_hyp_data;
       fp_retr = extract_nth_hyp_data;
    }
 
-let makeNthHypT i p =
-   let tac, _, _ = get_resource_arg p get_nth_hyp_resource in tac i
-
-let nthHypT = argfunT makeNthHypT
+let nthHypT = argfunT (fun i p ->
+   (get_resource_arg p get_nth_hyp_resource).nth_hyp i p)
 
 let nth_hyp_mem p =
-   let _, f, _ = get_resource_arg p get_nth_hyp_resource in f
+   (get_resource_arg p get_nth_hyp_resource).nth_hyp_fun
 
 let someNthHypT = funT (fun p ->
-   let _, _, tac = get_resource_arg p get_nth_hyp_resource in
-      tac p)
+   (get_resource_arg p get_nth_hyp_resource).some_nth_hyp p)
+
+let matchAssumT cut = argfunT (fun i p ->
+   (get_resource_arg p get_nth_hyp_resource).match_assums cut i p)
 
 let explode t =
    let t = TermMan.explode_sequent t in
@@ -251,13 +328,10 @@ let process_nth_hyp_resource_annotation ?labels name args term_args statement lo
       rule_labels_not_allowed loc labels;
       match args.spec_ints, args.spec_addrs, term_args, List.map (fun (_, _, t) -> explode t) assums, explode goal with
          [| _ |], [||], [], [], ([ Context _; Hypothesis(_,t1); Context _ ], t2) ->
-            [t1, t2, fun i -> Tactic_type.Tactic.tactic_of_rule pre_tactic { arg_ints = [| i |]; arg_addrs = [||] } []]
+            [t1, t2, NthImmediate (fun i ->
+               Tactic_type.Tactic.tactic_of_rule pre_tactic { arg_ints = [| i |]; arg_addrs = [||] } [])]
        | [||], [||], [], [ [Context _], t1 ], ( [Context _], t2) ->
-            [t1, t2, argfunT (fun i p ->
-               if alpha_equal (Sequent.concl p) (Sequent.nth_hyp p i) then
-                  failT
-               else
-                  (Tactic_type.Tactic.tactic_of_rule pre_tactic empty_rw_args [] thenT makeNthHypT i p))]
+            [t1, t2, NthStep (Tactic_type.Tactic.tactic_of_rule pre_tactic empty_rw_args [])]
        | [||], [||], _, [ [Context _], t1 ], ( [Context _], t2) ->
             let addrs =
                try List.map (fun t -> List.hd (find_subterm t1 (fun t' _ -> alpha_equal t t'))) term_args with
@@ -265,15 +339,11 @@ let process_nth_hyp_resource_annotation ?labels name args term_args statement lo
                      raise (Invalid_argument (sprintf
                         "%s: Auto_tactic.improve_nth_hyp: %s: missing a subterm" (string_of_loc loc) name))
             in
-            let tac = argfunT (fun i p ->
-               let hyp = nth_hyp p i in
-                  if alpha_equal (Sequent.concl p) hyp then
-                     failT
-                  else
-                     let terms = List.map (term_subterm hyp) addrs in
-                        (Tactic_type.Tactic.tactic_of_rule pre_tactic empty_rw_args terms thenT makeNthHypT i p))
+            let tac hyp =
+               let terms = List.map (term_subterm hyp) addrs in
+                  Tactic_type.Tactic.tactic_of_rule pre_tactic empty_rw_args terms
             in
-               [t1, t2, tac]
+               [t1, t2, NthStepTerm tac]
        | _ ->
             raise (Invalid_argument (sprintf
                "%s: Auto_tactic.improve_nth_hyp: %s: is not an appropriate rule" (string_of_loc loc) name))

@@ -51,13 +51,24 @@ topval nthHypT : int -> tactic
 val nth_hyp_mem : tactic_arg -> term -> term -> bool
 
 (*
+ * Uses the nth_hyp to match a goal agains an assumption. Assumes that the goal and the
+ * assumption already match, except for the conclusions. The tactic argument is the
+ * "cut" rule that will cat the given term in as a new hyp at the end of the hyp list.
+ *)
+val matchAssumT : (term -> tactic) -> int -> tactic
+
+(*
  * The input for the nth_hyp resource is the hypothesis term, conclusion term
  * and the tactic nthHypT should use when applying
  *)
-resource (term * term * (int -> tactic), (int -> tactic) * (term -> term -> bool) * (tactic_arg -> tactic)) nth_hyp
+type nth_hyp_result
+type nth_hyp_entry
+resource (term * term * nth_hyp_entry, nth_hyp_result) nth_hyp
+
+val wrap_nth_hyp : (int -> tactic) -> nth_hyp_entry
 
 val process_nth_hyp_resource_annotation :
-   (term * term * (int -> tactic)) annotation_processor
+   (term * term * nth_hyp_entry) annotation_processor
 
 (*
  * The info provided is a name (used for debugging),
