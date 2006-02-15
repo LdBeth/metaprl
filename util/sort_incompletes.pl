@@ -17,6 +17,7 @@ while(<INC>) {
 close(INC);
 $cmdline = 'MP_DEBUG=load editor/ml/mp -batch 2>&1 < /dev/null';
 #print("Executing: $cmdline\n");
+$incs=0;
 open(LOAD, "-|", $cmdline);
 while(<LOAD>) {
     chomp();
@@ -26,7 +27,9 @@ while(<LOAD>) {
 	    s/\./\//;
 	    s/(.)/\/\L$1\E/;
 	    print("New incomplete: ", $_, "\n");
+	    $incs++;
 	}
     }
 }
 close(LOAD);
+print "Total new incompletes: $incs\n";

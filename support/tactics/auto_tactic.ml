@@ -338,15 +338,19 @@ let process_nth_hyp_resource_annotation ?labels name args term_args statement lo
    let assums, goal = unzip_mfunction statement in
       rule_labels_not_allowed loc labels;
       match args.spec_ints, args.spec_addrs, term_args, List.map (fun (_, _, t) -> explode t) assums, explode goal with
-         [| _ |], [||], [], [], ([ Context _; Hypothesis(v,t1); Context _ ], t2) ->
+         [| _ |], [||], [], [], ([ Context (h, _, _); Hypothesis(v,t1); Context(j, jc, jv) ], t2) ->
             let tac i =
                Tactic_type.Tactic.tactic_of_rule pre_tactic { arg_ints = [| i |]; arg_addrs = [||] } []
             in
             let dependent =
-               is_var_free v t2 && not (
+               (is_var_free v t2 && not (
                   is_so_var_term t2 &&
                   match dest_so_var t2 with
                      _, [_; _], [v'] -> is_var_term v' && Lm_symbol.eq v (dest_var v')
+                   | _ -> false)) ||
+               not(
+                  match jc, jv with
+                     [h'], [v'] -> Lm_symbol.eq h h' && is_var_term v' && Lm_symbol.eq v (dest_var v')
                    | _ -> false)
             in
                [t1, t2, if dependent then NthUncertain tac else NthImmediate tac]
