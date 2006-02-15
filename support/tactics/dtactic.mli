@@ -74,6 +74,7 @@ val intro_must_select : intro_item
  * The inherited d tactic.
  *)
 val d_prec : auto_prec
+val d_in_auto : tactic_arg -> bool (* true when in auto, but not the "Complete" part of it *)
 
 topval dT : int -> tactic
 

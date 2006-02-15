@@ -249,7 +249,7 @@ let extract_elim_data =
                       | None ->
                            raise (RefineError ("extract_elim_data", StringTermError ("D tactic doesn't know about", t)))))
 
-let in_auto p =
+let d_in_auto p =
    match Sequent.get_int_arg p "d_auto" with
       Some 0
     | Some 1 ->
