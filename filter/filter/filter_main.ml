@@ -83,7 +83,7 @@ let add_anon_arg arg =
       Pcaml.input_file := arg
 
 let spec =
-   ["-I", String add_include, "add an directory to the path for include files";
+   ["-I", String add_include, "add a directory to the path for include files";
     "-o", String set_output_file, "specify output file";
     "-lib", String set_lib, "specify MPLIB directory";
     "-export", Unit set_export, "export an ASCII file"]

@@ -53,7 +53,9 @@ val extract_str :
 val expr_of_loc : MLast.loc -> MLast.expr
 
 module ProofCaches :
-   CachesSig with type t = Convert.t and type cooked = Convert.cooked
+   CachesSig
+   with type t = Convert.t
+   with type cooked = Convert.cooked
 
 (*
  * -*-

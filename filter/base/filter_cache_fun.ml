@@ -974,6 +974,17 @@ struct
       info
 
    (*
+    * XXX: BUG: JYH: this is a hack until we fix the recursive inlining
+    * of summarized modules.
+    *
+    * Reset the base.
+    *)
+   let reset_hack cache =
+      let base = cache.base in
+         base.sig_summaries <- [];
+         base.str_summaries <- []
+
+   (*
     * Find a summary by its module path.
     *)
    let find_summarized_sig_module cache path =
@@ -1145,6 +1156,13 @@ struct
       let code = hash_typeenv code typeenv in
       let code = hash_termenv code termenv in
       let code = hash_int code (Filter_grammar.hash_grammar grammar) in
+      (* Squash the hash code so that it can be used on 32bit machines *)
+      let code =
+         match Sys.word_size with
+            64 -> code land 0x7fffffff
+          | 32 -> code
+          | i  -> raise (Invalid_argument (Printf.sprintf "Filter_cache_fun: unknown word size: %d" i))
+      in
          code
 
    (************************************************************************
@@ -1194,6 +1212,7 @@ struct
 
    (*
     * Merge two lists, removing duplicates.
+    * The two lists must be sorted.
     *)
    let rec merge_resources rsrc1 rsrc2 =
       match rsrc1, rsrc2 with
@@ -1441,6 +1460,10 @@ struct
          if !debug_filter_cache then
             eprintf "FilterCache.inline_sig_module: %s: %s%t" cache.name (string_of_path path) eflush;
          try
+            (*
+             * XXX: BUG: JYH: in addition to opnames, we need to collect
+             * resources and grammars.  This is wrong!  Should be fixed.
+             *)
             let info = find_summarized_sig_module cache path in
                if !debug_filter_cache then
                   eprintf "FilterCache.inline_sig_module: %s: already loaded%t" (string_of_path path) eflush;

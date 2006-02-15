@@ -116,6 +116,7 @@ section
     #
     PRLC_FILES[] =
         filter/filter_prog
+        filter/filter_reflect
         filter/filter_bin
 
     PRLCN_FILES[] =
@@ -140,7 +141,7 @@ section
     #
     #OCamlProgramInstall($(MPINSTALL), $(BIN), prlc, $(PRLCOMP_FILES))
 
-    BIN_PROGS =
+    BIN_PROGS = prlcn prlco convert merge_prla
 
     export BIN_PROGS
 

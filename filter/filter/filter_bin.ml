@@ -12,7 +12,7 @@
  * See the file doc/htmlman/default.html or visit http://metaprl.org/
  * for more information.
  *
- * Copyright (C) 1998 Jason Hickey, Cornell University
+ * Copyright (C) 1998-2006 Mojave Group, Caltech, Cornell University.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -29,9 +29,8 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * jyh@cs.caltech.edu
  *)
-
 open Arg
 open Lm_debug
 
@@ -45,7 +44,10 @@ open Filter_type
 open Filter_summary
 open Filter_summary_type
 open Filter_prog
+open Filter_magic
 open Proof_convert
+
+open Filter_prog.ProofCaches
 
 (*
  * Show the file loading.
@@ -54,162 +56,208 @@ let _ =
    show_loading "Loading Filter_bin%t"
 
 (*
- * Include directories.
+ * string -> path commands
  *)
-let include_path = ref ["."]
+let set_path doc var path =
+   let path' = Lm_string_util.split ":" path in
+      var := path'
 
-let add_include dir =
-   include_path := !include_path @ [dir]
+let set_path_arg doc var =
+   Arg.String (set_path doc var)
 
 (*
- * Need some info about types and extraction.
+ * This is a list of hosts to use for database lookup.
  *)
-module type CompileInfoSig =
-sig
-   type proof
-   type expr
-   type ctyp
-   type sig_item
-   type str_item
-   type str_resource
+let include_path = Env_arg.general "include" ["."] "Include directories" set_path set_path_arg
 
-   val extract :
-      (unit -> (term, meta_term, unit, ctyp resource_sig, ctyp, expr, sig_item) module_info) ->
-      (term, meta_term, proof, str_resource, ctyp, expr, str_item) module_info ->
-      (module_path * string * ctyp resource_sig) list ->
-      string -> string -> string -> (str_item * MLast.loc) list
-   val compile : (str_item * MLast.loc) list -> unit
-end
+let add_include path =
+   include_path := !include_path @ [path]
 
+(*
+ * Reflection prefix, in case we are generating reflected versions
+ * of the file.
+ *)
+let reflect_flag = ref false
+
+(*
+ * Theory description.
+ *)
 let theory_group, theory_groupdsc = Filter_util.make_groupdsc_opts ()
 
 (*
- * Compile from a pre-parsed file.
+ * Compile a signature to ML.
  *)
-module MakeCompile (**)
-   (Info : CompileInfoSig)
-   (FilterCache : SummaryCacheSig
-    with type sig_expr  = Info.expr
-    with type sig_ctyp  = Info.ctyp
-    with type sig_item  = Info.sig_item
-    with type sig_proof = unit
-    with type str_proof = Info.proof
-    with type str_expr  = Info.expr
-    with type str_ctyp  = Info.ctyp
-    with type str_item  = Info.str_item
-    with type str_resource = Info.str_resource
-    with type arg       = unit) =
-struct
-   let compile name =
-      let kind, path =
-         if Filename.check_suffix name ".cmiz" then
-            InterfaceType, Filename.chop_suffix name ".cmiz"
-         else if Filename.check_suffix name ".cmit" then
-            InterfaceType, Filename.chop_suffix name ".cmit"
-         else if Filename.check_suffix name ".cmoz" then
-            ImplementationType, Filename.chop_suffix name ".cmoz"
-         else if Filename.check_suffix name ".cmot" then
-            ImplementationType, Filename.chop_suffix name ".cmot"
-         else
-            raise (Failure "Filter_parse.compile: invalid suffix")
-      in
-      let cache = FilterCache.create !include_path in
-      let info = FilterCache.load cache () path kind AnySuffix in
-      let check () =
-         FilterCache.check info () InterfaceType
-      in
-      let items =
-         Info.extract check (FilterCache.info info) (FilterCache.resources info) (Filename.basename path) (theory_group ()) (theory_groupdsc ())
-      in
-         Info.compile items
-end
+let compile_sig name =
+   let path = Lm_filename_util.root name in
+   let cache = SigFilterCache.create !include_path in
+   let info = SigFilterCache.load cache () path InterfaceType AnySuffix in
 
-(*
- * The two caches.
- *)
-module SigCompileInfo =
-struct
-   type proof = unit
-   type expr  = MLast.expr
-   type ctyp  = MLast.ctyp
-   type sig_item = MLast.sig_item
-   type str_item = MLast.sig_item
-   type str_resource = MLast.ctyp resource_sig
-
-   let extract check = extract_sig ()
-   let compile items =
+   (* Get the ML items *)
+   let items =
+      Filter_prog.extract_sig (**)
+         ()
+         (SigFilterCache.info info)
+         (SigFilterCache.resources info)
+         (Filename.basename path)
+         (theory_group ())
+         (theory_groupdsc ())
+   in
+      (* Print them *)
       (!Pcaml.print_interf) items
-end
-
-module StrCompileInfo =
-struct
-   type proof = Convert.cooked proof_type
-   type expr  = MLast.expr
-   type ctyp  = MLast.ctyp
-   type sig_item = MLast.sig_item
-   type str_item = MLast.str_item
-   type str_resource = (ctyp, expr) resource_str
-
-   let extract check = extract_str () (check ())
-   let compile items =
-      (!Pcaml.print_implem) items;
-      eprintf "Writing output file%t" eflush;
-      flush stdout
-end
-
-module SigCompile = MakeCompile (SigCompileInfo) (ProofCaches.SigFilterCache)
-module StrCompile = MakeCompile (StrCompileInfo) (ProofCaches.StrFilterCache)
 
 (*
- * Utility to replace a suffix.
+ * Compile an implementation to ML.
  *)
-let replace_suffix name suffix =
-   let i = String.rindex name '.' in
-   let j = String.length suffix in
-   let s = String.create (i + j) in
-      String.blit name 0 s 0 i;
-      String.blit suffix 0 s i j;
-      s
+let compile_str name =
+   let path = Lm_filename_util.root name in
+   let cache = StrFilterCache.create !include_path in
+   let info = StrFilterCache.load cache () path ImplementationType AnySuffix in
+
+   (* Get the ML items *)
+   let check = StrFilterCache.check info () InterfaceType in
+   let items =
+      Filter_prog.extract_str (**)
+         ()
+         check
+         (StrFilterCache.info info)
+         (StrFilterCache.resources info)
+         (Filename.basename path)
+         (theory_group ())
+         (theory_groupdsc ())
+   in
+      (* Print them *)
+      (!Pcaml.print_implem) items
+
+(*
+ * Generate a reflected signature.
+ *)
+let compile_reflect_sig name =
+   let cache = SigFilterCache.create !include_path in
+   let orig_path = Lm_filename_util.root name in
+   let orig_info = SigFilterCache.load cache () orig_path InterfaceType AnySuffix in
+
+   (* Create the new cache *)
+   let new_base, new_path = Filter_reflect.reflect_filename orig_path in
+   let new_info = SigFilterCache.create_cache cache new_path InterfaceType in
+   let () = SigFilterCache.reset_hack new_info in
+
+   (* Process the file *)
+   let () =
+      Filter_reflect.compile_sig new_info (SigFilterCache.info orig_info);
+      SigFilterCache.save new_info () AnySuffix
+   in
+
+   (* Get the ML items *)
+   let items =
+      Filter_prog.extract_sig (**)
+         ()
+         (SigFilterCache.info new_info)
+         (SigFilterCache.resources new_info)
+         new_base
+         (theory_group ())
+         (theory_groupdsc ())
+   in
+      (* Print the ML part *)
+      (!Pcaml.print_interf) items
+
+(*
+ * Generate a reflected implementation.
+ *)
+let copy_proof proof1 proof2 =
+      match proof1, proof2 with
+         (Incomplete | Interactive _), Interactive _ ->
+            proof2
+       | _ ->
+            proof1
+
+let compile_reflect_str name =
+   let cache = StrFilterCache.create !include_path in
+   let orig_path = Lm_filename_util.root name in
+   let orig_info = StrFilterCache.load cache () orig_path ImplementationType AnySuffix in
+
+   (* Create the new cache *)
+   let new_base, new_path = Filter_reflect.reflect_filename orig_path in
+   let new_info = StrFilterCache.create_cache cache new_path ImplementationType in
+   let () = StrFilterCache.reset_hack new_info in
+
+   (* Process the file *)
+   let () =
+      Filter_reflect.compile_str new_info (StrFilterCache.info orig_info)
+   in
+
+   (*
+    * Check that implementation matches interface.
+    * This will also copy part of the interface into the implementation.
+    *)
+   let sig_info = StrFilterCache.check new_info () InterfaceType in
+
+   (*
+    * Proof copying.
+    *)
+   let () =
+      (* Also copy old proofs if they exist *)
+      if file_interactive (new_path ^ ".prlb") || Sys.file_exists (new_path ^ ".prla") then begin
+         StrFilterCache.set_mode new_info InteractiveSummary;
+         StrFilterCache.copy_proofs new_info () copy_proof
+      end;
+      StrFilterCache.set_mode new_info InteractiveSummary;
+      StrFilterCache.save new_info () (OnlySuffixes ["cmoz"])
+   in
+
+   (* Get the ML items *)
+   let items =
+      Filter_prog.extract_str (**)
+         ()
+         sig_info
+         (StrFilterCache.info new_info)
+         (StrFilterCache.resources new_info)
+         new_base
+         (theory_group ())
+         (theory_groupdsc ())
+   in
+      (* Print them *)
+      (!Pcaml.print_implem) items
 
 (*
  * Compile a file.
  *)
 let process_file file =
-   if Filename.check_suffix file ".cmiz" or
-      Filename.check_suffix file ".cmit"
-   then
-      begin
-         (* An interface file *)
-         (* Pcaml.input_file := replace_suffix file ".ppi"; *)
-         SigCompile.compile file
-      end
-   else if Filename.check_suffix file ".cmoz" or
-           Filename.check_suffix file ".cmot"
-   then
-      begin
-         (* An implementation file *)
-         (* Pcaml.input_file := replace_suffix file ".ppo"; *)
-         StrCompile.compile file
-      end
-   else
-      raise (Bad "Filter_bin.main: file has a bogus suffix")
+   let compile =
+      if Filename.check_suffix file ".cmiz" || Filename.check_suffix file ".cmit" then
+         if !reflect_flag then
+            compile_reflect_sig
+         else
+            compile_sig
+      else if Filename.check_suffix file ".cmoz" || Filename.check_suffix file ".cmot" then
+         if !reflect_flag then
+            compile_reflect_str
+         else
+            compile_str
+      else
+         raise (Bad "Filter_bin.main: file has a bogus suffix")
+   in
+      compile file
 
 (*
  * Argument specification.
  *)
 let spec =
-   ["-I", Arg.String add_include, "add an directory to the path for include files";
-    "-intf", Arg.String process_file, "compile an interface file";
-    "-impl", Arg.String process_file, "compile an implementation file"]
+   ["-I",        Arg.String add_include,        "add an directory to the path for include files";
+    "-r",        Arg.Set reflect_flag,          "generate a reflected file";
+    "--reflect", Arg.Set reflect_flag,          "generate a reflected file";
+    "-o",        Arg.String (fun s -> Pcaml.output_file := Some s), "specify the output file (defaults to stdout)"]
 
 (*
  * Everything standard is taken care of.
  * There should be a single file argument, so
  * process it.
  *)
-let _ =
+let main () =
    Pcaml.input_file := "";
    Arg.parse spec process_file "Compile a MetaPRL binary file"
+
+let () = Filter_exn.print_exn Dform.null_base None main ()
+
 
 (*
  * -*-

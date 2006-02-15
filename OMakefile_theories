@@ -20,6 +20,7 @@ if $(NATIVE_PROFILING_ENABLED)
 CAMLP4N = $(file $(LIB)/camlp4n$(EXE))
 CAMLP4O = $(file $(LIB)/camlp4o$(EXE))
 CONVERT = $(file $(BIN)/convert$(EXE))
+PRLCN   = $(file $(BIN)/prlcn$(EXE))
 MPTIME =
 CAMLP4FLAGS[] =
 
@@ -45,6 +46,21 @@ OCAMLDEPFLAGS += -prl
    exit 1
 
 #
+# Reflected theories
+#
+reflect_%.ppo reflect_%.cmoz: %.cmoz reflect_%.cmiz $(PRLCN) :optional: %.prla :effects: %.prlb :scanner: $(NOSCANNER)
+   $(WrapC $(PRLCN)) --reflect -o $*.ppo $<
+
+reflect_%.cmi reflect_%.cmiz: %.cmiz $(PRLCN) :scanner: $(NOSCANNER)
+   $(ReflectC $(OCAMLC)) $(OCAMLFLAGS) $(OCAMLCFLAGS) $(OCAMLPPFLAGS) $(PREFIXED_OCAMLINCLUDES) -c -intf $<
+
+reflect_%.cmo: reflect_%.ppo :scanner: $(NOSCANNER)
+   $(OCAMLC) $(OCAMLFLAGS) $(OCAMLCFLAGS) $(PREFIXED_OCAMLINCLUDES) -c -impl $<
+
+reflect_%.cmx reflect_%$(EXT_OBJ): reflect_%.ppo :scanner: $(NOSCANNER)
+   $(OCAMLOPT) $(OCAMLFLAGS) $(OCAMLOPTFLAGS) $(PREFIXED_OCAMLINCLUDES) -c -impl $<
+
+#
 # For theory files, generate intermediate .ppo files
 #
 %.ppo %.cmoz: %.ml %.cmiz :optional: %.prla :effects: %.prlb :scanner: scan-ocaml-%.ml :value: $(prlc-deps)
@@ -53,12 +69,15 @@ OCAMLDEPFLAGS += -prl
 %.cmi %.cmiz: %.mli :scanner: scan-ocaml-%.mli
    $(PrlC $(OCAMLC)) $(OCAMLFLAGS) $(OCAMLCFLAGS) $(OCAMLPPFLAGS) $(PREFIXED_OCAMLINCLUDES) -c $<
 
-%.cmo: %.ppo :scanner: scan-ocaml-%.ml
+%.cmo: %.ppo %.ml :scanner: scan-ocaml-%.ml
    $(OCAMLC) $(OCAMLFLAGS) $(OCAMLCFLAGS) $(PREFIXED_OCAMLINCLUDES) -c -impl $<
 
-%.cmx %$(EXT_OBJ): %.ppo :scanner: scan-ocaml-%.ml
+%.cmx %$(EXT_OBJ): %.ppo %.ml :scanner: scan-ocaml-%.ml
    $(OCAMLOPT) $(OCAMLFLAGS) $(OCAMLOPTFLAGS) $(PREFIXED_OCAMLINCLUDES) -c -impl $<
 
+#
+# Dependency management
+#
 if $(SLOPPY_DEPENDENCIES)
    %.cmi %.cmiz:  :squash: $(CAMLP4N)
    %.ppo %.cmoz:  :squash: $(CAMLP4N)

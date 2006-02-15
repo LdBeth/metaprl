@@ -10,7 +10,7 @@ Shell. +=
       setenv(MP_GROUP, $(THEORYNAME))
       setenv(MP_DESCR, $(THEORYDESCR))
       setenv(MP_INCLUDE, $(concat :, $(OCAMLINCLUDES)))
-      code=$(shell-code $(argv))
+      code = $(shell-code $(argv))
       if $(eq $(code), 0)
          return 1
       else
@@ -45,5 +45,16 @@ PrlC(command) =
    # JYH: not sure if this should be hardcoded as CAMLP4N.
    #
    COMMAND[] = prlcomp $(command) -pp $(quote-argv $(CAMLP4N) $(LOC))
+
+   return($(COMMAND))
+
+#
+# Create a reflected theory.
+#
+ReflectC(command) =
+   #
+   # Put together the command
+   #
+   COMMAND[] = prlcomp $(command) -pp $(quote-argv $(PRLCN) --reflect)
 
    return($(COMMAND))

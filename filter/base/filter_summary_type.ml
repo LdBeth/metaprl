@@ -198,6 +198,9 @@ sig
    val load           : t -> arg -> module_name -> select_type -> alt_suffix -> info
    val filename       : t -> info -> string
 
+   (* Temporary workarounds *)
+   val reset_hack     : info -> unit
+
    (* Module operations *)
    val check          : info -> arg -> select_type -> sig_info
    val parse_comments : info -> (loc -> term -> term) -> unit

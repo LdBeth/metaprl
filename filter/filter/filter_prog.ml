@@ -72,27 +72,27 @@ let debug_filter_prog =
  ************************************************************************)
 
 (*
- * For implementations, we maintain a state, which contains
+ * For implementations, we maintain a state that contains
  *    1. a list of the resources that have been defined
  *)
-type t = {
-   imp_sig_info : (term, meta_term, unit, MLast.ctyp resource_sig, MLast.ctyp, MLast.expr, MLast.sig_item) module_info;
-   mutable imp_toploop : (string * MLast.ctyp) list;
-   imp_arg : Convert.t;
-   imp_name : string;
-   imp_group : string;
-   imp_groupdesc : string;
-   mutable imp_resources : (string * (MLast.ctyp * string)) list; (* The second string is the FQN *)
-   imp_all_resources : (module_path * string * MLast.ctyp resource_sig) list;
-   mutable imp_terms : term list;
-   mutable imp_num_terms : int;
-   mutable imp_meta_terms : meta_term list;
-   mutable imp_num_meta_terms : int;
-   mutable imp_nums : Lm_num.num list;
-   mutable imp_num_nums : int;
-   mutable imp_opnames : opname list;
-   mutable imp_num_opnames : int
-}
+type t =
+   { imp_sig_info : (term, meta_term, unit, MLast.ctyp resource_sig, MLast.ctyp, MLast.expr, MLast.sig_item) module_info;
+     mutable imp_toploop : (string * MLast.ctyp) list;
+     imp_arg : Convert.t;
+     imp_name : string;
+     imp_group : string;
+     imp_groupdesc : string;
+     mutable imp_resources : (string * (MLast.ctyp * string)) list; (* The second string is the FQN *)
+     imp_all_resources : (module_path * string * MLast.ctyp resource_sig) list;
+     mutable imp_terms : term list;
+     mutable imp_num_terms : int;
+     mutable imp_meta_terms : meta_term list;
+     mutable imp_num_meta_terms : int;
+     mutable imp_nums : Lm_num.num list;
+     mutable imp_num_nums : int;
+     mutable imp_opnames : opname list;
+     mutable imp_num_opnames : int
+   }
 
 (*
  * These are the argument types that can be used as annotations.
@@ -609,7 +609,7 @@ let declare_magic_block _loc { magic_code = items } =
  * Trailer declares a new refiner.
  *)
 let interf_postlog info _loc =
-   [ <:sig_item< value $refiner_id$ : $refiner_ctyp _loc$ >> ]
+   [<:sig_item< value $refiner_id$ : $refiner_ctyp _loc$ >>]
 
 (*
  * Extract a signature item.
@@ -1443,21 +1443,25 @@ let define_parent proc _loc
    let parent_path = parent_path_expr _loc path in
    let rec find_resource name = function
       [] ->
-         Stdpp.raise_with_loc _loc (Invalid_argument("Resource " ^ name ^ " not known by cached info"))
+         List.iter (fun (_, name, _) ->
+               eprintf "Resource: %s@." name) proc.imp_all_resources;
+         Stdpp.raise_with_loc _loc (Invalid_argument (**)
+                                       (Printf.sprintf "Filter_prog.define_parent: %s: resource %s unknown" (string_of_path path) name))
     | (path, name', _) :: _ when name = name' ->
          path
     | _ :: t ->
          find_resource name t
-   in let make_ctyp (name, _) =
+   in
+   let make_ctyp (name, _) =
       let path = find_resource name proc.imp_all_resources in
-      (name, (<:ctyp< $parent_path_ctyp _loc path$ . $lid:input_type name$ >>, res_fqn path name))
+         (name, (<:ctyp< $parent_path_ctyp _loc path$ . $lid:input_type name$ >>, res_fqn path name))
    in
       proc.imp_resources <- proc.imp_resources @ (List.map make_ctyp nresources);
       match path with
          [name] -> [
             <:str_item< Mp_resource.extends_theory $str:name$ >>;
             <:str_item< $exp:refiner_expr _loc$.join_refiner $lid: local_refiner_id$ $parent_path$.$lid: refiner_id$ >>;
-            refiner_let _loc;
+            refiner_let _loc
          ]
        | _ ->
             Stdpp.raise_with_loc _loc (Invalid_argument "Including sub-theories not implemented")
@@ -1713,23 +1717,24 @@ let extract_str_item proc (item, loc) =
  * Extract a signature.
  *)
 let extract_str arg sig_info info resources name group groupdesc =
-   let proc = { imp_sig_info = sig_info;
-                imp_resources = [];
-                imp_toploop = implem_toploop sig_info;
-                imp_arg = arg;
-                imp_name = name;
-                imp_group = group;
-                imp_groupdesc = groupdesc;
-                imp_all_resources = resources;
-                imp_terms = [];
-                imp_num_terms = 0;
-                imp_meta_terms = [];
-                imp_num_meta_terms = 0;
-                imp_nums = [];
-                imp_num_nums = 0;
-                imp_opnames = [];
-                imp_num_opnames = 0
-              }
+   let proc =
+      { imp_sig_info = sig_info;
+        imp_resources = [];
+        imp_toploop = implem_toploop sig_info;
+        imp_arg = arg;
+        imp_name = name;
+        imp_group = group;
+        imp_groupdesc = groupdesc;
+        imp_all_resources = resources;
+        imp_terms = [];
+        imp_num_terms = 0;
+        imp_meta_terms = [];
+        imp_num_meta_terms = 0;
+        imp_nums = [];
+        imp_num_nums = 0;
+        imp_opnames = [];
+        imp_num_opnames = 0
+      }
    in
    let items = Lm_list_util.flat_map (extract_str_item proc) (info_items info) in
    let items = wrap_summary_items proc items in
