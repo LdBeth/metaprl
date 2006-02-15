@@ -61,6 +61,15 @@ reflect_%.cmx reflect_%$(EXT_OBJ): reflect_%.ppo :scanner: $(NOSCANNER)
    $(OCAMLOPT) $(OCAMLFLAGS) $(OCAMLOPTFLAGS) $(PREFIXED_OCAMLINCLUDES) -c -impl $<
 
 #
+# XXX HACK!!!
+#
+# the .cmoz/.cmx/.o for reflected theories depend on the same things as the one for the original ones.
+#
+reflect_%.cmi reflect_%.cmiz: %.cmi
+reflect_%.cmo: %.cmo
+reflect_%.cmx reflect_%$(EXT_OBJ): %.cmx %$(EXT_OBJ)
+
+#
 # For theory files, generate intermediate .ppo files
 #
 %.ppo %.cmoz: %.ml %.cmiz :optional: %.prla :effects: %.prlb :scanner: scan-ocaml-%.ml :value: $(prlc-deps)
