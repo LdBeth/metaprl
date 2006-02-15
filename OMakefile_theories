@@ -373,6 +373,7 @@ section
 
                 # Actually include the theory.
                 READONLY = false
+                MLZFILES[] =
                 PENDING_THEORIES[] += $(thydir)
                 .SUBDIRS: $(thydir)
                     include MetaprlInfo
@@ -385,6 +386,7 @@ section
                         include OMakefile
                         export
                     else
+                        OCamlGeneratedFiles($(addsuffixes .ml .mli, $(MLZFILES)))
                         if $(defined MPFILES)
                             Theory($(MPFILES))
                             export
