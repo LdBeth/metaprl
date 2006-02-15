@@ -240,7 +240,7 @@ let extract_nth_hyp_data =
                   somehyp hyps t (i-1)
              | Hypothesis (_, h) ->
                   let t' = mk_nthhyp_pair_term h t in
-                     if alpha_equal t' t then
+                     if alpha_equal h t then
                         nth_hypT i
                      else
                         iterate_some hyps h t i (Term_match_table.lookup_all tbl select_all t')
