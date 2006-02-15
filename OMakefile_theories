@@ -61,15 +61,6 @@ reflect_%.cmx reflect_%$(EXT_OBJ): reflect_%.ppo :scanner: $(NOSCANNER)
    $(OCAMLOPT) $(OCAMLFLAGS) $(OCAMLOPTFLAGS) $(PREFIXED_OCAMLINCLUDES) -c -impl $<
 
 #
-# XXX HACK!!!
-#
-# the .cmoz/.cmx/.o for reflected theories depend on the same things as the one for the original ones.
-#
-reflect_%.cmi reflect_%.cmiz: %.cmi
-reflect_%.cmo: %.cmo
-reflect_%.cmx reflect_%$(EXT_OBJ): %.cmx %$(EXT_OBJ)
-
-#
 # For theory files, generate intermediate .ppo files
 #
 %.ppo %.cmoz: %.ml %.cmiz :optional: %.prla :effects: %.prlb :scanner: scan-ocaml-%.ml :value: $(prlc-deps)
@@ -418,3 +409,17 @@ section
     export COLLECTED_THEORIES
 
 MP_DIRS[] = $(COLLECTED_THEORIES)
+
+#
+# XXX HACK!!!
+#
+# The .cmoz/.cmx/.o for reflected theories depend on the same things as the one for the original ones.
+# Also, all the reflected theories depend on itt_hoas_theory
+#
+REFLECTION_BASE[] =
+    $(file $(find-theory itt/reflection/experimental)/itt_hoas_theory)
+
+reflect_%.cmi reflect_%.cmiz: %.cmi $(addsuffixes .cmi .cmiz, $(REFLECTION_BASE))
+reflect_%.cmo: %.cmo $(addsuffix .cmi, $(REFLECTION_BASE))
+reflect_%.cmx reflect_%$(EXT_OBJ): %.cmx %$(EXT_OBJ) $(addsuffixes .cmi .cmx, $(REFLECTION_BASE))
+reflect_%.ppo: $(addsuffix .cmiz, $(REFLECTION_BASE))
