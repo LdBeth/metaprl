@@ -21,6 +21,7 @@ CAMLP4N = $(file $(LIB)/camlp4n$(EXE))
 CAMLP4O = $(file $(LIB)/camlp4o$(EXE))
 CONVERT = $(file $(BIN)/convert$(EXE))
 PRLCN   = $(file $(BIN)/prlcn$(EXE))
+PRLCO   = $(file $(BIN)/prlco$(EXE))
 MPTIME =
 CAMLP4FLAGS[] =
 
@@ -59,6 +60,12 @@ reflect_%.cmo: reflect_%.ppo :scanner: $(NOSCANNER)
 
 reflect_%.cmx reflect_%$(EXT_OBJ): reflect_%.ppo :scanner: $(NOSCANNER)
    $(OCAMLOPT) $(OCAMLFLAGS) $(OCAMLOPTFLAGS) $(PREFIXED_OCAMLINCLUDES) -c -impl $<
+
+reflect_%.p4i: %.cmiz $(PRLCO) :value: $(prlc-deps)
+   $(WrapC $(PRLCO)) --reflect $(CAMLP4FLAGS) $< > $@
+
+reflect_%.p4: %.cmoz reflect_%.cmiz $(PRLCO) :value: $(prlc-deps)
+   $(WrapC $(PRLCO)) --reflect $(CAMLP4FLAGS) $< > $@
 
 #
 # For theory files, generate intermediate .ppo files
@@ -299,6 +306,21 @@ find-theories(names) =
             find-theory($(name))
     return $(dirs)
 
+
+#
+# XXX HACK!!!
+#
+# The .cmoz/.cmx/.o for reflected theories depend on the same things as the one for the original ones.
+# Also, all the reflected theories depend on itt_hoas_theory
+#
+REFLECTION_BASE[] =
+    $(file $(find-theory itt/reflection/experimental)/itt_hoas_theory)
+
+reflect_%.cmi reflect_%.cmiz: %.cmi $(addsuffixes .cmi .cmiz, $(REFLECTION_BASE))
+reflect_%.cmo: %.cmo $(addsuffix .cmi, $(REFLECTION_BASE))
+reflect_%.cmx reflect_%$(EXT_OBJ): %.cmx %$(EXT_OBJ) $(addsuffixes .cmi .cmx, $(REFLECTION_BASE))
+reflect_%.ppo: $(addsuffix .cmiz, $(REFLECTION_BASE))
+
 #
 # Compile an entire theory.
 #
@@ -409,17 +431,3 @@ section
     export COLLECTED_THEORIES
 
 MP_DIRS[] = $(COLLECTED_THEORIES)
-
-#
-# XXX HACK!!!
-#
-# The .cmoz/.cmx/.o for reflected theories depend on the same things as the one for the original ones.
-# Also, all the reflected theories depend on itt_hoas_theory
-#
-REFLECTION_BASE[] =
-    $(file $(find-theory itt/reflection/experimental)/itt_hoas_theory)
-
-reflect_%.cmi reflect_%.cmiz: %.cmi $(addsuffixes .cmi .cmiz, $(REFLECTION_BASE))
-reflect_%.cmo: %.cmo $(addsuffix .cmi, $(REFLECTION_BASE))
-reflect_%.cmx reflect_%$(EXT_OBJ): %.cmx %$(EXT_OBJ) $(addsuffixes .cmi .cmx, $(REFLECTION_BASE))
-reflect_%.ppo: $(addsuffix .cmiz, $(REFLECTION_BASE))

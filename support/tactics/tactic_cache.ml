@@ -74,12 +74,6 @@ open Refiner.Refiner.TermSubst
 open Refiner.Refiner.Rewrite
 open Refiner.Refiner.Refine
 
-(*
- * Debug statement.
- *)
-let _ =
-   show_loading "Loading Tactic_cache%t"
-
 (************************************************************************
  * TYPES                                                                *
  ************************************************************************)

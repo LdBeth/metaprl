@@ -49,12 +49,6 @@ open Filter_util
 open Tactic_type
 open Shell_sig
 
-(*
- * Show that the file is loading.
- *)
-let _ =
-   show_loading "Loading Package_info%t"
-
 let debug_package_info =
    create_debug (**)
       { debug_name = "package_info";

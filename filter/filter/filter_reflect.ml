@@ -90,7 +90,7 @@ let declare_parent cache loc item =
          Failure _ ->
             Stdpp.raise_with_loc loc (EmptyModulePath "Filter_reflect.declare_parent")
    in
-   let name = String.capitalize (reflect_prefix ^ String.uncapitalize name) in
+   let name = reflect_prefix ^ String.uncapitalize name in
    let path = head @ [name] in
       declare_parent_path cache loc path
 
@@ -140,7 +140,7 @@ let compile_sig_item info (item, loc) =
          ()
 
 let compile_sig info orig_info =
-   declare_parent_path info dummy_loc ["Itt_hoas_theory"];
+   declare_parent_path info dummy_loc ["itt_hoas_theory"];
    List.iter (compile_sig_item info) (info_items orig_info)
 
 (************************************************************************
@@ -169,7 +169,7 @@ let define_parent cache loc item =
          Failure _ ->
             Stdpp.raise_with_loc loc (EmptyModulePath "Filter_reflect.define_parent")
    in
-   let name = String.capitalize (reflect_prefix ^ String.uncapitalize name) in
+   let name = reflect_prefix ^ String.uncapitalize name in
    let path = head @ [name] in
       define_parent_path cache loc path
 
@@ -219,7 +219,7 @@ let compile_str_item info (item, loc) =
          ()
 
 let compile_str info orig_info =
-   define_parent_path info dummy_loc ["Itt_hoas_theory"];
+   define_parent_path info dummy_loc ["itt_hoas_theory"];
    List.iter (compile_str_item info) (info_items orig_info)
 
 (*

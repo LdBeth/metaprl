@@ -62,12 +62,6 @@ open Shell_sig
 let eprintf = Lm_printf.eprintf
 let eflush = Lm_printf.eflush
 
-(*
- * Show that the file is loading.
- *)
-let _ =
-   show_loading "Loading Proof_edit%t"
-
 let debug_edit =
    create_debug (**)
       { debug_name = "edit";

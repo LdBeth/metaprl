@@ -95,11 +95,8 @@ open Options_boot
 open Top_options
 
 (*
- * Debug statement.
+ * Debugging.
  *)
-let _ =
-   show_loading "Loading Top_conversionals%t"
-
 let debug_conv =
    create_debug (**)
       { debug_name = "conv";

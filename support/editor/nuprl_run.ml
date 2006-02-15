@@ -39,9 +39,6 @@ open Basic
 open Library
 open Nuprl5
 
-let _ =
-   show_loading "Loading Nuprl_run%t"
-
 exception NoTest
 exception Test of string
 

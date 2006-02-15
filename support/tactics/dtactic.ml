@@ -190,12 +190,6 @@ open Simp_typeinf
 open Typeinf
 open Browser_resource
 
-(*
- * Show that the file is loading.
- *)
-let _ =
-   show_loading "Loading Dtactic%t"
-
 let debug_dtactic =
    create_debug (**)
       { debug_name = "dtactic";

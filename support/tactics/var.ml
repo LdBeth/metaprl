@@ -68,12 +68,6 @@ open Tactic_type
 open Perv
 
 (*
- * Debug statement.
- *)
-let _ =
-   show_loading "Loading Var%t"
-
-(*
  * Generate a new variable disjoint from the given vars.
  *)
 let mem' vars v =

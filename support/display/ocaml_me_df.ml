@@ -37,9 +37,6 @@ extends Ocaml_mt_df
 
 open Lm_debug
 
-let _ =
-   show_loading "Loading Ocaml_me_df%t"
-
 (*
  * Projection.
  *)

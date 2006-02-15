@@ -74,11 +74,6 @@
 extends Ocaml
 extends Ocaml_base_df
 
-open Lm_debug
-
-let _ =
-   show_loading "Loading Ocaml_patt_df%t"
-
 (*
  * Special forms.
  *)

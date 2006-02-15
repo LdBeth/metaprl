@@ -78,12 +78,6 @@ open Refiner.Refiner.TermOp
 open Refiner.Refiner.TermMan
 open Tactic_type
 
-(*
- * Show that the file is loading.
- *)
-let _ =
-   show_loading "Loading Summary%t"
-
 (************************************************************************
  * HTML                                                                 *
  ************************************************************************)

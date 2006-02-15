@@ -130,9 +130,6 @@ open Browser_resource
 (*
  * Debugging.
  *)
-let _ =
-   show_loading "Loading Auto_tactic%t"
-
 let debug_auto =
    create_debug (**)
       { debug_name = "auto";

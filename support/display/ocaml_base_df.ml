@@ -35,9 +35,6 @@ extends Ocaml
 
 open Lm_debug
 
-let _ =
-   show_loading "Loading Ocaml_base_df%t"
-
 (*
  * Operators.
  *)

@@ -46,7 +46,7 @@ module Nuprl (Edit : ShellEditSig) = struct
    exception LibraryException of string
 
    let itt_bug = ref true
-   let _ = show_loading "Loading Nuprl_eval%t"
+   let _ = show_loading "Loading Nuprl_eval(Edit)%t"
    let library = null_oref ()
    let connection = null_oref ()
 

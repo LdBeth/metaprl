@@ -1567,7 +1567,9 @@ let implem_prolog proc _loc name =
                                 $lid:global_num_var$) =
                             Ml_term.term_arrays_of_string $str:String.escaped marshalled_terms$>>]
    in
-      <:str_item< value $lid:local_refiner_id$ = $refiner_expr _loc$ . null_refiner $str: name$ >> :: term_let
+      <:str_item< Lm_debug.show_loading $str: "Loading theory " ^ String.capitalize name ^ "%t"$ >>
+      :: <:str_item< value $lid:local_refiner_id$ = $refiner_expr _loc$ . null_refiner $str: name$ >>
+      :: term_let
 
 (*
  * Trailing declarations.
@@ -1585,7 +1587,8 @@ let implem_postlog proc _loc =
                   Theory.thy_group = $str:proc.imp_group$;
                   Theory.thy_groupdesc = $str:proc.imp_groupdesc$;
                   Theory.thy_refiner = $lid:refiner_id$
-               }>>]
+               }>>;
+            <:str_item< Lm_debug.show_loading $str: ("Finished loading " ^ String.capitalize proc.imp_name ^ "%t") $ >>]
 
 (*
  * Now extract the program.

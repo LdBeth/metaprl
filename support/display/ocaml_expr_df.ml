@@ -34,11 +34,6 @@
 extends Ocaml
 extends Ocaml_base_df
 
-open Lm_debug
-
-let _ =
-   show_loading "Loading OCaml_expr_df%t"
-
 (*
  * Special flags.
  *)

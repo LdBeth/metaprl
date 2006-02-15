@@ -62,12 +62,6 @@ open Dform
 open Lm_rformat
 open Simple_print
 
-(*
- * Show that the file is loading.
- *)
-let _ =
-   show_loading "Loading Base_dform%t"
-
 let debug_dform = load_debug "dform"
 
 (* @terms *)

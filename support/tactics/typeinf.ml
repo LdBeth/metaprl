@@ -61,12 +61,6 @@ open Tactic_type
 open Tactic_type.Tacticals
 open Tactic_type.Sequent
 
-(*
- * Show that the file is loading.
- *)
-let _ =
-   show_loading "Loading Typeinf%t"
-
 (************************************************************************
  * TYPES                                                                *
  ************************************************************************)

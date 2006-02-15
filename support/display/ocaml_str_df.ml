@@ -34,11 +34,6 @@ extends Ocaml
 extends Ocaml_base_df
 extends Ocaml_sig_df
 
-open Lm_debug
-
-let _ =
-   show_loading "Loading Ocaml_str_df%t"
-
 (*
  * Exception declarations name type constructors.
  *)

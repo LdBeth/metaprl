@@ -46,12 +46,6 @@ open Refiner.Refiner.Term
 open Refiner.Refiner.TermOp
 open Refiner.Refiner.TermSubst
 
-(*
- * Show that the file is loading.
- *)
-let _ =
-   show_loading "Loading Perv%t"
-
 (************************************************************************
  * DISPLAY FORMS
  *)
