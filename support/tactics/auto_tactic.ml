@@ -108,6 +108,7 @@ open Refiner.Refiner
 open Refiner.Refiner.RefineError
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
+open Refiner.Refiner.TermMan
 open Refiner.Refiner.TermMeta
 open Refiner.Refiner.TermOp
 open Refiner.Refiner.TermSubst
@@ -166,6 +167,7 @@ and auto_type =
 
 type nth_hyp_entry =
    NthImmediate of (int -> tactic)
+ | NthUncertain of (int -> tactic)
  | NthStep of tactic
  | NthStepTerm of (term -> tactic)
 
@@ -188,47 +190,43 @@ declare nthhyp_pair{'hyp;'concl}
 let mk_nthhyp_pair_term =
    mk_dep0_dep0_term (opname_of_term <<nthhyp_pair{'hyp;'concl}>>)
 
-let wrap_nth_hyp tac =
+let wrap_nth_hyp_uncertain tac =
+   NthUncertain tac
+
+let wrap_nth_hyp_certain tac =
    NthImmediate tac
 
 let extract_nth_hyp_data =
    let select_immediate = function
       NthImmediate _ -> true
+    | NthUncertain _
     | NthStep _
     | NthStepTerm _ -> false
+   in
+   let select_indep = function
+      NthImmediate _
+    | NthStep _
+    | NthStepTerm _ -> true
+    | NthUncertain _ -> false
    in
    let a = mk_var_term (Lm_symbol.add "t") in
    let self_term = mk_nthhyp_pair_term a a in
    let err = RefineError ("extract_nth_hyp_data", StringError "nthHypT tactic doesn't have an entry for this hypothesis/conclusion combination") in
    let err_assum = RefineError ("Auto_tactic.matchAssumsT", StringError "lengths do not match") in
-   let rec iter_assum cut assum i (c : nth_hyp_entry lazy_lookup) _ =
-      match c () with
-         Some (NthImmediate tac, cont) ->
-            (cut assum thenLT [nthAssumT i; tac (-1)]) orelseT funT (iter_assum cut assum i cont)
-       | Some (NthStep tac, cont) ->
-            (tac thenT nthAssumT i) orelseT funT (iter_assum cut assum i cont)
-       | Some (NthStepTerm tac, cont) ->
-            (tac assum thenT nthAssumT i) orelseT funT (iter_assum cut assum i cont)
-       | None ->
-            raise err
-   in
    let failT' _ = failT in
    (fun tbl ->
       let nth_hypT =
          match Term_match_table.lookup tbl select_immediate self_term with
             Some (NthImmediate tac) -> tac
-          | Some (NthStep _)
-          | Some (NthStepTerm _) (* Can not happen *) -> raise Not_found
+          | Some _ -> raise (Invalid_argument "nthHypT: internal error")
           | None -> failT'
-      in
-      let apply hyp i = function
-         NthImmediate tac -> tac i
-       | NthStep tac -> tac thenT nth_hypT i
-       | NthStepTerm tac -> tac hyp thenT nth_hypT i
       in
       let rec iterate hyp i (c : nth_hyp_entry lazy_lookup) _ =
          match c () with
-            Some (tac, cont) -> apply hyp i tac orelseT funT (iterate hyp i cont)
+            Some (NthImmediate tac, _) -> tac i
+          | Some (NthStep tac, _) -> tac thenT nth_hypT i
+          | Some (NthStepTerm tac, _) -> tac hyp thenT nth_hypT i
+          | Some (NthUncertain tac, cont) -> tac i orelseT funT (iterate hyp i cont)
           | None -> raise err
       in
       let rec somehyp hyps t i =
@@ -246,7 +244,10 @@ let extract_nth_hyp_data =
                         iterate_some hyps h t i (Term_match_table.lookup_all tbl select_all t')
       and iterate_some hyps hyp t i c =
          match c () with
-            Some (tac, cont) -> apply hyp i tac orelseT funT (keep_iterate_some hyps hyp t i cont)
+            Some (NthImmediate tac, _) -> tac i
+          | Some (NthStep tac, _) -> tac thenT nth_hypT i
+          | Some (NthStepTerm tac, _) -> tac hyp thenT nth_hypT i
+          | Some (NthUncertain tac, cont) -> tac i orelseT funT (keep_iterate_some hyps hyp t i cont)
           | None -> somehyp hyps t (i-1)
       and keep_iterate_some hyps hyp t i cont _ =
          iterate_some hyps hyp t i cont
@@ -261,7 +262,7 @@ let extract_nth_hyp_data =
                      iterate hyp i (Term_match_table.lookup_all tbl select_all t) p);
          nth_hyp_fun = (fun t1 t2 ->
             let t = mk_nthhyp_pair_term t1 t2 in
-               match Term_match_table.lookup tbl select_all t with
+               match Term_match_table.lookup tbl select_indep t with
                   Some _ -> true
                 | None -> false);
          some_nth_hyp = (fun p ->
@@ -288,7 +289,22 @@ let extract_nth_hyp_data =
                   nthAssumT i
                else
                   let t = mk_nthhyp_pair_term assum concl in
-                     iter_assum cut assum i (Term_match_table.lookup_all tbl select_all t) p);
+                     match Term_match_table.lookup_bucket tbl select_indep t with
+                        Some (NthStep tac :: _)
+                      | Some (_ :: NthStep tac :: _)
+                      | Some (_ :: _ :: NthStep tac :: _) ->
+                           tac thenT nthAssumT i
+                      | Some (NthStepTerm tac :: _)
+                      | Some (_ :: NthStepTerm tac :: _)
+                      | Some (_ :: _ :: NthStepTerm tac :: _) ->
+                           tac assum thenT nthAssumT i
+                      | Some (NthImmediate tac :: _) ->
+                           cut assum thenLT [nthAssumT i; tac (-1)]
+                      | Some (NthUncertain _ :: _)
+                      | Some [] ->
+                           raise (Invalid_argument "nthHypT: internal error")
+                      | None ->
+                           raise err);
       })
 
 let add_nth_hyp_data tbl (hyp,concl,tac) =
@@ -317,13 +333,23 @@ let explode t =
    let t = TermMan.explode_sequent t in
       SeqHyp.to_list t.sequent_hyps, t.sequent_concl
 
+
 let process_nth_hyp_resource_annotation ?labels name args term_args statement loc pre_tactic =
    let assums, goal = unzip_mfunction statement in
       rule_labels_not_allowed loc labels;
       match args.spec_ints, args.spec_addrs, term_args, List.map (fun (_, _, t) -> explode t) assums, explode goal with
-         [| _ |], [||], [], [], ([ Context _; Hypothesis(_,t1); Context _ ], t2) ->
-            [t1, t2, NthImmediate (fun i ->
-               Tactic_type.Tactic.tactic_of_rule pre_tactic { arg_ints = [| i |]; arg_addrs = [||] } [])]
+         [| _ |], [||], [], [], ([ Context _; Hypothesis(v,t1); Context _ ], t2) ->
+            let tac i =
+               Tactic_type.Tactic.tactic_of_rule pre_tactic { arg_ints = [| i |]; arg_addrs = [||] } []
+            in
+            let dependent =
+               is_var_free v t2 && not (
+                  is_so_var_term t2 &&
+                  match dest_so_var t2 with
+                     _, [_; _], [v'] -> is_var_term v' && Lm_symbol.eq v (dest_var v')
+                   | _ -> false)
+            in
+               [t1, t2, if dependent then NthUncertain tac else NthImmediate tac]
        | [||], [||], [], [ [Context _], t1 ], ( [Context _], t2) ->
             [t1, t2, NthStep (Tactic_type.Tactic.tactic_of_rule pre_tactic empty_rw_args [])]
        | [||], [||], _, [ [Context _], t1 ], ( [Context _], t2) ->

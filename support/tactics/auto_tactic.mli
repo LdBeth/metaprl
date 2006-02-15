@@ -65,7 +65,9 @@ type nth_hyp_result
 type nth_hyp_entry
 resource (term * term * nth_hyp_entry, nth_hyp_result) nth_hyp
 
-val wrap_nth_hyp : (int -> tactic) -> nth_hyp_entry
+(* Only use the "certain" form on tactics that will fully succeed on all the matches! *)
+val wrap_nth_hyp_certain   : (int -> tactic) -> nth_hyp_entry
+val wrap_nth_hyp_uncertain : (int -> tactic) -> nth_hyp_entry
 
 val process_nth_hyp_resource_annotation :
    (term * term * nth_hyp_entry) annotation_processor
