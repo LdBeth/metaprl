@@ -51,9 +51,10 @@ type intro_option =
 type elim_option =
    ThinOption of (int -> tactic)  (* Thin the eliminated hyp, unless overridden *)
  | ElimArgsOption of (tactic_arg -> term -> term list) * term option
+ | AutoOK (* It's OK to use this in autoT on "normal" level *)
 
 type intro_item = string * int option * rule_labels * auto_type * tactic
-type elim_item  = rule_labels * (int -> tactic)
+type elim_item  = rule_labels * bool * (int -> tactic)
 
 resource (term * elim_item, int -> tactic) elim
 resource (term * intro_item, tactic) intro

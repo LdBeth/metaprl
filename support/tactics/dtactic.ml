@@ -104,13 +104,16 @@ doc <:doc<
    type elim_option =
       ThinOption of (int -> tactic)
     | ElimArgsOption of (tactic_arg -> term -> term list) * term option
+    | AutoOK
    @end[verbatim]
    @end[center]
 
    The @tt[ElimArgsOption] provides arguments in the same way as the
    @tt[IntroArgsOption].  The @tt[ThinOption] is an argument that provides an
    optional tactic to ``thin'' the hypothesis after application of the
-   elimination rule.
+   elimination rule. The @tt[AutoOK] option specifies that the rule can be used
+   by @hreftactic[autoT] on @tt[AutoNormal] level (by default, elim rules will only
+   be used by @hreftactic[autoT] on @tt[AutoMustComplete] level).
 
    The @hreftactic[dT] resources are implemented as tables that store
    the term descriptions and tactics for ``decomposition''
@@ -213,41 +216,14 @@ type intro_option =
 type elim_option =
    ThinOption of (int -> tactic)
  | ElimArgsOption of (tactic_arg -> term -> term list) * term option
+ | AutoOK
 
 type intro_item = string * int option * rule_labels * auto_type * tactic
-type elim_item  = rule_labels * (int -> tactic)
+type elim_item  = rule_labels * bool * (int -> tactic)
 
 (************************************************************************
  * IMPLEMENTATION                                                       *
  ************************************************************************)
-
-(*
- * Extract a D tactic from the data.
- * The tactic checks for an optable.
- *)
-let extract_elim_data =
-   let select_options options (opts, _) =
-      rule_labels_are_allowed options opts
-   in
-   let rec firstiT i = function
-      [] ->
-         raise (Invalid_argument "extract_elim_data: internal error")
-    | [_, tac] ->
-         tac i
-    | (_, tac) :: tacs ->
-         tac i orelseT firstiT i tacs
-   in
-      (fun tbl ->
-            argfunT (fun i p ->
-                  let options = get_options p in
-                  let t = Sequent.nth_hyp p i in
-                     if !debug_dtactic then
-                        eprintf "Dtactic: elim: lookup %s%t" (SimplePrint.short_string_of_term t) eflush;
-                     match lookup_bucket tbl (select_options options) t with
-                        Some tacs ->
-                           firstiT i tacs
-                      | None ->
-                           raise (RefineError ("extract_elim_data", StringTermError ("D tactic doesn't know about", t)))))
 
 let d_in_auto p =
    match Sequent.get_int_arg p "d_auto" with
@@ -256,6 +232,33 @@ let d_in_auto p =
          true
     | _ ->
          false
+(*
+ * Extract a D tactic from the data.
+ * The tactic checks for an optable.
+ *)
+let extract_elim_data =
+   let select_options options d_in_auto (opts, auto_ok, _) =
+      ((not d_in_auto) || auto_ok) && rule_labels_are_allowed options opts
+   in
+   let rec firstiT i = function
+      [] ->
+         raise (Invalid_argument "extract_elim_data: internal error")
+    | [_, _, tac] ->
+         tac i
+    | (_, _, tac) :: tacs ->
+         tac i orelseT firstiT i tacs
+   in
+      (fun tbl ->
+            argfunT (fun i p ->
+                  let options = get_options p in
+                  let t = Sequent.nth_hyp p i in
+                     if !debug_dtactic then
+                        eprintf "Dtactic: elim: lookup %s%t" (SimplePrint.short_string_of_term t) eflush;
+                     match lookup_bucket tbl (select_options options (d_in_auto p)) t with
+                        Some tacs ->
+                           firstiT i tacs
+                      | None ->
+                           raise (RefineError ("extract_elim_data", StringTermError ("D tactic doesn't know about", t)))))
 
 let extract_intro_data =
    let select_intro p options in_auto_type (name, sel, opts, auto_type, _) =
@@ -513,8 +516,9 @@ let process_elim_resource_annotation ?(options = []) ?labels name args term_args
              | _ ->
                   raise (Invalid_argument (sprintf "Dtactic: %s: not an elimination rule" name))
          in
+         let auto_ok = List.mem AutoOK options in
          let options = rule_labels_of_opt_terms labels in
-            [t, (options, tac)]
+            [t, (options, auto_ok, tac)]
     | _ ->
          raise (Invalid_argument (sprintf "Dtactic.improve_elim: %s: must be an elimination rule" name))
 
@@ -534,7 +538,7 @@ let intro_must_option =
    ("mustOptionT", None, None, AutoNormal, mustOptionT)
 
 let wrap_elim ?labels tac =
-   rule_labels_of_opt_terms labels, tac
+   rule_labels_of_opt_terms labels, false, tac
 
 (*
  * Resources
@@ -595,6 +599,11 @@ let resource auto += [ {
    auto_name = "dT";
    auto_prec = d_prec;
    auto_tac = withIntT "d_auto" 1 (dT 0);
+   auto_type = AutoNormal;
+}; {
+   auto_name = "dT elim-simple";
+   auto_prec = d_elim_prec;
+   auto_tac = withIntT "d_auto" 1 (onSomeHypT dT);
    auto_type = AutoNormal;
 }; {
    auto_name = "dT complete";
