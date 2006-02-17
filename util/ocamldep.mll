@@ -48,7 +48,7 @@ let prl_cmi_names = [
    "Tactic_type";
    "Precedence";
    "Refiner";
-   "Mp_resource";
+   "Mp_resource"
 ]
 
 let prl_names = [
@@ -66,7 +66,7 @@ let prl_names = [
  *)
 let topval_names = [
    "Mptop";
-   "Shell_sig";
+   "Shell_sig"
 ]
 
 (*
@@ -77,7 +77,7 @@ let rule_names = [
    "Lm_symbol";
    "Rewriter_sig";
    "Perv";
-   "Top_resource";
+   "Top_resource"
 ]
 
 }
@@ -90,14 +90,20 @@ let quotestart = '<' ':' (['a'-'z'])+ '<'
 let filename = (['A'-'Z' 'a'-'z' '_' '-' '.' '0'-'9' '/'])*
 
 rule main = parse
-    "open" white+ | "include" white+
+    "open" white+
+  | "include" white+
   | "module" white+ modname white+ '=' white+
       { struct_name lexbuf; main lexbuf }
-  | "derive" white+ | "extends" white+
+  | "derive" white+
+  | "extends" white+
       { prl_struct_name lexbuf; main lexbuf }
   | "topval" white+
       { contains_topval := true; main lexbuf }
-  | white "prim" white+ | white "prim_rw" white+ | white "interactive" white+ | white "interactive_rw" white+ | white "derived" white+
+  | white "prim" white+
+  | white "prim_rw" white+
+  | white "interactive" white+
+  | white "interactive_rw" white+
+  | white "derived" white+
       { contains_topval := true; contains_rules := true ; main lexbuf }
   | "INCLUDE" white+
       { include_name lexbuf; main lexbuf }
@@ -121,13 +127,13 @@ rule main = parse
 
 and struct_name = parse
     modname
-      { add_structure(Lexing.lexeme lexbuf) }
+      { add_structure (Lexing.lexeme lexbuf) }
   | ""
       { () }
 
 and prl_struct_name = parse
     modname
-      { add_prl_structure(Lexing.lexeme lexbuf) }
+      { add_prl_structure (Lexing.lexeme lexbuf) }
   | ""
       { () }
 
@@ -185,17 +191,20 @@ let find_in_path path name name' =
       [] -> raise Not_found
     | dir::rem ->
         let fullname = Filename.concat dir name in
-        if Sys.file_exists fullname then fullname else
-        let fullname = Filename.concat dir name' in
-        if Sys.file_exists fullname then fullname else try_dir rem
-    in try_dir path
+        if Sys.file_exists fullname then
+           fullname
+        else
+           let fullname = Filename.concat dir name' in
+           if Sys.file_exists fullname then fullname else try_dir rem
+    in
+       try_dir path
 
 let rec find_file name = function
    [] ->
       raise Not_found
  | ext::exts ->
-      try Filename.chop_suffix (find_in_path !load_path ((String.uncapitalize name) ^ ext) (name ^ ext)) ext
-      with Not_found -> find_file name exts
+      try Filename.chop_suffix (find_in_path !load_path ((String.uncapitalize name) ^ ext) (name ^ ext)) ext with
+         Not_found -> find_file name exts
 
 let find_dependency_cmi modname deps =
    try
@@ -212,13 +221,13 @@ let find_dependency_cmiz modname deps =
 let find_dependency_cmo_cmx modname (cmo_deps,cmx_deps) =
    let cmi_file =
       try
-         Some ((find_file modname [".mli"; ".cmi"; ".mlz"; ".ml"; ".cmo"; ".cmx"])^".cmi")
+         Some ((find_file modname [".mli"; ".cmi"; ".mlz"; ".ml"; ".cmo"; ".cmx"]) ^ ".cmi")
       with Not_found ->
          None
    in
    let cmx_file =
       try
-         Some ((find_file modname [".ml"; ".cmx"; ".mlz"; ".cmo"])^".cmx")
+         Some ((find_file modname [".ml"; ".cmx"; ".mlz"; ".cmo"]) ^ ".cmx")
       with Not_found ->
          None
    in
@@ -228,7 +237,7 @@ let find_dependency_cmo_cmx modname (cmo_deps,cmx_deps) =
     | Some cmi, None ->
          cmi :: cmo_deps, cmi :: cmx_deps
     | None, Some _ ->
-         raise(Invalid_argument "Ocamldep.find_dependency_cmo_cmx: bug!")
+         raise (Invalid_argument "Ocamldep.find_dependency_cmo_cmx: bug!")
     | None, None ->
          cmo_deps, cmx_deps
 
@@ -280,6 +289,8 @@ let file_dependencies source_file =
     free_structures := StringSet.empty;
     prl_structures := StringSet.empty;
     includes := StringSet.empty;
+
+    (* Scan the file *)
     let basename, is_impl =
        if Filename.check_suffix source_file ".ml" then
           Filename.chop_suffix source_file ".ml", true
@@ -291,6 +302,8 @@ let file_dependencies source_file =
     let ic = open_in source_file in
     let lb = Lexing.from_channel ic in
     main lb;
+
+    (* Compute dependencies *)	
     free_structures := StringSet.union !free_structures !prl_structures;
     if !modules_flag then begin
        StringSet.iter (fun s -> print_string s; print_char ' ') !prl_structures;
@@ -305,15 +318,18 @@ let file_dependencies source_file =
     let includes = StringSet.fold find_include !includes [] in
     if is_impl then begin
       let init_deps,init_ppo_dep =
-        if Sys.file_exists (basename ^ ".mli")
-        then let cmi_name = basename ^ ".cmi" in (([cmi_name], [cmi_name]), [basename ^ ".cmiz"])
-        else (([], []), []) in
+        if Sys.file_exists (basename ^ ".mli") then
+           let cmi_name = basename ^ ".cmi" in (([cmi_name], [cmi_name]), [basename ^ ".cmiz"])
+        else
+           (([], []), []) in
       let (cmo_deps, cmx_deps) =
-        StringSet.fold find_dependency_cmo_cmx !free_structures init_deps in
+        StringSet.fold find_dependency_cmo_cmx !free_structures init_deps
+      in
       let ppo_deps =
          if !omake_flag then
             StringSet.fold find_dependency_cmiz !prl_structures init_ppo_dep
-         else cmo_deps
+         else
+            cmo_deps
       in
       (* XXX HACK: since we can not check whether the corresponding .mli contains "topval",
          in prl mode we always assume dependencies - at least on the .cmi
@@ -323,7 +339,8 @@ let file_dependencies source_file =
          if !prl_flag && !ml_topval_flag then
             let extra_deps = List.fold_right find_dependency_cmi topval_names [] in
                (extra_deps @ cmo_deps), (extra_deps @ cmx_deps)
-         else cmo_deps, cmx_deps
+         else
+            cmo_deps, cmx_deps
       in
       let ppo_deps, cmo_deps, cmx_deps =
          if !prl_flag then
