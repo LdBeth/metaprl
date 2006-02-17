@@ -37,7 +37,7 @@ fi
 # SSH="ssh -x -n -o BatchMode=yes `whoami`@localhost `pwd`/util/check-status.sh `pwd` update"
 SSH="`pwd`/util/check-status.sh `pwd` update"
 if [ "$MP_DEBUG" ]; then
-   SSH=$SSH MP_DEBUG "$MP_DEBUG"
+   SSH="$SSH MP_DEBUG $MP_DEBUG"
 fi
 if [ "$FOREGR" ]; then
    $SSH "$@" < /dev/null
