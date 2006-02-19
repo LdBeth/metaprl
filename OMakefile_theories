@@ -49,16 +49,16 @@ OCAMLDEPFLAGS += -prl
 #
 # Reflected theories
 #
-reflect_%.ppo reflect_%.cmoz: %.cmoz reflect_%.cmiz $(PRLCN) :optional: %.prla :effects: %.prlb :scanner: $(NOSCANNER)
+reflect_%.ppo reflect_%.cmoz: %.cmoz reflect_%.cmiz $(PRLCN) :optional: %.prla :effects: %.prlb :scanner: scan-ocaml-%.ml
    $(WrapC $(PRLCN)) --reflect -o $*.ppo $<
 
-reflect_%.cmi reflect_%.cmiz: %.cmiz $(PRLCN) :scanner: $(NOSCANNER)
+reflect_%.cmi reflect_%.cmiz: %.cmiz $(PRLCN) :scanner: scan-ocaml-%.mli
    $(ReflectC $(OCAMLC)) $(OCAMLFLAGS) $(OCAMLCFLAGS) $(OCAMLPPFLAGS) $(PREFIXED_OCAMLINCLUDES) -c -intf $<
 
-reflect_%.cmo: reflect_%.ppo :scanner: $(NOSCANNER)
+reflect_%.cmo: reflect_%.ppo :scanner: scan-ocaml-%.ml
    $(OCAMLC) $(OCAMLFLAGS) $(OCAMLCFLAGS) $(PREFIXED_OCAMLINCLUDES) -c -impl $<
 
-reflect_%.cmx reflect_%$(EXT_OBJ): reflect_%.ppo :scanner: $(NOSCANNER)
+reflect_%.cmx reflect_%$(EXT_OBJ): reflect_%.ppo :scanner: scan-ocaml-%.ml
    $(OCAMLOPT) $(OCAMLFLAGS) $(OCAMLOPTFLAGS) $(PREFIXED_OCAMLINCLUDES) -c -impl $<
 
 reflect_%.p4i: %.cmiz $(PRLCO) :value: $(prlc-deps)
@@ -306,26 +306,6 @@ find-theories(names) =
             find-theory($(name))
     return $(dirs)
 
-
-#
-# XXX HACK!!!
-#
-# The .cmoz/.cmx/.o for reflected theories depend on the same things as the one for the original ones.
-# Also, all the reflected theories depend on itt_hoas_theory
-
-#
-# JYH: comment out, because it is too specific.
-# Not all files called reflect_* depend on HOAS (we want
-# to allow for hardcoding something else).  In particular,
-# this fails on Reflect_base_theory.
-#
-# REFLECTION_BASE[] =
-#     $(file $(find-theory itt/reflection/experimental)/itt_hoas_theory)
-# 
-# reflect_%.cmi reflect_%.cmiz: %.cmi $(addsuffixes .cmi .cmiz, $(REFLECTION_BASE))
-# reflect_%.cmo: %.cmo $(addsuffix .cmi, $(REFLECTION_BASE))
-# reflect_%.cmx reflect_%$(EXT_OBJ): %.cmx %$(EXT_OBJ) $(addsuffixes .cmi .cmx, $(REFLECTION_BASE))
-# reflect_%.ppo: $(addsuffix .cmiz, $(REFLECTION_BASE))
 
 #
 # Compile an entire theory.
