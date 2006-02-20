@@ -364,18 +364,8 @@ let define_parent info loc item =
 let parse_rule info loc name mt args =
    (* Check with the refiner first for rewrite errors *)
    let cvars = context_vars mt in
-      SymbolSet.iter (fun v ->
-            eprintf "Context var: %a@." pp_print_symbol v) (fst cvars);
    let params = extract_params cvars args in
    let terms = collect_terms params in
-      List.iter (fun t ->
-            match t with
-               IntParam v ->
-                  eprintf "parse_rule: int param: %a@." pp_print_symbol v
-             | AddrParam v ->
-                  eprintf "parse_rule: addr param: %a@." pp_print_symbol v
-             | TermParam t ->
-                  eprintf "parse_rule: term param: %s@." (SimplePrint.string_of_term t)) params;
       Refine.check_rule name (collect_cvars params) terms (strip_mfunction mt);
 
       (* Then check for type errors *)
@@ -555,7 +545,6 @@ let add_elim info loc name t_logic rules =
 
    (* Build the rule *)
    let h_v, mt = Filter_reflection.mk_elim_thm info.info_parse_info t_logic rules in
-   eprintf "Context: %a@." pp_print_symbol h_v;
    let params = [mk_so_var_term h_v [] []] in
    let _, mt, params = parse_rule info loc rule_name mt params in
 

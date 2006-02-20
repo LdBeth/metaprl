@@ -475,6 +475,7 @@ let summ_reflect summ =
    in
 
    (* Add dependency on the original file and the reflected theories *)
+      Format.eprintf "Reflect: %s@." basename;
    let prl_structures = StringSet.add (String.capitalize basename) prl_structures in
    let prl_structures =
       List.fold_left (fun set name -> StringSet.add name set) prl_structures reflect_names
