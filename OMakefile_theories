@@ -79,10 +79,10 @@ reflect_%.p4: %.cmoz reflect_%.cmiz $(PRLCO) :value: $(prlc-deps)
 %.cmi %.cmiz: %.mli :scanner: scan-ocaml-%.mli
    $(PrlC $(OCAMLC)) $(OCAMLFLAGS) $(OCAMLCFLAGS) $(OCAMLPPFLAGS) $(PREFIXED_OCAMLINCLUDES) -c $<
 
-%.cmo: %.ppo :squash: %.ml :scanner: scan-ocaml-%.ml
+%.cmo: %.ppo %.ml :scanner: scan-ocaml-%.ml
    $(OCAMLC) $(OCAMLFLAGS) $(OCAMLCFLAGS) $(PREFIXED_OCAMLINCLUDES) -c -impl $<
 
-%.cmx %$(EXT_OBJ): %.ppo :squash: %.ml :scanner: scan-ocaml-%.ml
+%.cmx %$(EXT_OBJ): %.ppo %.ml :scanner: scan-ocaml-%.ml
    $(OCAMLOPT) $(OCAMLFLAGS) $(OCAMLOPTFLAGS) $(PREFIXED_OCAMLINCLUDES) -c -impl $<
 
 #
