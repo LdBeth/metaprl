@@ -381,35 +381,24 @@ let find_include name =
 let add_dependency_include dst src table =
    match find_include src with
       Some src ->
-         add_dependency table dst src
-    | None ->
-         table
-
-let add_dependency_include2 dst1 dst2 src table =
-   match find_include src with
-      Some src ->
-         add_dependency (add_dependency table dst1 src) dst2 src
+         List.fold_left (fun table dst ->
+               add_dependency table dst src) table dst
     | None ->
          table
 
 let add_dependency_cmi dst src table =
    match find_dependency_cmi src with
       Some src ->
-         add_dependency table dst src
+         List.fold_left (fun table dst ->
+               add_dependency table dst src) table dst
     | None ->
          table
 
 let add_dependency_cmiz dst src table =
    match find_dependency_cmiz src with
       Some src ->
-         add_dependency table dst src
-    | None ->
-         table
-
-let add_dependency_cmiz2 dst1 dst2 src table =
-   match find_dependency_cmiz src with
-      Some src ->
-         add_dependency (add_dependency table dst1 src) dst2 src
+         List.fold_left (fun table dst ->
+               add_dependency table dst src) table dst
     | None ->
          table
 
@@ -567,14 +556,14 @@ let add_intf_dependencies table summ =
          summ_includes        = includes
        } = summ
    in
-   let name_cmi = basename ^ ".cmi" in
-   let name_ppi = basename ^ ".ppi" in
+   let name_cmi  = basename ^ ".cmi" in
+   let name_ppi  = basename ^ ".ppi" in
    let name_cmiz = basename ^ ".cmiz" in
-   let table = StringSet.fold (add_dependency_include name_cmi) includes table in
-   let table = StringSet.fold (add_dependency_cmi name_cmi) free_structures table in
+   let table = StringSet.fold (add_dependency_include [name_cmi]) includes table in
+   let table = StringSet.fold (add_dependency_cmi [name_cmi]) free_structures table in
    let table =
       if options.opt_omake_flag && options.opt_prl_flag then
-         StringSet.fold (add_dependency_cmiz2 name_cmiz name_ppi) prl_structures table
+         StringSet.fold (add_dependency_cmiz [name_cmiz; name_ppi]) prl_structures table
       else
          table
    in
@@ -615,15 +604,15 @@ let add_impl_dependencies table summ =
 
    (* The .ppo depends on the .cmiz files for the PRL modules *)
    let table =
-      StringSet.fold (add_dependency_cmiz name_ppo) prl_structures table
+      StringSet.fold (add_dependency_cmiz [name_ppo]) prl_structures table
    in
 
    (* Add the includes *)
    let table =
       if options.opt_prl_flag then
-         StringSet.fold (add_dependency_include name_ppo) includes table
+         StringSet.fold (add_dependency_include [name_ppo]) includes table
       else
-         StringSet.fold (add_dependency_include2 name_cmo name_cmx) includes table
+         StringSet.fold (add_dependency_include [name_cmo; name_cmx]) includes table
    in
       table
 

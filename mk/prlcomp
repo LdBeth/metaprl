@@ -47,14 +47,3 @@ PrlC(command) =
    COMMAND[] = prlcomp $(command) -pp $(quote-argv $(CAMLP4N) $(LOC))
 
    return($(COMMAND))
-
-#
-# Create a reflected theory.
-#
-ReflectC(command) =
-   #
-   # Put together the command
-   #
-   COMMAND[] = prlcomp $(command) -pp $(quote-argv $(PRLCN) --reflect)
-
-   return($(COMMAND))
