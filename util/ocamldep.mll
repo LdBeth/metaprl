@@ -113,6 +113,9 @@ let rule_names =
 let reflect_names =
    ["Itt_hoas_theory"]
 
+let reflect_modules =
+   ["Basic_tactics"]
+
 (*
  * Actual dependency table.
  *)
@@ -475,8 +478,13 @@ let summ_reflect summ =
    let prl_structures =
       List.fold_left (fun set name -> StringSet.add name set) prl_structures reflect_names
    in
+
+   (* The theories will be extending Basic_tactics *)
+   let free_structures =
+      List.fold_left (fun set name -> StringSet.add name set) StringSet.empty reflect_modules
+   in
       { summ with summ_basename = reflect_prefix ^ basename;
-                  summ_free_structures = StringSet.empty;
+                  summ_free_structures = free_structures;
                   summ_prl_structures  = prl_structures;
                   summ_includes        = StringSet.empty;
                   summ_contains_topval = false

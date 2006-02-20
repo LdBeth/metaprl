@@ -134,6 +134,7 @@ let compile_str name =
 let compile_reflect_sig name =
    let cache = SigFilterCache.create !include_path in
    let orig_path = Lm_filename_util.root name in
+   let orig_base = Lm_filename_util.basename orig_path in
    let orig_info = SigFilterCache.load cache () orig_path InterfaceType AnySuffix in
 
    (* Create the new cache *)
@@ -143,7 +144,7 @@ let compile_reflect_sig name =
 
    (* Process the file *)
    let () =
-      Filter_reflect.compile_sig new_info (SigFilterCache.info orig_info);
+      Filter_reflect.compile_sig new_info orig_base (SigFilterCache.info orig_info);
       SigFilterCache.save new_info () AnySuffix
    in
 
@@ -173,6 +174,7 @@ let copy_proof proof1 proof2 =
 let compile_reflect_str name =
    let cache = StrFilterCache.create !include_path in
    let orig_path = Lm_filename_util.root name in
+   let orig_base = Lm_filename_util.basename orig_path in
    let orig_info = StrFilterCache.load cache () orig_path ImplementationType AnySuffix in
 
    (* Create the new cache *)
@@ -182,7 +184,7 @@ let compile_reflect_str name =
 
    (* Process the file *)
    let () =
-      Filter_reflect.compile_str new_info (StrFilterCache.info orig_info)
+      Filter_reflect.compile_str new_info orig_base (StrFilterCache.info orig_info)
    in
 
    (*

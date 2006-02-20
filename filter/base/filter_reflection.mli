@@ -52,7 +52,7 @@ val is_xquote0_term : term -> bool
 (*
  * Reflection processing.
  *)
-val dest_xquote_term : parse_state -> term -> term
+val dest_xquote_term  : parse_state -> term -> term
 val dest_xquote0_term : parse_state -> term -> term
 
 (*

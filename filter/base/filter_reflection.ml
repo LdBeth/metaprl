@@ -1080,7 +1080,7 @@ let mk_type_check_thm info quote =
                         hyps, vars, succ index) ([Context (h_v, [], [])], [], 1) bvars
             in
             let bvars = List.fold_left (fun bvars v -> mk_var_term v :: bvars) [] vars in
-            let t = mk_so_var_term (Lm_symbol.make "b" index) [default_contexts] bvars in
+            let t = mk_so_var_term (Lm_symbol.make "b" index) [h_v] bvars in
             let concl = Reflect.mk_meta_member_term info t ty in
             let seq_info =
                { sequent_args = q_arg;
