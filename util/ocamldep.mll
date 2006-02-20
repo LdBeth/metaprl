@@ -464,6 +464,7 @@ let reflect_module_name name =
 
 let summ_reflect summ =
    let { summ_basename       = basename;
+         summ_is_impl        = is_impl;
          summ_prl_structures = prl_structures
        } = summ
    in
@@ -481,9 +482,12 @@ let summ_reflect summ =
 
    (* The theories will be extending Basic_tactics *)
    let free_structures =
-      List.fold_left (fun set name -> StringSet.add name set) StringSet.empty reflect_modules
+      if is_impl then
+         List.fold_left (fun set name -> StringSet.add name set) StringSet.empty reflect_modules
+      else
+         StringSet.empty
    in
-      { summ with summ_basename = reflect_prefix ^ basename;
+      { summ with summ_basename        = reflect_prefix ^ basename;
                   summ_free_structures = free_structures;
                   summ_prl_structures  = prl_structures;
                   summ_includes        = StringSet.empty;

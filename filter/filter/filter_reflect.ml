@@ -26,6 +26,7 @@
  *)
 open Lm_debug
 open Lm_printf
+open Lm_symbol
 
 open Term_sig
 open Term_ty_sig
@@ -67,6 +68,11 @@ let debug_filter_reflect =
  * Show the file loading.
  *)
 let () = show_loading "Loading Filter_reflect%t"
+
+(*
+ * Variables.
+ *)
+let var_p = Lm_symbol.add "p"
 
 (************************************************************************
  * Base term grammar
@@ -136,6 +142,16 @@ let reflect_filename orig_path =
    let new_base = reflect_prefix ^ old_base in
    let new_path = Lm_filename_util.replace_basename orig_path new_base in
       new_base, new_path
+
+(*
+ * Check whether the location of an exn is already defined.
+ *)
+let not_exn_located exn =
+   match exn with
+      Stdpp.Exc_located _ ->
+         false
+    | _ ->
+         true
 
 (************************************************************************
  * Signature conversion.
@@ -284,7 +300,7 @@ let check_rule info loc mt terms =
    info.info_parsing_state.check_rule loc mt terms
 
 (*
- * Add a parent.
+ * Add an ML open command.
  *)
 let add_open info _loc name =
    let cache = info.info_cache in
@@ -292,6 +308,21 @@ let add_open info _loc name =
       StrFilterCache.add_command cache (SummaryItem (bind_item item), _loc)
 
 (*
+ * Adding to the cache.
+ *)
+let declare_define_term info shapeclass ty_term =
+   StrFilterCache.declare_term info.info_cache shapeclass ty_term
+
+let define_term info loc shapeclass name ty_term contractum res =
+   let term_def =
+      { term_def_name = name;
+        term_def_value = contractum;
+        term_def_resources = res
+      }
+   in
+      StrFilterCache.add_command info.info_cache (DefineTerm (shapeclass, ty_term, term_def), loc)
+
+(************************************************
  * The parents are the _reflected_ theories.
  *)
 let define_parent_path info loc path =
@@ -323,23 +354,38 @@ let define_parent info loc item =
    let path = head @ [name] in
       define_parent_path info loc path
 
-(*
- * Adding to the cache.
+(************************************************
+ * Rule reflection.
  *)
-let declare_define_term info shapeclass ty_term =
-   StrFilterCache.declare_term info.info_cache shapeclass ty_term
-
-let define_term info loc shapeclass name ty_term contractum res =
-   let term_def =
-      { term_def_name = name;
-        term_def_value = contractum;
-        term_def_resources = res
-      }
-   in
-      StrFilterCache.add_command info.info_cache (DefineTerm (shapeclass, ty_term, term_def), loc)
 
 (*
- * A primitive rule specifies the extract.
+ * Type checking.
+ *)
+let parse_rule info loc name mt args =
+   (* Check with the refiner first for rewrite errors *)
+   let cvars = context_vars mt in
+      SymbolSet.iter (fun v ->
+            eprintf "Context var: %a@." pp_print_symbol v) (fst cvars);
+   let params = extract_params cvars args in
+   let terms = collect_terms params in
+      List.iter (fun t ->
+            match t with
+               IntParam v ->
+                  eprintf "parse_rule: int param: %a@." pp_print_symbol v
+             | AddrParam v ->
+                  eprintf "parse_rule: addr param: %a@." pp_print_symbol v
+             | TermParam t ->
+                  eprintf "parse_rule: term param: %s@." (SimplePrint.string_of_term t)) params;
+      Refine.check_rule name (collect_cvars params) terms (strip_mfunction mt);
+
+      (* Then check for type errors *)
+      check_input_mterm info loc mt;
+      check_input_terms info loc terms;
+      check_rule info loc mt terms;
+      cvars, mt, List.map erase_arg_term args
+
+(*
+ * Build the command that becomes part of the summary.
  *)
 let rule_command name params mt pf res =
    let cvars = context_vars mt in
@@ -351,6 +397,9 @@ let rule_command name params mt pf res =
              rule_resources = res
       }
 
+(*
+ * Add the rule definition to the summary.
+ *)
 let define_rule info loc name
     (params : term list)
     (mterm : meta_term)
@@ -385,22 +434,6 @@ let define_thm info loc name params mterm s res =
 
 let define_int_thm info loc name params mterm res =
    define_rule info loc name params mterm Incomplete res
-
-(*
- * Type checking.
- *)
-let parse_rule info loc name mt args =
-   (* Check with the refiner first for rewrite errors *)
-   let cvars = context_vars mt in
-   let params = extract_params cvars args in
-   let terms = collect_terms params in
-      Refine.check_rule name (collect_cvars params) terms (strip_mfunction mt);
-
-      (* Then check for type errors *)
-      check_input_mterm info loc mt;
-      check_input_terms info loc terms;
-      check_rule info loc mt terms;
-      cvars, mt, List.map erase_arg_term args
 
 (*
  * Add a term definition.  The term is defined in the parent theory.
@@ -458,8 +491,134 @@ let add_declare info rules loc quote =
    in
       add_prim_rule info rules loc item
 
+(************************************************
+ * Postprocessing.  This adds:
+ *    1. A membership theorem for each rule in the logic
+ *    2. A "pretty" reflected introduction rule
+ *    3. An elimination rule
+ *)
+
 (*
- * Compile each of the items in the summary.
+ * Add a logic membership rule.
+ *)
+let add_mem_logic info logic_name t_logic loc item =
+   let { ref_rule_name = name } = item in
+   let opname = Opname.mk_opname name (opname_prefix info loc) in
+   let t_rule = mk_term (mk_op opname []) [] in
+   let mt = Filter_reflection.mk_mem_logic_thm info.info_parse_info t_logic t_rule in
+   let tac =
+      Printf.sprintf "mem_logic_trans << %s >>
+then_OnLastT (rwh unfold_%s 0 thenT mem_rules_logic)
+thenT autoT" (**)
+         logic_name logic_name
+   in
+   let name = Printf.sprintf "mem_%s_%s" name logic_name in
+   let res = intro_resources loc in
+      define_thm info loc name [] mt tac res
+
+let add_mem_logic info logic_name t_logic (loc, item) =
+   try add_mem_logic info logic_name t_logic loc item with
+      exn when not_exn_located exn ->
+         Stdpp.raise_with_loc loc exn
+
+(*
+ * Add an introduction rule in "Provable" form.
+ *)
+let add_intro info t_logic loc item =
+   let { ref_rule_name      = name;
+         ref_rule_params    = params;
+         ref_rule_resources = res;
+         ref_rule_term      = mt
+       } = item
+   in
+   let rule_name = "intro_" ^ name in
+   let cvars, mt_rule, params = parse_rule info loc rule_name mt params in
+   let _, mt = Filter_reflection.mk_intro_thm info.info_parse_info t_logic mt_rule in
+   let mt, params, _ = mterms_of_parsed_mterms (fun _ -> true) mt params in
+   let tac = Printf.sprintf "provableRuleT << %s >> unfold_%s" name name in
+      define_thm info loc rule_name params mt tac res;
+      mt_rule
+
+let add_intro info t_logic (loc, item) =
+   try add_intro info t_logic loc item with
+      exn when not_exn_located exn ->
+         Stdpp.raise_with_loc loc exn
+
+(*
+ * Add an elimination rule for proof induction.
+ *)
+let add_elim info loc name t_logic rules =
+   let rule_name = "elim_" ^ name in
+
+   (* TODO: add to elim resource *)
+   let res = no_resources in
+
+   (* Build the rule *)
+   let h_v, mt = Filter_reflection.mk_elim_thm info.info_parse_info t_logic rules in
+   eprintf "Context: %a@." pp_print_symbol h_v;
+   let params = [mk_so_var_term h_v [] []] in
+   let _, mt, params = parse_rule info loc rule_name mt params in
+
+   (* TODO: more accurate tactic *)
+   let tac = "elimRuleT" in
+      define_thm info loc rule_name params mt tac res
+
+let add_elim info loc name t_logic rules =
+   try add_elim info loc name t_logic rules with
+      exn when not_exn_located exn ->
+         Stdpp.raise_with_loc loc exn
+
+(*
+ * Postprocessing theorems.
+ *)
+let postprocess_rules info current loc name items =
+   (* Collect all the names of the term, and build a logic *)
+   let rules =
+      List.fold_left (fun terms (loc, item) ->
+            let name = item.ref_rule_name in
+            let opname = Opname.mk_opname name (opname_prefix info loc) in
+            let t = mk_term (mk_op opname []) [] in
+               t :: terms) [] items
+   in
+   let rules = List.rev rules in
+   let t_rules = Filter_reflection.mk_rules_logic_term info.info_parse_info rules current in
+
+   (* Define the logic term *)
+   let opname = Opname.mk_opname name (opname_prefix info loc) in
+   let t_logic = mk_term (mk_op opname []) [] in
+
+   (* Define the logic *)
+   let quote =
+      { ty_term   = t_logic;
+        ty_opname = opname;
+        ty_params = [];
+        ty_bterms = [];
+        ty_type   = term_type
+      }
+   in
+   let sc = shape_normal in
+   let () = declare_define_term info sc quote in
+   let () = define_term info loc sc ("unfold_" ^ name) quote t_rules no_resources in
+
+   (* State that it is a logic *)
+   let name_wf = "wf_" ^ name in
+   let logic_wf = Filter_reflection.mk_logic_wf_thm info.info_parse_info t_logic in
+   let _, logic_wf, _ = parse_rule info loc name_wf logic_wf [] in
+   let logic_res = intro_resources loc in
+   let logic_tac = Printf.sprintf "rwh unfold_%s 0 thenT autoT" name in
+   let () = define_thm info loc name_wf [] logic_wf logic_tac logic_res in
+
+   (* Add a membership term for each of the rules *)
+   let () = List.iter (add_mem_logic info name t_logic) items in
+
+   (* Add an introduction form for each of the rules *)
+   let rules = List.map (add_intro info t_logic) items in
+
+      (* Add an elimination rule for the entire logic *)
+      add_elim info loc name t_logic rules
+
+(************************************************
+ * Process the summary.
  *)
 let compile_str_item info rules item loc =
    match item with
@@ -533,11 +692,7 @@ let compile_str_item info rules item loc =
 
 let compile_str_item info rules (item, loc) =
    try compile_str_item info rules item loc with
-      exn when (match exn with
-                   Stdpp.Exc_located _ ->
-                      false
-                 | _ ->
-                      true) ->
+      exn when not_exn_located exn ->
          Stdpp.raise_with_loc loc exn
 
 let compile_str cache orig_name orig_info =
@@ -547,8 +702,10 @@ let compile_str cache orig_name orig_info =
       define_parent_path info dummy_loc [orig_name];
       add_open info dummy_loc "Basic_tactics"
    in
-   let _rules = List.fold_left (compile_str_item info) [] (info_items orig_info) in
-      ()
+   let rules = List.fold_left (compile_str_item info) [] (info_items orig_info) in
+   let rules = List.rev rules in
+   let current = Filter_reflection.mk_empty_logic_term info.info_parse_info in
+      postprocess_rules info current dummy_loc orig_name rules
 
 (*
  * -*-
