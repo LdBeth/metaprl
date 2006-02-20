@@ -406,6 +406,13 @@ let add_dependency_cmiz dst src table =
     | None ->
          table
 
+let add_dependency_cmiz2 dst1 dst2 src table =
+   match find_dependency_cmiz src with
+      Some src ->
+         add_dependency (add_dependency table dst1 src) dst2 src
+    | None ->
+         table
+
 let add_dependency_cmo_cmx dst_cmo dst_cmx src table =
    let cmi_file = find_dependency_cmi src in
    let cmx_file = find_dependency_cmx src in
@@ -475,7 +482,6 @@ let summ_reflect summ =
    in
 
    (* Add dependency on the original file and the reflected theories *)
-      Format.eprintf "Reflect: %s@." basename;
    let prl_structures = StringSet.add (String.capitalize basename) prl_structures in
    let prl_structures =
       List.fold_left (fun set name -> StringSet.add name set) prl_structures reflect_names
@@ -562,12 +568,13 @@ let add_intf_dependencies table summ =
        } = summ
    in
    let name_cmi = basename ^ ".cmi" in
+   let name_ppi = basename ^ ".ppi" in
    let name_cmiz = basename ^ ".cmiz" in
    let table = StringSet.fold (add_dependency_include name_cmi) includes table in
    let table = StringSet.fold (add_dependency_cmi name_cmi) free_structures table in
    let table =
       if options.opt_omake_flag && options.opt_prl_flag then
-         StringSet.fold (add_dependency_cmiz name_cmiz) prl_structures table
+         StringSet.fold (add_dependency_cmiz2 name_cmiz name_ppi) prl_structures table
       else
          table
    in
@@ -681,7 +688,7 @@ let () =
 (*
  * -*-
  * Local Variables:
- * Mode: caml
+ * Mode: caml-mode
  * Fill-column: 100
  * End:
  * -*-

@@ -52,8 +52,11 @@ OCAMLDEPFLAGS += -prl
 reflect_%.ppo reflect_%.cmoz: %.cmoz reflect_%.cmiz $(PRLCN) :optional: %.prla :effects: %.prlb :scanner: scan-ocaml-%.ml
    $(WrapC $(PRLCN)) --reflect -o $*.ppo $<
 
-reflect_%.cmi reflect_%.cmiz: %.cmiz $(PRLCN) :scanner: scan-ocaml-%.mli
-   $(ReflectC $(OCAMLC)) $(OCAMLFLAGS) $(OCAMLCFLAGS) $(OCAMLPPFLAGS) $(PREFIXED_OCAMLINCLUDES) -c -intf $<
+reflect_%.ppi reflect_%.cmiz: %.cmiz $(PRLCN) :scanner: scan-ocaml-%.mli
+   $(WrapC $(PRLCN)) --reflect -o $*.ppi $<
+
+reflect_%.cmi: reflect_%.ppi :scanner: scan-ocaml-%.ml
+   $(OCAMLC) $(OCAMLFLAGS) $(OCAMLCFLAGS) $(PREFIXED_OCAMLINCLUDES) -c -intf $<
 
 reflect_%.cmo: reflect_%.ppo :scanner: scan-ocaml-%.ml
    $(OCAMLC) $(OCAMLFLAGS) $(OCAMLCFLAGS) $(PREFIXED_OCAMLINCLUDES) -c -impl $<
@@ -76,10 +79,10 @@ reflect_%.p4: %.cmoz reflect_%.cmiz $(PRLCO) :value: $(prlc-deps)
 %.cmi %.cmiz: %.mli :scanner: scan-ocaml-%.mli
    $(PrlC $(OCAMLC)) $(OCAMLFLAGS) $(OCAMLCFLAGS) $(OCAMLPPFLAGS) $(PREFIXED_OCAMLINCLUDES) -c $<
 
-%.cmo: %.ppo %.ml :scanner: scan-ocaml-%.ml
+%.cmo: %.ppo :squash: %.ml :scanner: scan-ocaml-%.ml
    $(OCAMLC) $(OCAMLFLAGS) $(OCAMLCFLAGS) $(PREFIXED_OCAMLINCLUDES) -c -impl $<
 
-%.cmx %$(EXT_OBJ): %.ppo %.ml :scanner: scan-ocaml-%.ml
+%.cmx %$(EXT_OBJ): %.ppo :squash: %.ml :scanner: scan-ocaml-%.ml
    $(OCAMLOPT) $(OCAMLFLAGS) $(OCAMLOPTFLAGS) $(PREFIXED_OCAMLINCLUDES) -c -impl $<
 
 #
