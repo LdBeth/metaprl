@@ -51,6 +51,7 @@ type intro_option =
 
 type elim_option =
    ThinOption of (int -> tactic)  (* Thin the eliminated hyp, unless overridden *)
+ | ThinFirst of (int -> tactic)   (* Try thinning before eliminating; thinning will be added to AutoNormal *)
  | ElimArgsOption of (tactic_arg -> term -> term list) * term option
  | AutoOK (* It's OK to use this in autoT on "normal" level *)
 

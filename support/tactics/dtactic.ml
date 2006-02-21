@@ -103,6 +103,7 @@ doc <:doc<
    @begin[verbatim]
    type elim_option =
       ThinOption of (int -> tactic)
+    | ThinFirst of (int -> tactic)
     | ElimArgsOption of (tactic_arg -> term -> term list) * term option
     | AutoOK
    @end[verbatim]
@@ -113,7 +114,10 @@ doc <:doc<
    optional tactic to ``thin'' the hypothesis after application of the
    elimination rule. The @tt[AutoOK] option specifies that the rule can be used
    by @hreftactic[autoT] on @tt[AutoNormal] level (by default, elim rules will only
-   be used by @hreftactic[autoT] on @tt[AutoMustComplete] level).
+   be used by @hreftactic[autoT] on @tt[AutoMustComplete] level). The @tt[ThinFirst]
+   option specifies that the rule only makes sense when something actually depends on
+   the variable introduced by the given hypothesis; otherwise the hypothesis should be
+   simply thinned.
 
    The @hreftactic[dT] resources are implemented as tables that store
    the term descriptions and tactics for ``decomposition''
@@ -215,6 +219,7 @@ type intro_option =
 
 type elim_option =
    ThinOption of (int -> tactic)
+ | ThinFirst of (int -> tactic)
  | ElimArgsOption of (tactic_arg -> term -> term list) * term option
  | AutoOK
 
@@ -471,6 +476,17 @@ let process_elim_resource_annotation ?(options = []) ?labels name args term_args
             in
                collect options
          in
+         let thinFirstT =
+            let rec collect = function
+               ThinFirst thinT :: _ ->
+                  Some thinT
+             | _ :: t ->
+                  collect t
+             | [] ->
+                  None
+            in
+               collect options
+         in
          let tac =
             match args.spec_ints, thinT with
                [| _ |], None ->
@@ -518,7 +534,14 @@ let process_elim_resource_annotation ?(options = []) ?labels name args term_args
          in
          let auto_ok = List.mem AutoOK options in
          let options = rule_labels_of_opt_terms labels in
-            [t, (options, auto_ok, tac)]
+            begin match thinFirstT with 
+               Some thinT when auto_ok ->
+                   [t, (options, true, (fun i -> thinT i orelseT tac i))]
+             | Some thinT ->
+                   [t, (options, true, thinT); t, (options, auto_ok, tac)]
+             | None ->
+                   [t, (options, auto_ok, tac)]
+            end
     | _ ->
          raise (Invalid_argument (sprintf "Dtactic.improve_elim: %s: must be an elimination rule" name))
 
