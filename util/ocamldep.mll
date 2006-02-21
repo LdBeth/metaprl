@@ -337,7 +337,7 @@ let print_dependencies table =
 (************************************************************************
  * Find files in the search path.
  *)
-let find_in_path path names =
+let find_in_path path names ext =
    let rec try_dir = function
       [] ->
          None
@@ -345,9 +345,9 @@ let find_in_path path names =
          let rec search names =
             match names with
                (name, realname) :: names ->
-                  let fullname = Filename.concat dir name in
+                  let fullname = Filename.concat dir name ^ ext in
                      if Sys.file_exists fullname then
-                        Some (Filename.concat dir realname)
+                        Some (dir, realname)
                      else
                         search names
              | [] ->
@@ -366,28 +366,35 @@ let find_in_path path names =
  * However, it is difficult to decide what to do otherwise, and
  * this will work in all the cases we are currently considering.
  *)
-let rec find_file name = function
+let rec find_file_by_ext names = function
    [] ->
       None
  | ext :: exts ->
-      let lc_name = String.uncapitalize name ^ ext in
-      let uc_name = name ^ ext in
-      let names = [lc_name, lc_name; uc_name, uc_name] in
+      match find_in_path options.opt_path names ext with
+         Some (dir, realname) ->
+            Some (Filename.concat dir realname)
+       | None ->
+            find_file_by_ext names exts
 
-      (* In --reflect mode, also search based on the reflect_ prefix *)
-      let names =
-         if options.opt_reflect_flag && is_reflect_prefix lc_name then
-            let lc_orig_name = chop_reflect_prefix lc_name in
-               names @ [lc_orig_name, lc_name]
-         else
-            names
-      in
-         match find_in_path options.opt_path names with
-            Some fullname ->
-               Some (Filename.chop_suffix fullname ext)
-          | None ->
-               find_file name exts
+let find_file name exts =
+   (* Look for lowercase and uppercase forms *)
+   let uc_name = name in
+   let lc_name = String.uncapitalize name in
+   let names = [lc_name, lc_name; uc_name, uc_name] in
 
+   (* In --reflect mode, also search based on the reflect_ prefix *)
+   let names =
+      if options.opt_reflect_flag && is_reflect_prefix lc_name then
+         let lc_orig_name = chop_reflect_prefix lc_name in
+            names @ [lc_orig_name, lc_name]
+      else
+         names
+   in
+      find_file_by_ext names exts
+
+(*
+ * Find various kinds of files.
+ *)
 let find_dependency_cmi modname =
    match find_file modname [".mli"; ".cmi"; ".mlz"; ".ml"; ".cmo"; ".cmx"] with
       Some filename ->
