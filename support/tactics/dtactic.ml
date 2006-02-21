@@ -540,6 +540,9 @@ let intro_must_option =
 let wrap_elim ?labels tac =
    rule_labels_of_opt_terms labels, false, tac
 
+let wrap_elim_auto_ok ?labels tac =
+   rule_labels_of_opt_terms labels, true, tac
+
 (*
  * Resources
  *)

@@ -10,7 +10,8 @@
  * See the file doc/htmlman/default.html or visit http://metaprl.org/
  * for more information.
  *
- * Copyright (C) 1998 Jason Hickey, Cornell University
+ * Copyright (C) 1998-2006 Aleksey Nogin, Cornell University and
+ * California Institute of Technology
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -69,6 +70,7 @@ val process_intro_resource_annotation :
 
 val wrap_intro : ?labels: term list -> tactic -> intro_item
 val wrap_elim  : ?labels: term list -> (int -> tactic) -> elim_item
+val wrap_elim_auto_ok : ?labels: term list -> (int -> tactic) -> elim_item
 val intro_must_select : intro_item
 
 (*
@@ -95,7 +97,6 @@ val intro_univ_arg : intro_option
 (*
  * -*-
  * Local Variables:
- * Caml-master: "editor.run"
  * End:
  * -*-
  *)
