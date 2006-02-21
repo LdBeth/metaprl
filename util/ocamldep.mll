@@ -116,6 +116,21 @@ let reflect_names =
 let reflect_modules =
    ["Basic_tactics"]
 
+let reflect_prefix = "reflect_"
+let reflect_length = String.length reflect_prefix
+
+let rec compare_reflect i name =
+   i = reflect_length || (name.[i] = reflect_prefix.[i] && compare_reflect (succ i) name)
+
+let is_reflect_prefix name =
+   String.length name > reflect_length && compare_reflect 0 name
+
+let chop_reflect_prefix name =
+   String.sub name reflect_length (String.length name - reflect_length)
+
+let reflect_module_name name =
+   String.capitalize (reflect_prefix ^ String.uncapitalize name)
+
 (*
  * Actual dependency table.
  *)
@@ -322,30 +337,52 @@ let print_dependencies table =
 (************************************************************************
  * Find files in the search path.
  *)
-let find_in_path path name name' =
+let find_in_path path names =
    let rec try_dir = function
       [] ->
          None
     | dir :: rem ->
-         let fullname = Filename.concat dir name in
-            if Sys.file_exists fullname then
-               Some fullname
-            else
-               let fullname = Filename.concat dir name' in
-                  if Sys.file_exists fullname then
-                     Some fullname
-                  else
-                     try_dir rem
+         let rec search names =
+            match names with
+               (name, realname) :: names ->
+                  let fullname = Filename.concat dir name in
+                     if Sys.file_exists fullname then
+                        Some (Filename.concat dir realname)
+                     else
+                        search names
+             | [] ->
+                  try_dir rem
+         in
+            search names
    in
       try_dir path
 
+(*
+ * Find the file in the search path given a set of extensions.
+ * For reflected theories, allow searching on the non-reflected name.
+ *
+ * XXX: JYH: this is bogus, because the reflect_* theories do not
+ * need to be placed in the same directory as the original files.
+ * However, it is difficult to decide what to do otherwise, and
+ * this will work in all the cases we are currently considering.
+ *)
 let rec find_file name = function
    [] ->
       None
  | ext :: exts ->
       let lc_name = String.uncapitalize name ^ ext in
       let uc_name = name ^ ext in
-         match find_in_path options.opt_path lc_name uc_name with
+      let names = [lc_name, lc_name; uc_name, uc_name] in
+
+      (* In --reflect mode, also search based on the reflect_ prefix *)
+      let names =
+         if options.opt_reflect_flag && is_reflect_prefix lc_name then
+            let lc_orig_name = chop_reflect_prefix lc_name in
+               names @ [lc_orig_name, lc_name]
+         else
+            names
+      in
+         match find_in_path options.opt_path names with
             Some fullname ->
                Some (Filename.chop_suffix fullname ext)
           | None ->
@@ -453,11 +490,6 @@ let scan_dependencies source_file =
  * This file depends on the original file,
  * and on the reflected versions of all the prl_structures.
  *)
-let reflect_prefix = "reflect_"
-
-let reflect_module_name name =
-   String.capitalize (reflect_prefix ^ (String.uncapitalize name))
-
 let summ_reflect summ =
    let { summ_basename       = basename;
          summ_is_impl        = is_impl;
