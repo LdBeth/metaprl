@@ -10,7 +10,7 @@
  * See the file doc/htmlman/default.html or visit http://metaprl.org/
  * for more information.
  *
- * Copyright (C) 1998-2006 Aleksey Nogin, Cornell University and
+ * Copyright (C) 1998-2006 MetaPRL Group, Cornell University and
  * California Institute of Technology
  *
  * This program is free software; you can redistribute it and/or
@@ -78,6 +78,7 @@ val intro_must_select : intro_item
  * The inherited d tactic.
  *)
 val d_prec : auto_prec
+val d_elim_prec : auto_prec
 val d_in_auto : tactic_arg -> bool (* true when in auto, but not the "Complete" part of it *)
 
 topval dT : int -> tactic
