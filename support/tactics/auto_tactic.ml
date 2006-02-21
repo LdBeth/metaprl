@@ -576,12 +576,12 @@ let resource auto += [{
    auto_prec = nth_hyp_prec;
    auto_tac = someNthHypT orelseT onSomeAssumT nthAssumT;
    auto_type = AutoTrivial;
-}; (* {
+}; {
    auto_name = "simpleReduceT";
    auto_prec = reduce_prec;
    auto_tac = simpleReduceT;
    auto_type = AutoNormal
-}; *) {
+}; {
    auto_name = "reduceT";
    auto_prec = reduce_prec;
    auto_tac = reduceT;
@@ -600,7 +600,6 @@ let tcaT = tcaT
 (*
  * -*-
  * Local Variables:
- * Caml-master: "refiner"
  * End:
  * -*-
  *)

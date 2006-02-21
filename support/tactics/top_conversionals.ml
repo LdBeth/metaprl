@@ -555,7 +555,6 @@ let apply_rewrite p t =
 (*
  * -*-
  * Local Variables:
- * Caml-master: "refiner"
  * End:
  * -*-
  *)
