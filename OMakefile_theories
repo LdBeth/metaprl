@@ -55,6 +55,12 @@ reflect_%.ppo reflect_%.cmoz: %.cmoz reflect_%.cmiz $(PRLCN) :optional: %.prla :
 reflect_%.ppi reflect_%.cmiz: %.cmiz $(PRLCN) :scanner: scan-ocaml-%.mli
    $(WrapC $(PRLCN)) --reflect -o $*.ppi $<
 
+reflect_%.p4i: %.cmiz $(PRLCO) :value: $(prlc-deps)
+   $(WrapC $(PRLCO)) --reflect -o $@ $(CAMLP4FLAGS) $<
+
+reflect_%.p4: %.cmoz reflect_%.cmiz $(PRLCO) :value: $(prlc-deps)
+   $(WrapC $(PRLCO)) --reflect -o $@ $(CAMLP4FLAGS) $<
+
 reflect_%.cmi: reflect_%.ppi :scanner: scan-ocaml-%.ml
    $(OCAMLC) $(OCAMLFLAGS) $(OCAMLCFLAGS) $(PREFIXED_OCAMLINCLUDES) -c -intf $<
 
@@ -63,12 +69,6 @@ reflect_%.cmo: reflect_%.ppo :scanner: scan-ocaml-%.ml
 
 reflect_%.cmx reflect_%$(EXT_OBJ): reflect_%.ppo :scanner: scan-ocaml-%.ml
    $(OCAMLOPT) $(OCAMLFLAGS) $(OCAMLOPTFLAGS) $(PREFIXED_OCAMLINCLUDES) -c -impl $<
-
-reflect_%.p4i: %.cmiz $(PRLCO) :value: $(prlc-deps)
-   $(WrapC $(PRLCO)) --reflect $(CAMLP4FLAGS) $< > $@
-
-reflect_%.p4: %.cmoz reflect_%.cmiz $(PRLCO) :value: $(prlc-deps)
-   $(WrapC $(PRLCO)) --reflect $(CAMLP4FLAGS) $< > $@
 
 #
 # For theory files, generate intermediate .ppo files

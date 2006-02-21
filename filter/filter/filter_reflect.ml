@@ -524,7 +524,6 @@ let add_intro info t_logic loc item =
    let rule_name = "intro_" ^ name in
    let cvars, mt_rule, params = parse_rule info loc rule_name mt params in
    let _, mt = Filter_reflection.mk_intro_thm info.info_parse_info t_logic mt_rule in
-   let mt, params, _ = mterms_of_parsed_mterms (fun _ -> true) mt params in
    let tac = Printf.sprintf "provableRuleT << %s >> unfold_%s" name name in
       define_thm info loc rule_name params mt tac res;
       mt_rule

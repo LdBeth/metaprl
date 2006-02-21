@@ -1258,7 +1258,7 @@ let mk_intro_thm info t_logic t =
    let fv = all_vars_terms (goal :: premises) in
    let h_v = Lm_symbol.new_name var_H (SymbolSet.mem fv) in
    let logic_v = Lm_symbol.new_name var_logic (SymbolSet.mem fv) in
-   let logic_t = mk_var_term logic_v in
+   let logic_t = mk_so_var_term logic_v [h_v] [] in
 
    (* Convert the terms *)
    let socvars_premises, premises =
@@ -1477,7 +1477,7 @@ let mk_mem_logic_thm info t_logic t_rule =
    let fv = all_vars_terms [t_logic; t_rule] in
    let h_v, fv = maybe_new_var var_H fv in
    let logic_v, fv = maybe_new_var var_logic fv in
-   let logic_t = mk_var_term logic_v in
+   let logic_t = mk_so_var_term logic_v [h_v] [] in
    let ty_logic = Reflect.mk_Logic_term info in
 
    (* Premises *)
