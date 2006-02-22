@@ -1375,7 +1375,7 @@ let mk_elim_assum info einfo t_logic t =
             let u_v, all_vars = maybe_new_var var_u all_vars in
             let h_t = mk_so_var_term hyp_v [h_v] [mk_var_term u_v] in
             let t_equal = Reflect.mk_equal_term info h_t premise ty_bterm in
-            let t_concl = mk_so_var_term concl_v [h_v; j_v] [mk_var_term u_v; mk_var_term x_v] in
+            let t_concl = mk_so_var_term concl_v [h_v; j_v] [mk_var_term u_v] in
             let t_implies = Reflect.mk_implies_term info t_equal t_concl in
             let t_all = Reflect.mk_all_term info u_v u_ty t_implies in
             let w_v, all_vars = maybe_new_var var_w all_vars in
@@ -1398,7 +1398,7 @@ let mk_elim_assum info einfo t_logic t =
    let seq =
       { sequent_args  = Reflect.mk_sequent_arg_term info;
         sequent_hyps  = SeqHyp.of_list premises;
-        sequent_concl = mk_so_var_term concl_v [h_v; j_v] [mk_var_term v_v; mk_var_term x_v]
+        sequent_concl = mk_so_var_term concl_v [h_v; j_v] [mk_var_term v_v]
       }
    in
       mk_sequent_term seq
@@ -1426,7 +1426,7 @@ let mk_elim_goal info einfo t_logic =
    let seq =
       { sequent_args  = Reflect.mk_sequent_arg_term info;
         sequent_hyps  = hyps;
-        sequent_concl = mk_so_var_term concl_v [h_v; j_v] [mk_var_term u_v; mk_var_term x_v]
+        sequent_concl = mk_so_var_term concl_v [h_v; j_v] [mk_var_term u_v]
       }
    in
       mk_sequent_term seq
