@@ -662,8 +662,8 @@ struct
    (*
     * Add a typeclass with the given opname.
     *
-    * declare typeclass current_opname : current_type :> current_parent
-    * declare typeclass current_opname : current_type <: current_parent
+    * declare typeclass current_opname : current_type -> current_parent
+    * declare typeclass current_opname : current_type <- current_parent
     * declare typeclass current_opname : current_type
     *
     * Constraints:
@@ -749,7 +749,7 @@ struct
    (*
     * Add an opname class.
     *
-    * declare type current : current_type :> current_parent
+    * declare type current : current_type -> current_parent
     *
     * Constraints.
     *    1. current_type must be sub-typeclass of Ty
@@ -1254,12 +1254,11 @@ struct
     * We assume that all summaries have been loaded.
     *)
    let rec collect_opnames cache info =
-      if not (List.memq info cache.summaries) then
-         begin
-            Lm_list_util.rev_iter (collect_opnames cache) info.sig_includes;
-            inline_sig_opnames true cache info;
-            cache.summaries <- info :: cache.summaries
-         end
+      if not (List.memq info cache.summaries) then begin
+         Lm_list_util.rev_iter (collect_opnames cache) info.sig_includes;
+         inline_sig_opnames true cache info;
+         cache.summaries <- info :: cache.summaries
+      end
 
    (*
     * Inline a module into the current one.

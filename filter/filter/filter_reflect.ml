@@ -187,6 +187,15 @@ let declare_parent cache loc item =
    let path = head @ [name] in
       declare_parent_path cache loc path
 
+(*
+ * Copy items directly.
+ *)
+let copy_sig_item cache loc item =
+   SigFilterCache.add_command cache (item, loc)
+
+(*
+ * Translate the interface.
+ *)
 let compile_sig_item info (item, loc) =
    match item with
       (*
@@ -196,6 +205,23 @@ let compile_sig_item info (item, loc) =
          if !debug_filter_reflect then
             eprintf "Filter_reflect.extract_sig_item: parent: %s@." (string_of_path name);
          declare_parent info loc parent
+
+      (*
+       * Copy these parts verbatim.
+       *)
+    | DefineTerm (sc, t, _)
+    | DeclareTerm (sc, t) ->
+         SigFilterCache.declare_term info sc t;
+         copy_sig_item info loc item
+    | DeclareTypeClass (sc, opname, ty_term, ty_parent) ->
+         SigFilterCache.declare_typeclass info sc opname ty_term ty_parent;
+         copy_sig_item info loc item
+    | DeclareType (sc, ty_term, ty_parent) ->
+         SigFilterCache.declare_type info sc ty_term ty_parent;
+         copy_sig_item info loc item
+    | DeclareTypeRewrite _ ->
+         (* JYH: probably we will never support type equalities *)
+         Stdpp.raise_with_loc loc (Failure "Filter_reflect.compile_sig_item: type rewrites are not supported")
 
       (*
        * Illegal items.
@@ -219,11 +245,6 @@ let compile_sig_item info (item, loc) =
     | Resource _
     | Prec _
     | InputForm _
-    | DefineTerm _
-    | DeclareTypeClass _
-    | DeclareType _
-    | DeclareTerm _
-    | DeclareTypeRewrite _
     | DForm _
     | PrecRel _
     | Id _
@@ -234,7 +255,6 @@ let compile_sig_item info (item, loc) =
 
 let compile_sig info orig_name orig_info =
    declare_parent_path info dummy_loc ["itt_hoas_theory"];
-   declare_parent_path info dummy_loc [orig_name];
    List.iter (compile_sig_item info) (info_items orig_info)
 
 (************************************************************************
@@ -605,10 +625,22 @@ let postprocess_rules info current loc name items =
       (* Add an elimination rule for the entire logic *)
       add_elim info loc name t_logic rules
 
+(*
+ * Copy items directly.
+ *)
+let copy_str_item info loc item =
+   StrFilterCache.add_command info.info_cache (item, loc)
+
 (************************************************
  * Process the summary.
  *)
-let compile_str_item info rules item loc =
+
+(*
+ * Process parents first.
+ * We need these so that the definitions inherited from the interface
+ * are well-formed.
+ *)
+let compile_str_item_parent info item loc =
    match item with
       (*
        * If the original theory extends Name,
@@ -617,7 +649,15 @@ let compile_str_item info rules item loc =
       Parent ({ parent_name = name } as parent) ->
          if !debug_filter_reflect then
             eprintf "Filter_reflect.extract_sig_item: parent: %s@." (string_of_path name);
-         define_parent info loc parent;
+         define_parent info loc parent
+
+    | _ ->
+         ()
+
+let compile_str_item info rules item loc =
+   match item with
+      (* We have already processed the parents *)
+      Parent _ ->
          rules
 
       (*
@@ -626,10 +666,18 @@ let compile_str_item info rules item loc =
     | DefineTerm (sc, t, _)
     | DeclareTerm (sc, t) ->
          (* Treat them both as declarations *)
+         StrFilterCache.declare_term info.info_cache sc t;
+         copy_str_item info loc item;
          add_declare info rules loc t
-    | DeclareTypeClass _
-    | DeclareType _ ->
+    | DeclareTypeClass (sc, opname, ty_term, ty_parent) ->
          (* Type declarations can be ignored -- we just use the terms directly *)
+         StrFilterCache.declare_typeclass info.info_cache sc opname ty_term ty_parent;
+         copy_str_item info loc item;
+         rules
+    | DeclareType (sc, ty_term, ty_parent) ->
+         (* Type declarations can be ignored -- we just use the terms directly *)
+         StrFilterCache.declare_type info.info_cache sc ty_term ty_parent;
+         copy_str_item info loc item;
          rules
     | DeclareTypeRewrite _ ->
          (* JYH: probably we will never support type equalities *)
@@ -678,6 +726,11 @@ let compile_str_item info rules item loc =
     | PRLGrammar _ ->
          rules
 
+let compile_str_item_parent info (item, loc) =
+   try compile_str_item_parent info item loc with
+      exn when not_exn_located exn ->
+         Stdpp.raise_with_loc loc exn
+
 let compile_str_item info rules (item, loc) =
    try compile_str_item info rules item loc with
       exn when not_exn_located exn ->
@@ -685,12 +738,13 @@ let compile_str_item info rules (item, loc) =
 
 let compile_str cache orig_name orig_info =
    let info = create_info dummy_loc cache in
+   let items = info_items orig_info in
    let () =
       define_parent_path info dummy_loc ["itt_hoas_theory"];
-      define_parent_path info dummy_loc [orig_name];
-      add_open info dummy_loc "Basic_tactics"
+      add_open info dummy_loc "Basic_tactics";
+      List.iter (compile_str_item_parent info) items
    in
-   let rules = List.fold_left (compile_str_item info) [] (info_items orig_info) in
+   let rules = List.fold_left (compile_str_item info) [] items in
    let rules = List.rev rules in
    let current = Filter_reflection.mk_empty_logic_term info.info_parse_info in
       postprocess_rules info current dummy_loc orig_name rules

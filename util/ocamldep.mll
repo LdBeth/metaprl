@@ -509,8 +509,7 @@ let summ_reflect summ =
       StringSet.fold (fun name set -> StringSet.add (reflect_module_name name) set) prl_structures StringSet.empty
    in
 
-   (* Add dependency on the original file and the reflected theories *)
-   let prl_structures = StringSet.add (String.capitalize basename) prl_structures in
+   (* Add dependencies on the reflected theories *)
    let prl_structures =
       List.fold_left (fun set name -> StringSet.add name set) prl_structures reflect_names
    in

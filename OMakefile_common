@@ -376,7 +376,7 @@ $(MLDEBUG_PATH):
 
 MLZFILES =
 MLPFILES =
-CLEAN = $`(RM) $`(file *.opt *.run *.o *.obj *.lib *.cm* *.a *~ .*~ .\#* *.ppo *.p4i *.p4o .version.* *.omc $`(addsuffix .ml, $(MLZFILES)) $`(addsuffix .mli, $(MLZFILES)) $`(addsuffix .ml, $(MLPFILES)))
+CLEAN = $`(RM) $`(file *.opt *.run *.o *.obj *.lib *.cm* *.a *~ .*~ .\#* *.ppo *.ppi *.p4i *.p4o .version.* *.omc $`(addsuffix .ml, $(MLZFILES)) $`(addsuffix .mli, $(MLZFILES)) $`(addsuffix .ml, $(MLPFILES)))
 
 clean:
     $(CLEAN) $(LIB) $(BIN) $(file mk/*.omc) $(THEORIES_PATH) $(MLDEBUG_PATH) $(LIB)/mk $(LIB)/theories
