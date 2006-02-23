@@ -1404,6 +1404,38 @@ let mk_elim_assum info einfo t_logic t =
       [], mk_sequent_term seq
 
 (*
+ * Make the wf assumption for the elimination theorem.
+ *)
+let mk_elim_wf_assum info einfo t_logic =
+   let { elim_h_v     = h_v;
+         elim_j_v     = j_v;
+         elim_u_v     = u_v;
+         elim_u_ty    = u_ty;
+         elim_x_v     = x_v;
+         elim_hyp_v   = hyp_v;
+         elim_concl_v = concl_v
+       } = einfo
+   in
+   let v_v, all_vars = maybe_new_var var_v einfo.elim_all_vars in
+   let hyps =
+      SeqHyp.of_list (**)
+         [Context (h_v, [], []);
+          Hypothesis (u_v, u_ty);
+          Hypothesis (x_v, Reflect.mk_ProvableSequent_term info t_logic (mk_so_var_term hyp_v [h_v] [mk_var_term u_v]));
+          Context (j_v, [h_v], [mk_var_term u_v; mk_var_term x_v]);
+          Hypothesis (v_v, u_ty);
+          ]
+   in
+   let concl_v_term = mk_so_var_term hyp_v [h_v] [mk_var_term v_v] in
+   let seq =
+      { sequent_args  = Reflect.mk_sequent_arg_term info;
+        sequent_hyps  = hyps;
+        sequent_concl = Reflect.mk_equal_term info concl_v_term concl_v_term (Reflect.mk_BTerm_term info)
+      }
+   in
+      ["wf"], mk_sequent_term seq
+
+(*
  * Make the elimination goal.
  *)
 let mk_elim_goal info einfo t_logic =
@@ -1460,9 +1492,10 @@ let mk_elim_thm info t_logic premises =
    in
 
    (* Build the premises *)
+   let wf_assum = mk_elim_wf_assum info einfo t_logic in
    let premises = List.map (mk_elim_assum info einfo t_logic) premises in
    let goal = mk_elim_goal info einfo t_logic in
-      h_v, zip_mlabeled premises goal
+      h_v, zip_mlabeled (wf_assum :: premises) goal
 
 (************************************************************************
  * Logic membership.
