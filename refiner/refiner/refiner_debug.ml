@@ -10,7 +10,7 @@
  * See the file doc/htmlman/default.html or visit http://metaprl.org/
  * for more information.
  *
- * Copyright (C) 1998 Jason Hickey, Cornell University
+ * Copyright (C) 2005-2006 MetaPRL Group, California Institute of Technology
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -505,6 +505,12 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
 
    let split_popl l =
       split (List.map split_pop l)
+
+   let split_sp (s, (p1, p2)) =
+      (s, p1), (s, p2)
+
+   let split_spl l =
+      split (List.map split_sp l)
 
    let split_term' { term_op = (op1, op2); term_terms = btl } =
       let btl1, btl2 = split btl in
@@ -2938,6 +2944,11 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          let p0_1, p0_2 = split p0 in
          let p1_1, p1_2 = p1 in
          merge merge_meta_term "TermMeta.zip_mimplies" (wrap2 TermMeta1.zip_mimplies p0_1 p1_1) (wrap2 TermMeta2.zip_mimplies p0_2 p1_2)
+
+      let zip_mlabeled (p0 : (string list * term) list) (p1 : term) =
+         let p0_1, p0_2 = split_spl p0 in
+         let p1_1, p1_2 = p1 in
+         merge merge_meta_term "TermMeta.zip_mlabeled" (wrap2 TermMeta1.zip_mlabeled p0_1 p1_1) (wrap2 TermMeta2.zip_mlabeled p0_2 p1_2)
 
       let unzip_mfunction (p0 : meta_term) =
          let p0_1, p0_2 = split_meta_term p0 in

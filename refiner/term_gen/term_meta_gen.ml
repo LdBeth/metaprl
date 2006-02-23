@@ -10,7 +10,8 @@
  * See the file doc/htmlman/default.html or visit http://metaprl.org/
  * for more information.
  *
- * Copyright (C) 1998-2004 MetaPRL Group
+ * Copyright (C) 1998-2006 MetaPRL Group, Cornell University and
+ * California Institute of Technology
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -163,6 +164,15 @@ struct
       match assums with
          [] -> MetaTheorem goal
        | h::t -> MetaImplies (MetaTheorem h, zip_mimplies t goal)
+
+   let rec mk_labeled assum = function
+      [] -> MetaTheorem assum
+    | label :: labels -> MetaLabeled(label, mk_labeled assum labels)
+       
+   let rec zip_mlabeled assums goal =
+      match assums with
+         [] -> MetaTheorem goal
+       | (ls, h)::t -> MetaImplies (mk_labeled h ls, zip_mlabeled t goal)
 
    (*
     * Implication with bindings.
@@ -636,7 +646,6 @@ end
 (*
  * -*-
  * Local Variables:
- * Caml-master: "refiner"
  * End:
  * -*-
  *)

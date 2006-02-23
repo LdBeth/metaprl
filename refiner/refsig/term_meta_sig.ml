@@ -10,7 +10,8 @@
  * See the file doc/htmlman/default.html or visit http://metaprl.org/
  * for more information.
  *
- * Copyright (C) 1998-2004 MetaPRL Group
+ * Copyright (C) 1998-2006 MetaPRL Group, Cornell University and California
+ * Institute of Technology
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -65,6 +66,7 @@ sig
    val unfold_mlabeled : string -> meta_term -> term
    val unzip_mimplies : meta_term -> term list * term
    val zip_mimplies : term list -> term -> meta_term
+   val zip_mlabeled : (string list * term) list -> term -> meta_term
    val unzip_mfunction : meta_term -> (string list * term option * term) list * term
    val zip_mfunction : (term option * term) list -> term -> meta_term
    val strip_mfunction : meta_term -> meta_term
@@ -109,7 +111,6 @@ end
 (*
  * -*-
  * Local Variables:
- * Caml-master: "refiner"
  * End:
  * -*-
  *)

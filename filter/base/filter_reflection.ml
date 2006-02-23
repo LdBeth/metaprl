@@ -4,7 +4,7 @@
  * ----------------------------------------------------------------
  *
  * @begin[license]
- * Copyright (C) 2005 Mojave Group, Caltech
+ * Copyright (C) 2005-2006 Mojave Group, Caltech
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -20,8 +20,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * @email{jyh@cs.caltech.edu}
+ * Author: Jason Hickey @email{jyh@cs.caltech.edu}
+ * Modified by: Aleksey Nogin @email{nogin@cs.caltech.edu}
  * @end[license]
  *)
 open Lm_debug
@@ -924,7 +924,7 @@ let sweep_min_rulequote_term info h_v socvars t =
    and sweep_sovar_term socvars t =
       let x, cargs, args = dest_so_var t in
       let socvars, args = sweep_list socvars args in
-      let t = mk_so_var_term x (h_v :: cargs) args in
+      let t = mk_so_var_term x (cargs @ [h_v]) args in
       let socvars = SymbolTable.add socvars x (false, cargs, List.length args) in
          socvars, t
 
@@ -932,7 +932,7 @@ let sweep_min_rulequote_term info h_v socvars t =
       let x, t, cargs, args = dest_context t in
       let socvars, t = sweepdn socvars t in
       let socvars, args = sweep_list socvars args in
-      let t = mk_context_term x t (h_v :: cargs) args in
+      let t = mk_context_term x t (cargs @ [h_v]) args in
          socvars, t
 
    and sweep_sequent_term socvars t =
@@ -951,7 +951,7 @@ let sweep_min_rulequote_term info h_v socvars t =
                         socvars, hyp :: hyps
                 | Context (x, cargs, args) ->
                      let socvars, args = sweep_list socvars args in
-                     let hyp = Context (x, h_v :: cargs, args) in
+                     let hyp = Context (x, cargs @ [h_v], args) in
                      let socvars = SymbolTable.add socvars x (true, cargs, List.length args) in
                         socvars, hyp :: hyps) (socvars, []) hyps
       in
@@ -1148,7 +1148,7 @@ let rec mk_infer_wf_context info h_v socvars cargs_done hyps cargs =
             match SymbolTable.find socvars v with
                (true, cargs_new, arity) ->
                   let cargs_done, hyps = mk_infer_wf_context info h_v socvars cargs_done hyps cargs_new in
-                  let hyps = Context (v, h_v :: cargs, mk_it_vec info arity) :: hyps in
+                  let hyps = Context (v, cargs @ [h_v], mk_it_vec info arity) :: hyps in
                   let cargs_done = v :: cargs_done in
                      mk_infer_wf_context info h_v socvars (v :: cargs_done) hyps cargs
              | (false, _, _) ->
@@ -1195,7 +1195,7 @@ let mk_infer_wf_premise info h_v fv socvars v (b, cargs, arity) =
     *)
    let e, ty =
       if b then
-         let hyps_l = SeqHyp.singleton (Context (v, h_v :: cargs, vars)) in
+         let hyps_l = SeqHyp.singleton (Context (v, cargs @ [h_v], vars)) in
          let t = Reflect.mk_hyplist_term info hyps_l in
          let e = Reflect.mk_hyp_context_term info hyps t in
          let ty = Reflect.mk_CVar_term info t_depth in
@@ -1217,7 +1217,7 @@ let mk_infer_wf_premise info h_v fv socvars v (b, cargs, arity) =
 let mk_infer_wf_premises info h_v fv socvars =
    let premises =
       SymbolTable.fold (fun premises v vinfo ->
-            let premise = mk_infer_wf_premise info h_v fv socvars v vinfo in
+            let premise = ["wf"], mk_infer_wf_premise info h_v fv socvars v vinfo in
                premise :: premises) [] socvars
    in
       List.rev premises
@@ -1276,17 +1276,17 @@ let mk_intro_thm info t_logic t =
    in
 
    (* Add the Provable predicates *)
-   let premises = List.map (mk_provable_sequent_term info h_v logic_t) premises in
+   let premises = List.map (fun t -> [], mk_provable_sequent_term info h_v logic_t t) premises in
    let t_goal = mk_provable_sequent_term info h_v logic_t goal in
 
    (* The logic should be a Logic{Sequent} *)
    let t_Logic = Reflect.mk_Logic_term info in
    let t_logic_wf = Reflect.mk_equal_term info logic_t logic_t t_Logic in
-   let logic_premise = mk_normal_sequent_term info h_v t_logic_wf in
+   let logic_premise = ["aux"], mk_normal_sequent_term info h_v t_logic_wf in
 
    (* Add the SubLogic constraint *)
    let t_sublogic = Reflect.mk_SubLogic_term info t_logic logic_t in
-   let sublogic_premise = mk_normal_sequent_term info h_v t_sublogic in
+   let sublogic_premise = ["aux"], mk_normal_sequent_term info h_v t_sublogic in
 
    (* Add the well-formedness subgoals *)
    let wf_premises = mk_infer_wf_premises info h_v fv socvars in
@@ -1295,7 +1295,7 @@ let mk_intro_thm info t_logic t =
    let premises = logic_premise :: sublogic_premise :: (wf_premises @ premises) in
 
    (* Build the sequent *)
-   let mt = zip_mimplies premises t_goal in
+   let mt = zip_mlabeled premises t_goal in
 
    (* Collect information about all socvars, for the proof witness *)
    let socvars_all = SymbolTable.fold SymbolTable.add socvars_premises socvars_goal in
@@ -1375,7 +1375,7 @@ let mk_elim_assum info einfo t_logic t =
             let u_v, all_vars = maybe_new_var var_u all_vars in
             let h_t = mk_so_var_term hyp_v [h_v] [mk_var_term u_v] in
             let t_equal = Reflect.mk_equal_term info h_t premise ty_bterm in
-            let t_concl = mk_so_var_term concl_v [h_v; j_v] [mk_var_term u_v] in
+            let t_concl = mk_so_var_term concl_v [j_v; h_v] [mk_var_term u_v] in
             let t_implies = Reflect.mk_implies_term info t_equal t_concl in
             let t_all = Reflect.mk_all_term info u_v u_ty t_implies in
             let w_v, all_vars = maybe_new_var var_w all_vars in
@@ -1398,10 +1398,10 @@ let mk_elim_assum info einfo t_logic t =
    let seq =
       { sequent_args  = Reflect.mk_sequent_arg_term info;
         sequent_hyps  = SeqHyp.of_list premises;
-        sequent_concl = mk_so_var_term concl_v [h_v; j_v] [mk_var_term v_v]
+        sequent_concl = mk_so_var_term concl_v [j_v; h_v] [mk_var_term v_v]
       }
    in
-      mk_sequent_term seq
+      [], mk_sequent_term seq
 
 (*
  * Make the elimination goal.
@@ -1426,7 +1426,7 @@ let mk_elim_goal info einfo t_logic =
    let seq =
       { sequent_args  = Reflect.mk_sequent_arg_term info;
         sequent_hyps  = hyps;
-        sequent_concl = mk_so_var_term concl_v [h_v; j_v] [mk_var_term u_v]
+        sequent_concl = mk_so_var_term concl_v [j_v; h_v] [mk_var_term u_v]
       }
    in
       mk_sequent_term seq
@@ -1462,7 +1462,7 @@ let mk_elim_thm info t_logic premises =
    (* Build the premises *)
    let premises = List.map (mk_elim_assum info einfo t_logic) premises in
    let goal = mk_elim_goal info einfo t_logic in
-      h_v, zip_mimplies premises goal
+      h_v, zip_mlabeled premises goal
 
 (************************************************************************
  * Logic membership.
@@ -1482,22 +1482,19 @@ let mk_mem_logic_thm info t_logic t_rule =
 
    (* Premises *)
    let t = Reflect.mk_equal_term info logic_t logic_t ty_logic in
-   let wf_premise = mk_normal_sequent_term info h_v t in
+   let wf_premise = ["wf"], mk_normal_sequent_term info h_v t in
 
    let t = Reflect.mk_SubLogic_term info t_logic logic_t in
-   let sub_premise = mk_normal_sequent_term info h_v t in
+   let sub_premise = [], mk_normal_sequent_term info h_v t in
 
    (* Goal term *)
    let t = Reflect.mk_MemLogic_term info t_rule logic_t in
    let goal = mk_normal_sequent_term info h_v t in
-      zip_mimplies [wf_premise; sub_premise] goal
+      zip_mlabeled [wf_premise; sub_premise] goal
 
-(*!
- * @docoff
- *
+(*
  * -*-
  * Local Variables:
- * Caml-master: "compile"
  * End:
  * -*-
  *)

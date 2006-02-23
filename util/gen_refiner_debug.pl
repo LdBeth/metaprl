@@ -91,6 +91,7 @@ $splits{"esequent"} = "split_eseq";
 $splits{"bound_term'"} = "split_bterm'";
 $splits{"operator'"} = "split_op'";
 $splits{"(term option * term) list"} = "split_popl";
+$splits{"(string list * term) list"} = "split_spl";
 $splits{"address rw_args_poly"} = $splits{"rw_args"} = "split_args";
 $splits{"param op_param"} = "split_opparam";
 $splits{"term -> term"} = $splits{"ml_rewrite"} = "split_ttf";
