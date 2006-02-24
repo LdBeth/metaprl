@@ -38,6 +38,7 @@ open Refiner.Refiner.Term
 open Refiner.Refiner.TermTy
 open Refiner.Refiner.TermMan
 open Refiner.Refiner.TermMeta
+open Refiner.Refiner.TermSubst
 open Refiner.Refiner.Rewrite
 open Refiner.Refiner.RefineError
 open Refiner.Refiner.Refine
@@ -69,10 +70,17 @@ let debug_filter_reflect =
  *)
 let () = show_loading "Loading Filter_reflect%t"
 
-(*
+(************************************************************************
  * Variables.
  *)
 let var_p = Lm_symbol.add "p"
+let var_d = Lm_symbol.add "d"
+
+let maybe_new_var v vars =
+   if SymbolSet.mem vars v then
+      new_name v (SymbolSet.mem vars)
+   else
+      v
 
 (************************************************************************
  * Base term grammar
@@ -632,6 +640,63 @@ let copy_str_item info loc item =
    StrFilterCache.add_command info.info_cache (item, loc)
 
 (************************************************
+ * Display forms.
+ *)
+let reflect_dform_def f def =
+   match def with
+      NoDForm
+    | MLDForm _ ->
+         def
+    | TermDForm t ->
+         TermDForm (f t)
+
+let define_dform info loc df =
+   let { dform_name  = name;
+         dform_redex = redex;
+         dform_def   = def
+       } = df
+   in
+
+   (* Quote the redex, using a fresh depth variable *)
+   let fv = free_vars_set redex in
+   let d_v = maybe_new_var var_d fv in
+   let d_t = mk_so_var_term d_v [] [] in
+
+   (* mk_bterm form *)
+   let redex_d = Filter_reflection.quote_term info.info_parse_info ~depth:d_t redex in
+   let def_d = reflect_dform_def (Filter_reflection.mk_reflect_df2_term info.info_parse_info d_t) def in
+   let df_d =
+      { df with dform_name  = name ^ "_mk_bterm";
+                dform_redex = redex_d;
+                dform_def   = def_d
+      }
+   in
+   let item_d = DForm df_d in
+
+   (* mk_term form *)
+   let redex_0 = Filter_reflection.quote_term info.info_parse_info redex in
+   let def_0 = reflect_dform_def (Filter_reflection.mk_reflect_df1_term info.info_parse_info) def in
+   let df_0 =
+      { df with dform_name  = name ^ "_mk_term";
+                dform_redex = redex_0;
+                dform_def   = def_0
+      }
+   in
+   let item_0 = DForm df_0 in
+      StrFilterCache.add_command info.info_cache (item_d, loc);
+      StrFilterCache.add_command info.info_cache (item_0, loc)
+
+(************************************************
+ * Copy open statements.
+ *)
+let define_summary_item info loc item =
+   match item.item_item with
+      <:str_item< open $_sl$ >> ->
+         StrFilterCache.add_command info.info_cache (SummaryItem item, loc)
+    | _ ->
+         ()
+
+(************************************************
  * Process the summary.
  *)
 
@@ -691,6 +756,20 @@ let compile_str_item info rules item loc =
          rules
 
       (*
+       * DForms are copied in quoted form.
+       *)
+    | DForm df ->
+         define_dform info loc df;
+         rules
+
+      (*
+       * Open statements need to be copied.
+       *)
+    | SummaryItem item ->
+         define_summary_item info loc item;
+         rules
+
+      (*
        * We want to support rewrites eventually, but they are currently
        * unsupported.
        *)
@@ -713,12 +792,10 @@ let compile_str_item info rules item loc =
        * The rest are ignored.
        *)
     | InputForm _
-    | SummaryItem _
     | MagicBlock _
     | ToploopItem _
     | Resource _
     | Prec _
-    | DForm _
     | PrecRel _
     | Id _
     | Comment _

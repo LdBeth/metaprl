@@ -117,67 +117,69 @@ module type ReflectSig =
 sig
    type t
 
-   val create                  : parse_state -> t
-   val mk_lambda_term          : t -> var -> term -> term
-   val mk_bind_term            : t -> var -> term -> term
-   val mk_bind_vec_term        : t -> term -> var -> term -> term
-   val mk_rev_bind_terms       : t -> hypothesis list -> term -> term
-   val mk_mk_bterm_term        : t -> term -> term -> term -> term
-   val mk_mk_term_term         : t -> term -> term -> term
-   val mk_operator_term        : t -> param op_param -> term
-   val mk_nil_term             : t -> term
-   val mk_cons_term            : t -> term -> term -> term
-   val mk_list_term            : t -> term list -> term
-   val mk_pair_term            : t -> term -> term -> term
-   val mk_length_term          : t -> term -> term
-   val mk_append_term          : t -> term -> term -> term
-   val mk_append_list_term     : t -> term list -> term
-   val mk_sequent_term         : t -> term -> term -> term -> term
-   val mk_ty_list_term         : t -> term -> term
-   val mk_implies_term         : t -> term -> term -> term
-   val mk_exists_term          : t -> var -> term -> term -> term
-   val mk_all_term             : t -> var -> term -> term -> term
-   val mk_equal_term           : t -> term -> term -> term -> term
-   val mk_number_term          : t -> int -> term
-   val mk_ty_nat               : t -> term
-   val mk_subst_term           : t -> term -> term -> term
-   val mk_soapply_term         : t -> term -> term list -> term
-   val mk_substl_term          : t -> term -> term -> term
-   val mk_capply_term          : t -> term -> var list -> term
-   val mk_map_term             : t -> var -> term -> term -> term
-   val mk_add_term             : t -> term -> term -> term
-   val mk_BTerm_term           : t -> term
-   val mk_BTerm2_term          : t -> term -> term
-   val mk_CVar_term            : t -> term -> term
-   val mk_proof_step_term      : t -> term -> term -> term
-   val mk_beq_proof_step_term  : t -> term -> term -> term
-   val mk_ProofRule_term       : t -> term
-   val mk_sequent_arg_term     : t -> term
-   val mk_Provable_term        : t -> term -> term -> term
-   val mk_ProvableSequent_term : t -> term -> term -> term
-   val mk_Sequent_term         : t -> term
-   val mk_meta_type_term       : t -> term
-   val mk_meta_member_term     : t -> term -> term -> term
-   val mk_Logic_term           : t -> term
-   val mk_type_term            : t -> term -> term
-   val mk_assert_term          : t -> term -> term
-   val mk_let_cvar_term        : t -> var -> term -> term -> int -> term -> term
-   val mk_let_sovar_term       : t -> var -> term -> term -> int -> term -> term
-   val mk_spread_term          : t -> term -> var -> var -> term -> term
-   val mk_sequent_bterm_term   : t -> term -> term
-   val mk_vsequent_term        : t -> term -> term list -> term -> term
-   val mk_bsequent_term        : t -> term -> SeqHyp.t -> term -> term
-   val mk_empty_logic_term     : t -> term
-   val mk_rules_logic_term     : t -> term -> term -> term
-   val mk_union_logic_term     : t -> term -> term -> term
-   val mk_SubLogic_term        : t -> term -> term -> term
-   val mk_MemLogic_term        : t -> term -> term -> term
-   val mk_it_term              : t -> term
-   val mk_xconcl_term          : t -> term
-   val mk_hyplist_term         : t -> seq_hyps -> term
-   val mk_vlist_term           : t -> seq_hyps -> term
-   val mk_hyp_context_term     : t -> seq_hyps -> term -> term
-   val mk_vbind_term           : t -> seq_hyps -> term -> term
+   val create                   : parse_state -> t
+   val mk_lambda_term           : t -> var -> term -> term
+   val mk_bind_term             : t -> var -> term -> term
+   val mk_bind_vec_term         : t -> term -> var -> term -> term
+   val mk_rev_bind_terms        : t -> hypothesis list -> term -> term
+   val mk_mk_bterm_term         : t -> term -> term -> term -> term
+   val mk_mk_term_term          : t -> term -> term -> term
+   val mk_operator_term         : t -> param op_param -> term
+   val mk_nil_term              : t -> term
+   val mk_cons_term             : t -> term -> term -> term
+   val mk_list_term             : t -> term list -> term
+   val mk_pair_term             : t -> term -> term -> term
+   val mk_length_term           : t -> term -> term
+   val mk_append_term           : t -> term -> term -> term
+   val mk_append_list_term      : t -> term list -> term
+   val mk_sequent_term          : t -> term -> term -> term -> term
+   val mk_ty_list_term          : t -> term -> term
+   val mk_implies_term          : t -> term -> term -> term
+   val mk_exists_term           : t -> var -> term -> term -> term
+   val mk_all_term              : t -> var -> term -> term -> term
+   val mk_equal_term            : t -> term -> term -> term -> term
+   val mk_number_term           : t -> int -> term
+   val mk_ty_nat                : t -> term
+   val mk_subst_term            : t -> term -> term -> term
+   val mk_soapply_term          : t -> term -> term list -> term
+   val mk_substl_term           : t -> term -> term -> term
+   val mk_capply_term           : t -> term -> var list -> term
+   val mk_map_term              : t -> var -> term -> term -> term
+   val mk_add_term              : t -> term -> term -> term
+   val mk_BTerm_term            : t -> term
+   val mk_BTerm2_term           : t -> term -> term
+   val mk_CVar_term             : t -> term -> term
+   val mk_proof_step_term       : t -> term -> term -> term
+   val mk_beq_proof_step_term   : t -> term -> term -> term
+   val mk_ProofRule_term        : t -> term
+   val mk_sequent_arg_term      : t -> term
+   val mk_Provable_term         : t -> term -> term -> term
+   val mk_ProvableSequent_term  : t -> term -> term -> term
+   val mk_Sequent_term          : t -> term
+   val mk_meta_type_term        : t -> term
+   val mk_meta_member_term      : t -> term -> term -> term
+   val mk_Logic_term            : t -> term
+   val mk_type_term             : t -> term -> term
+   val mk_assert_term           : t -> term -> term
+   val mk_let_cvar_term         : t -> var -> term -> term -> int -> term -> term
+   val mk_let_sovar_term        : t -> var -> term -> term -> int -> term -> term
+   val mk_spread_term           : t -> term -> var -> var -> term -> term
+   val mk_sequent_bterm_term    : t -> term -> term
+   val mk_vsequent_term         : t -> term -> term list -> term -> term
+   val mk_bsequent_term         : t -> term -> SeqHyp.t -> term -> term
+   val mk_empty_logic_term      : t -> term
+   val mk_rules_logic_term      : t -> term -> term -> term
+   val mk_union_logic_term      : t -> term -> term -> term
+   val mk_SubLogic_term         : t -> term -> term -> term
+   val mk_MemLogic_term         : t -> term -> term -> term
+   val mk_it_term               : t -> term
+   val mk_xconcl_term           : t -> term
+   val mk_hyplist_term          : t -> seq_hyps -> term
+   val mk_vlist_term            : t -> seq_hyps -> term
+   val mk_hyp_context_term      : t -> seq_hyps -> term -> term
+   val mk_vbind_term            : t -> seq_hyps -> term -> term
+   val mk_reflect_df1_term      : t -> term -> term
+   val mk_reflect_df2_term      : t -> term -> term -> term
 end;;
 
 module Reflect : ReflectSig =
@@ -247,6 +249,8 @@ struct
    let info_vlist             = hash ("vlist",           [],  [])
    let info_hyp_context       = hash ("hyp_context",     [],  [])
    let info_vbind             = hash ("vbind",           [],  [])
+   let info_reflect_df1       = hash ("reflect_df",      [],  [0])
+   let info_reflect_df2       = hash ("reflect_df",      [],  [0; 0])
 
    (*
     * Lazy opname creation.
@@ -536,11 +540,34 @@ struct
          }
       in
          TermMan.mk_sequent_term seq
+
+   let mk_reflect_df1_term info t1 =
+      mk_dep0_term (find_opname info info_reflect_df1) t1
+
+   let mk_reflect_df2_term info t1 t2 =
+      mk_dep0_dep0_term (find_opname info info_reflect_df2) t1 t2
 end;;
 
 type parse_info = Reflect.t
 
 let create_parse_info = Reflect.create
+
+(*
+ * Display forms.
+ *)
+let mk_reflect_df1_term = Reflect.mk_reflect_df1_term
+let mk_reflect_df2_term = Reflect.mk_reflect_df2_term
+
+(*
+ * Logic construction.
+ *)
+let mk_empty_logic_term = Reflect.mk_empty_logic_term
+
+let mk_rules_logic_term info t_rules t_logic =
+   let t_rules = Reflect.mk_list_term info t_rules in
+      Reflect.mk_rules_logic_term info t_rules t_logic
+
+let mk_union_logic_term = Reflect.mk_union_logic_term
 
 (*
  * Some generic constructors.
@@ -668,9 +695,12 @@ let dest_xquote_term state t =
    let depth, t = dest_dep0_dep0_term xquote_opname t in
       sweep_quote_term info depth t
 
-let quote_term info depth t =
-   let depth = Reflect.mk_number_term info depth in
-      sweep_quote_term info depth t
+let quote_term info ?depth t =
+   match depth with
+      Some depth ->
+         sweep_quote_term info depth t
+    | None ->
+         sweep_quote0_term info t
 
 (************************************************************************
  * Rule quoting.
@@ -1110,19 +1140,6 @@ let mk_type_check_thm info quote =
    (* Zip the rule *)
    let mt = zip_mimplies (List.rev premises) goal in
       mt
-
-(*
- * Logic construction.
- *)
-let mk_empty_logic_term info =
-   Reflect.mk_empty_logic_term info
-
-let mk_rules_logic_term info t_rules t_logic =
-   let t_rules = Reflect.mk_list_term info t_rules in
-      Reflect.mk_rules_logic_term info t_rules t_logic
-
-let mk_union_logic_term info t_logic1 t_logic2 =
-   Reflect.mk_union_logic_term info t_logic1 t_logic2
 
 (*
  * Collect the contexts for a well-formedness goal.
