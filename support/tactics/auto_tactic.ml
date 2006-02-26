@@ -166,18 +166,28 @@ and auto_type =
  | AutoComplete
 
 type nth_hyp_entry =
+   (* proves "...; i.hyp; ... >- concl" right away *)
    NthImmediate of (int -> tactic)
+   (* might prove "...; i.hyp; ... >- concl", or fail *)
  | NthUncertain of (int -> tactic)
+
+   (* turns "...>- concl" into "...>- hyp" *)
  | NthStep of tactic
+   (* turns "...>- concl" into "...>- hyp", takes hyp as input *)
  | NthStepTerm of (term -> tactic)
+
+   (* turns "...; i.hyp; ... >- ..." into "...; i.hyp; ...; j.concl; ... >- ..."; the int is negative*)
+ | NthForward of (int -> tactic) * int
+   (* same as NthForward, but may fail *)
+ | NthForwardUncertain of (int -> tactic) * int
 
 type nth_hyp_result = {
    nth_hyp : int -> tactic_arg -> tactic;
-   nth_hyp_fun : term -> term -> bool; 
+   nth_hyp_fun : term -> term -> bool;
    some_nth_hyp : tactic_arg -> tactic;
    match_assums : (term -> tactic) -> int -> tactic_arg -> tactic;
 }
-   
+
 (************************************************************************
  * IMPLEMENTATION - nthHypT                                             *
  ************************************************************************)
@@ -200,13 +210,17 @@ let extract_nth_hyp_data =
    let select_immediate = function
       NthImmediate _ -> true
     | NthUncertain _
+    | NthForward _
+    | NthForwardUncertain _
     | NthStep _
     | NthStepTerm _ -> false
    in
    let select_indep = function
       NthImmediate _
+    | NthForward _
     | NthStep _
     | NthStepTerm _ -> true
+    | NthForwardUncertain _
     | NthUncertain _ -> false
    in
    let a = mk_var_term (Lm_symbol.add "t") in
@@ -227,6 +241,9 @@ let extract_nth_hyp_data =
           | Some (NthStep tac, _) -> tac thenT nth_hypT i
           | Some (NthStepTerm tac, _) -> tac hyp thenT nth_hypT i
           | Some (NthUncertain tac, cont) -> tac i orelseT funT (iterate hyp i cont)
+          | Some (NthForward (tac, j), _) -> tac i thenT nth_hypT j
+          | Some (NthForwardUncertain (tac, j), cont) ->
+               (tac i thenT nth_hypT j) orelseT funT (iterate hyp i cont)
           | None -> raise err
       in
       let rec somehyp hyps t i =
@@ -248,6 +265,9 @@ let extract_nth_hyp_data =
           | Some (NthStep tac, _) -> tac thenT nth_hypT i
           | Some (NthStepTerm tac, _) -> tac hyp thenT nth_hypT i
           | Some (NthUncertain tac, cont) -> tac i orelseT funT (keep_iterate_some hyps hyp t i cont)
+          | Some (NthForward (tac, j), _) -> tac i thenT nth_hypT j
+          | Some (NthForwardUncertain (tac, j), cont) ->
+               (tac i thenT nth_hypT j) orelseT funT (keep_iterate_some hyps hyp t i cont)
           | None -> somehyp hyps t (i-1)
       and keep_iterate_some hyps hyp t i cont _ =
          iterate_some hyps hyp t i cont
@@ -300,7 +320,10 @@ let extract_nth_hyp_data =
                            tac assum thenT nthAssumT i
                       | Some (NthImmediate tac :: _) ->
                            cut assum thenLT [nthAssumT i; tac (-1)]
+                      | Some (NthForward (tac, j) :: _) ->
+                           cut assum thenLT [nthAssumT i; tac (-1) thenT nth_hypT j]
                       | Some (NthUncertain _ :: _)
+                      | Some (NthForwardUncertain _ :: _)
                       | Some [] ->
                            raise (Invalid_argument "nthHypT: internal error")
                       | None ->
@@ -368,6 +391,30 @@ let process_nth_hyp_resource_annotation ?labels name args term_args statement lo
                   Tactic_type.Tactic.tactic_of_rule pre_tactic empty_rw_args terms
             in
                [t1, t2, NthStepTerm tac]
+       | [| _ |], [||], [],
+         [((Context (h , _, _) :: Hypothesis(v, t1 ) :: Context(j , jc, jv) :: rest ), concl)],
+          ([Context (h', _, _) ;  Hypothesis(v',t1') ;  Context(j', _ , _ ) ], concl')
+          when Lm_symbol.eq h h' && Lm_symbol.eq v v' && alpha_equal t1 t1' && Lm_symbol.eq j j' && alpha_equal concl concl' ->
+            let tac i =
+               Tactic_type.Tactic.tactic_of_rule pre_tactic { arg_ints = [| i |]; arg_addrs = [||] } []
+            in
+            let dependent =
+               not(
+                  match jc, jv with
+                     [h'], [v'] -> Lm_symbol.eq h h' && is_var_term v' && Lm_symbol.eq v (dest_var v')
+                   | _ -> false)
+            in
+            let rec collect j = function
+               [] -> []
+             | Hypothesis(_, t2) :: rest ->
+                  let dependent = dependent || is_var_free v t2 in
+                  let tac = if dependent then NthForward (tac, j) else NthForwardUncertain (tac, j) in
+                     (t1, t2, tac) :: collect (j + 1) rest
+             | Context _ :: _ ->
+                  raise (Invalid_argument (sprintf
+                     "%s: Auto_tactic.improve_nth_hyp: %s: is not an appropriate rule" (string_of_loc loc) name))
+            in
+               collect (- (List.length rest)) rest
        | _ ->
             raise (Invalid_argument (sprintf
                "%s: Auto_tactic.improve_nth_hyp: %s: is not an appropriate rule" (string_of_loc loc) name))
