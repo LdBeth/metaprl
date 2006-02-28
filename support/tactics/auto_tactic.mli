@@ -49,6 +49,7 @@ open Tactic_type.Tactic
  * fails, or succeeds right away.
  *)
 topval nthHypT : int -> tactic
+topval someNthHypT : tactic
 val nth_hyp_mem : tactic_arg -> term -> term -> bool
 
 (*
