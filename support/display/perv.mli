@@ -205,13 +205,13 @@ declare "string"[s:s]
  * The @tt{bind} term is used internally by the @MetaPRL
  * to represent generic variable binding.
  *)
-declare "bind"{a. 'z}
-declare "bind"{a, b. 'z}
-declare "bind"{a, b, c. 'z}
-declare "bind"{a, b, c, d. 'z}
-declare "bind"{a, b, c, d, e. 'z}
-declare "bind"{a, b, c, d, e, f. 'z}
-declare "bind"{a, b, c, d, e, f, g. 'z}
+declare "bind"{a. 'z : 'T } : 'T
+declare "bind"{a, b. 'z : 'T } : 'T
+declare "bind"{a, b, c. 'z : 'T } : 'T
+declare "bind"{a, b, c, d. 'z : 'T } : 'T
+declare "bind"{a, b, c, d, e. 'z : 'T } : 'T
+declare "bind"{a, b, c, d, e, f. 'z : 'T } : 'T
+declare "bind"{a, b, c, d, e, f, g. 'z : 'T } : 'T
 
 (*
  * The @tt{xbinder} term is used to specify first-order variables in rules
