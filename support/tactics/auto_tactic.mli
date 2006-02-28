@@ -125,18 +125,21 @@ topval autoT : tactic (* "AutoTrivial" orthenT "AutoNormal" thenT tcaT *)
  * "tac twtca" is a short for "tac thenWT tcaT"
  * "tac taa" is a short for "tac thenAT autoT"
  * "tac twa" is a short for "tac thenWT autoT"
+ * "tac ta" is a short for "tac thenT autoT"
  *)
 suffix ttca
 suffix tatca
 suffix twtca
 suffix taa
 suffix twa
+suffix ta
 
 topval prefix_ttca : tactic -> tactic
 topval prefix_tatca : tactic -> tactic
 topval prefix_twtca : tactic -> tactic
 topval prefix_taa : tactic -> tactic
 topval prefix_twa : tactic -> tactic
+topval prefix_ta : tactic -> tactic
 
 topval byDefT: conv -> tactic
 topval byDefsT: conv list -> tactic

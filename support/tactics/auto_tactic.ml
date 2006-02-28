@@ -593,6 +593,11 @@ let prefix_twa tac =
 
 suffix twa
 
+let prefix_ta tac =
+   tac thenT autoT
+
+suffix ta
+
 let make_defT =
    let mk_progress t =
       termC (fun t' -> if alpha_equal t t' then failC else idC)
