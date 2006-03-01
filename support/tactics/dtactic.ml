@@ -548,6 +548,9 @@ let process_elim_resource_annotation ?(options = []) ?labels name args term_args
 let wrap_intro ?labels tac =
    ("wrap_intro", None, rule_labels_of_opt_terms labels, AutoNormal, tac)
 
+let wrap_intro_auto_complete ?labels tac =
+   ("wrap_intro", None, rule_labels_of_opt_terms labels, AutoComplete, tac)
+
 let mustSelectT = funT (fun p ->
    raise (RefineError ("Dtactic.mustSelectT", StringTermError ("Select (selT) argument required", Sequent.concl p))))
 

@@ -70,7 +70,8 @@ val process_intro_resource_annotation :
    (term * intro_item) annotation_processor
 
 val wrap_intro : ?labels: term list -> tactic -> intro_item
-val wrap_elim  : ?labels: term list -> (int -> tactic) -> elim_item
+val wrap_intro_auto_complete : ?labels: term list -> tactic -> intro_item
+val wrap_elim : ?labels: term list -> (int -> tactic) -> elim_item
 val wrap_elim_auto_ok : ?labels: term list -> (int -> tactic) -> elim_item
 val intro_must_select : intro_item
 
