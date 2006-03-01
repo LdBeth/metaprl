@@ -81,6 +81,7 @@ val intro_must_select : intro_item
 val d_prec : auto_prec
 val d_elim_prec : auto_prec
 val d_in_auto : tactic_arg -> bool (* true when in auto, but not the "Complete" part of it *)
+val d_outside_auto : tactic -> tactic (* temporary drop any "I am in autoT" information *)
 
 topval dT : int -> tactic
 

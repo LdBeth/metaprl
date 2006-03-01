@@ -619,6 +619,8 @@ let auto_dT =
       let t = Sequent.nth_hyp p i in
          dT i thenT check_num_equalT (num_equal t p) t)
 
+let d_outside_auto tac = withoutIntT "d_auto" tac
+
 let resource auto += [ {
    auto_name = "dT trivial";
    auto_prec = d_prec;
@@ -664,7 +666,6 @@ let resource menubar +=
 (*
  * -*-
  * Local Variables:
- * Caml-master: "editor.run"
  * End:
  * -*-
  *)
