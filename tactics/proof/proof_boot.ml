@@ -764,7 +764,7 @@ struct
     *)
    let rec replace_goal_ext goal = function
       Goal _ ->
-         Goal goal
+         Goal (norm_goal goal)
     | RuleBox rb ->
          RuleBox (**)
             { rb with rule_status = LazyStatusDelayed;
@@ -772,7 +772,19 @@ struct
                       rule_extract = replace_goal_ext goal rb.rule_extract
             }
     | node ->
-         Unjustified (goal, leaves_ext node)
+         let old_goal = msequent_goal (goal_ext node).ref_goal in
+         let new_goal, new_assums = dest_msequent goal.ref_goal in
+         let goal =
+            if TermSubst.alpha_equal old_goal new_goal then
+               let mseq = TermNorm.normalize_msequent (mk_msequent old_goal new_assums) in
+                  if mseq == goal.ref_goal then
+                     goal
+                  else
+                     { goal with ref_goal = mseq }
+            else
+               norm_goal goal
+         in
+            Unjustified (goal, leaves_ext node)
 
    (*
     * Match the subgoal list with the existing subgoals.
@@ -846,7 +858,7 @@ struct
                 | answer -> answer
             with
                RuleBox _ as node , subgoals ->
-                  replace_goal_ext (norm_goal leaf) node, subgoals
+                  replace_goal_ext leaf node, subgoals
              | answer ->
                   answer
             end
