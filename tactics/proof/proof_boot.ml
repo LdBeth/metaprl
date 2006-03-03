@@ -38,7 +38,8 @@
  * See the file doc/htmlman/default.html or visit http://metaprl.org/
  * for more information.
  *
- * Copyright (C) 1999 Jason Hickey, Cornell University
+ * Copyright (C) 1999-2006 MetaPRL Group, Cornell University and
+ * California Institute of Technology
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -1293,8 +1294,6 @@ struct
       in
          ExprExtract arglist
 
-   let null_address = TermAddr.make_address []
-
    (*
     * Describe all the parts of this step.
     *)
@@ -2132,7 +2131,6 @@ end
 (*
  * -*-
  * Local Variables:
- * Caml-master: "editor.top"
  * End:
  * -*-
  *)

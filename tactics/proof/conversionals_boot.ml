@@ -264,10 +264,8 @@ struct
    let rwc conv assum clause =
       Rewrite.rw conv assum (TermAddr.make_address [ClauseAddr clause])
 
-   let empty_addr = TermAddr.make_address []
-
    let rwcAll conv assum =
-      Rewrite.rw (allSubC conv) assum empty_addr
+      Rewrite.rw (allSubC conv) assum null_address
 
    let rw conv clause =
       rwc conv 0 clause
@@ -304,7 +302,6 @@ end
 (*
  * -*-
  * Local Variables:
- * Caml-master: "refiner"
  * End:
  * -*-
  *)

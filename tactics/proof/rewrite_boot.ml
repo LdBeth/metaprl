@@ -421,15 +421,13 @@ struct
    let create_ml_iform name f =
       rewrite_of_pre_rewrite (create_ml_rewrite (null_refiner name) name f) empty_rw_args []
 
-   let zero_addr = TermAddr.make_address []
-
    (*
     * Rewrite a term.
     * No justification.
     *)
    let apply_rewrite bookmark conv t =
       let arg = TacticInternal.debug_arg bookmark t in
-      let tac = apply 0 zero_addr None conv in
+      let tac = apply 0 null_address None conv in
       let res = fst (TacticInternal.refine tac arg) in
       let goal, _ = Refine.dest_msequent (List.hd res).ref_goal in
          goal
@@ -444,7 +442,6 @@ end
 (*
  * -*-
  * Local Variables:
- * Caml-master: "refiner"
  * End:
  * -*-
  *)

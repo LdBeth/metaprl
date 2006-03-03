@@ -6,7 +6,7 @@
  * See the file doc/htmlman/default.html or visit http://metaprl.org/
  * for more information.
  *
- * Copyright (C) 1998-2005 MetaPRL Group, Cornell University and Caltech
+ * Copyright (C) 1998-2006 MetaPRL Group, Cornell University and Caltech
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -60,6 +60,8 @@ struct
    module AddrTypes = TermType
 
    type address = addr_item list
+
+   let null_address = []
 
    let compose_address = compose_addr
    let string_of_address = string_of_addr

@@ -40,7 +40,7 @@
  * See the file doc/htmlman/default.html or visit http://metaprl.org/
  * for more information.
  *
- * Copyright (C) 1998-2005 MetaPRL Group, Cornell University and
+ * Copyright (C) 1998-2006 MetaPRL Group, Cornell University and
  * California Institute of Technology.
  *
  * This program is free software; you can redistribute it and/or
@@ -704,7 +704,7 @@ struct
        | CondRewriteSubgoals terms ->
             List.fold_left (fun subgoals t -> replace_subgoal addr t :: subgoals) subgoals terms
       in
-         replace (TermAddr.make_address []) [] subgoals
+         replace null_address [] subgoals
 
    (*
     * Apply a conditional rewrite.
@@ -891,8 +891,6 @@ struct
    (*
     * Extract decription for UI purposes.
     *)
-   let null_address = make_address []
-   
    let describe name args params =
       name, Array.to_list args.arg_ints, Array.to_list args.arg_addrs, params
 
