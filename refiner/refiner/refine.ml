@@ -301,11 +301,6 @@ struct
     | RewriteAddress of term * address * rewrite_just
     | RewriteHigher of term * rewrite_just list
 
-   and cond_rewrite_subgoals =
-      CondRewriteSubgoalsAddr of address * cond_rewrite_subgoals
-    | CondRewriteSubgoalsList of cond_rewrite_subgoals list
-    | CondRewriteSubgoals of term list
-
    and cond_rewrite_just =
       CondRewriteHere of cond_rewrite_here
     | CondRewriteML of cond_rewrite_here * term_extract * int
@@ -435,10 +430,15 @@ struct
    (*
     * A conditional rewrite takes a goal, then applies the rewrite
     * and generates subgoals.  The first argument is the sequent
-    * the rewrite is being applied to, and the second is the
-    * particular subterm to be rewritted.
+    * the rewrite is being applied to, the second is all the variables
+    * that we are in scope of and the third is the particular subterm
+    * to be rewritted.
     *)
-   type cond_rewrite = sentinal -> SymbolSet.t -> term -> term * cond_rewrite_subgoals * cond_rewrite_just
+   type internal_cond_rewrite =
+      sentinal -> SymbolSet.t -> term -> term * term list * cond_rewrite_just
+
+   type cond_rewrite =
+      address * (SymbolSet.t -> internal_cond_rewrite)
 
    (*
     * These are the forms created at compile time.
@@ -666,50 +666,38 @@ struct
     ************************************************************************)
 
    (*
-    * XXX HACK!!! This should go away once we implement the crw mechanism properly
-    * Replace the subgoals in the sequent.
-    * We have to rename variables to avoid capture,
-    * so we need to calculate the binding occurrences to the
-    * term in question, and then rename to avoid capture in the goal.
+    * Apply the rewrite to an addressed term.
     *)
-   let replace_subgoals tst mseq subgoals =
-      (*
-       * We have to rename sequent vars when we substitute into the goal.
-       *)
-      let replace_subgoal addr t' =
-         (* Compute the extra binding variables in the clause *)
-         let addr1, addr2 = TermAddr.split_clause_address addr in
-         let tt = term_subterm tst addr1 in
-         let f bvars t =
-            if SymbolSet.intersectp bvars (free_vars_set t') then
-               REF_RAISE(RefineError ("Refine.replace_subgoals",
-                  StringWrapError("Invalid context for conditional rewrite application",AddressError(addr,tst))))
-            else
-               t
-         in
-         ignore(TermAddr.apply_var_fun_at_addr f addr2 SymbolSet.empty tt);
-         (* Now we can replace the goal without fear *)
-         { mseq with mseq_goal = replace_concl tst t' }
-      in
+   let apply_crwaddr addr crw vars sent bvars t =
+      if addr == null_address then
+         crw vars sent bvars t
+      else
+         DEFINE body =
+            let t', (subgoals, just) =
+               let f bvars t =
+                  let t, subgoals, just = crw vars sent bvars t in
+                     t, (subgoals, just)
+               in
+                  apply_var_fun_arg_at_addr f addr bvars t
+            in
+               t', subgoals, CondRewriteAddress (t, addr, just)
+         IN
+         IFDEF VERBOSE_EXN THEN
+            try body
+            with
+               RefineError (name, x) ->
+                  raise (RefineError ("apply_crwaddr", RewriteAddressError (addr, name, x)))
+         ELSE
+            body
+         ENDIF
 
-      (*
-       * Collect all the subgoals that were given by the conditional
-       * rewrite.
-       *)
-      let rec replace addr subgoals = function
-         CondRewriteSubgoalsList subgoals' ->
-            List.fold_left (replace addr) subgoals subgoals'
-       | CondRewriteSubgoalsAddr (addr', subgoal) ->
-            replace (TermAddr.compose_address addr addr') subgoals subgoal
-       | CondRewriteSubgoals terms ->
-            List.fold_left (fun subgoals t -> replace_subgoal addr t :: subgoals) subgoals terms
-      in
-         replace null_address [] subgoals
+   let replace_subgoal seq cond t =
+      { seq with mseq_goal = replace_concl cond t }
 
    (*
     * Apply a conditional rewrite.
     *)
-   let crwtactic i (crw : cond_rewrite) (sent : sentinal) (seq : msequent) =
+   let crwtactic i ((addr, crw) : cond_rewrite) (sent : sentinal) (seq : msequent) =
       let { mseq_goal = goal; mseq_assums = assums } = seq in
       let t =
          if i = 0 then
@@ -719,54 +707,41 @@ struct
          else
             REF_RAISE(RefineError ("Refine.crwtactic", StringIntError ("assumption is out of range", i)))
       in
+      (*
+       * XXX HACK!!! This should go away once we implement the crw mechanism properly
+       *)
+      let addr1, addr2 = TermAddr.split_clause_address addr in
+      let tt = term_subterm t addr1 in
+      let vars = SymbolSet.union (free_vars_set tt) (mseq_so_vars seq) in
       IFDEF VERBOSE_EXN THEN
          if !debug_rewrites then
             eprintf "crwtactic applied to %a%t" print_term t eflush;
       ENDIF;
-      let t', subgoals, just = crw sent (mseq_so_vars seq) t in
-      if t' == t then [seq], Identity else
-      let subgoal =
-         if i = 0 then
-            { seq with mseq_goal = t' }
-         else
-            { seq with mseq_assums = Lm_list_util.replace_nth (pred i) t' assums }
-      in
-      let subgoals = subgoal :: replace_subgoals t' seq subgoals in
-         subgoals, CondRewriteJust (seq, just)
-
-   (*
-    * Apply the rewrite to an addressed term.
-    *)
-   let crwaddr addr (crw: cond_rewrite) sent bvars t =
-      DEFINE body =
-         let t', (subgoals, just) =
-            let f bvars t =
-               let t, subgoals, just = crw sent bvars t in
-                  t, (subgoals, just)
-            in
-               apply_var_fun_arg_at_addr f addr bvars t
+      let t', subgoals, just = apply_crwaddr addr2 crw vars sent vars tt in
+      if t' == tt then
+         [seq], Identity
+      else
+         let t' = replace_subterm t addr1 t' in
+         let subgoal =
+            if i = 0 then
+               { seq with mseq_goal = t' }
+            else
+               { seq with mseq_assums = Lm_list_util.replace_nth (pred i) t' assums }
          in
-            t', CondRewriteSubgoalsAddr (addr, subgoals), CondRewriteAddress (t, addr, just)
-      IN
-      IFDEF VERBOSE_EXN THEN
-         try body
-         with
-            RefineError (name, x) ->
-               raise (RefineError ("crwaddr", RewriteAddressError (addr, name, x)))
-      ELSE
-         body
-      ENDIF
+         let cond = if i = 0 then t else t' in
+         let subgoals = subgoal :: List.map (replace_subgoal seq cond) subgoals in
+            subgoals, CondRewriteJust (seq, just)
 
    (*
     * Apply the rewrite at the outermost terms where it does not fail.
     * XXX: This breacks current (incomplete) conditional variable scope checking.
    let crwhigher (crw: cond_rewrite) sent bvars t =
       let t', args =
-         let f t =
+         let f bvars t =
             let t, subgoals, just = crw sent bvars t in
                t, (subgoals, just)
          in
-            apply_fun_higher f t
+            apply_var_fun_higher f bvars t
       in
       let subgoals, just = List.split args in
          t', CondRewriteSubgoalsList subgoals, CondRewriteHigher (t, just, t')
@@ -775,27 +750,36 @@ struct
    (*
     * Composition is supplied for efficiency.
     *)
-   let candthenrw crw1 crw2 sent bvars t =
+   let candthenrw_aux crw1 crw2 vars sent bvars t =
       let t', subgoals, just =
-         crw1 sent bvars t
+         crw1 vars sent bvars t
       in
       let t'', subgoals', just' =
-         crw2 sent bvars t'
+         crw2 vars sent bvars t'
       in
-         t'', CondRewriteSubgoalsList [subgoals; subgoals'], CondRewriteCompose (just, just')
+         t'', subgoals @ subgoals', CondRewriteCompose (just, just')
 
-   let corelserw crw1 crw2 sent bvars t =
+   let candthenrw (addr1, crw1) (addr2, crw2) =
+      null_address, candthenrw_aux (apply_crwaddr addr1 crw1) (apply_crwaddr addr2 crw2)
+
+   let corelserw_aux crw1 crw2 vars sent bvars t =
       IFDEF VERBOSE_EXN THEN
-         try crw1 sent bvars t with
+         try crw1 vars sent bvars t with
             RefineError (name1, x) ->
-               try crw2 sent bvars t with
+               try crw2 vars sent bvars t with
                   RefineError (name2, y) ->
                      raise (RefineError ("corelserw", PairError (name1, x, name2, y)))
       ELSE
-         try crw1 sent bvars t with
+         try crw1 vars sent bvars t with
             RefineError _ ->
-               crw2 sent bvars t
+               crw2 vars sent bvars t
       ENDIF
+
+   let corelserw (addr1, crw1) (addr2, crw2) =
+      null_address, corelserw_aux (apply_crwaddr addr1 crw1) (apply_crwaddr addr2 crw2)
+
+   let crwaddr addr1 (addr2, crw) =
+      (compose_address addr1 addr2), crw
 
    (************************************************************************
     * UTILITIES                                                            *
@@ -1898,26 +1882,30 @@ struct
          pre_crw_contractum = contractum;
          pre_crw_assums = subgoals;
       } in
-      let rw' addrs params (sent : sentinal) (bvars : SymbolSet.t) t =
+      let rw' addrs params vars (sent : sentinal) (bvars : SymbolSet.t) t =
          IFDEF VERBOSE_EXN THEN
             if !debug_rewrites then
                eprintf "Refiner: applying conditional rewrite %s to %a with bvars = [%a] %t" name print_term t output_symbol_set bvars eflush;
          ENDIF;
          match apply_rewrite rw (addrs, bvars) t params with
             (t' :: subgoals) ->
-               sent.sent_cond_rewrite opname pre_crw;
-                  t',
-                  CondRewriteSubgoals subgoals,
-                  CondRewriteHere { cjust_goal = t;
-                                    cjust_addrs = addrs;
-                                    cjust_params = params;
-                                    cjust_refiner = opname;
+               let vars = SymbolSet.inter (SymbolSet.diff (free_vars_terms subgoals) vars) bvars in
+                  if not (SymbolSet.is_empty vars) then begin
+                     let v = SymbolSet.choose vars in
+                        REF_RAISE(RefineError (name, StringVarError("Rewrite condition has free variable where it is not allowed", v)))
+                  end;
+                  sent.sent_cond_rewrite opname pre_crw;
+                  t', subgoals, CondRewriteHere {
+                     cjust_goal = t;
+                     cjust_addrs = addrs;
+                     cjust_params = params;
+                     cjust_refiner = opname;
                   }
              | [] ->
                   raise (Failure "Refine.create_cond_rewrite: no contracta")
       in
          Hashtbl.add build.build_cond_rewrites opname pre_crw;
-         CondRW rw'
+         CondRW (fun addrs params -> null_address, rw' addrs params)
 
    let justify_cond_rewrite build name _ subgoals redex contractum proof =
       let opname = mk_opname name build.build_opname in
@@ -1979,11 +1967,16 @@ struct
             eprintf "Refiner.add_ml_cond_rewrite: %s%t" name eflush
       ENDIF;
       let opname = mk_opname name build.build_opname in
-      let crw addrs params (sent : sentinal) (bvars : SymbolSet.t) t =
+      let crw addrs params vars (sent : sentinal) (bvars : SymbolSet.t) t =
          let t', subgoals, ext = rw bvars params t in
+         let vars = SymbolSet.inter (SymbolSet.diff (free_vars_terms subgoals) vars) bvars in
+            if not (SymbolSet.is_empty vars) then begin
+               let v = SymbolSet.choose vars in
+                  REF_RAISE(RefineError (name, StringVarError("Rewrite condition has free variable where it is not allowed", v)))
+            end;
             sent.sent_ml_cond_rewrite opname rw;
             t',
-            CondRewriteSubgoals subgoals,
+            subgoals,
             CondRewriteML ({ cjust_goal = t;
                              cjust_addrs = addrs;
                              cjust_params = params;
@@ -1996,6 +1989,6 @@ struct
                ml_crw_info = rw;
                ml_crw_refiner = build.build_refiner
             };
-         CondRW crw
+         CondRW (fun addrs params -> null_address, crw addrs params)
 end
 
