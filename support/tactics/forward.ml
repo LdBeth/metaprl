@@ -142,9 +142,6 @@ let extract_forward_data =
 let resource (term * forward_info, (forward_info -> bool) -> int -> tactic) forward =
    table_resource_info extract_forward_data
 
-let select_true _ =
-   true
-
 (*
  * Get explicit arguments to the elimination rule.
  *)
@@ -384,7 +381,7 @@ let start_info p =
 
 let forwardT i =
    funT (fun p ->
-         let forward_tac = forward_proof p select_true in
+         let forward_tac = forward_proof p select_all in
          let len, hyps, concl = start_info p in
          let i = Sequent.get_pos_hyp_num p i in
             single_step forward_tac hyps concl len i)
@@ -412,12 +409,9 @@ let forwardChainBoundT bound =
 
 let forwardChainT = forwardChainBoundT max_int
 
-(*!
- * @docoff
- *
+(*
  * -*-
  * Local Variables:
- * Caml-master: "compile"
  * End:
  * -*-
  *)
