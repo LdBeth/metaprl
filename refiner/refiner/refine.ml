@@ -695,6 +695,15 @@ struct
       { seq with mseq_goal = replace_concl cond t }
 
    (*
+    * XXX HACK!!! This should go away once we implement the crw mechanism properly.
+    * Or at least when we add another SymbolSet.t argument to apply_var_fun_arg_at_addr 
+    * (which is needed for the rewriter anyway). Basically, we need to be able to track
+    * "avoid" variables separate from the "local bindings" variables.
+    *)
+   let get_tvars vars t =
+      (Obj.obj (Obj.dup (Obj.repr t)) : term), (vars, t)
+
+   (*
     * Apply a conditional rewrite.
     *)
    let crwtactic i ((addr, crw) : cond_rewrite) (sent : sentinal) (seq : msequent) =
@@ -711,13 +720,13 @@ struct
        * XXX HACK!!! This should go away once we implement the crw mechanism properly
        *)
       let addr1, addr2 = TermAddr.split_clause_address addr in
-      let tt = term_subterm t addr1 in
-      let vars = SymbolSet.union (free_vars_set tt) (mseq_so_vars seq) in
+      let t, (ttvars, tt) = apply_var_fun_arg_at_addr get_tvars addr1 (free_vars_set t) t in
+      let vars = SymbolSet.union ttvars (mseq_so_vars seq) in
       IFDEF VERBOSE_EXN THEN
          if !debug_rewrites then
             eprintf "crwtactic applied to %a%t" print_term t eflush;
       ENDIF;
-      let t', subgoals, just = apply_crwaddr addr2 crw vars sent vars tt in
+      let t', subgoals, just = apply_crwaddr addr2 crw ttvars sent vars tt in
       if t' == tt then
          [seq], Identity
       else

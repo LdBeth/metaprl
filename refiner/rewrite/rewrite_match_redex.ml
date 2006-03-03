@@ -662,6 +662,11 @@ struct
                   end;
                   if !debug_rewrite then
                      eprintf "Rewrite.match_redex.RWSOContext: stack(%d)/%d%t" i (Array.length stack) eflush;
+                  (*
+                   * XXX: BUG: "diff new_bvars all_bvars" is not right for the case of nested context variables
+                   *  (since those will not get alpha-renamed, so if may be present in both all_bvars'
+                   *  and in the bindings of t'', so diff will remove it when it should be kept.
+                   *)
                   stack.(i) <- StackContext (SymbolSet.diff new_bvars all_bvars', t'', addr, []);
                   match_redex_term addrs stack new_bvars term' term
 
