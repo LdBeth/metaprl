@@ -883,17 +883,16 @@ struct
     * Compare all the relevant parts of the attribute lists.
     *)
    let alpha_equal_term_list tl1 tl2 =
-      List.length tl1 = List.length tl2 && List.for_all2 alpha_equal tl1 tl2
+      tl1 == tl2 || Lm_list_util.for_all2 alpha_equal tl1 tl2
 
    let assoc_equal (l1 : (string * 'a) list) (l2 : (string * 'a) list) (f : 'a -> 'a -> bool) =
-      (List.length l1 = List.length l2) && List.for_all2 (fun (s1, t1) (s2, t2) ->
-            s1 = s2 && f t1 t2) l1 l2
+      Lm_list_util.for_all2 (fun (s1, t1) (s2, t2) -> s1 = s2 && f t1 t2) l1 l2
 
    let opname_assoc_equal (l1 : (opname * 'a) list) (l2 : (opname * 'a) list) (f : 'a -> 'a -> bool) =
-      (List.length l1 = List.length l2) && List.for_all2 (fun (s1, t1) (s2, t2) ->
-            Opname.eq s1 s2 && f t1 t2) l1 l2
+      Lm_list_util.for_all2 (fun (s1, t1) (s2, t2) -> Opname.eq s1 s2 && f t1 t2) l1 l2
 
    let attributes_alpha_equal arg1 arg2 =
+      arg1 == arg2 ||
       let { attr_terms      = terms1;
             attr_term_lists = term_lists1;
             attr_types      = types1;
@@ -931,15 +930,9 @@ struct
     * Also compare the assumptions.
     *)
    let tactic_arg_alpha_equal_with_attributes arg1 arg2 =
-      let { ref_goal = goal1;
-            ref_attributes = attr1
-          } = arg1
-      in
-      let { ref_goal = goal2;
-            ref_attributes = attr2
-          } = arg2
-      in
-         msequent_alpha_equal goal1 goal2 && attributes_alpha_equal attr1 attr2
+      arg1 == arg2 ||
+         (msequent_alpha_equal arg1.ref_goal arg2.ref_goal &&
+            attributes_alpha_equal arg1.ref_attributes arg2.ref_attributes)
 
    (*
     * Match only the goals.
