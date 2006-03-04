@@ -168,19 +168,18 @@ struct
 
    let progressT tac =
       let aux p =
-         let tac' pp =
-            match pp with
-               [p'] ->
-                  if Sequent.tactic_arg_alpha_equal p' p then
-                     raise (RefineError ("progressT", StringError "no progress"))
-                  else
-                     [idT]
-             | _ ->
-                  List.map (fun _ -> idT) pp
+         let rec tac' = function
+            [] -> []
+          | p' :: pp ->
+               if Sequent.tactic_arg_alpha_equal p' p then
+                  raise (RefineError ("progressT", StringError "no progress"))
+               else
+                  idT :: (tac' pp)
          in
             prefix_thenFLT tac tac'
       in
          funT aux
+
    (*
     * Repeat, spreading out over subgoals.
     * Stop if there is no progress.
