@@ -513,17 +513,9 @@ struct
          (* This is the common case *)
          true
       else
-         let { mseq_goal = goal1; mseq_assums = assums1 } = seq1 in
-         let { mseq_goal = goal2; mseq_assums = assums2 } = seq2 in
-         let rec compare = function
-            hyp1::assums1, hyp2::assums2 ->
-               alpha_equal hyp1 hyp2 & compare (assums1, assums2)
-          | [], [] ->
-               true
-          | _ ->
-               false
-         in
-            alpha_equal goal1 goal2 & compare (assums1, assums2)
+         alpha_equal seq1.mseq_goal seq2.mseq_goal &&
+            (seq1.mseq_assums == seq2.mseq_assums ||
+               Lm_list_util.for_all2 alpha_equal seq1.mseq_assums seq2.mseq_assums)
 
    (*
     * Split the goals from the assums.
