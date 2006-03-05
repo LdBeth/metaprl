@@ -55,7 +55,7 @@ type elim_option =
  | ElimArgsOption of (tactic_arg -> term -> term list) * term option
  | AutoOK (* It's OK to use this in autoT on "normal" level *)
 
-type intro_item = string * int option * rule_labels * auto_type * tactic
+type intro_item
 type elim_item  = rule_labels * bool * (int -> tactic)
 
 resource (term * elim_item, int -> tactic) elim
@@ -69,8 +69,8 @@ val process_intro_resource_annotation :
    ?options: intro_option list ->
    (term * intro_item) annotation_processor
 
-val wrap_intro : ?labels: term list -> tactic -> intro_item
-val wrap_intro_auto_complete : ?labels: term list -> tactic -> intro_item
+val wrap_intro : ?labels: term list -> ?name:string -> ?select:int -> tactic -> intro_item
+val wrap_intro_auto_complete : ?labels: term list -> ?name:string -> ?select:int -> tactic -> intro_item
 val wrap_elim : ?labels: term list -> (int -> tactic) -> elim_item
 val wrap_elim_auto_ok : ?labels: term list -> (int -> tactic) -> elim_item
 val intro_must_select : intro_item
