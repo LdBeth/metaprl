@@ -223,7 +223,14 @@ type elim_option =
  | ElimArgsOption of (tactic_arg -> term -> term list) * term option
  | AutoOK
 
-type intro_item = string * int option * rule_labels * auto_type * tactic
+type intro_item = {
+   intro_tac: tactic;
+   intro_select: int option;
+   intro_labels: rule_labels;
+   intro_auto: auto_type;
+   intro_name: string;
+}
+
 type elim_item  = rule_labels * bool * (int -> tactic)
 
 (************************************************************************
@@ -266,10 +273,10 @@ let extract_elim_data =
                            raise (RefineError ("extract_elim_data", StringTermError ("D tactic doesn't know about", t)))))
 
 let extract_intro_data =
-   let select_intro p options in_auto_type (name, sel, opts, auto_type, _) =
+   let select_intro p options in_auto_type item =
       if !debug_dtactic then
-         eprintf "Dtactic: intro: potential match found: %s; will test for selection%t" name eflush;
-      (match in_auto_type, auto_type with
+         eprintf "Dtactic: intro: potential match found: %s; will test for selection%t" item.intro_name eflush;
+      (match in_auto_type, item.intro_auto with
           Some 0, AutoTrivial
         | Some 1, AutoNormal
         | Some 2, AutoComplete
@@ -278,7 +285,7 @@ let extract_intro_data =
         | _ ->
              false)
       &&
-      (match sel with
+      (match item.intro_select with
           None ->
              true
         | Some i ->
@@ -288,12 +295,12 @@ let extract_intro_data =
                | None ->
                     false)
       &&
-      (rule_labels_are_allowed options opts)
+      (rule_labels_are_allowed options item.intro_labels)
    in
-   let extract (name, _, _, _, tac) =
+   let extract item =
       if !debug_dtactic then
-         eprintf "Dtactic: intro: found %s%t" name eflush;
-      tac
+         eprintf "Dtactic: intro: found %s%t" item.intro_name eflush;
+      item.intro_tac
    in
       (fun tbl ->
             funT (fun p ->
@@ -396,18 +403,25 @@ let process_intro_resource_annotation ?(options = []) ?labels name args term_arg
    in
    let sel_opts = get_sel_arg options in
    let option_opts = rule_labels_of_opt_terms labels in
+   let item = {
+      intro_name = name;
+      intro_select = sel_opts;
+      intro_labels = option_opts;
+      intro_auto = AutoComplete;
+      intro_tac = tac;
+   } in
    let rec auto_aux = function
       [] ->
-         [t, (name, sel_opts, option_opts, (if assums = [] then AutoTrivial else AutoNormal), tac)]
+         [t, { item with intro_auto = if assums = [] then AutoTrivial else AutoNormal }]
     | AutoMustComplete :: _ ->
-         [t, (name, sel_opts, option_opts, AutoComplete, tac)]
+         [t, item]
     | CondMustComplete f :: _ ->
          let auto_exn = RefineError ("intro_annotation: " ^ name, StringError "not appropriate in weakAutoT") in
          let tac' =
             funT (fun p -> if f p then raise auto_exn else tac)
          in
-            [t, (name, sel_opts, option_opts, AutoNormal, tac');
-             t, (name, sel_opts, option_opts, AutoComplete, tac)]
+            [t, {item with intro_auto = AutoNormal; intro_tac = tac'};
+             t, item]
     | _ :: tl ->
          auto_aux tl
    in
@@ -545,20 +559,19 @@ let process_elim_resource_annotation ?(options = []) ?labels name args term_args
     | _ ->
          raise (Invalid_argument (sprintf "Dtactic.improve_elim: %s: must be an elimination rule" name))
 
-let intro_name = function
-   Some name -> name | None -> "wrap_intro"
-
-let wrap_intro ?labels ?name ?select tac =
-   (intro_name name, select, rule_labels_of_opt_terms labels, AutoNormal, tac)
-
-let wrap_intro_auto_complete ?labels ?name ?select tac =
-   (intro_name name, select, rule_labels_of_opt_terms labels, AutoComplete, tac)
+let wrap_intro ?labels ?name ?select ?auto tac = {
+   intro_name = (match name with Some name -> name | None -> "wrap_intro");
+   intro_select = select;
+   intro_labels = rule_labels_of_opt_terms labels;
+   intro_auto = (match auto with Some auto -> auto | None -> AutoNormal);
+   intro_tac = tac;
+}
 
 let mustSelectT = funT (fun p ->
    raise (RefineError ("Dtactic.mustSelectT", StringTermError ("Select (selT) argument required", Sequent.concl p))))
 
 let intro_must_select =
-   ("mustSelectT", None, rule_labels_empty, AutoNormal, mustSelectT)
+   wrap_intro ~name:"mustSelectT" mustSelectT
 
 let mustOptionT = funT (fun p ->
    raise (RefineError ("Dtactic.mustOptionT", StringTermError ("String option (optionT) argument required", Sequent.concl p))))
