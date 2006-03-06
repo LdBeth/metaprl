@@ -299,7 +299,7 @@ let extract_intro_data =
       (rule_labels_are_allowed options item.intro_labels)
    in
    let rec extract (cont: intro_item lazy_lookup) p =
-      match cont () with with
+      match cont () with
          Some (item, cont) ->
             if !debug_dtactic then
                eprintf "Dtactic: intro: found %s%t" item.intro_name eflush;
@@ -324,7 +324,7 @@ let extract_intro_data =
             let options = Sequent.get_option_args p in
                if !debug_dtactic then
                   eprintf "Dtactic: intro: lookup %s%t" (SimplePrint.short_string_of_term t) eflush;
-               extract (lookup_all tbl (select_intro p options (Sequent.get_int_arg p "d_auto")) t ())))
+               extract (lookup_all tbl (select_intro p options (Sequent.get_int_arg p "d_auto")) t) p))
 
 (*
  * Options for intro rule.
