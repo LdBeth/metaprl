@@ -224,10 +224,11 @@ type elim_option =
  | AutoOK
 
 type intro_item = {
-   intro_tac: tactic;
+   intro_auto: auto_type;
    intro_select: int option;
    intro_labels: rule_labels;
-   intro_auto: auto_type;
+   intro_fall_through: bool;
+   intro_tac: tactic;
    intro_name: string;
 }
 
@@ -297,30 +298,33 @@ let extract_intro_data =
       &&
       (rule_labels_are_allowed options item.intro_labels)
    in
-   let extract item =
-      if !debug_dtactic then
-         eprintf "Dtactic: intro: found %s%t" item.intro_name eflush;
-      item.intro_tac
+   let rec extract (cont: intro_item lazy_lookup) p =
+      match cont () with with
+         Some (item, cont) ->
+            if !debug_dtactic then
+               eprintf "Dtactic: intro: found %s%t" item.intro_name eflush;
+            if item.intro_fall_through then
+               item.intro_tac orelseT (argfunT extract cont)
+            else
+               item.intro_tac
+       | None ->
+            let msg =
+               match get_sel_arg p with
+                  Some _ ->
+                     "dT: nothing appropriate found: the select argument may be out of range"
+                | None ->
+                     (* "dT: nothing appropriate found: the option arguments may not be valid" *)
+                     "dT: nothing appropriate found"
+            in
+               raise (RefineError ("extract_intro_data", StringTermError (msg, (Sequent.concl p))))
    in
       (fun tbl ->
-            funT (fun p ->
-                  let t = Sequent.concl p in
-                  let options = Sequent.get_option_args p in
-                     if !debug_dtactic then
-                        eprintf "Dtactic: intro: lookup %s%t" (SimplePrint.short_string_of_term t) eflush;
-                     match lookup_bucket tbl (select_intro p options (Sequent.get_int_arg p "d_auto")) t with
-                        Some tacs ->
-                           firstT (List.map extract tacs)
-                      | None ->
-                           let msg =
-                              match get_sel_arg p with
-                                 Some _ ->
-                                    "dT: nothing appropriate found: the select argument may be out of range"
-                               | None ->
-                                    (* "dT: nothing appropriate found: the option arguments may not be valid" *)
-                                    "dT: nothing appropriate found"
-                           in
-                              raise (RefineError ("extract_intro_data", StringTermError (msg, t)))))
+         funT (fun p ->
+            let t = Sequent.concl p in
+            let options = Sequent.get_option_args p in
+               if !debug_dtactic then
+                  eprintf "Dtactic: intro: lookup %s%t" (SimplePrint.short_string_of_term t) eflush;
+               extract (lookup_all tbl (select_intro p options (Sequent.get_int_arg p "d_auto")) t ())))
 
 (*
  * Options for intro rule.
@@ -409,6 +413,7 @@ let process_intro_resource_annotation ?(options = []) ?labels name args term_arg
       intro_labels = option_opts;
       intro_auto = AutoComplete;
       intro_tac = tac;
+      intro_fall_through = true;
    } in
    let rec auto_aux = function
       [] ->
@@ -559,19 +564,20 @@ let process_elim_resource_annotation ?(options = []) ?labels name args term_args
     | _ ->
          raise (Invalid_argument (sprintf "Dtactic.improve_elim: %s: must be an elimination rule" name))
 
-let wrap_intro ?labels ?name ?select ?auto tac = {
-   intro_name = (match name with Some name -> name | None -> "wrap_intro");
+let wrap_intro ?labels ?(name="wrap_intro") ?select ?(auto=AutoNormal) ?(fall_through=true) tac = {
+   intro_name = name;
    intro_select = select;
    intro_labels = rule_labels_of_opt_terms labels;
-   intro_auto = (match auto with Some auto -> auto | None -> AutoNormal);
+   intro_auto = auto;
    intro_tac = tac;
+   intro_fall_through = fall_through;
 }
 
 let mustSelectT = funT (fun p ->
    raise (RefineError ("Dtactic.mustSelectT", StringTermError ("Select (selT) argument required", Sequent.concl p))))
 
 let intro_must_select =
-   wrap_intro ~name:"mustSelectT" mustSelectT
+   wrap_intro ~name:"mustSelectT" ~fall_through:false mustSelectT
 
 let mustOptionT = funT (fun p ->
    raise (RefineError ("Dtactic.mustOptionT", StringTermError ("String option (optionT) argument required", Sequent.concl p))))

@@ -69,7 +69,14 @@ val process_intro_resource_annotation :
    ?options: intro_option list ->
    (term * intro_item) annotation_processor
 
-val wrap_intro : ?labels: term list -> ?name:string -> ?select:int -> ?auto:auto_type -> tactic -> intro_item
+val wrap_intro :
+   ?labels: term list ->   (* rule selection labels *)
+   ?name:string ->         (* rule/tactic name *)
+   ?select:int ->          (* require a matching selT argument *)
+   ?auto:auto_type ->      (* use a rule in a specific phase of autoT; default: AutoNormal *)
+   ?fall_through:bool ->   (* whether to keep trying other matches if this one fails; default: true *)
+   tactic -> intro_item
+
 val wrap_elim : ?labels: term list -> (int -> tactic) -> elim_item
 val wrap_elim_auto_ok : ?labels: term list -> (int -> tactic) -> elim_item
 val intro_must_select : intro_item
