@@ -1383,11 +1383,6 @@ let mk_elim_assum info einfo t_logic t =
       List.fold_left (fun (socvars, all_vars, clauses) premise ->
             let socvars, premise = sweep_rulequote_term info socvars premise in
 
-            (* The subgoal *)
-            let premise1 = Reflect.mk_ProvableSequent_term info t_logic premise in
-            let w_v, all_vars = maybe_new_var var_w all_vars in
-            let premise1 = Hypothesis (w_v, premise1) in
-
             (* The induction part *)
             let u_v, all_vars = maybe_new_var var_u all_vars in
             let h_t = mk_so_var_term hyp_v [h_v] [mk_var_term u_v] in
@@ -1397,7 +1392,18 @@ let mk_elim_assum info einfo t_logic t =
             let t_all = Reflect.mk_all_term info u_v u_ty t_implies in
             let w_v, all_vars = maybe_new_var var_w all_vars in
             let premise2 = Hypothesis (w_v, t_all) in
-               socvars, all_vars, premise1 :: premise2 :: clauses) (socvars, all_vars, clauses) (List.rev premises)
+               socvars, all_vars, premise2 :: clauses) (socvars, all_vars, clauses) (List.rev premises)
+   in
+
+   let socvars, _, clauses =
+      List.fold_left (fun (socvars, all_vars, clauses) premise ->
+            let socvars, premise = sweep_rulequote_term info socvars premise in
+
+            (* The subgoal *)
+            let premise1 = Reflect.mk_ProvableSequent_term info t_logic premise in
+            let w_v, all_vars = maybe_new_var var_w all_vars in
+            let premise1 = Hypothesis (w_v, premise1) in
+               socvars, all_vars, premise1 :: clauses) (socvars, all_vars, clauses) (List.rev premises)
    in
 
    (* Universally quantify the variables *)
