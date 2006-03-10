@@ -562,7 +562,7 @@ let add_intro info t_logic (loc, item) =
          Stdpp.raise_with_loc loc exn
 
 (*
- * Add an elimination rule for proof induction.
+ * Add the huge elimination rule for proof induction.
  *)
 let add_elim info loc name t_logic rules =
    let rule_name = "elim_" ^ name in
@@ -581,6 +581,29 @@ let add_elim info loc name t_logic rules =
 
 let add_elim info loc name t_logic rules =
    try add_elim info loc name t_logic rules with
+      exn when not_exn_located exn ->
+         Stdpp.raise_with_loc loc exn
+
+(*
+ * Add the multi-step elimination rule for proof induction.
+ *)
+let add_elim_start info loc name t_logic rules =
+   let rule_name = "elim_start_" ^ name in
+
+   (* TODO: add to elim resource *)
+   let res = no_resources in
+
+   (* Build the rule *)
+   let h_v, mt = Filter_reflection.mk_elim_start_thm info.info_parse_info t_logic in
+   let params = [mk_so_var_term h_v [] []] in
+   let _, mt, params = parse_rule info loc rule_name mt params in
+
+   (* TODO: more accurate tactic *)
+   let tac = "elimRuleStartT" in
+      define_thm info loc rule_name params mt tac res
+
+let add_elim_start info loc name t_logic rules =
+   try add_elim_start info loc name t_logic rules with
       exn when not_exn_located exn ->
          Stdpp.raise_with_loc loc exn
 
@@ -631,7 +654,10 @@ let postprocess_rules info current loc name items =
    let rules = List.map (add_intro info t_logic) items in
 
       (* Add an elimination rule for the entire logic *)
-      add_elim info loc name t_logic rules
+      add_elim info loc name t_logic rules;
+
+      (* Add the multi-step elimination rule for the entire logic *)
+      add_elim_start info loc name t_logic rules
 
 (*
  * Copy items directly.

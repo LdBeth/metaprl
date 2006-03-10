@@ -79,20 +79,22 @@ let perv_opname       = mk_opname "Perv" nil_opname
 (*
  * Variables.
  *)
-let var_A       = Lm_symbol.add "A"
-let var_C       = Lm_symbol.add "C"
-let var_H       = Lm_symbol.add "H"
-let var_J       = Lm_symbol.add "J"
-let var_u       = Lm_symbol.add "u"
-let var_U       = Lm_symbol.add "U"
-let var_v       = Lm_symbol.add "v"
-let var_w       = Lm_symbol.add "w"
-let var_x       = Lm_symbol.add "x"
-let var_z       = Lm_symbol.add "z"
-let var_step    = Lm_symbol.add "step"
-let var_witness = Lm_symbol.add "witness"
-let var_none    = Lm_symbol.add "_"
-let var_logic   = Lm_symbol.add "logic"
+let var_A        = Lm_symbol.add "A"
+let var_C        = Lm_symbol.add "C"
+let var_H        = Lm_symbol.add "H"
+let var_J        = Lm_symbol.add "J"
+let var_u        = Lm_symbol.add "u"
+let var_U        = Lm_symbol.add "U"
+let var_v        = Lm_symbol.add "v"
+let var_w        = Lm_symbol.add "w"
+let var_x        = Lm_symbol.add "x"
+let var_z        = Lm_symbol.add "z"
+let var_step     = Lm_symbol.add "step"
+let var_witness  = Lm_symbol.add "witness"
+let var_premise  = Lm_symbol.add "premise"
+let var_premises = Lm_symbol.add "premises"
+let var_none     = Lm_symbol.add "_"
+let var_logic    = Lm_symbol.add "logic"
 
 (*
  * Additional term constructors missing from TermOp.
@@ -128,6 +130,7 @@ sig
    val mk_nil_term              : t -> term
    val mk_cons_term             : t -> term -> term -> term
    val mk_list_term             : t -> term list -> term
+   val mk_all_list_term         : t -> var -> term -> term -> term
    val mk_pair_term             : t -> term -> term -> term
    val mk_length_term           : t -> term -> term
    val mk_append_term           : t -> term -> term -> term
@@ -155,6 +158,8 @@ sig
    val mk_sequent_arg_term      : t -> term
    val mk_Provable_term         : t -> term -> term -> term
    val mk_ProvableSequent_term  : t -> term -> term -> term
+   val mk_ProofStepWitness_term : t -> term
+   val mk_SimpleStep_term       : t -> term -> term -> term -> term -> term
    val mk_Sequent_term          : t -> term
    val mk_meta_type_term        : t -> term
    val mk_meta_member_term      : t -> term -> term -> term
@@ -199,11 +204,14 @@ struct
    let info_CVar              = hash ("CVar",            [],  [0])
    let info_Logic             = hash ("Logic",           [],  [])
    let info_ProofRule         = hash ("ProofRule",       [],  [])
+   let info_ProofStepWitness  = hash ("ProofStepWitness",[],  [])
    let info_Provable          = hash ("Provable",        [],  [0; 0])
    let info_ProvableSequent   = hash ("ProvableSequent", [],  [0; 0])
    let info_Sequent           = hash ("Sequent",         [],  [])
+   let info_SimpleStep        = hash ("SimpleStep",      [],  [0; 0; 0; 0])
    let info_add               = hash ("add",             [],  [0; 0])
    let info_append            = hash ("append",          [],  [0; 0])
+   let info_all_list          = hash ("all_list",        [],  [0; 1])
    let info_assert            = hash ("assert",          [],  [0])
    let info_beq_proof_step    = hash ("beq_proof_step",  [],  [0; 0])
    let info_bind_vec          = hash ("bind",            [],  [0; 1])
@@ -332,6 +340,9 @@ struct
    let mk_append_term info t1 t2 =
       mk_simple_term (find_opname info info_append) [t1; t2]
 
+   let mk_all_list_term info v t1 t2 =
+      mk_dep0_dep1_term (find_opname info info_all_list) v t1 t2
+
    let rec mk_append_list_term info l =
       match l with
          [] ->
@@ -408,6 +419,12 @@ struct
 
    let mk_ProofRule_term info =
       mk_simple_term (find_opname info info_ProofRule) []
+
+   let mk_ProofStepWitness_term info =
+      mk_simple_term (find_opname info info_ProofStepWitness) []
+
+   let mk_SimpleStep_term info premises goal witness logic =
+      mk_simple_term (find_opname info info_SimpleStep) [premises; goal; witness; logic]
 
    let mk_sequent_arg_term info =
       mk_simple_term (find_opname info info_sequent_arg) []
@@ -1446,8 +1463,7 @@ let mk_elim_wf_assum info einfo t_logic =
           Hypothesis (u_v, u_ty);
           Hypothesis (x_v, Reflect.mk_ProvableSequent_term info t_logic (mk_so_var_term hyp_v [h_v] [mk_var_term u_v]));
           Context (j_v, [h_v], [mk_var_term u_v; mk_var_term x_v]);
-          Hypothesis (v_v, u_ty);
-          ]
+          Hypothesis (v_v, u_ty)]
    in
    let concl_v_term = mk_so_var_term hyp_v [h_v] [mk_var_term v_v] in
    let seq =
@@ -1487,21 +1503,15 @@ let mk_elim_goal info einfo t_logic =
       mk_sequent_term seq
 
 (*
- * Make the elimination theorem.
+ * Build the elim info, which is basically just the variable names.
+ *
+ * NOTE: make sure all the calls to new_var have distinct x
  *)
-let mk_elim_thm info t_logic premises =
-   let it = Reflect.mk_it_term info in
-
-   (* Variable calculations *)
-   let mt_all = List.fold_left (fun mt t -> MetaImplies (t, mt)) (MetaTheorem it) premises in
-   let all_vars = all_vars_mterm mt_all in
-
-   (* NOTE: make sure all the calls to new_var have distinct x *)
+let mk_elim_info all_vars =
    let new_var x =
       Lm_symbol.new_name x (SymbolSet.mem all_vars)
    in
    let h_v = new_var var_H in
-   let einfo =
       { elim_h_v      = h_v;
         elim_j_v      = new_var var_J;
         elim_u_v      = new_var var_u;
@@ -1512,13 +1522,112 @@ let mk_elim_thm info t_logic premises =
         elim_concl_v  = new_var var_C;
         elim_all_vars = all_vars
       }
-   in
+
+(*
+ * Make the huge form of the elimination theorem.
+ *)
+let mk_elim_thm info t_logic premises =
+   let it = Reflect.mk_it_term info in
+
+   (* Variable calculations *)
+   let mt_all = List.fold_left (fun mt t -> MetaImplies (t, mt)) (MetaTheorem it) premises in
+   let all_vars = all_vars_mterm mt_all in
+   let einfo = mk_elim_info all_vars in
 
    (* Build the premises *)
    let wf_assum = mk_elim_wf_assum info einfo t_logic in
    let premises = List.map (mk_elim_assum info einfo t_logic) premises in
    let goal = mk_elim_goal info einfo t_logic in
-      h_v, zip_mlabeled (wf_assum :: premises) goal
+      einfo.elim_h_v, zip_mlabeled (wf_assum :: premises) goal
+
+(************************************************************************
+ * Multi-step elimination.
+ *)
+
+(*
+ * Make an elimination premise for the start step of elimination.
+ *)
+let mk_elim_premise info einfo t_logic =
+   let { elim_h_v      = h_v;
+         elim_j_v      = j_v;
+         elim_u_v      = u_v;
+         elim_u_ty     = u_ty;
+         elim_v_v      = v_v;
+         elim_x_v      = x_v;
+         elim_hyp_v    = hyp_v;
+         elim_concl_v  = concl_v;
+         elim_all_vars = all_vars
+       } = einfo
+   in
+
+   (* Additional variables *)
+   let premises_v, all_vars = maybe_new_var var_premises einfo.elim_all_vars in
+   let premise_v, all_vars  = maybe_new_var var_premise all_vars in
+   let witness_v, all_vars  = maybe_new_var var_witness all_vars in
+   let w1_v, all_vars       = maybe_new_var var_w all_vars in
+   let w2_v, all_vars       = maybe_new_var var_w all_vars in
+   let w3_v, all_vars       = maybe_new_var var_w all_vars in
+   let w4_v, all_vars       = maybe_new_var var_w all_vars in
+
+   (* Some terms *)
+   let a_v_t        = mk_so_var_term hyp_v [h_v] [mk_var_term v_v] in
+   let c_v_t        = mk_so_var_term concl_v [j_v; h_v] [mk_var_term v_v] in
+   let t_BTerm      = Reflect.mk_BTerm_term info in
+   let t_BTerm_list = Reflect.mk_ty_list_term info t_BTerm in
+   let t_ProofStepWitness = Reflect.mk_ProofStepWitness_term info in
+   let t_premises   = mk_var_term premises_v in
+   let t_premise    = mk_var_term premise_v in
+   let t_witness    = mk_var_term witness_v in
+
+   (* Build the sequent *)
+   let hyps =
+      [Context    (h_v, [], []);
+       Hypothesis (u_v,        u_ty);
+       Hypothesis (x_v,        Reflect.mk_ProvableSequent_term info t_logic (mk_so_var_term hyp_v [h_v] [mk_var_term u_v]));
+       Context    (j_v, [h_v], [mk_var_term u_v; mk_var_term x_v]);
+       Hypothesis (v_v,        u_ty);
+       Hypothesis (premises_v, t_BTerm_list);
+       Hypothesis (witness_v,  t_ProofStepWitness);
+       Hypothesis (w1_v,       Reflect.mk_SimpleStep_term info t_premises a_v_t t_witness t_logic);
+       Hypothesis (w2_v,       Reflect.mk_ProvableSequent_term info t_logic a_v_t);
+       Hypothesis (w3_v,       Reflect.mk_all_list_term info premise_v t_premises (Reflect.mk_Provable_term info t_logic t_premise));
+       Hypothesis (w4_v,       Reflect.mk_all_list_term info premise_v t_premises (**)
+                      (Reflect.mk_all_term info v_v u_ty (**)
+                          (Reflect.mk_implies_term info (**)
+                              (Reflect.mk_equal_term info a_v_t t_premise t_BTerm)
+                              c_v_t)))]
+   in
+   let seq =
+      { sequent_args  = Reflect.mk_sequent_arg_term info;
+        sequent_hyps  = SeqHyp.of_list hyps;
+        sequent_concl = c_v_t
+      }
+   in
+      [], mk_sequent_term seq
+
+(*
+ * Make the short-elimination form, based on Itt_hoas_proof_ind.provableSequent_elim.
+ * Here, "logic" is the specific logic.
+ *
+ * [wf] sequent { <H>; v: 'ty; x: ProvableSequent{logic; 'A['v]}; <J['v; 'x]>; w: 'ty >- 'A['w] in BTerm } -->
+ * sequent { <H>; v: 'ty; x: ProvableSequent{logic; 'A['v]}; <J['v; 'x]>;
+ *     u: 'ty;
+ *     premises: list{BTerm};
+ *     witness: ProofStepWitness;
+ *     SimpleStep{'premises; 'A['u]; 'witness; logic};
+ *     all_list{'premises; premise. Provable{logic; 'premise}};
+ *     all_list{'premises; premise. (all w: 'ty. (('A['w] = 'premise in BTerm) => 'C['w]))}
+ *     >- 'C['u] }-->
+ * sequent { <H>; v: 'ty; x: ProvableSequent{logic; 'A['v]}; <J['v; 'x]> >- 'C['v] }
+ *)
+let mk_elim_start_thm info t_logic =
+   let einfo = mk_elim_info SymbolSet.empty in
+
+   (* Build the rule *)
+   let wf_assum = mk_elim_wf_assum info einfo t_logic in
+   let premise = mk_elim_premise info einfo t_logic in
+   let goal = mk_elim_goal info einfo t_logic in
+      einfo.elim_h_v, zip_mlabeled [wf_assum; premise] goal
 
 (************************************************************************
  * Logic membership.

@@ -86,6 +86,11 @@ val mk_mem_logic_thm  : parse_info -> term -> term -> meta_term
 val mk_elim_thm       : parse_info -> term -> meta_term list -> var * meta_term
 
 (*
+ * Multi-part elimination.
+ *)
+val mk_elim_start_thm : parse_info -> term -> var * meta_term
+
+(*
  * Various terms.
  *)
 val mk_reflect_df1_term : parse_info -> term -> term
