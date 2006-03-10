@@ -88,7 +88,8 @@ val mk_elim_thm       : parse_info -> term -> meta_term list -> var * meta_term
 (*
  * Multi-part elimination.
  *)
-val mk_elim_start_thm : parse_info -> term -> var * meta_term
+val mk_elim_start_thm       : parse_info -> term -> var * meta_term
+val mk_simple_step_elim_thm : parse_info -> term -> term list -> var * meta_term
 
 (*
  * Various terms.

@@ -89,6 +89,7 @@ let var_v        = Lm_symbol.add "v"
 let var_w        = Lm_symbol.add "w"
 let var_x        = Lm_symbol.add "x"
 let var_z        = Lm_symbol.add "z"
+let var_goal     = Lm_symbol.add "goal"
 let var_step     = Lm_symbol.add "step"
 let var_witness  = Lm_symbol.add "witness"
 let var_premise  = Lm_symbol.add "premise"
@@ -155,6 +156,7 @@ sig
    val mk_proof_step_term       : t -> term -> term -> term
    val mk_beq_proof_step_term   : t -> term -> term -> term
    val mk_ProofRule_term        : t -> term
+   val mk_ProofCheck_term       : t -> term -> term -> term -> term -> term
    val mk_sequent_arg_term      : t -> term
    val mk_Provable_term         : t -> term -> term -> term
    val mk_ProvableSequent_term  : t -> term -> term -> term
@@ -204,6 +206,7 @@ struct
    let info_CVar              = hash ("CVar",            [],  [0])
    let info_Logic             = hash ("Logic",           [],  [])
    let info_ProofRule         = hash ("ProofRule",       [],  [])
+   let info_ProofCheck        = hash ("ProofCheck",      [],  [0; 0; 0; 0])
    let info_ProofStepWitness  = hash ("ProofStepWitness",[],  [])
    let info_Provable          = hash ("Provable",        [],  [0; 0])
    let info_ProvableSequent   = hash ("ProvableSequent", [],  [0; 0])
@@ -419,6 +422,9 @@ struct
 
    let mk_ProofRule_term info =
       mk_simple_term (find_opname info info_ProofRule) []
+
+   let mk_ProofCheck_term info t1 t2 t3 t4 =
+      mk_simple_term (find_opname info info_ProofCheck) [t1; t2; t3; t4]
 
    let mk_ProofStepWitness_term info =
       mk_simple_term (find_opname info info_ProofStepWitness) []
@@ -1628,6 +1634,90 @@ let mk_elim_start_thm info t_logic =
    let premise = mk_elim_premise info einfo t_logic in
    let goal = mk_elim_goal info einfo t_logic in
       einfo.elim_h_v, zip_mlabeled [wf_assum; premise] goal
+
+(*
+ * SimpleStep elimination.
+ *
+ *   <H>; x: ProofCheck{r_1; premises; goal; witness}; <J[x]> >- C[x] -->
+ *   ...
+ *   <H>; x: ProofCheck{r_n; premises; goal; witness}; <J[x]> >- C[x] -->
+ *   <H>; x: SimpleStep{premises; goal; witness; logic}; <J[x]> >- C[x]
+ *
+ * NOTE: JYH: this will have to be extended when we support "extends".
+ *)
+type celim =
+   { celim_h_v      : var;
+     celim_j_v      : var;
+     celim_x_v      : var;
+     celim_c_v_t    : term;
+     celim_premises : term;
+     celim_goal     : term;
+     celim_witness  : term
+   }
+
+let mk_proof_check_case info cinfo t_rule =
+   let { celim_h_v      = h_v;
+         celim_j_v      = j_v;
+         celim_x_v      = x_v;
+         celim_c_v_t    = c_v_t;
+         celim_premises = t_premises;
+         celim_goal     = t_goal;
+         celim_witness  = t_witness
+       } = cinfo
+   in
+   let hyps =
+      [Context    (h_v, [], []);
+       Hypothesis (x_v,        Reflect.mk_ProofCheck_term info t_rule t_premises t_goal t_witness);
+       Context    (j_v, [h_v], [mk_var_term x_v])]
+   in
+   let seq =
+      { sequent_args  = Reflect.mk_sequent_arg_term info;
+        sequent_hyps  = SeqHyp.of_list hyps;
+        sequent_concl = c_v_t
+      }
+   in
+      [], mk_sequent_term seq
+
+let mk_simple_step_goal info cinfo t_logic =
+   let { celim_h_v      = h_v;
+         celim_j_v      = j_v;
+         celim_x_v      = x_v;
+         celim_c_v_t    = c_v_t;
+         celim_premises = t_premises;
+         celim_goal     = t_goal;
+         celim_witness  = t_witness
+       } = cinfo
+   in
+   let hyps =
+      [Context    (h_v, [], []);
+       Hypothesis (x_v,        Reflect.mk_SimpleStep_term info t_premises t_goal t_witness t_logic);
+       Context    (j_v, [h_v], [mk_var_term x_v])]
+   in
+   let seq =
+      { sequent_args  = Reflect.mk_sequent_arg_term info;
+        sequent_hyps  = SeqHyp.of_list hyps;
+        sequent_concl = c_v_t
+      }
+   in
+      mk_sequent_term seq
+
+let mk_simple_step_elim_thm info t_logic rules =
+   (* Var info *)
+   let cinfo =
+      { celim_h_v      = var_H;
+        celim_j_v      = var_J;
+        celim_x_v      = var_x;
+        celim_c_v_t    = mk_so_var_term var_C        [var_J; var_H] [mk_var_term var_x];
+        celim_premises = mk_so_var_term var_premises [var_H] [];
+        celim_goal     = mk_so_var_term var_goal     [var_H] [];
+        celim_witness  = mk_so_var_term var_witness  [var_H] []
+      }
+   in
+
+   (* Build the rule *)
+   let premises = List.map (mk_proof_check_case info cinfo) rules in
+   let goal = mk_simple_step_goal info cinfo t_logic in
+      var_H, zip_mlabeled premises goal
 
 (************************************************************************
  * Logic membership.

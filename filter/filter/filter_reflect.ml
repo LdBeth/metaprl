@@ -587,7 +587,7 @@ let add_elim info loc name t_logic rules =
 (*
  * Add the multi-step elimination rule for proof induction.
  *)
-let add_elim_start info loc name t_logic rules =
+let add_elim_start info loc name t_logic =
    let rule_name = "elim_start_" ^ name in
 
    (* TODO: add to elim resource *)
@@ -602,8 +602,31 @@ let add_elim_start info loc name t_logic rules =
    let tac = "elimRuleStartT" in
       define_thm info loc rule_name params mt tac res
 
-let add_elim_start info loc name t_logic rules =
-   try add_elim_start info loc name t_logic rules with
+let add_elim_start info loc name t_logic =
+   try add_elim_start info loc name t_logic with
+      exn when not_exn_located exn ->
+         Stdpp.raise_with_loc loc exn
+
+(*
+ * Case analysis on SimpleStep.
+ *)
+let add_simple_step_elim info loc name t_logic rules =
+   let rule_name = "elim_step_" ^ name in
+
+   (* TODO: add to elim resource *)
+   let res = no_resources in
+
+   (* Build the rule *)
+   let h_v, mt = Filter_reflection.mk_simple_step_elim_thm info.info_parse_info t_logic rules in
+   let params = [mk_so_var_term h_v [] []] in
+   let _, mt, params = parse_rule info loc rule_name mt params in
+
+   (* TODO: more accurate tactic *)
+   let tac = "elimSimpleStepT" in
+      define_thm info loc rule_name params mt tac res
+
+let add_simple_step_elim info loc name t_logic rules =
+   try add_simple_step_elim info loc name t_logic rules with
       exn when not_exn_located exn ->
          Stdpp.raise_with_loc loc exn
 
@@ -651,13 +674,16 @@ let postprocess_rules info current loc name items =
    let () = List.iter (add_mem_logic info name t_logic) items in
 
    (* Add an introduction form for each of the rules *)
-   let rules = List.map (add_intro info t_logic) items in
+   let intro_rules = List.map (add_intro info t_logic) items in
 
       (* Add an elimination rule for the entire logic *)
-      add_elim info loc name t_logic rules;
+      add_elim info loc name t_logic intro_rules;
 
       (* Add the multi-step elimination rule for the entire logic *)
-      add_elim_start info loc name t_logic rules
+      add_elim_start info loc name t_logic;
+
+      (* Case analysis on SimpleStep *)
+      add_simple_step_elim info loc name t_logic rules
 
 (*
  * Copy items directly.
