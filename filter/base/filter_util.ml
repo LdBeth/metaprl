@@ -58,7 +58,7 @@ let _ =
  *)
 let dummy_loc =
    Lexing.dummy_pos, Lexing.dummy_pos
-   
+
 (*
  * Construct a location.
  * XXX: TODO: This converts the old-style location data into modern one.
@@ -240,15 +240,28 @@ let no_resources =
    }
 
 let intro_resources _loc =
-   let intro = {
-      res_loc = _loc;
-      res_name = "intro";
-      res_flag = Mp_resource.Public;
-      res_args = [<:expr< [] >>]
-   } in
-   { item_item = [intro];
-     item_bindings = []
-   }
+   let intro =
+      { res_loc  = _loc;
+        res_name = "intro";
+        res_flag = Mp_resource.Public;
+        res_args = []
+      }
+   in
+      { item_item = [intro];
+        item_bindings = []
+      }
+
+let elim_resources _loc =
+   let elim =
+      { res_loc  = _loc;
+        res_name = "elim";
+        res_flag = Mp_resource.Public;
+        res_args = []
+      }
+   in
+      { item_item = [elim];
+        item_bindings = []
+      }
 
 (*
  * -*-

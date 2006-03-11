@@ -89,6 +89,7 @@ let var_v        = Lm_symbol.add "v"
 let var_w        = Lm_symbol.add "w"
 let var_x        = Lm_symbol.add "x"
 let var_z        = Lm_symbol.add "z"
+let var_rule     = Lm_symbol.add "rule"
 let var_goal     = Lm_symbol.add "goal"
 let var_step     = Lm_symbol.add "step"
 let var_witness  = Lm_symbol.add "witness"
@@ -1370,7 +1371,13 @@ let maybe_new_var var_x all_vars =
  * Given a rule:
  *     T1 --> ... --> Tn
  * The elim clause is:
- *     true
+ *     <H>; u: U; x: ProvableSequent{A[u]}; <J[u; x]>;
+ *        P[logic] << T1 >>; all u: U. (A[u] = << T1 >> in BTerm => C[u]);
+ *        ...
+ *        P[logic] << T_{n - 1} >>; all u: U. (A[u] = << T_{n - 1} >> in BTerm => C[u]);
+ *        v: U;
+ *        A[v] = Tn in BTerm;
+ *        P[logic] << A[v] >>
  *)
 let mk_elim_assum info einfo t_logic t =
    let { elim_h_v      = h_v;
@@ -1650,10 +1657,32 @@ type celim =
      celim_j_v      : var;
      celim_x_v      : var;
      celim_c_v_t    : term;
+     celim_rule     : term;
      celim_premises : term;
      celim_goal     : term;
-     celim_witness  : term
+     celim_witness  : term;
+     celim_vars     : SymbolSet.t
    }
+
+let mk_celim_info all_vars =
+   let h_v, all_vars        = maybe_new_var var_H all_vars in
+   let j_v, all_vars        = maybe_new_var var_J all_vars in
+   let x_v, all_vars        = maybe_new_var var_x all_vars in
+   let c_v, all_vars        = maybe_new_var var_C all_vars in
+   let rule_v, all_vars     = maybe_new_var var_rule all_vars in
+   let premises_v, all_vars = maybe_new_var var_premises all_vars in
+   let goal_v, all_vars     = maybe_new_var var_goal all_vars in
+   let witness_v, all_vars  = maybe_new_var var_witness all_vars in
+      { celim_h_v      = h_v;
+        celim_j_v      = j_v;
+        celim_x_v      = x_v;
+        celim_c_v_t    = mk_so_var_term c_v        [j_v; h_v] [mk_var_term x_v];
+        celim_rule     = mk_so_var_term rule_v     [h_v] [];
+        celim_premises = mk_so_var_term premises_v [h_v] [];
+        celim_goal     = mk_so_var_term goal_v     [h_v] [];
+        celim_witness  = mk_so_var_term witness_v  [h_v] [];
+        celim_vars     = all_vars
+      }
 
 let mk_proof_check_case info cinfo t_rule =
    let { celim_h_v      = h_v;
@@ -1702,22 +1731,108 @@ let mk_simple_step_goal info cinfo t_logic =
       mk_sequent_term seq
 
 let mk_simple_step_elim_thm info t_logic rules =
-   (* Var info *)
-   let cinfo =
-      { celim_h_v      = var_H;
-        celim_j_v      = var_J;
-        celim_x_v      = var_x;
-        celim_c_v_t    = mk_so_var_term var_C        [var_J; var_H] [mk_var_term var_x];
-        celim_premises = mk_so_var_term var_premises [var_H] [];
-        celim_goal     = mk_so_var_term var_goal     [var_H] [];
-        celim_witness  = mk_so_var_term var_witness  [var_H] []
-      }
-   in
-
-   (* Build the rule *)
+   let cinfo = mk_celim_info SymbolSet.empty in
    let premises = List.map (mk_proof_check_case info cinfo) rules in
    let goal = mk_simple_step_goal info cinfo t_logic in
       var_H, zip_mlabeled premises goal
+
+(*
+ * Elim rule for ProofCheck.
+ * Given a rule R =  T1 --> ... --> Tn
+ *
+ * <H>; x: ProofCheck{R; premises; goal; witness}; <J[x]>;
+ *     ...quantifiers...
+ *     premises = [<< T1 >>; ...; << T_{n - 1} >>] in list{BTerm};
+ *     goal = << Tn >> >- C[x] -->
+ * <H>; x: ProofCheck{R; premises; goal; witness}; <J[x]> >- C[x]
+ *)
+let mk_proof_check_premise info cinfo t =
+   let { celim_h_v      = h_v;
+         celim_j_v      = j_v;
+         celim_x_v      = x_v;
+         celim_c_v_t    = c_v_t;
+         celim_rule     = t_rule;
+         celim_premises = t_premises;
+         celim_goal     = t_goal;
+         celim_witness  = t_witness;
+         celim_vars     = all_vars
+       } = cinfo
+   in
+
+   (* Some additional variables *)
+   let w1_v, all_vars = maybe_new_var var_w all_vars in
+   let w2_v, all_vars = maybe_new_var var_w all_vars in
+
+   (* Some terms *)
+   let ty_bterm = Reflect.mk_BTerm_term info in
+   let ty_bterm_list = Reflect.mk_ty_list_term info ty_bterm in
+
+   (* Convert the terms in the rule *)
+   let premises, goal = unzip_mfunction t in
+   let premises = List.map (fun (_, _, premise) -> premise) premises in
+
+   (* Convert the goal equality *)
+   let socvars, goal = sweep_rulequote_term info SymbolTable.empty goal in
+   let goal_clause = Hypothesis (w1_v, Reflect.mk_equal_term info t_goal goal ty_bterm) in
+
+   (* Convert the premises and the goal *)
+   let socvars, premises =
+      List.fold_left (fun (socvars, premises) premise ->
+            let socvars, premise = sweep_rulequote_term info socvars premise in
+               socvars, premise :: premises) (socvars, []) (List.rev premises)
+   in
+   let premises = Reflect.mk_list_term info premises in
+   let premises_clause = Hypothesis (w2_v, Reflect.mk_equal_term info t_premises premises ty_bterm_list) in
+
+   (* Universally quantify the variables *)
+   let socvars = sort_socvars socvars in
+   let clauses = quantify_socvars_hyps info socvars [premises_clause; goal_clause] in
+
+   (* Build the sequent *)
+   let premises =
+      Context (h_v, [], [])
+      :: Hypothesis (x_v, Reflect.mk_ProofCheck_term info t_rule t_premises t_goal t_witness)
+      :: Context (j_v, [h_v], [mk_var_term x_v])
+      :: clauses
+   in
+   let seq =
+      { sequent_args  = Reflect.mk_sequent_arg_term info;
+        sequent_hyps  = SeqHyp.of_list premises;
+        sequent_concl = c_v_t
+      }
+   in
+      [], mk_sequent_term seq
+
+let mk_proof_check_goal info cinfo =
+   let { celim_h_v      = h_v;
+         celim_j_v      = j_v;
+         celim_x_v      = x_v;
+         celim_c_v_t    = c_v_t;
+         celim_rule     = t_rule;
+         celim_premises = t_premises;
+         celim_goal     = t_goal;
+         celim_witness  = t_witness
+       } = cinfo
+   in
+   let premises =
+      [Context (h_v, [], []);
+       Hypothesis (x_v, Reflect.mk_ProofCheck_term info t_rule t_premises t_goal t_witness);
+       Context (j_v, [h_v], [mk_var_term x_v])]
+   in
+   let seq =
+      { sequent_args  = Reflect.mk_sequent_arg_term info;
+        sequent_hyps  = SeqHyp.of_list premises;
+        sequent_concl = c_v_t
+      }
+   in
+      mk_sequent_term seq
+
+let mk_proof_check_elim_thm info t_rule t =
+   let cinfo = mk_celim_info (all_vars_mterm t) in
+   let cinfo = { cinfo with celim_rule = t_rule } in
+   let premise = mk_proof_check_premise info cinfo t in
+   let goal = mk_proof_check_goal info cinfo in
+      cinfo.celim_h_v, zip_mlabeled [premise] goal
 
 (************************************************************************
  * Logic membership.

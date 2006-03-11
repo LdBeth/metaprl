@@ -554,67 +554,39 @@ let add_intro info t_logic loc item =
    let _, mt = Filter_reflection.mk_intro_thm info.info_parse_info t_logic mt_rule in
    let tac = Printf.sprintf "provableRuleT << %s >> unfold_%s" name name in
       define_thm info loc rule_name params mt tac res;
-      mt_rule
+      { item with ref_rule_term = mt_rule }
 
 let add_intro info t_logic (loc, item) =
    try add_intro info t_logic loc item with
       exn when not_exn_located exn ->
          Stdpp.raise_with_loc loc exn
 
-(*
- * Add the huge elimination rule for proof induction.
- *)
-let add_elim info loc name t_logic rules =
-   let rule_name = "elim_" ^ name in
-
-   (* TODO: add to elim resource *)
-   let res = no_resources in
-
-   (* Build the rule *)
-   let h_v, mt = Filter_reflection.mk_elim_thm info.info_parse_info t_logic rules in
-   let params = [mk_so_var_term h_v [] []] in
-   let _, mt, params = parse_rule info loc rule_name mt params in
-
-   (* TODO: more accurate tactic *)
-   let tac = "elimRuleT" in
-      define_thm info loc rule_name params mt tac res
-
-let add_elim info loc name t_logic rules =
-   try add_elim info loc name t_logic rules with
-      exn when not_exn_located exn ->
-         Stdpp.raise_with_loc loc exn
-
-(*
+(************************************************
  * Add the multi-step elimination rule for proof induction.
  *)
-let add_elim_start info loc name t_logic =
-   let rule_name = "elim_start_" ^ name in
+let add_proof_check_elim info loc item =
+   let { ref_rule_name = name;
+         ref_rule_term = mt
+       } = item
+   in
+   let rule_name = "elim_check_" ^ name in
 
-   (* TODO: add to elim resource *)
-   let res = no_resources in
+   (* Name of the proof rule *)
+   let opname = Opname.mk_opname name (opname_prefix info loc) in
+   let t = mk_term (mk_op opname []) [] in
 
    (* Build the rule *)
-   let h_v, mt = Filter_reflection.mk_elim_start_thm info.info_parse_info t_logic in
+   let h_v, mt = Filter_reflection.mk_proof_check_elim_thm info.info_parse_info t mt in
    let params = [mk_so_var_term h_v [] []] in
    let _, mt, params = parse_rule info loc rule_name mt params in
 
    (* TODO: more accurate tactic *)
-   let tac = "elimRuleStartT" in
+   let tac = "elimProofCheckT" in
+   let res = elim_resources loc in
       define_thm info loc rule_name params mt tac res
 
-let add_elim_start info loc name t_logic =
-   try add_elim_start info loc name t_logic with
-      exn when not_exn_located exn ->
-         Stdpp.raise_with_loc loc exn
-
-(*
- * Case analysis on SimpleStep.
- *)
 let add_simple_step_elim info loc name t_logic rules =
    let rule_name = "elim_step_" ^ name in
-
-   (* TODO: add to elim resource *)
-   let res = no_resources in
 
    (* Build the rule *)
    let h_v, mt = Filter_reflection.mk_simple_step_elim_thm info.info_parse_info t_logic rules in
@@ -623,10 +595,48 @@ let add_simple_step_elim info loc name t_logic rules =
 
    (* TODO: more accurate tactic *)
    let tac = "elimSimpleStepT" in
+   let res = elim_resources loc in
       define_thm info loc rule_name params mt tac res
 
-let add_simple_step_elim info loc name t_logic rules =
-   try add_simple_step_elim info loc name t_logic rules with
+let add_elim_start info loc name t_logic =
+   let rule_name = "elim_start_" ^ name in
+
+   (* Build the rule *)
+   let h_v, mt = Filter_reflection.mk_elim_start_thm info.info_parse_info t_logic in
+   let params = [mk_so_var_term h_v [] []] in
+   let _, mt, params = parse_rule info loc rule_name mt params in
+
+   (* TODO: more accurate tactic *)
+   let tac = "elimRuleStartT" in
+      define_thm info loc rule_name params mt tac no_resources
+
+let add_multi_step_elim info loc name t_logic rules intro_rules =
+   try
+      List.iter (add_proof_check_elim info loc) intro_rules;
+      add_simple_step_elim info loc name t_logic rules;
+      add_elim_start info loc name t_logic
+   with
+      exn when not_exn_located exn ->
+         Stdpp.raise_with_loc loc exn
+
+(************************************************
+ * Add the huge elimination rule for proof induction.
+ *)
+let add_elim info loc name t_logic items =
+   let rule_name = "elim_" ^ name in
+   let rules = List.map (fun item -> item.ref_rule_term) items in
+
+   (* Build the rule *)
+   let h_v, mt = Filter_reflection.mk_elim_thm info.info_parse_info t_logic rules in
+   let params = [mk_so_var_term h_v [] []] in
+   let _, mt, params = parse_rule info loc rule_name mt params in
+
+   (* TODO: more accurate tactic *)
+   let tac = "elimRuleT" in
+      define_thm info loc rule_name params mt tac no_resources
+
+let add_elim info loc name t_logic rules =
+   try add_elim info loc name t_logic rules with
       exn when not_exn_located exn ->
          Stdpp.raise_with_loc loc exn
 
@@ -675,15 +685,11 @@ let postprocess_rules info current loc name items =
 
    (* Add an introduction form for each of the rules *)
    let intro_rules = List.map (add_intro info t_logic) items in
+      (* Add the multi-step elimination rule for the entire logic *)
+      add_multi_step_elim info loc name t_logic rules intro_rules;
 
       (* Add an elimination rule for the entire logic *)
-      add_elim info loc name t_logic intro_rules;
-
-      (* Add the multi-step elimination rule for the entire logic *)
-      add_elim_start info loc name t_logic;
-
-      (* Case analysis on SimpleStep *)
-      add_simple_step_elim info loc name t_logic rules
+      add_elim info loc name t_logic intro_rules
 
 (*
  * Copy items directly.
