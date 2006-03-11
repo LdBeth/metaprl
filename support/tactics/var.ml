@@ -30,7 +30,8 @@ doc <:doc<
    See the file doc/htmlman/default.html or visit http://metaprl.org/
    for more information.
 
-   Copyright (C) 1998 Jason Hickey, Cornell University
+   Copyright (C) 1998-2006 MetaPRL Group, Cornell University and
+   California Institute of Technology
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License
@@ -99,23 +100,23 @@ let maybe_new_vars vars vars' =
 
 let bv = Lm_symbol.add "vv"
 
-let var_subst_to_bind t1 t2 =
+let var_subst_to_bind ?(var=bv) t1 t2 =
    let vs = free_vars_set t1 in
    let v =
-      if SymbolSet.mem vs bv then
-         new_name bv (SymbolSet.mem vs)
+      if SymbolSet.mem vs var then
+         new_name var (SymbolSet.mem vs)
       else
-         bv
+         var
    in
       mk_bind1_term v (var_subst t1 t2 v)
 
-let var_subst_to_bind2 t t1 t2 =
+let var_subst_to_bind2 ?(var=bv) t t1 t2 =
    let vs = free_vars_set t in
    let v1 =
-      if SymbolSet.mem vs bv then
-         new_name bv (SymbolSet.mem vs)
+      if SymbolSet.mem vs var then
+         new_name var (SymbolSet.mem vs)
       else
-         bv
+         var
 	in
 	let vs' = SymbolSet.add vs v1 in
 	let v2 = new_name bv (SymbolSet.mem vs') in
