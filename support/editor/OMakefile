@@ -44,7 +44,7 @@ TOPFILES[] =
 make_mp_version$(EXE): make_mp_version.ml
     $(OCAMLC) $(OCAMLCFLAGS) -o $@ unix.cma $<
 
-static.=
+static. =
     SVNVERSION_AVAILABLE = $(CheckProg svnversion)
 
 if $(file-exists $(ROOT)/.svn/entries)
@@ -55,8 +55,8 @@ if $(file-exists $(ROOT)/.svn/entries)
         # dirs = $(dependencies $(MLDEBUG_PATH))
         FS=$'"'
         awk($(MLDEBUG_PATH))
-        case $'^DEBUGINCLUDES=\(.*\)'
-            dirs = $(filter-out -I, $(array $1))
+        case $'^DEBUGINCLUDES='
+            dirs = $(filter-out -I, $(array $2))
             export
         case $'^-I'
             dirs = $(filter-out -I, $(array $0))
