@@ -3,6 +3,11 @@
 # This duplicates the funcationality in filter/filter/prlcomp.ml
 #
 
+#
+# XXX: JYH: this seems kind of inefficient to me.
+# We should fix omake so that the final line can
+# just be $(argv).
+#
 Shell. +=
    prlcomp(argv) =
       setenv(MP_ROOT, $(ROOT))
@@ -41,9 +46,9 @@ WrapC(command) =
 #
 PrlC(command) =
    #
-   # Put together the command
-   # JYH: not sure if this should be hardcoded as CAMLP4N.
+   # Put together the command.  This should not be an array,
+   # because the alias prlcomp should not be quoted.
    #
-   COMMAND[] = prlcomp $(command) -pp $(quote-argv $(CAMLP4N) $(LOC))
+   COMMAND = prlcomp $(command) -pp $(quote-argv $(CAMLP4N) $(LOC))
 
    return($(COMMAND))

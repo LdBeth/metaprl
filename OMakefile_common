@@ -359,7 +359,7 @@ $(THEORIES_PATH):
         if $(equal $(OSTYPE), Win32)
             fprintln($@, $(string $(deps)))
         else
-            fprintln($@, $'INCLUDES='$(quote-argv $(deps)))
+            fprintln($@, $'INCLUDES='$(quote $(deps)))
 
 $(MLDEBUG_PATH):
     section
@@ -368,7 +368,7 @@ $(MLDEBUG_PATH):
         if $(equal $(OSTYPE), Win32)
             fprintln($@, $(string $(deps)))
         else
-            fprintln($@, $'DEBUGINCLUDES='$(quote-argv $(deps)))
+            fprintln($@, $'DEBUGINCLUDES='$(quote $(deps)))
 
 ########################################################################
 # Default clean command line

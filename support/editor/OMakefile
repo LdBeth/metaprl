@@ -55,8 +55,8 @@ if $(file-exists $(ROOT)/.svn/entries)
         # dirs = $(dependencies $(MLDEBUG_PATH))
         FS=$'"'
         awk($(MLDEBUG_PATH))
-        case $'^DEBUGINCLUDES='
-            dirs = $(filter-out -I, $(array $2))
+        case $'^DEBUGINCLUDES=\(.*\)'
+            dirs = $(filter-out -I, $(array $1))
             export
         case $'^-I'
             dirs = $(filter-out -I, $(array $0))
