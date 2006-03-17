@@ -49,19 +49,11 @@ static. =
 
 if $(file-exists $(ROOT)/.svn/entries)
     #
-    # XXX: BUG: nogin: for some reason, extracting dependencies gives an empty set here :-(
+    # Subversion revision potentially depends on all the directories
+    # in the project.
     #
     get-entries() =
-        # dirs = $(dependencies $(MLDEBUG_PATH))
-        FS=$'"'
-        awk($(MLDEBUG_PATH))
-        case $'^DEBUGINCLUDES='
-            dirs = $(filter-out -I, $(array $2))
-            export
-        case $'^-I'
-            dirs = $(filter-out -I, $(array $0))
-            export
-        return $(addsuffix /.svn/entries, $(dirs))
+        return $(addsuffix /.svn/entries, $(project-directories))
 
     digest-deps() =
         return $(digest-optional $(get-entries))
@@ -74,7 +66,7 @@ if $(file-exists $(ROOT)/.svn/entries)
         svnrevision(args) =
             hi = false
             lo =
-            FS=$'"'
+            FS = $'"'
             foreach(ent, $(args))
                 if $(file-exists $(ent))
                     awk($(ent))
