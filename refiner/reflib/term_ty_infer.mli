@@ -49,7 +49,7 @@ val mk_ty_sequent_term   : term -> term -> term -> term
 val mk_ty_hyp_term       : term -> term -> term
 val mk_ty_exists_term    : var -> term -> term -> term
 val mk_ty_constrain_term : term -> term -> term
-val mk_ty_hyp_cases_term : (term * shape) list -> term
+val mk_ty_hyp_cases_term : (term * term) list -> term
 
 (*
  * A type environment has 3 parts.

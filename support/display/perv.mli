@@ -104,7 +104,7 @@ declare type ty_sequent{'ty_hyp : ty_hyp; 'ty_concl : Ty; 'ty_seq : Ty} : ty_seq
 declare type ty_hyp{'ty_var : Ty; 'ty_hyp : Ty} : ty_hyp
 declare type ty_exists{'a : Ty; v : 'a. 'ty['v] : ty_hyp} : ty_hyp
 
-declare ty_hyp_case[s:sh]{'ty : Ty} : Dform
+declare ty_hyp_case{'ty_var : Ty; 'ty_hyp : Ty} : Dform
 declare type ty_hyp_cases{'cases : Dform} : ty_hyp
 
 (*

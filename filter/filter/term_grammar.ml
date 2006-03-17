@@ -1795,31 +1795,28 @@ struct
           ]];
 
       ty_hyp:
-         [[ ty_var = singleterm; ":"; ty_hyp = singleterm ->
-             let ty_var = get_aterm _loc ty_var in
-             let ty_hyp = get_aterm _loc ty_hyp in
-                mk_ty_hyp_term ty_var ty_hyp
+         [[ cases = ty_hyp_cases ->
+               (match cases with
+                  [ty_var, ty_hyp] ->
+                     mk_ty_hyp_term ty_var ty_hyp
+                | _ ->
+                     mk_ty_hyp_cases_term (List.rev cases))
            | "exst"; v = var; ":"; ty_var = singleterm; "."; ty_hyp = SELF ->
              let ty_var = get_aterm _loc ty_var in
                 mk_ty_exists_term v ty_var ty_hyp
-           | ty_var = singleterm; "::"; ty_hyp = singleterm; cases = ty_hyp_cases_rest ->
-               let ty_var = get_aterm _loc ty_var in
-               let ty_hyp = shape_of_term (get_aterm _loc ty_hyp) in
-               let cases  = (ty_var, ty_hyp) :: List.rev cases in
-                  mk_ty_hyp_cases_term cases
           ]];
 
-      ty_hyp_cases_rest:
+      ty_hyp_cases:
          [[ case = ty_hyp_case ->
              [case]
-          | cases = ty_hyp_cases_rest; case = ty_hyp_case ->
+          | cases = ty_hyp_cases; "|"; case = ty_hyp_case ->
              case :: cases
           ]];
 
       ty_hyp_case:
-         [[ "|"; ty_var = singleterm; "::"; ty_hyp = singleterm ->
+         [[ ty_var = singleterm; ":"; ty_hyp = singleterm ->
                let ty_var = get_aterm _loc ty_var in
-               let ty_hyp = shape_of_term (get_aterm _loc ty_hyp) in
+               let ty_hyp = get_aterm _loc ty_hyp in
                   ty_var, ty_hyp
           ]];
 

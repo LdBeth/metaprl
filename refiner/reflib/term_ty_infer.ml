@@ -111,7 +111,7 @@ type ty =
  | TypeSCVar    of ty list * ty list * ty         (* sequent context: context vars, arguments, ty_var * ty_hyp *)
  | TypeHyp      of ty * ty                        (* ty_var, ty_hyp *)
  | TypeExists   of var * ty * ty                  (* Universal quantifier *)
- | TypeHypCases of (ty * shape) list              (* Hypothesis cases *)
+ | TypeHypCases of (ty * ty) list                 (* Hypothesis cases *)
  | TypeSequent  of ty * ty * ty                   (* hyps, concl, result *)
 
 (*
@@ -132,9 +132,10 @@ type venv = ty SymbolTable.t
  * is done.
  *)
 type unify_constraint =
-   ConstraintSubtype of unify_info * term * term
- | ConstraintEqual of unify_info * term * term
- | ConstraintMember of unify_info * term * ty  (* type constraint *)
+   ConstraintSubtype  of unify_info * term * term
+ | ConstraintEqual    of unify_info * term * term
+ | ConstraintMember   of unify_info * term * ty                 (* type constraint *)
+ | ConstraintCase     of unify_info * ty * ty * (ty * ty) list  (* hypothesis case *)
 
 type senv =
    { senv_subst       : ty SymbolTable.t;
@@ -215,40 +216,17 @@ let dest_ty_hyp_term =
 let is_ty_hyp_term =
    is_dep0_dep0_term hyp_opname
 
-let mk_ty_hyp_case_term ty_var shape =
-   let op = mk_op hyp_case_opname [make_param (Shape shape)] in
-      mk_term op [mk_simple_bterm ty_var]
+let mk_ty_hyp_case_term =
+   mk_dep0_dep0_term hyp_case_opname
 
-let dest_ty_hyp_case_term t =
-   let { term_op = op; term_terms = bterms } = dest_term t in
-   let { op_name = op; op_params = params } = dest_op op in
-      match params, bterms with
-         [param], [bterm] when Opname.eq op hyp_case_opname ->
-            let shape =
-               match dest_param param with
-                  Shape shape -> shape
-                | _ -> raise (RefineError ("dest_ty_hyp_case_term", StringTermError ("illegal parameter", t)))
-            in
-            let ty_var = dest_simple_bterm bterm in
-               ty_var, shape
-       | _ ->
-            raise (RefineError ("dest_ty_hyp_case_term", StringTermError ("not a hyp case term", t)))
+let dest_ty_hyp_case_term =
+   dest_dep0_dep0_term hyp_case_opname
 
-let is_ty_hyp_case_term t =
-   let { term_op = op; term_terms = bterms } = dest_term t in
-   let { op_name = op; op_params = params } = dest_op op in
-      match params, bterms with
-         [param], [bterm] when Opname.eq op hyp_case_opname ->
-            (match dest_param param, dest_bterm bterm with
-                Shape _, { bvars = [] } ->
-                   true
-              | _ ->
-                   false)
-       | _ ->
-            false
+let is_ty_hyp_case_term =
+   is_dep0_dep0_term hyp_case_opname
 
 let mk_ty_hyp_cases_term cases =
-   mk_dep0_term hyp_cases_opname (mk_xlist_term (List.map (fun (ty_var, shape) -> mk_ty_hyp_case_term ty_var shape) cases))
+   mk_dep0_term hyp_cases_opname (mk_xlist_term (List.map (fun (ty_var, ty_hyp) -> mk_ty_hyp_case_term ty_var ty_hyp) cases))
 
 let dest_ty_hyp_cases_term t =
    let cases = dest_dep0_term hyp_cases_opname t in
@@ -331,7 +309,7 @@ let rec term_of_ty ty =
     | TypeHyp (ty_var, ty_hyp) ->
          mk_ty_hyp_term (term_of_ty ty_var) (term_of_ty ty_hyp)
     | TypeHypCases cases ->
-         mk_ty_hyp_cases_term (List.map (fun (ty_var, shape) -> term_of_ty ty_var, shape) cases)
+         mk_ty_hyp_cases_term (List.map (fun (ty_var, ty_hyp) -> term_of_ty ty_var, term_of_ty ty_hyp) cases)
     | TypeExists (v, ty_bound, ty) ->
          mk_ty_exists_term v (term_of_ty ty_bound) (term_of_ty ty)
     | TypeSequent (ty_hyp, ty_concl, ty_seq) ->
@@ -626,8 +604,8 @@ and subst_type_list subst vars tyl =
    List.map (subst_type subst vars) tyl
 
 and subst_type_cases subst vars cases =
-   List.map (fun (ty_var, shape) ->
-         subst_type subst vars ty_var, shape) cases
+   List.map (fun (ty_var, ty_hyp) ->
+         subst_type subst vars ty_var, subst_type subst vars ty_hyp) cases
 
 (* Toplevel versions *)
 let subst_var_term subst v =
@@ -686,6 +664,15 @@ let raise_type2_error subst info ty1 ty2 =
       StringErrorError ("type",
       TermErrorError (subst_type_term subst ty1,
       StringErrorError ("is not compatible with",
+      TermError (subst_type_term subst ty2))))
+   in
+      raise_err subst info err
+
+let raise_case_error subst info ty1 ty2 =
+   let err =
+      StringErrorError ("hypothesis var",
+      TermErrorError (subst_type_term subst ty1,
+      StringErrorError ("is not compatible with hypothesis type",
       TermError (subst_type_term subst ty2))))
    in
       raise_err subst info err
@@ -751,9 +738,10 @@ let rec normalize_term info subst t =
    else if is_ty_hyp_cases_term t then
       let cases = dest_ty_hyp_cases_term t in
       let subst, cases =
-         List.fold_left (fun (subst, cases) (ty_var, shape) ->
+         List.fold_left (fun (subst, cases) (ty_var, ty_hyp) ->
                let subst, ty_var = normalize_term info subst ty_var in
-               let cases = (ty_var, shape) :: cases in
+               let subst, ty_hyp = normalize_term info subst ty_hyp in
+               let cases = (ty_var, ty_hyp) :: cases in
                   subst, cases) (subst, []) cases
       in
          subst, TypeHypCases (List.rev cases)
@@ -768,44 +756,26 @@ let normalize_type info subst ty =
          subst, ty
 
 (*
- * Choose the hypothesis case based on the actual hypothesis.
- *)
-let choose_hyp_case subst info hyp cases =
-   let shape = shape_of_term hyp in
-   let rec search cases =
-      match cases with
-         (ty_var, shape') :: cases ->
-            if shape_eq shape' shape then
-               ty_var
-            else
-               search cases
-       | [] ->
-            raise_illegal_term_error subst info hyp
-   in
-      search cases
-
-(*
  * The type should be a hyp type.
  *)
-let rec expand_type info subst ty =
+let rec expand_hyp_type_aux info subst ty =
    let subst, ty = normalize_type info subst ty in
       match ty with
          TypeVar v ->
-            begin match subst_find_opt subst v with
-               Some ty ->
-                  expand_type info subst ty
-             | None ->
-                  let ty_var = TypeVar (new_symbol_string "sequent-var") in
-                  let ty_hyp = TypeVar (new_symbol_string "sequent-hyp") in
-                  let ty = TypeHyp (ty_var, ty_hyp) in
-                     subst_add_var subst v ty, ty
-            end
+            (match subst_find_opt subst v with
+                Some ty ->
+                   expand_hyp_type_aux info subst ty
+              | None ->
+                   let ty_var = TypeVar (new_symbol_string "sequent-var") in
+                   let ty_hyp = TypeVar (new_symbol_string "sequent-hyp") in
+                   let ty = TypeHyp (ty_var, ty_hyp) in
+                      subst_add_var subst v ty, ty)
        | ty ->
             subst, ty
 
 let expand_hyp_type info subst ty hyp =
    let rec expand subst vars ty =
-      let subst, ty = expand_type info subst ty in
+      let subst, ty = expand_hyp_type_aux info subst ty in
          match ty with
             TypeExists (v, ty_var, ty) ->
                expand subst ((v, ty_var) :: vars) ty
@@ -814,15 +784,16 @@ let expand_hyp_type info subst ty hyp =
           | ty ->
                raise_expand_type_error subst info "not a legal hypothesis type" ty
    in
-   let subst, ty = expand_type info subst ty in
+   let subst, ty = expand_hyp_type_aux info subst ty in
       match ty with
          TypeExists (v, ty_var, ty) ->
             expand subst [v, ty_var] ty
        | TypeHyp (ty_var, ty_hyp) ->
             subst, [], ty_var, ty_hyp
        | TypeHypCases cases ->
-            let ty_var = choose_hyp_case subst info hyp cases in
-            let ty_hyp = TypeVar (new_symbol_string "hyp") in
+            let ty_var = TypeVar (new_symbol_string "hyp-var") in
+            let ty_hyp = TypeVar (new_symbol_string "hyp-type") in
+            let subst = subst_add_constraint subst (ConstraintCase (info, ty_var, ty_hyp, cases)) in
                subst, [], ty_var, ty_hyp
        | ty ->
             raise_expand_type_error subst info "not a legal hypothesis type" ty
@@ -848,8 +819,8 @@ let rec free_vars_type fv ty =
     | TypeHyp (ty_var, ty_hyp) ->
          free_vars_type (free_vars_type fv ty_hyp) ty_var
     | TypeHypCases cases ->
-         List.fold_left (fun fv (ty_var, _) ->
-               free_vars_type fv ty_var) fv cases
+         List.fold_left (fun fv (ty_var, ty_hyp) ->
+               free_vars_type (free_vars_type fv ty_var) ty_hyp) fv cases
     | TypeExists (v, ty1, ty2) ->
          let fv2 = free_vars_type SymbolSet.empty ty2 in
          let fv2 = SymbolSet.remove fv2 v in
@@ -900,7 +871,7 @@ let type_subst v t ty =
        | TypeHyp (ty_var, ty_hyp) ->
             TypeHyp (subst ty_var, subst ty_hyp)
        | TypeHypCases cases ->
-            TypeHypCases (List.map (fun (ty_var, shape) -> subst ty_var, shape) cases)
+            TypeHypCases (List.map (fun (ty_var, ty_hyp) -> subst ty_var, subst ty_hyp) cases)
        | TypeExists (v', ty_var, ty) ->
             let ty = if Lm_symbol.eq v' v then ty else subst ty in
                TypeExists (v, subst ty_var, subst ty)
@@ -1046,7 +1017,7 @@ let standardize_ty_var info subst v1 ty_bound ty =
        | TypeHyp (ty_var, ty_hyp) ->
             TypeHyp (standardize ty_var, standardize ty_hyp)
        | TypeHypCases cases ->
-            TypeHypCases (List.map (fun (ty_var, subst) -> standardize ty_var, subst) cases)
+            TypeHypCases (List.map (fun (ty_var, ty_hyp) -> standardize ty_var, standardize ty_hyp) cases)
        | TypeExists (v, ty_bound, ty) ->
             TypeExists (v, standardize ty_bound, standardize ty)
        | TypeSequent (ty_hyp, ty_concl, ty_seq) ->
@@ -1087,7 +1058,7 @@ let standardize_ty_hyp info subst vars ty_var ty_hyp =
           | TypeHyp (ty_var, ty_hyp) ->
                TypeHyp (standardize ty_var, standardize ty_hyp)
           | TypeHypCases cases ->
-               TypeHypCases (List.map (fun (ty_var, subst) -> standardize ty_var, subst) cases)
+               TypeHypCases (List.map (fun (ty_var, ty_hyp) -> standardize ty_var, standardize ty_hyp) cases)
           | TypeExists (v, ty_var, ty) ->
                TypeExists (v, standardize ty_var, standardize ty)
           | TypeSequent (ty_hyp, ty_concl, ty_seq) ->
@@ -1186,6 +1157,10 @@ let rec unify_equal_types tenv info subst ty1 ty2 =
             let subst = unify_equal_types tenv info subst ty_hyp1 ty_hyp2 in
                unify_equal_types tenv info subst ty_var1 ty_var2
 
+       | TypeHypCases cases1, TypeHypCases cases2
+         when List.length cases1 = List.length cases2 ->
+            unify_equal_case_lists tenv info subst cases1 cases2
+
        | TypeExists (v1, ty_bound1, ty1), TypeExists (v2, ty_bound2, ty2) ->
             let subst = unify_equal_types tenv info subst ty_bound1 ty_bound2 in
             let v3 = new_symbol v1 in
@@ -1200,6 +1175,11 @@ let rec unify_equal_types tenv info subst ty1 ty2 =
 
 and unify_equal_type_lists tenv info subst tl1 tl2 =
    List.fold_left2 (unify_equal_types tenv info) subst tl1 tl2
+
+and unify_equal_case_lists tenv info subst cases1 cases2 =
+   List.fold_left2 (fun subst (t11, t12) (t21, t22) ->
+         let subst = unify_equal_types tenv info subst t12 t22 in
+            unify_equal_types tenv info subst t11 t21) subst cases1 cases2
 
 (*
  * Two term types.
@@ -1399,6 +1379,10 @@ let rec unify_subtype_types tenv info subst ty1 ty2 =
             let subst = unify_subtype_types tenv info subst ty_hyp1 ty_hyp2 in
                unify_subtype_types tenv info subst ty_var2 ty_var1
 
+       | TypeHypCases cases1, TypeHypCases cases2
+         when List.length cases1 = List.length cases2 ->
+            unify_subtype_case_lists tenv info subst cases1 cases2
+
        | TypeExists (v, ty_var, ty1), _ ->
             let subst, ty1 = instantiate_ty_var subst v ty_var ty1 in
                unify_subtype_types tenv info subst ty1 ty2
@@ -1412,6 +1396,11 @@ let rec unify_subtype_types tenv info subst ty1 ty2 =
 
 and unify_subtype_type_lists tenv info subst tl1 tl2 =
    List.fold_left2 (unify_equal_types tenv info) subst tl1 tl2
+
+and unify_subtype_case_lists tenv info subst cases1 cases2 =
+   List.fold_left2 (fun subst (t11, t12) (t21, t22) ->
+         let subst = unify_subtype_types tenv info subst t12 t22 in
+            unify_subtype_types tenv info subst t21 t11) subst cases1 cases2
 
 (*
  * Unify with a term that defines a typeclass.
@@ -1786,6 +1775,66 @@ and infer_sequent_hyps tenv venv info subst arg ty_hyp' hyps i len =
 (************************************************************************
  * Constraint solving.
  *)
+
+(*
+ * Check if a type corresponds to a variable.
+ *)
+let rec is_ty_var subst ty =
+   match ty with
+      TypeVar v ->
+         (match subst_find_opt subst v with
+             Some ty ->
+                is_ty_var subst ty
+           | None ->
+                true)
+    | _ ->
+         false
+
+(*
+ * Choose a case by:
+ *    1. Search for a matching unification for the hyp
+ *    2. Or else, searching for a matching unification for the var
+ *
+ * This can clearly be smarter, by using some sort of guided search.
+ *)
+let rec unify_constraint_case1 tenv info subst t1 t2 cases =
+   match cases with
+      (c1, c2) :: cases ->
+         (try
+             let subst = unify_subtype_types tenv info subst c1 t1 in
+                unify_subtype_types tenv info subst t2 c2
+          with
+             RefineError _ ->
+                unify_constraint_case1 tenv info subst t1 t2 cases)
+    | [] ->
+         raise_case_error subst info t1 t2
+
+let rec unify_constraint_case2 tenv info subst t1 t2 cases =
+   match cases with
+      (c1, c2) :: cases ->
+         (try
+             let subst = unify_subtype_types tenv info subst t2 c2 in
+                unify_subtype_types tenv info subst c1 t1
+          with
+             RefineError _ ->
+                unify_constraint_case2 tenv info subst t1 t2 cases)
+    | [] ->
+         raise_case_error subst info t1 t2
+
+let unify_constraint_case tenv info subst t1 t2 cases =
+   if not (is_ty_var subst t2) then
+      unify_constraint_case2 tenv info subst t1 t2 cases
+   else if is_ty_var subst t1 then
+      raise_case_error subst info t1 t2
+   else
+      unify_constraint_case1 tenv info subst t1 t2 cases
+
+(*
+ * Constraint solver.
+ *
+ * XXX: JYH: the order of solving does in fact matter, but the problem
+ * is hard.  It is currently ignored.
+ *)
 let solve_constraint tenv venv subst con =
    match con with
       ConstraintMember (info, t1, ty2) ->
@@ -1807,6 +1856,9 @@ let solve_constraint tenv venv subst con =
             venv, subst
     | ConstraintEqual (info, t1, t2) ->
          let subst = unify_equal_normal_term_types tenv info false subst t1 t2 in
+            venv, subst
+    | ConstraintCase (info, t1, t2, cases) ->
+         let subst = unify_constraint_case tenv info subst t1 t2 cases in
             venv, subst
 
 let rec solve_constraints tenv venv subst =
