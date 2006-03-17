@@ -10,7 +10,7 @@
  * See the file doc/htmlman/default.html or visit http://metaprl.org/
  * for more information.
  *
- * Copyright (C) 2005 Mojave Group, Caltech
+ * Copyright (C) 2005-2006 Mojave Group, Caltech
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -26,8 +26,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Aleksey Nogin <nogin@cs.cornell.edu>
- * Modified By: Jason Hickey <jyh@cs.cornell.edu>
+ * Author: Jason Hickey <jyh@cs.caltech.edu>
+ * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 open Lm_printf
 open Lm_symbol
@@ -111,6 +111,7 @@ type ty =
  | TypeSCVar    of ty list * ty list * ty         (* sequent context: context vars, arguments, ty_var * ty_hyp *)
  | TypeHyp      of ty * ty                        (* ty_var, ty_hyp *)
  | TypeExists   of var * ty * ty                  (* Universal quantifier *)
+ | TypeHypCases of (ty * shape) list              (* Hypothesis cases *)
  | TypeSequent  of ty * ty * ty                   (* hyps, concl, result *)
 
 (*
@@ -194,9 +195,11 @@ let sequent_context_cvars_opname = mk_perv_opname "ty_sequent_context_cvars"
 let sequent_context_args_opname  = mk_perv_opname "ty_sequent_context_args"
 let sequent_context_var_opname   = mk_perv_opname "ty_sequent_context_var"
 
-let sequent_opname = mk_perv_opname "ty_sequent"
-let hyp_opname = mk_perv_opname "ty_hyp"
-let exists_opname = mk_perv_opname "ty_exists"
+let sequent_opname   = mk_perv_opname "ty_sequent"
+let hyp_opname       = mk_perv_opname "ty_hyp"
+let hyp_cases_opname = mk_perv_opname "ty_hyp_cases"
+let hyp_case_opname  = mk_perv_opname "ty_hyp_case"
+let exists_opname    = mk_perv_opname "ty_exists"
 
 let ty_constant_opname = mk_perv_opname "type"
 
@@ -211,6 +214,53 @@ let dest_ty_hyp_term =
 
 let is_ty_hyp_term =
    is_dep0_dep0_term hyp_opname
+
+let mk_ty_hyp_case_term ty_var shape =
+   let op = mk_op hyp_case_opname [make_param (Shape shape)] in
+      mk_term op [mk_simple_bterm ty_var]
+
+let dest_ty_hyp_case_term t =
+   let { term_op = op; term_terms = bterms } = dest_term t in
+   let { op_name = op; op_params = params } = dest_op op in
+      match params, bterms with
+         [param], [bterm] when Opname.eq op hyp_case_opname ->
+            let shape =
+               match dest_param param with
+                  Shape shape -> shape
+                | _ -> raise (RefineError ("dest_ty_hyp_case_term", StringTermError ("illegal parameter", t)))
+            in
+            let ty_var = dest_simple_bterm bterm in
+               ty_var, shape
+       | _ ->
+            raise (RefineError ("dest_ty_hyp_case_term", StringTermError ("not a hyp case term", t)))
+
+let is_ty_hyp_case_term t =
+   let { term_op = op; term_terms = bterms } = dest_term t in
+   let { op_name = op; op_params = params } = dest_op op in
+      match params, bterms with
+         [param], [bterm] when Opname.eq op hyp_case_opname ->
+            (match dest_param param, dest_bterm bterm with
+                Shape _, { bvars = [] } ->
+                   true
+              | _ ->
+                   false)
+       | _ ->
+            false
+
+let mk_ty_hyp_cases_term cases =
+   mk_dep0_term hyp_cases_opname (mk_xlist_term (List.map (fun (ty_var, shape) -> mk_ty_hyp_case_term ty_var shape) cases))
+
+let dest_ty_hyp_cases_term t =
+   let cases = dest_dep0_term hyp_cases_opname t in
+   let cases = dest_xlist cases in
+      List.map dest_ty_hyp_case_term cases
+
+let is_ty_hyp_cases_term t =
+   if is_dep0_term hyp_cases_opname t then
+      let cases = one_subterm t in
+         is_xlist_term cases && List.for_all is_ty_hyp_case_term (dest_xlist cases)
+   else
+      false
 
 let rec mk_ty_exists_term =
    mk_dep0_dep1_term exists_opname
@@ -280,6 +330,8 @@ let rec term_of_ty ty =
             mk_simple_term sequent_context_var_opname [cvars; args; hyp]
     | TypeHyp (ty_var, ty_hyp) ->
          mk_ty_hyp_term (term_of_ty ty_var) (term_of_ty ty_hyp)
+    | TypeHypCases cases ->
+         mk_ty_hyp_cases_term (List.map (fun (ty_var, shape) -> term_of_ty ty_var, shape) cases)
     | TypeExists (v, ty_bound, ty) ->
          mk_ty_exists_term v (term_of_ty ty_bound) (term_of_ty ty)
     | TypeSequent (ty_hyp, ty_concl, ty_seq) ->
@@ -291,24 +343,26 @@ let rec term_of_ty ty =
 let v_sym = Lm_symbol.add "v"
 let type_var = TypeVar v_sym
 
-let ty_var_shape     = shape_of_term (term_of_ty type_var)
-let ty_term_shape    = shape_of_term (term_of_ty (TypeTerm (mk_var_term v_sym)))
-let ty_so_var_shape  = shape_of_term (term_of_ty (TypeSoVar ([], [], type_var)))
-let ty_cvar_shape    = shape_of_term (term_of_ty (TypeCVar ([], [], type_var, type_var)))
-let ty_scvar_shape   = shape_of_term (term_of_ty (TypeSCVar ([], [], type_var)))
-let ty_hyp_shape     = shape_of_term (term_of_ty (TypeHyp (type_var, type_var)))
-let ty_exists_shape  = shape_of_term (term_of_ty (TypeExists (v_sym, type_var, type_var)))
-let ty_sequent_shape = shape_of_term (term_of_ty (TypeSequent (type_var, type_var, type_var)))
+let ty_var_shape       = shape_of_term (term_of_ty type_var)
+let ty_term_shape      = shape_of_term (term_of_ty (TypeTerm (mk_var_term v_sym)))
+let ty_so_var_shape    = shape_of_term (term_of_ty (TypeSoVar ([], [], type_var)))
+let ty_cvar_shape      = shape_of_term (term_of_ty (TypeCVar ([], [], type_var, type_var)))
+let ty_scvar_shape     = shape_of_term (term_of_ty (TypeSCVar ([], [], type_var)))
+let ty_hyp_shape       = shape_of_term (term_of_ty (TypeHyp (type_var, type_var)))
+let ty_hyp_cases_shape = shape_of_term (term_of_ty (TypeHypCases []))
+let ty_exists_shape    = shape_of_term (term_of_ty (TypeExists (v_sym, type_var, type_var)))
+let ty_sequent_shape   = shape_of_term (term_of_ty (TypeSequent (type_var, type_var, type_var)))
 
 let shape_of_type = function
-   TypeVar _     -> ty_var_shape
- | TypeTerm _    -> ty_term_shape
- | TypeSoVar _   -> ty_so_var_shape
- | TypeCVar _    -> ty_cvar_shape
- | TypeSCVar _   -> ty_scvar_shape
- | TypeHyp _     -> ty_hyp_shape
- | TypeExists _  -> ty_exists_shape
- | TypeSequent _ -> ty_sequent_shape
+   TypeVar _      -> ty_var_shape
+ | TypeTerm _     -> ty_term_shape
+ | TypeSoVar _    -> ty_so_var_shape
+ | TypeCVar _     -> ty_cvar_shape
+ | TypeSCVar _    -> ty_scvar_shape
+ | TypeHyp _      -> ty_hyp_shape
+ | TypeHypCases _ -> ty_hyp_cases_shape
+ | TypeExists _   -> ty_exists_shape
+ | TypeSequent _  -> ty_sequent_shape
 
 (************************************************
  * Type environment.
@@ -559,6 +613,8 @@ and subst_type subst vars ty =
                     subst_type subst vars ty_hyp)
     | TypeHyp (ty_var, ty_hyp) ->
          TypeHyp (subst_type subst vars ty_var, subst_type subst vars ty_hyp)
+    | TypeHypCases cases ->
+         TypeHypCases (subst_type_cases subst vars cases)
     | TypeExists (v, ty1, ty2) ->
          TypeExists (v, subst_type subst vars ty1, subst_type subst vars ty2)
     | TypeSequent (ty_hyp, ty_concl, ty_seq) ->
@@ -568,6 +624,10 @@ and subst_type subst vars ty =
 
 and subst_type_list subst vars tyl =
    List.map (subst_type subst vars) tyl
+
+and subst_type_cases subst vars cases =
+   List.map (fun (ty_var, shape) ->
+         subst_type subst vars ty_var, shape) cases
 
 (* Toplevel versions *)
 let subst_var_term subst v =
@@ -688,6 +748,15 @@ let rec normalize_term info subst t =
       let subst, ty_var = normalize_term info subst ty_var in
       let subst, ty_hyp = normalize_term info subst ty_hyp in
          subst, TypeHyp (ty_var, ty_hyp)
+   else if is_ty_hyp_cases_term t then
+      let cases = dest_ty_hyp_cases_term t in
+      let subst, cases =
+         List.fold_left (fun (subst, cases) (ty_var, shape) ->
+               let subst, ty_var = normalize_term info subst ty_var in
+               let cases = (ty_var, shape) :: cases in
+                  subst, cases) (subst, []) cases
+      in
+         subst, TypeHypCases (List.rev cases)
    else
       subst, TypeTerm t
 
@@ -697,6 +766,23 @@ let normalize_type info subst ty =
          normalize_term info subst t
     | _ ->
          subst, ty
+
+(*
+ * Choose the hypothesis case based on the actual hypothesis.
+ *)
+let choose_hyp_case subst info hyp cases =
+   let shape = shape_of_term hyp in
+   let rec search cases =
+      match cases with
+         (ty_var, shape') :: cases ->
+            if shape_eq shape' shape then
+               ty_var
+            else
+               search cases
+       | [] ->
+            raise_illegal_term_error subst info hyp
+   in
+      search cases
 
 (*
  * The type should be a hyp type.
@@ -717,7 +803,7 @@ let rec expand_type info subst ty =
        | ty ->
             subst, ty
 
-let expand_hyp_type info subst ty =
+let expand_hyp_type info subst ty hyp =
    let rec expand subst vars ty =
       let subst, ty = expand_type info subst ty in
          match ty with
@@ -726,9 +812,20 @@ let expand_hyp_type info subst ty =
           | TypeHyp (ty_var, ty_hyp) ->
                subst, List.rev vars, ty_var, ty_hyp
           | ty ->
-               raise_expand_type_error subst info "not a hypothesis type" ty
+               raise_expand_type_error subst info "not a legal hypothesis type" ty
    in
-      expand subst [] ty
+   let subst, ty = expand_type info subst ty in
+      match ty with
+         TypeExists (v, ty_var, ty) ->
+            expand subst [v, ty_var] ty
+       | TypeHyp (ty_var, ty_hyp) ->
+            subst, [], ty_var, ty_hyp
+       | TypeHypCases cases ->
+            let ty_var = choose_hyp_case subst info hyp cases in
+            let ty_hyp = TypeVar (new_symbol_string "hyp") in
+               subst, [], ty_var, ty_hyp
+       | ty ->
+            raise_expand_type_error subst info "not a legal hypothesis type" ty
 
 (************************************************
  * Free vars and substitution.
@@ -750,6 +847,9 @@ let rec free_vars_type fv ty =
          free_vars_type_list (free_vars_type_list (free_vars_type (free_vars_type fv ty_res) ty_exp) args) cvars
     | TypeHyp (ty_var, ty_hyp) ->
          free_vars_type (free_vars_type fv ty_hyp) ty_var
+    | TypeHypCases cases ->
+         List.fold_left (fun fv (ty_var, _) ->
+               free_vars_type fv ty_var) fv cases
     | TypeExists (v, ty1, ty2) ->
          let fv2 = free_vars_type SymbolSet.empty ty2 in
          let fv2 = SymbolSet.remove fv2 v in
@@ -799,6 +899,8 @@ let type_subst v t ty =
             TypeSCVar (List.map subst cvars, List.map subst args, subst ty_hyp)
        | TypeHyp (ty_var, ty_hyp) ->
             TypeHyp (subst ty_var, subst ty_hyp)
+       | TypeHypCases cases ->
+            TypeHypCases (List.map (fun (ty_var, shape) -> subst ty_var, shape) cases)
        | TypeExists (v', ty_var, ty) ->
             let ty = if Lm_symbol.eq v' v then ty else subst ty in
                TypeExists (v, subst ty_var, subst ty)
@@ -943,6 +1045,8 @@ let standardize_ty_var info subst v1 ty_bound ty =
             TypeSCVar (List.map standardize cvars, List.map standardize args, standardize ty_hyp)
        | TypeHyp (ty_var, ty_hyp) ->
             TypeHyp (standardize ty_var, standardize ty_hyp)
+       | TypeHypCases cases ->
+            TypeHypCases (List.map (fun (ty_var, subst) -> standardize ty_var, subst) cases)
        | TypeExists (v, ty_bound, ty) ->
             TypeExists (v, standardize ty_bound, standardize ty)
        | TypeSequent (ty_hyp, ty_concl, ty_seq) ->
@@ -982,6 +1086,8 @@ let standardize_ty_hyp info subst vars ty_var ty_hyp =
                TypeSCVar (List.map standardize cvars, List.map standardize args, standardize ty_hyp)
           | TypeHyp (ty_var, ty_hyp) ->
                TypeHyp (standardize ty_var, standardize ty_hyp)
+          | TypeHypCases cases ->
+               TypeHypCases (List.map (fun (ty_var, subst) -> standardize ty_var, subst) cases)
           | TypeExists (v, ty_var, ty) ->
                TypeExists (v, standardize ty_var, standardize ty)
           | TypeSequent (ty_hyp, ty_concl, ty_seq) ->
@@ -1654,7 +1760,7 @@ and infer_sequent_hyps tenv venv info subst arg ty_hyp' hyps i len =
       match SeqHyp.get hyps i with
          Hypothesis (v, hyp) ->
             let info' = UnifyCompose (info, UnifyType ty_hyp') in
-            let subst, vars, ty_var, ty_hyp = expand_hyp_type info' subst ty_hyp' in
+            let subst, vars, ty_var, ty_hyp = expand_hyp_type info' subst ty_hyp' hyp in
             let subst, ty_var, ty_hyp = standardize_ty_hyp info' subst vars ty_var ty_hyp in
             let subst = infer_term_type tenv venv info subst hyp ty_hyp in
             let venv = venv_add_var venv v ty_var in
