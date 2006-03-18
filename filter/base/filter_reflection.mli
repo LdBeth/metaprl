@@ -76,13 +76,14 @@ val mk_logic_wf_thm   : parse_info -> term -> meta_term
 val mk_intro_thm      : parse_info -> term -> meta_term -> term_param list -> socvars_info * meta_term * term_param list
 val mk_type_check_thm : parse_info -> (term, term) poly_ty_term -> meta_term
 val mk_mem_logic_thm  : parse_info -> term -> term -> meta_term
-val mk_elim_thm       : parse_info -> term -> meta_term list -> var * meta_term
 
 (*
- * Multi-part elimination.
+ * Elimination theorems.
  *)
+val mk_elim_thm             : parse_info -> term -> meta_term list -> (* parents *) term list -> var * meta_term
+
 val mk_elim_start_thm       : parse_info -> term -> var * meta_term
-val mk_simple_step_elim_thm : parse_info -> term -> term list -> var * meta_term
+val mk_simple_step_elim_thm : parse_info -> term -> (* rules *) term list -> (* parents *) term list -> var * meta_term
 val mk_proof_check_elim_thm : parse_info -> term -> meta_term -> var * meta_term
 
 (*

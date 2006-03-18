@@ -78,6 +78,7 @@ let add_include path =
  * of the file.
  *)
 let reflect_flag = ref false
+let reflect_name = ref None
 
 (*
  * Theory description.
@@ -138,7 +139,7 @@ let compile_reflect_sig name =
    let orig_info = SigFilterCache.load cache () orig_path InterfaceType AnySuffix in
 
    (* Create the new cache *)
-   let new_base, new_path = Filter_reflect.reflect_filename orig_path in
+   let new_base, new_path = Filter_reflect.reflect_filename !reflect_name orig_path in
    let new_info = SigFilterCache.create_cache cache new_path InterfaceType in
    let () = SigFilterCache.reset_hack new_info in
 
@@ -178,7 +179,7 @@ let compile_reflect_str name =
    let orig_info = StrFilterCache.load cache () orig_path ImplementationType AnySuffix in
 
    (* Create the new cache *)
-   let new_base, new_path = Filter_reflect.reflect_filename orig_path in
+   let new_base, new_path = Filter_reflect.reflect_filename !reflect_name orig_path in
    let new_info = StrFilterCache.create_cache cache new_path ImplementationType in
    let () = StrFilterCache.reset_hack new_info in
 
@@ -244,9 +245,10 @@ let process_file file =
  * Argument specification.
  *)
 let spec =
-   ["-I",        Arg.String add_include,        "add an directory to the path for include files";
-    "-r",        Arg.Set reflect_flag,          "generate a reflected file";
-    "--reflect", Arg.Set reflect_flag,          "generate a reflected file";
+   ["-I",        Arg.String add_include,                            "add an directory to the path for include files";
+    "-r",        Arg.Set reflect_flag,                              "generate a reflected file";
+    "--reflect", Arg.Set reflect_flag,                              "generate a reflected file";
+    "--name",    Arg.String (fun s -> reflect_name := Some s),      "specify the name of the reflected file";
     "-o",        Arg.String (fun s -> Pcaml.output_file := Some s), "specify the output file (defaults to stdout)"]
 
 (*
@@ -259,7 +261,6 @@ let main () =
    Arg.parse spec process_file "Compile a MetaPRL binary file"
 
 let () = Filter_exn.print_exn Dform.null_base None main ()
-
 
 (*
  * -*-

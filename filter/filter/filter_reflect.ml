@@ -145,9 +145,16 @@ let bind_item i =
  * Reflect theories are prefixed with "reflect_"
  *)
 let reflect_prefix = "reflect_"
+let reflect_prefix_cap = "Reflect_"
 
-let reflect_filename orig_path =
-   let old_base = Lm_filename_util.basename orig_path in
+let reflect_filename new_name orig_path =
+   let old_base =
+      match new_name with
+         Some new_name ->
+            new_name
+       | None ->
+            Lm_filename_util.basename orig_path
+   in
    let new_base = reflect_prefix ^ old_base in
    let new_path = Lm_filename_util.replace_basename orig_path new_base in
       new_base, new_path
@@ -244,7 +251,9 @@ let compile_sig_item info (item, loc) =
       (*
        * Supported items.
        *)
-      Parent ({ parent_name = name } as parent) ->
+      Parent { parent_name = ["itt_hoas_theory"] } ->
+         ()
+    | Parent ({ parent_name = name } as parent) ->
          if !debug_filter_reflect then
             eprintf "Filter_reflect.extract_sig_item: parent: %s@." (string_of_path name);
          declare_parent info loc parent
@@ -663,11 +672,11 @@ let add_proof_check_elim info loc item =
    let res = elim_resources loc in
       define_thm info loc rule_name params mt tac res
 
-let add_simple_step_elim info loc name t_logic rules =
+let add_simple_step_elim info loc name t_logic rules parents =
    let rule_name = "elim_step_" ^ name in
 
    (* Build the rule *)
-   let h_v, mt = Filter_reflection.mk_simple_step_elim_thm info.info_parse_info t_logic rules in
+   let h_v, mt = Filter_reflection.mk_simple_step_elim_thm info.info_parse_info t_logic rules parents in
    let params = [IntParam h_v] in
    let mt = parse_rule info loc rule_name mt params in
 
@@ -688,10 +697,10 @@ let add_elim_start info loc name t_logic =
    let tac = "elimRuleStartT" in
       define_thm info loc rule_name params mt tac no_resources
 
-let add_multi_step_elim info loc name t_logic rules intro_rules =
+let add_multi_step_elim info loc name t_logic rules intro_rules parents =
    try
       List.iter (add_proof_check_elim info loc) intro_rules;
-      add_simple_step_elim info loc name t_logic rules;
+      add_simple_step_elim info loc name t_logic rules parents;
       add_elim_start info loc name t_logic
    with
       exn when not_exn_located exn ->
@@ -700,12 +709,12 @@ let add_multi_step_elim info loc name t_logic rules intro_rules =
 (************************************************
  * Add the huge elimination rule for proof induction.
  *)
-let add_elim info loc name t_logic items =
+let add_elim info loc name t_logic items parents =
    let rule_name = "elim_" ^ name in
    let rules = List.map (fun item -> item.ref_rule_term) items in
 
    (* Build the rule *)
-   let h_v, mt = Filter_reflection.mk_elim_thm info.info_parse_info t_logic rules in
+   let h_v, mt = Filter_reflection.mk_elim_thm info.info_parse_info t_logic rules parents in
    let params = [IntParam h_v] in
    let mt = parse_rule info loc rule_name mt params in
 
@@ -721,7 +730,7 @@ let add_elim info loc name t_logic rules =
 (*
  * Postprocessing theorems.
  *)
-let postprocess_rules info current loc name items =
+let postprocess_rules info current loc name parents items =
    (* Collect all the names of the term, and build a logic *)
    let rules =
       List.fold_left (fun terms (loc, item) ->
@@ -753,10 +762,10 @@ let postprocess_rules info current loc name items =
    (* Add an introduction form for each of the rules *)
    let intro_rules = List.map (add_intro info t_logic) items in
       (* Add the multi-step elimination rule for the entire logic *)
-      add_multi_step_elim info loc name t_logic rules intro_rules;
+      add_multi_step_elim info loc name t_logic rules intro_rules parents;
 
       (* Add an elimination rule for the entire logic *)
-      add_elim info loc name t_logic intro_rules
+      add_elim info loc name t_logic intro_rules parents
 
 (*
  * Copy items directly.
@@ -812,6 +821,23 @@ let define_dform info loc df =
       StrFilterCache.add_command info.info_cache (item_0, loc)
 
 (************************************************
+ * Build the parent logic.
+ *)
+let make_parent_term info parent =
+   let opname = Opname.make_opname [parent; reflect_prefix_cap ^ parent] in
+      mk_simple_term opname []
+
+let rec compile_parent_logic info parents =
+   match parents with
+      [] ->
+         Filter_reflection.mk_empty_logic_term info.info_parse_info
+    | [parent] ->
+         parent
+    | parent :: parents ->
+         let parents = compile_parent_logic info parents in
+            Filter_reflection.mk_union_logic_term info.info_parse_info parent parents
+
+(************************************************
  * Copy open statements.
  *)
 let define_summary_item info loc item =
@@ -830,19 +856,21 @@ let define_summary_item info loc item =
  * We need these so that the definitions inherited from the interface
  * are well-formed.
  *)
-let compile_str_item_parent info item loc =
+let compile_str_item_parent info parents item loc =
    match item with
       (*
        * If the original theory extends Name,
        * then the reflected theory extends Reflect_name.
        *)
-      Parent ({ parent_name = name } as parent) ->
+      Parent { parent_name = ["itt_hoas_theory"] } ->
+         parents
+    | Parent ({ parent_name = name } as parent) ->
          if !debug_filter_reflect then
             eprintf "Filter_reflect.extract_sig_item: parent: %s@." (string_of_path name);
-         define_parent info loc parent
-
+         define_parent info loc parent;
+         List.hd name :: parents
     | _ ->
-         ()
+         parents
 
 let compile_str_item info rules item loc =
    match item with
@@ -927,8 +955,8 @@ let compile_str_item info rules item loc =
     | PRLGrammar _ ->
          rules
 
-let compile_str_item_parent info (item, loc) =
-   try compile_str_item_parent info item loc with
+let compile_str_item_parent info parents (item, loc) =
+   try compile_str_item_parent info parents item loc with
       exn when not_exn_located exn ->
          Stdpp.raise_with_loc loc exn
 
@@ -940,15 +968,16 @@ let compile_str_item info rules (item, loc) =
 let compile_str cache orig_name orig_info =
    let info = create_info dummy_loc cache in
    let items = info_items orig_info in
-   let () =
+   let parents =
       define_parent_path info dummy_loc ["itt_hoas_theory"];
       add_open info dummy_loc "Basic_tactics";
-      List.iter (compile_str_item_parent info) items
+      List.fold_left (compile_str_item_parent info) [] items
    in
+   let parents = List.rev_map (make_parent_term info) parents in
    let rules = List.fold_left (compile_str_item info) [] items in
    let rules = List.rev rules in
-   let current = Filter_reflection.mk_empty_logic_term info.info_parse_info in
-      postprocess_rules info current dummy_loc orig_name rules
+   let current = compile_parent_logic info parents in
+      postprocess_rules info current dummy_loc orig_name parents rules
 
 (*
  * -*-

@@ -37,7 +37,7 @@ open Filter_prog.ProofCaches
 (*
  * Name conversions.
  *)
-val reflect_filename : string -> string * string
+val reflect_filename : string option -> string -> string * string
 
 (*
  * Compiling.

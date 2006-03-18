@@ -1552,19 +1552,20 @@ let mk_elim_info all_vars =
 (*
  * Make the huge form of the elimination theorem.
  *)
-let mk_elim_thm info t_logic premises =
+let mk_elim_thm info t_logic rules parents =
    let it = Reflect.mk_it_term info in
 
    (* Variable calculations *)
-   let mt_all = List.fold_left (fun mt t -> MetaImplies (t, mt)) (MetaTheorem it) premises in
+   let mt_all = List.fold_left (fun mt t -> MetaImplies (t, mt)) (MetaTheorem it) rules in
    let all_vars = all_vars_mterm mt_all in
    let einfo = mk_elim_info all_vars in
 
    (* Build the premises *)
    let wf_assum = mk_elim_wf_assum info einfo t_logic in
-   let premises = List.map (mk_elim_assum info einfo t_logic) premises in
+   let parent_premises = List.map (fun parent -> [], mk_elim_goal info einfo parent) parents in
+   let rule_premises = List.map (mk_elim_assum info einfo t_logic) rules in
    let goal = mk_elim_goal info einfo t_logic in
-      einfo.elim_h_v, zip_mlabeled (wf_assum :: premises) goal
+      einfo.elim_h_v, zip_mlabeled (wf_assum :: (parent_premises @ rule_premises)) goal
 
 (************************************************************************
  * Multi-step elimination.
@@ -1743,11 +1744,12 @@ let mk_simple_step_goal info cinfo t_logic =
    in
       mk_sequent_term seq
 
-let mk_simple_step_elim_thm info t_logic rules =
+let mk_simple_step_elim_thm info t_logic rules parents =
    let cinfo = mk_celim_info SymbolSet.empty in
-   let premises = List.map (mk_proof_check_case info cinfo) rules in
+   let parent_premises = List.map (fun parent -> [], mk_simple_step_goal info cinfo parent) parents in
+   let rule_premises = List.map (mk_proof_check_case info cinfo) rules in
    let goal = mk_simple_step_goal info cinfo t_logic in
-      var_H, zip_mlabeled premises goal
+      var_H, zip_mlabeled (parent_premises @ rule_premises) goal
 
 (*
  * Elim rule for ProofCheck.

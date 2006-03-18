@@ -337,44 +337,44 @@ let print_dependencies table =
 (************************************************************************
  * Find files in the search path.
  *)
-let find_in_path path names ext =
-   let rec try_dir = function
-      [] ->
-         None
-    | dir :: rem ->
-         let rec search names =
-            match names with
-               (name, realname) :: names ->
-                  let fullname = Filename.concat dir name ^ ext in
-                     if Sys.file_exists fullname then
-                        Some (dir, realname)
-                     else
-                        search names
-             | [] ->
-                  try_dir rem
-         in
-            search names
-   in
-      try_dir path
 
 (*
  * Find the file in the search path given a set of extensions.
  * For reflected theories, allow searching on the non-reflected name.
- *
- * XXX: JYH: this is bogus, because the reflect_* theories do not
- * need to be placed in the same directory as the original files.
- * However, it is difficult to decide what to do otherwise, and
- * this will work in all the cases we are currently considering.
  *)
-let rec find_file_by_ext names = function
-   [] ->
-      None
- | ext :: exts ->
-      match find_in_path options.opt_path names ext with
-         Some (dir, realname) ->
-            Some (Filename.concat dir realname)
-       | None ->
-            find_file_by_ext names exts
+let rec find_file_by_path path name ext =
+   match path with
+      dir :: path ->
+         let fullname = Filename.concat dir name ^ ext in
+            if Sys.file_exists fullname then
+               Some dir
+            else
+               find_file_by_path path name ext
+    | [] ->
+         None
+
+let rec find_file_by_ext name exts =
+   match exts with
+      ext :: exts ->
+         let dir = find_file_by_path options.opt_path name ext in
+            (match dir with
+                Some _ ->
+                   dir
+              | None ->
+                   find_file_by_ext name exts)
+    | [] ->
+         None
+
+let rec find_file_by_name names exts =
+   match names with
+      (name, realname) :: names ->
+         (match find_file_by_ext name exts with
+             Some dir ->
+                Some (Filename.concat dir realname)
+           | None ->
+                find_file_by_name names exts)
+    | [] ->
+         None
 
 let find_file name exts =
    (* Look for lowercase and uppercase forms *)
@@ -382,7 +382,7 @@ let find_file name exts =
    let lc_name = String.uncapitalize name in
    let names = [lc_name, lc_name; uc_name, uc_name] in
 
-   (* In --reflect mode, also search based on the reflect_ prefix *)
+   (* In --reflect mode, also search based on the original name without the reflect_ prefix *)
    let names =
       if options.opt_reflect_flag && is_reflect_prefix lc_name then
          let lc_orig_name = chop_reflect_prefix lc_name in
@@ -390,7 +390,7 @@ let find_file name exts =
       else
          names
    in
-      find_file_by_ext names exts
+      find_file_by_name names exts
 
 (*
  * Find various kinds of files.
@@ -506,7 +506,11 @@ let summ_reflect summ =
 
    (* Add the Reflect_ prefix to all the dependencies *)
    let prl_structures =
-      StringSet.fold (fun name set -> StringSet.add (reflect_module_name name) set) prl_structures StringSet.empty
+      StringSet.fold (fun name set ->
+            if name = "Itt_hoas_theory" then
+               set
+            else
+               StringSet.add (reflect_module_name name) set) prl_structures StringSet.empty
    in
 
    (* Add dependencies on the reflected theories *)
