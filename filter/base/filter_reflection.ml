@@ -626,10 +626,14 @@ let is_xquote0_term t =
 
 let sweep_quote0_term info t =
    let rec sweepdn t =
-      if is_var_term t || is_so_var_term t then
+      if is_var_term t then
          t
+      else if is_so_var_term t then
+         let v, cargs, args = dest_so_var t in
+            mk_so_var_term v cargs (List.map sweepdn args)
       else if is_context_term t then
-         raise (RefineError ("Filter_grammar.sweep_quote_term", StringTermError ("contexts cannot be quoted currently", t)))
+         raise (RefineForceError ("Filter_reflection", "sweep_quote_term",
+            StringTermError ("contexts cannot be quoted currently", t)))
       else if is_sequent_term t then
          sweep_sequent_term t
       else if is_xunquote_term t then
@@ -650,15 +654,16 @@ let sweep_quote0_term info t =
             sequent_concl = concl
           } = explode_sequent t
       in
-      let () =
-         if SeqHyp.length hyps <> 0 then
-            raise (RefineError ("sweep_quote_term", StringError "hypotheses not supported yet"))
-      in
-      let nil = Reflect.mk_nil_term info in
       let arg = sweepdn arg in
+      let hyps =
+         SeqHyp.map (function
+               Hypothesis (x, t) ->
+                  Hypothesis (x, sweepdn t)
+             | Context (x, cargs, args) ->
+                  Context (x, cargs, List.map sweepdn args)) hyps
+      in
       let concl = sweepdn concl in
-      let t = Reflect.mk_sequent_term info arg nil concl in
-         t
+         Reflect.mk_bsequent_term info arg hyps concl
    in
       sweepdn t
 
@@ -681,7 +686,8 @@ let sweep_quote_term info depth t =
       if is_var_term t || is_so_var_term t then
          t
       else if is_context_term t then
-         raise (RefineError ("Filter_grammar.sweep_quote_term", StringTermError ("contexts cannot be quoted currently", t)))
+         raise (RefineForceError ("Filter_reflection", "sweep_quote_term",
+            StringTermError ("contexts cannot be quoted currently", t)))
       else if is_sequent_term t then
          sweep_sequent_term t
       else if is_xunquote_term t then
@@ -704,7 +710,8 @@ let sweep_quote_term info depth t =
       in
       let () =
          if SeqHyp.length hyps <> 0 then
-            raise (RefineError ("sweep_quote_term", StringError "hypotheses not supported yet"))
+            raise (RefineForceError ("Filter_reflection", "sweep_quote_term",
+               StringTermError("hypotheses not supported yet", t)))
       in
       let nil = Reflect.mk_nil_term info in
       let arg = sweepdn arg in
