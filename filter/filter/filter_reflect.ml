@@ -258,15 +258,16 @@ let compile_sig_item info (item, loc) =
          Stdpp.raise_with_loc loc (Invalid_argument "Filter_reflect.extract_sig_item")
 
       (*
-       * Rules and rewrites become declared terms.
+       * Declare the terms that correspond to rules and rewrites.
        *)
     | Rule { rule_name = name }
     | Rewrite { rw_name = name }
     | CondRewrite { crw_name = name } ->
+         let name = "term_" ^ name in
          let opname = Opname.mk_opname name (opname_prefix info loc) in
          let _, sc, t = declare_simple_term opname in
             SigFilterCache.declare_term info sc t;
-            copy_sig_item info loc (DeclareTerm(sc, t))
+            copy_sig_item info loc (DeclareTerm (sc, t))
 
       (*
        * The rest are ignored.
@@ -287,13 +288,26 @@ let compile_sig_item info (item, loc) =
     | PRLGrammar _ ->
          ()
 
-let compile_sig info orig_name orig_info =
-   declare_parent_path info dummy_loc ["itt_hoas_theory"];
-   List.iter (compile_sig_item info) (info_items orig_info);
-   let opname = Opname.mk_opname orig_name (opname_prefix info dummy_loc) in
+(************************************************
+ * Postprocessing.
+ *)
+
+(*
+ * Declare the term that defines the logic.
+ *)
+let declare_logic info name loc =
+   let opname = Opname.mk_opname name (opname_prefix info loc) in
    let _, sc, t = declare_simple_term opname in
       SigFilterCache.declare_term info sc t;
       copy_sig_item info dummy_loc (DeclareTerm(sc, t))
+
+(*
+ * The entire signature.
+ *)
+let compile_sig info orig_name orig_info =
+   declare_parent_path info dummy_loc ["itt_hoas_theory"];
+   List.iter (compile_sig_item info) (info_items orig_info);
+   declare_logic info orig_name dummy_loc
 
 (************************************************************************
  * Implementation conversion.
