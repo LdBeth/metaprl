@@ -55,6 +55,7 @@ FILTER_MAGIC[] =
     $(REFDIR)/reflib/ascii_io.ml
     $(PROOFDIR)/proof_term_boot.ml
     filter_shape.ml
+    filter_base_type.ml
     filter_type.ml
     filter_grammar.ml
 

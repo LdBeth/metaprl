@@ -46,6 +46,7 @@ open Tactic_type
 
 open Shell_sig
 
+open Filter_base_type
 open Filter_type
 open Filter_util
 open Filter_summary_type
@@ -73,7 +74,7 @@ type goal =
  * This is the actual rule/rewrite object.
  *)
 type info =
-   { mutable rule_params    : term param list;
+   { mutable rule_params    : term_param list;
      mutable rule_assums    : term list;
      mutable rule_goal      : goal;
      mutable rule_proof     : Package_info.proof proof_type;

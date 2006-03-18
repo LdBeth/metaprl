@@ -96,7 +96,7 @@ val set_goal : shell -> term -> unit
 val set_redex : shell -> term -> unit
 val set_contractum : shell -> term -> unit
 val set_assumptions : shell -> term list -> unit
-val set_params : shell -> term Filter_type.param list -> unit
+val set_params : shell -> Filter_base_type.term_param list -> unit
 
 val filename : parse_arg -> shell -> string option
 

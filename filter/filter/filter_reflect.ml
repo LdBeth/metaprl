@@ -45,6 +45,7 @@ open Refiner.Refiner.Refine
 
 open Opname
 open Simple_print
+open Filter_base_type
 open Filter_type
 open Filter_shape
 open Filter_summary
@@ -337,7 +338,7 @@ let compile_sig info orig_name orig_info =
 type ref_rule =
    { ref_rule_name      : string;
      ref_rule_resources : (ProofCaches.StrFilterCache.str_expr, term) resource_def;
-     ref_rule_params    : term list;
+     ref_rule_params    : term_param list;
      ref_rule_term      : meta_term
    }
 
@@ -347,17 +348,17 @@ type ref_rule =
 type info =
    { info_cache         : StrFilterCache.info;
      info_parsing_state : parsing_state;
-     info_parse_state   : Filter_reflection.parse_state;
+     info_parse_state   : parse_state;
      info_parse_info    : Filter_reflection.parse_info
    }
 
 let mk_parse_state loc id =
-   { Filter_reflection.parse_quotation =
+   { parse_quotation =
         (fun name s ->
               TermGrammar.raw_term_of_parsed_term (TermGrammar.parse_quotation loc id name s));
-     Filter_reflection.parse_opname = TermGrammar.mk_opname_kind loc;
-     Filter_reflection.parse_shape  = TermGrammar.find_shape_class loc;
-     Filter_reflection.parse_param  = TermGrammar.dest_xparam loc
+     parse_opname = TermGrammar.mk_opname_kind loc;
+     parse_shape  = TermGrammar.find_shape_class loc;
+     parse_param  = TermGrammar.dest_xparam loc
    }
 
 let create_info loc cache =
@@ -449,39 +450,41 @@ let define_parent info loc item =
  *)
 
 (*
+ * Parse the parameter lists.
+ *)
+let parse_params info loc mt params =
+   extract_params (context_vars mt) params
+
+(*
  * Type checking.
  *)
-let parse_rule info loc name mt args =
+let parse_rule info loc name mt params =
    (* Check with the refiner first for rewrite errors *)
-   let cvars = context_vars mt in
-   let params = extract_params cvars args in
-   let terms = collect_terms params in
+   let terms  = collect_terms params in
       Refine.check_rule name (collect_cvars params) terms (strip_mfunction mt);
 
       (* Then check for type errors *)
       check_input_mterm info loc mt;
       check_input_terms info loc terms;
       check_rule info loc mt terms;
-      cvars, mt, List.map erase_arg_term args
+      mt
 
 (*
  * Build the command that becomes part of the summary.
  *)
 let rule_command name params mt pf res =
-   let cvars = context_vars mt in
-   let params = extract_params cvars params in
-      Rule { rule_name      = name;
-             rule_params    = params;
-             rule_stmt      = mt;
-             rule_proof     = pf;
-             rule_resources = res
-      }
+   Rule { rule_name      = name;
+          rule_params    = params;
+          rule_stmt      = mt;
+          rule_proof     = pf;
+          rule_resources = res
+   }
 
 (*
  * Add the rule definition to the summary.
  *)
 let define_rule info loc name
-    (params : term list)
+    (params : term_param list)
     (mterm : meta_term)
     (extract : Convert.cooked proof_type)
     (res : ((MLast.expr, term) resource_def)) =
@@ -492,7 +495,7 @@ let define_rule info loc name
             Rule r, Primitive extract ->
                let _, ext_args, _ = split_mfunction mterm in
                let addrs = collect_cvars r.rule_params in
-                  Refine.check_prim_rule name addrs (collect_terms r.rule_params) (strip_mfunction mterm) ext_args extract
+                  Refine.check_prim_rule name addrs (collect_terms params) (strip_mfunction mterm) ext_args extract
           | _ ->
                ()
       in
@@ -508,9 +511,9 @@ let define_rule info loc name
 let define_thm info loc name params mterm s res =
    let assums, goal = unzip_mfunction mterm in
    let assums = List.map (fun (_, _, assum) -> assum) assums in
-   let mseq = mk_msequent goal assums in
-   let proof = Proof.create_io_rulebox mseq s in
-   let proof = Convert.of_raw () s proof in
+   let mseq   = mk_msequent goal assums in
+   let proof  = Proof.create_io_rulebox mseq s in
+   let proof  = Convert.of_raw () s proof in
       define_rule info loc name params mterm (Interactive proof) res
 
 (*
@@ -520,7 +523,8 @@ let define_thm info loc name params mterm s res =
  *)
 let add_define info rules loc item =
    let { ref_rule_name = name;
-         ref_rule_term = def
+         ref_rule_term = def;
+         ref_rule_params = params
        } = item
    in
 
@@ -530,7 +534,7 @@ let add_define info rules loc item =
    let () = declare_term info sc quote in
 
    (* Add the definition as the proof-checking predicate *)
-   let _, def, _ = parse_rule info loc name def [] in
+   let def = parse_rule info loc name def params in
    let def = Filter_reflection.mk_rule_term info.info_parse_info def in
    let () = define_term info loc sc ("unfold_" ^ name) quote def no_resources in
 
@@ -538,7 +542,7 @@ let add_define info rules loc item =
    let name_wf = "wf_" ^ name in
    let mt = Filter_reflection.mk_rule_wf_thm info.info_parse_info t_rule in
    let res = intro_resources loc in
-   let _, mt, _ = parse_rule info loc name_wf mt [] in
+   let mt = parse_rule info loc name_wf mt [] in
    let tac = Printf.sprintf "rwh unfold_%s 0 thenT proofRuleWFT" name in
    let () = define_thm info loc name_wf [] mt tac res in
       (loc, item) :: rules
@@ -573,27 +577,15 @@ let add_rule info rules loc item =
        } = item
    in
 
-   (* We need only the term parameters *)
-   let params =
-      List.fold_left (fun params param ->
-            match param with
-               IntParam _
-             | AddrParam _ ->
-                  params
-             | TermParam t ->
-                  t :: params) [] params
-   in
-   let params = List.rev params in
-
    (* Build the reflected rule *)
-   let _item =
+   let item =
       { ref_rule_name      = "rule_" ^ name;
         ref_rule_resources = res;
         ref_rule_params    = params;
         ref_rule_term      = mt
       }
    in
-      rules
+      add_define info rules loc item
 
 (************************************************
  * Postprocessing.  This adds:
@@ -636,8 +628,8 @@ let add_intro info t_logic loc item =
        } = item
    in
    let rule_name = "intro_" ^ name in
-   let cvars, mt_rule, params = parse_rule info loc rule_name mt params in
-   let _, mt = Filter_reflection.mk_intro_thm info.info_parse_info t_logic mt_rule in
+   let mt_rule = parse_rule info loc rule_name mt params in
+   let _, mt, params = Filter_reflection.mk_intro_thm info.info_parse_info t_logic mt_rule params in
    let tac = Printf.sprintf "provableRuleT << %s >> unfold_%s" name name in
       define_thm info loc rule_name params mt tac res;
       { item with ref_rule_term = mt_rule }
@@ -663,8 +655,8 @@ let add_proof_check_elim info loc item =
 
    (* Build the rule *)
    let h_v, mt = Filter_reflection.mk_proof_check_elim_thm info.info_parse_info t mt in
-   let params = [mk_so_var_term h_v [] []] in
-   let _, mt, params = parse_rule info loc rule_name mt params in
+   let params = [IntParam h_v] in
+   let mt = parse_rule info loc rule_name mt params in
 
    (* TODO: more accurate tactic *)
    let tac = "elimProofCheckT" in
@@ -676,8 +668,8 @@ let add_simple_step_elim info loc name t_logic rules =
 
    (* Build the rule *)
    let h_v, mt = Filter_reflection.mk_simple_step_elim_thm info.info_parse_info t_logic rules in
-   let params = [mk_so_var_term h_v [] []] in
-   let _, mt, params = parse_rule info loc rule_name mt params in
+   let params = [IntParam h_v] in
+   let mt = parse_rule info loc rule_name mt params in
 
    (* TODO: more accurate tactic *)
    let tac = "elimSimpleStepT" in
@@ -689,8 +681,8 @@ let add_elim_start info loc name t_logic =
 
    (* Build the rule *)
    let h_v, mt = Filter_reflection.mk_elim_start_thm info.info_parse_info t_logic in
-   let params = [mk_so_var_term h_v [] []] in
-   let _, mt, params = parse_rule info loc rule_name mt params in
+   let params = [IntParam h_v] in
+   let mt = parse_rule info loc rule_name mt params in
 
    (* TODO: more accurate tactic *)
    let tac = "elimRuleStartT" in
@@ -714,8 +706,8 @@ let add_elim info loc name t_logic items =
 
    (* Build the rule *)
    let h_v, mt = Filter_reflection.mk_elim_thm info.info_parse_info t_logic rules in
-   let params = [mk_so_var_term h_v [] []] in
-   let _, mt, params = parse_rule info loc rule_name mt params in
+   let params = [IntParam h_v] in
+   let mt = parse_rule info loc rule_name mt params in
 
    (* TODO: more accurate tactic *)
    let tac = "elimRuleT" in
@@ -750,7 +742,7 @@ let postprocess_rules info current loc name items =
    (* State that it is a logic *)
    let name_wf = "wf_" ^ name in
    let logic_wf = Filter_reflection.mk_logic_wf_thm info.info_parse_info t_logic in
-   let _, logic_wf, _ = parse_rule info loc name_wf logic_wf [] in
+   let logic_wf = parse_rule info loc name_wf logic_wf [] in
    let logic_res = intro_resources loc in
    let logic_tac = Printf.sprintf "rwh unfold_%s 0 thenT autoT" name in
    let () = define_thm info loc name_wf [] logic_wf logic_tac logic_res in

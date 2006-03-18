@@ -52,6 +52,7 @@ open Refiner.Refiner.RefineError
 
 open Lexing
 open Filter_type
+open Filter_base_type
 open Filter_util
 open Filter_summary
 open Filter_summary_util
@@ -886,10 +887,10 @@ struct
          build_term spell space items
 
    and mk_parse_state loc name =
-      { Filter_reflection.parse_quotation = parse_quotation loc name;
-        Filter_reflection.parse_opname    = mk_opname_kind loc;
-        Filter_reflection.parse_shape     = find_shape_class loc;
-        Filter_reflection.parse_param     = dest_xparam loc
+      { parse_quotation = parse_quotation loc name;
+        parse_opname    = mk_opname_kind loc;
+        parse_shape     = find_shape_class loc;
+        parse_param     = dest_xparam loc
       }
 
    let rec strip_white_lst = function

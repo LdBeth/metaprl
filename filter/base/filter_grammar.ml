@@ -1,10 +1,10 @@
-(*
+(*x
  * Define a basic parser and lexer.
  *
  * ----------------------------------------------------------------
  *
  * @begin[license]
- * Copyright (C) 2004 Mojave Group, Caltech
+ * Copyright (C) 2004-2006 Mojave Group, Caltech
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -44,8 +44,9 @@ open Refiner.Refiner.TermShape
 open Refiner.Refiner.TermSubst
 open Refiner.Refiner.Rewrite
 open Refiner.Refiner.RefineError
-open Filter_reflection
 open Filter_shape
+open Filter_base_type
+open Filter_reflection
 
 open Tactic_type
 

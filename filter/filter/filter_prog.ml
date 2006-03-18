@@ -46,6 +46,7 @@ open Refiner.Refiner.RefineError
 open Precedence
 open Mp_resource
 
+open Filter_base_type
 open Filter_type
 open Filter_util
 open Filter_shape

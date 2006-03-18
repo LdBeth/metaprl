@@ -2,6 +2,8 @@ BASE_FILES[] =
     filter_buffer
     free_vars
     filter_shape
+    filter_base_type
+    filter_summary_util
     filter_reflection
     filter_grammar
     filter_type
@@ -13,7 +15,6 @@ BASE_FILES[] =
     filter_summary
     filter_summary_type
     filter_summary_io
-    filter_summary_util
     filter_cache_fun
     filter_magic
     filter_cache

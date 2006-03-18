@@ -65,6 +65,7 @@ open Refiner.Refiner.Refine
 open Mp_resource
 
 open Term_grammar
+open Filter_base_type
 open Filter_type
 open Filter_util
 open Filter_shape
@@ -334,12 +335,12 @@ struct
     * the get_proc function needs to set the start symbols.
     *)
    let mk_parse_state loc id =
-      { Filter_reflection.parse_quotation =
+      { parse_quotation =
            (fun name s ->
                  TermGrammar.raw_term_of_parsed_term (TermGrammar.parse_quotation loc id name s));
-        Filter_reflection.parse_opname = TermGrammar.mk_opname_kind loc;
-        Filter_reflection.parse_shape  = TermGrammar.find_shape_class loc;
-        Filter_reflection.parse_param  = TermGrammar.dest_xparam loc
+        parse_opname = TermGrammar.mk_opname_kind loc;
+        parse_shape  = TermGrammar.find_shape_class loc;
+        parse_param  = TermGrammar.dest_xparam loc
       }
 
    let input_exp shape id s =

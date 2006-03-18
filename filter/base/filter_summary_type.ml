@@ -48,6 +48,7 @@ open File_base_type
 open Filter_type
 open Filter_shape
 open Filter_summary
+open Filter_base_type
 
 (*
  * Abbreviations.
@@ -156,8 +157,6 @@ end
  * The sig_* types parameterize the signatures, and the str_* types
  * parameterize the module_info being constructed.
  *)
-type parse_state = Filter_reflection.parse_state
-
 type summary_mode =
    CompiledSummary
  | InteractiveSummary

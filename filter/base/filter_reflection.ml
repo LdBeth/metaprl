@@ -37,7 +37,6 @@ open Term_sig
 open Term_ty_sig
 open Term_meta_sig
 open Simple_print
-open Filter_shape
 open Refiner.Refiner
 open Refiner.Refiner.TermType
 open Refiner.Refiner.Term
@@ -51,15 +50,9 @@ open Refiner.Refiner.RefineError
 
 open Tactic_type
 
-(*
- * For expanding quotations.
- *)
-type parse_state =
-   { parse_quotation : string -> string -> term;
-     parse_opname    : op_kind -> string list -> shape_param list -> int list -> Opname.opname;
-     parse_shape     : shape -> shape_class;
-     parse_param     : term -> param
-   }
+open Filter_shape
+open Filter_base_type
+open Filter_summary_util
 
 (*
  * Info about vars.
@@ -1117,9 +1110,6 @@ let mk_type_check_thm info quote =
 
    (* Sequent arg *)
    let q_arg = Reflect.mk_meta_type_term info in
-(*
-   let q_arg = quote_term info 0 arg in
-*)
 
    (* Capture won't happen because we are constructing the terms *)
    let h_v = var_H in
@@ -1209,7 +1199,7 @@ let mk_infer_scalar_hyps info fv hyps arity =
    let it = Reflect.mk_it_term info in
    let rec loop fv vars hyps i =
       if i = arity then
-         vars, hyps
+         List.rev vars, List.rev hyps
       else
          let v = maybe_new_var var_x fv in
          let fv = SymbolSet.add fv v in
@@ -1249,7 +1239,7 @@ let mk_infer_wf_premise info h_v fv socvars v (b, cargs, arity) =
          let ty = Reflect.mk_CVar_term info t_depth in
             e, ty
       else
-         let t = mk_so_var_term v cargs vars in
+         let t = mk_so_var_term v (cargs @ [h_v]) vars in
          let e = Reflect.mk_vbind_term info hyps t in
          let ty = Reflect.mk_BTerm2_term info t_depth in
             e, ty
@@ -1297,13 +1287,13 @@ let mk_provable_sequent_term info h_v t_logic t =
    let t = Reflect.mk_ProvableSequent_term info t_logic t in
       mk_normal_sequent_term info h_v t
 
-let mk_intro_thm info t_logic t =
+let mk_intro_thm info t_logic t params =
    (* Convert the terms in the rule *)
    let premises, goal = unzip_mfunction t in
    let premises = List.map (fun (_, _, premise) -> premise) premises in
 
    (* Choose a new context variable *)
-   let fv = all_vars_terms (goal :: premises) in
+   let fv = all_vars_terms (goal :: premises @ collect_terms params) in
    let h_v = Lm_symbol.new_name var_H (SymbolSet.mem fv) in
    let logic_v = Lm_symbol.new_name var_logic (SymbolSet.mem fv) in
    let logic_t = mk_so_var_term logic_v [h_v] [] in
@@ -1316,6 +1306,22 @@ let mk_intro_thm info t_logic t =
    in
    let premises = List.rev premises in
    let socvars_goal, goal = sweep_min_rulequote_term info h_v SymbolTable.empty goal in
+
+   (* Params look like they are part of the goal *)
+   let socvars_goal, params =
+      List.fold_left (fun (socvars, params) param ->
+            let socvars, param =
+               match param with
+                  IntParam _
+                | AddrParam _ ->
+                     socvars, param
+                | TermParam t ->
+                     let socvars, t = sweep_min_rulequote_term info h_v socvars t in
+                        socvars, TermParam t
+            in
+               socvars, param :: params) (socvars_goal, []) params
+   in
+   let params = List.rev params in
 
    (* The only socvars we care about are those in the goal, but not in a premise *)
    let socvars =
@@ -1348,7 +1354,7 @@ let mk_intro_thm info t_logic t =
    (* Collect information about all socvars, for the proof witness *)
    let socvars_all = SymbolTable.fold SymbolTable.add socvars_premises socvars_goal in
    let socvars_info = mk_infer_socvars_info socvars_all in
-      socvars_info, mt
+      socvars_info, mt, params
 
 (************************************************************************
  * Elimination.

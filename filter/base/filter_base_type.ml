@@ -1,16 +1,10 @@
 (*
- * Utilities on summaries.
+ * Some types shared by Filter_reflection and Filter_type.
  *
  * ----------------------------------------------------------------
  *
- * This file is part of MetaPRL, a modular, higher order
- * logical framework that provides a logical programming
- * environment for OCaml and other languages.
- *
- * See the file doc/htmlman/default.html or visit http://metaprl.org/
- * for more information.
- *
- * Copyright (C) 1998-2006 Mojave Group, Caltech
+ * @begin[license]
+ * Copyright (C) 2006 Mojave Group, Caltech
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -27,28 +21,44 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * @email{jyh@cs.caltech.edu}
+ * @end[license]
  *)
 open Lm_symbol
 
-open Rewrite_sig
+open Opname
+open Term_sig
+open Term_shape_sig
 open Refiner.Refiner.TermType
-
-open Filter_base_type
+open Filter_shape
 
 (*
- * Parameter lists.
+ * The type of rule parameters.
+ * %%MAGICBEGIN%%
  *)
-val collect_cvars  : term poly_param list -> rewrite_args_spec
-val collect_terms  : term poly_param list -> term list
-val split_params   : term poly_param list -> var list * var list * term list
-val name_params    : term poly_param list -> string list * string list * string list * string list
-val extract_params : SymbolSet.t * SymbolSet.t -> term list -> term poly_param list
+type 'term poly_param =
+   IntParam of var
+ | AddrParam of var
+ | TermParam of 'term
+(* %%MAGICEND%% *)
+
+type term_param = term poly_param
+
+(*
+ * For expanding quotations.
+ *)
+type parse_state =
+   { parse_quotation : string -> string -> term;
+     parse_opname    : op_kind -> string list -> shape_param list -> int list -> Opname.opname;
+     parse_shape     : shape -> shape_class;
+     parse_param     : term -> param
+   }
 
 (*
  * -*-
  * Local Variables:
- * Caml-master: "refiner"
+ * Fill-column: 100
  * End:
  * -*-
+ * vim:ts=3:et:tw=100
  *)

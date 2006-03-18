@@ -38,6 +38,7 @@ open Refiner.Refiner.TermType
 open Refiner.Refiner.TermMeta
 open Refiner.Refiner.TermTy
 open Filter_shape
+open Filter_base_type
 open Opname
 open Dform
 open Mp_resource
@@ -91,32 +92,32 @@ type aterm = term poly_aterm
  ************************************************************************)
 
 type 'expr param_constr =
-   ConPStr of string
- | ConPMeta of var
- | ConPNum of Lm_num.num
- | ConPInt of 'expr
- | ConPExpr of 'expr
+   ConPStr   of string
+ | ConPMeta  of var
+ | ConPNum   of Lm_num.num
+ | ConPInt   of 'expr
+ | ConPExpr  of 'expr
  | ConPToken of opname
 
 type 'expr param_constructor = 'expr param_constr * shape_param
 
 type 'expr bvar_constructor =
    ConBVarConst of string
- | ConBVarExpr of 'expr
+ | ConBVarExpr  of 'expr
 
 type ('term, 'expr) term_constructor =
-   ConTerm of 'term     (* a constant term *)
- | ConExpr of 'expr
- | ConVar of 'expr
+   ConTerm      of 'term     (* a constant term *)
+ | ConExpr      of 'expr
+ | ConVar       of 'expr
  | ConConstruct of opname * 'expr param_constructor list * ('term, 'expr) bterm_constructor list
- | ConSequent of ('term, 'expr) term_constructor * ('term, 'expr) hyp_constructor list * ('term, 'expr) term_constructor
+ | ConSequent   of ('term, 'expr) term_constructor * ('term, 'expr) hyp_constructor list * ('term, 'expr) term_constructor
 
 and ('term, 'expr) bterm_constructor =
    'expr bvar_constructor list * ('term, 'expr) term_constructor
 
 and ('term, 'expr) hyp_constructor =
-   ConContext of 'expr * ('term, 'expr) term_constructor list
- | ConHypList of 'expr
+   ConContext    of 'expr * ('term, 'expr) term_constructor list
+ | ConHypList    of 'expr
  | ConHypothesis of 'expr * ('term, 'expr) term_constructor
 
 (************************************************************************
@@ -134,21 +135,21 @@ and ('term, 'expr) hyp_constructor =
  * A str_item can have MetaPRL stuff in it.
  *)
 type 'term prl_binding =
-   BindTerm of 'term
+   BindTerm   of 'term
  | BindOpname of opname
- | BindNum of Lm_num.num
+ | BindNum    of Lm_num.num
 
 type ('item, 'term) bnd_expr =
    { item_bindings : (string * 'term prl_binding) list;
-     item_item : 'item
+     item_item     : 'item
    }
 
-type 'expr resource_anno = {
-   res_loc  : MLast.loc;
-   res_name : string;
-   res_flag : private_flag;
-   res_args : 'expr list
-}
+type 'expr resource_anno =
+   { res_loc  : MLast.loc;
+     res_name : string;
+     res_flag : private_flag;
+     res_args : 'expr list
+   }
 
 type ('expr, 'term) resource_def =
    ('expr resource_anno list, 'term) bnd_expr
@@ -156,62 +157,57 @@ type ('expr, 'term) resource_def =
 (*
  * Resource descriptions.
  *)
-type 'ctyp resource_sig = {
-   resource_input : 'ctyp;
-   resource_output : 'ctyp
-}
+type 'ctyp resource_sig =
+   { resource_input  : 'ctyp;
+     resource_output : 'ctyp
+   }
 
-type ('ctyp, 'expr) resource_str = {
-   res_input : 'ctyp;
-   res_output : 'ctyp;
-   res_body : 'expr;
-}
-
-type 'term param =
-   IntParam of var
- | AddrParam of var
- | TermParam of 'term
+type ('ctyp, 'expr) resource_str =
+   { res_input  : 'ctyp;
+     res_output : 'ctyp;
+     res_body   : 'expr;
+   }
 
 (*
  * Proof is type unit in interface.
  *)
 type ('term, 'proof, 'expr) rewrite_info =
-   { rw_name : string;
-     rw_redex : 'term;
+   { rw_name       : string;
+     rw_redex      : 'term;
      rw_contractum : 'term;
-     rw_proof : 'proof;
-     rw_resources : ('expr, 'term) resource_def
+     rw_proof      : 'proof;
+     rw_resources  : ('expr, 'term) resource_def
    }
 
 type 'term iform_info =
-   { iform_name : string;
-     iform_redex : 'term;
+   { iform_name       : string;
+     iform_redex      : 'term;
      iform_contractum : 'term
    }
 
 type ('term, 'proof, 'expr) cond_rewrite_info =
-   { crw_name : string;
-     crw_params : 'term param list;
-     crw_assums : 'term list;
-     crw_redex : 'term;
+   { crw_name       : string;
+     crw_params     : 'term poly_param list;
+     crw_assums     : 'term list;
+     crw_redex      : 'term;
      crw_contractum : 'term;
-     crw_proof : 'proof;
-     crw_resources : ('expr, 'term) resource_def
+     crw_proof      : 'proof;
+     crw_resources  : ('expr, 'term) resource_def
    }
 
 type ('term, 'meta_term, 'proof, 'expr) rule_info =
-   { rule_name : string;
-     rule_params : 'term param list;
-     rule_stmt : 'meta_term;
-     rule_proof : 'proof;
+   { rule_name      : string;
+     rule_params    : 'term poly_param list;
+     rule_stmt      : 'meta_term;
+     rule_proof     : 'proof;
      rule_resources : ('expr, 'term) resource_def
    }
 
 type ('term, 'expr) mlterm_info =
-   { mlterm_name : string;
-     mlterm_params : 'term param list;
-     mlterm_term : 'term;
-     mlterm_def : ('expr, 'term) bnd_expr option;
+   { mlterm_name      : string;
+     mlterm_params    : 'term poly_param list;
+     mlterm_term      : 'term;
+     mlterm_def       : ('expr, 'term) bnd_expr option;
      mlterm_resources : ('expr, 'term) resource_def
    }
 
@@ -220,13 +216,13 @@ type ('term, 'expr) mlterm_info =
  * opened, and it lists all the resources that were discovered.
  *)
 type 'ctyp parent_info =
-   { parent_name : module_path;
+   { parent_name      : module_path;
      parent_resources : (string * 'ctyp resource_sig) list
    }
 
 type ('term, 'expr) term_def =
-   { term_def_name : string;
-     term_def_value : 'term;
+   { term_def_name      : string;
+     term_def_value     : 'term;
      term_def_resources : ('expr, 'term) resource_def
    }
 
@@ -237,33 +233,33 @@ type dform_option =
 
 type ('term, 'expr) dform_ml_def =
    { dform_ml_printer : string;
-     dform_ml_buffer : string;
-     dform_ml_code : ('expr, 'term) bnd_expr;
+     dform_ml_buffer  : string;
+     dform_ml_code    : ('expr, 'term) bnd_expr;
    }
 
 type ('term, 'expr) dform_def =
    NoDForm
  | TermDForm of 'term
- | MLDForm of ('term, 'expr) dform_ml_def
+ | MLDForm   of ('term, 'expr) dform_ml_def
 
 (*
  * Dform descriptions.
  * The definition is not required in the interface.
  *)
 type ('term, 'expr) dform_info =
-   { dform_name : string;
-     dform_modes : dform_modes;
+   { dform_name    : string;
+     dform_modes   : dform_modes;
      dform_options : dform_option list;
-     dform_redex : 'term;
-     dform_def : ('term, 'expr) dform_def
+     dform_redex   : 'term;
+     dform_def     : ('term, 'expr) dform_def
    }
 
 (*
  * Define a precedence relation.
  *)
 type prec_rel_info =
-   { prec_rel : Precedence.relation;
-     prec_left : string;
+   { prec_rel   : Precedence.relation;
+     prec_left  : string;
      prec_right : string
    }
 
@@ -354,8 +350,6 @@ type ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item, 'module_info) s
  * The mk_var_contexts function should return the Some list when the SO variable bindings are known
  * from the proof context.
  *)
-type parse_state = Filter_reflection.parse_state
-
 type parsing_state =
    { opname_prefix      : MLast.loc -> opname;
      mk_opname_kind     : MLast.loc -> op_kind -> string list -> shape_param list -> int list -> Opname.opname;

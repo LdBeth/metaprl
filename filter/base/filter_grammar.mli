@@ -31,7 +31,8 @@ open Term_sig
 open Term_shape_sig
 open Refiner.Refiner.TermType
 open Refiner.Refiner.TermShape
-open Filter_reflection
+
+open Filter_base_type
 
 exception PrecNotFound of shape
 

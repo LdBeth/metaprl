@@ -36,7 +36,7 @@ open Lm_symbol
 open Rewrite_sig
 open Refiner.Refiner.TermMan
 
-open Filter_type
+open Filter_base_type
 
 (*
  * Show the file loading.

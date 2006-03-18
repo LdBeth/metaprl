@@ -117,7 +117,7 @@ type ref_status =
  | RefUngrounded of int * int * opname
  | RefIncomplete of int * int
 
-type obj_contents = string * obj_status * meta_term * term Filter_type.param list
+type obj_contents = string * obj_status * meta_term * term Filter_base_type.poly_param list
 
 (*
  * Possible commands.
@@ -195,7 +195,7 @@ type edit_object =
      edit_set_redex       : term -> unit;
      edit_set_contractum  : term -> unit;
      edit_set_assumptions : term list -> unit;
-     edit_set_params      : term Filter_type.param list -> unit;
+     edit_set_params      : term Filter_base_type.poly_param list -> unit;
 
      (* Navigation *)
      edit_check_addr : string list -> unit; (* Raise exn if the address is not found; must accept an empty list *)
@@ -261,7 +261,7 @@ sig
    val set_redex        : string -> string -> term -> unit
    val set_contractum   : string -> string -> term -> unit
    val set_assumptions  : string -> string -> term list -> unit
-   val set_params       : string -> string -> term Filter_type.param list -> unit
+   val set_params       : string -> string -> term Filter_base_type.poly_param list -> unit
    val refine           : int list -> string -> msequent * msequent list * msequent list
    val node             : int list -> string option * msequent * msequent list * msequent list
    val undo             : unit -> unit

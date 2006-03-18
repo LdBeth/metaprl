@@ -48,6 +48,7 @@ open Term_ty_sig
 open Filter_util
 open Filter_type
 open Filter_shape
+open Filter_base_type
 
 (*
  * Show the file loading.
@@ -1055,10 +1056,10 @@ struct
          if Opname.eq opname private_op then Private
          else if Opname.eq opname public_op then Public
          else raise (RefineError ("Filter_summary.dest_pvt_flag", StringTermError ("malformed term", t)))
-   
+
    let dest_resource_term expr_f t =
-      let t1, t2, loc, name = 
-         (* 
+      let t1, t2, loc, name =
+         (*
           * XXX HACK: ASCII IO format <= 1.0.24 compatibility:
           *           resource improvement terms used to have one subterm
           *)
@@ -1095,7 +1096,7 @@ struct
 
    let dest_improve convert t =
       let pvt, expr =
-         (* 
+         (*
           * XXX HACK: ASCII IO format <= 1.0.24 compatibility:
           *           resource improvement terms used to have one subterm
           *)
@@ -1106,7 +1107,7 @@ struct
       in
          Improve {
             improve_name = dest_string_param t;
-            improve_flag = dest_pvt_flag pvt; 
+            improve_flag = dest_pvt_flag pvt;
             improve_expr = dest_bnd_expr convert expr
          }
 
@@ -1628,7 +1629,7 @@ struct
    let term_of_flag = function
       Private -> private_term
     | Public -> public_term
-   
+
    let term_of_res expr_f res =
       mk_loc_string_term2 res_op res.res_loc res.res_name (**)
          (term_of_flag res.res_flag)

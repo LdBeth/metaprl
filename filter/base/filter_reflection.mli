@@ -24,24 +24,17 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
+open Lm_symbol
+
 open Opname
 open Term_sig
 open Term_ty_sig
 open Term_shape_sig
 open Refiner.Refiner.TermType
 open Refiner.Refiner.TermShape
-open Filter_shape
-open Lm_symbol
 
-(*
- * For expanding quotations.
- *)
-type parse_state =
-   { parse_quotation : string -> string -> term;
-     parse_opname    : op_kind -> string list -> shape_param list -> int list -> Opname.opname;
-     parse_shape     : shape -> shape_class;
-     parse_param     : term -> param
-   }
+open Filter_shape
+open Filter_base_type
 
 (*
  * Hooks.
@@ -80,7 +73,7 @@ val quote_term        : parse_info -> ?depth: term -> term -> term
 val mk_rule_term      : parse_info -> meta_term -> term
 val mk_rule_wf_thm    : parse_info -> term -> meta_term
 val mk_logic_wf_thm   : parse_info -> term -> meta_term
-val mk_intro_thm      : parse_info -> term -> meta_term -> socvars_info * meta_term
+val mk_intro_thm      : parse_info -> term -> meta_term -> term_param list -> socvars_info * meta_term * term_param list
 val mk_type_check_thm : parse_info -> (term, term) poly_ty_term -> meta_term
 val mk_mem_logic_thm  : parse_info -> term -> term -> meta_term
 val mk_elim_thm       : parse_info -> term -> meta_term list -> var * meta_term

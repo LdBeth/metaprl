@@ -39,7 +39,7 @@ open File_type_base
  ************************************************************************
  *
  * Current MD5 hash of the summary-related types (as computed by OMake):
- * FILTER_MD5: 1f124ec76d5686d7cad2ddf5b760a5c0
+ * FILTER_MD5: e07cbef3930b09e7315fc7f63feb068d
  *
  * The arguments for pack_version are:
  *    major version number, minor sub-version number, revision number
@@ -84,10 +84,11 @@ open File_type_base
  * Rev 29: added "RawOption" raw attribute
  * Rev 30: changed the options_table type; changed the string encoding of option_info
  * Rev 31: updated the variable name handling in the rewriter.
+ * Rev 32: moved the type of rule parameters into Filter_base_type.
  *)
-let raw_versions = List.map (pack_version 1 0) [31]
+let raw_versions = List.map (pack_version 1 0) [32;31]
 
-let term_versions = List.map (pack_version 1 0) [31; 30;29;28;27;25;24]
+let term_versions = List.map (pack_version 1 0) [32;31;30;29;28;27;25;24]
 
 (*
  * ASCII IO format revision history:
