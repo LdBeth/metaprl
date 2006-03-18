@@ -285,7 +285,7 @@ let compile_sig_item info (item, loc) =
        *)
     | Rewrite { rw_name = name }
     | CondRewrite { crw_name = name } ->
-         Stdpp.raise_with_loc loc (Failure (Printf.sprintf "Filter_reflect.compile_str_item: %s: rewrites are not implemented" name))
+         Stdpp.raise_with_loc loc (Failure (Printf.sprintf "Filter_reflect.compile_sig_item: %s: rewrites are not implemented" name))
 
       (*
        * The rest are ignored.
@@ -501,9 +501,10 @@ let define_rule info loc name
       exn ->
          Stdpp.raise_with_loc loc exn
 
-let define_prim info loc name params mterm extract res =
-   define_rule info loc name params mterm (Primitive extract) res
-
+(*
+ * We use this internally to create theorems for the various
+ * reflected facts.  "s" is the tactic text.
+ *)
 let define_thm info loc name params mterm s res =
    let assums, goal = unzip_mfunction mterm in
    let assums = List.map (fun (_, _, assum) -> assum) assums in
@@ -511,9 +512,6 @@ let define_thm info loc name params mterm s res =
    let proof = Proof.create_io_rulebox mseq s in
    let proof = Convert.of_raw () s proof in
       define_rule info loc name params mterm (Interactive proof) res
-
-let define_int_thm info loc name params mterm res =
-   define_rule info loc name params mterm Incomplete res
 
 (*
  * Add a term definition.  The term is defined in the parent theory.
@@ -525,9 +523,13 @@ let add_define info rules loc item =
          ref_rule_term = def
        } = item
    in
+
+   (* Declare the term itself *)
    let opname = Opname.mk_opname name (opname_prefix info loc) in
    let t_rule, sc, quote = declare_simple_term opname in
    let () = declare_term info sc quote in
+
+   (* Add the definition as the proof-checking predicate *)
    let _, def, _ = parse_rule info loc name def [] in
    let def = Filter_reflection.mk_rule_term info.info_parse_info def in
    let () = define_term info loc sc ("unfold_" ^ name) quote def no_resources in
@@ -540,12 +542,6 @@ let add_define info rules loc item =
    let tac = Printf.sprintf "rwh unfold_%s 0 thenT proofRuleWFT" name in
    let () = define_thm info loc name_wf [] mt tac res in
       (loc, item) :: rules
-
-let add_prim_rule info rules loc item =
-   add_define info rules loc item
-
-let add_interactive_rule info rules loc item =
-   add_define info rules loc item
 
 (*
  * When a term is declared, add the type-checking rule.
@@ -560,7 +556,44 @@ let add_declare info rules loc quote =
         ref_rule_term      = mt
       }
    in
-      add_prim_rule info rules loc item
+      add_define info rules loc item
+
+(*
+ * Define a declared rule.
+ *
+ * JYH: this is of course completely broken.
+ * Will fix 3/18/2006.
+ *)
+let add_rule info rules loc item =
+   let { rule_name      = name;
+         rule_params    = params;
+         rule_stmt      = mt;
+         rule_proof     = _proof;
+         rule_resources = res
+       } = item
+   in
+
+   (* We need only the term parameters *)
+   let params =
+      List.fold_left (fun params param ->
+            match param with
+               IntParam _
+             | AddrParam _ ->
+                  params
+             | TermParam t ->
+                  t :: params) [] params
+   in
+   let params = List.rev params in
+
+   (* Build the reflected rule *)
+   let _item =
+      { ref_rule_name      = "rule_" ^ name;
+        ref_rule_resources = res;
+        ref_rule_params    = params;
+        ref_rule_term      = mt
+      }
+   in
+      rules
 
 (************************************************
  * Postprocessing.  This adds:
@@ -851,10 +884,8 @@ let compile_str_item info rules item loc =
       (*
        * Convert a rule.
        *)
-    | Rule info ->
-         if !debug_filter_reflect then
-            eprintf "Filter_reflect.compile_str_item: rule %s@." info.rule_name;
-         rules
+    | Rule item ->
+         add_rule info rules loc item
 
       (*
        * DForms are copied in quoted form.
