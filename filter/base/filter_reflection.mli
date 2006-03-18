@@ -73,7 +73,7 @@ val quote_term        : parse_info -> ?depth: term -> term -> term
 val mk_rule_term      : parse_info -> meta_term -> term
 val mk_rule_wf_thm    : parse_info -> term -> meta_term
 val mk_logic_wf_thm   : parse_info -> term -> meta_term
-val mk_intro_thm      : parse_info -> term -> meta_term -> term_param list -> socvars_info * meta_term * term_param list
+val mk_intro_thm      : parse_info -> term -> provable_kind -> meta_term -> term_param list -> socvars_info * meta_term * term_param list
 val mk_type_check_thm : parse_info -> (term, term) poly_ty_term -> meta_term
 val mk_mem_logic_thm  : parse_info -> term -> term -> meta_term
 
@@ -95,6 +95,8 @@ val mk_reflect_df2_term : parse_info -> term -> term -> term
 val mk_empty_logic_term : parse_info -> term
 val mk_rules_logic_term : parse_info -> term list -> term -> term
 val mk_union_logic_term : parse_info -> term -> term -> term
+
+val is_meta_type_term   : parse_info -> term -> bool
 
 (*!
  * @docoff

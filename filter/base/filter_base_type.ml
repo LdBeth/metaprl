@@ -45,6 +45,14 @@ type 'term poly_param =
 type term_param = term poly_param
 
 (*
+ * Intro rule are either ProvableSequent or
+ * ProvableJudgment.
+ *)
+type provable_kind =
+   ProvableSequent
+ | ProvableJudgment
+
+(*
  * For expanding quotations.
  *)
 type parse_state =

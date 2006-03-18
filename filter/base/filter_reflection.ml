@@ -154,10 +154,13 @@ sig
    val mk_sequent_arg_term      : t -> term
    val mk_Provable_term         : t -> term -> term -> term
    val mk_ProvableSequent_term  : t -> term -> term -> term
+   val mk_ProvableJudgment_term : t -> term -> term -> term
+   val mk_IsJudgment_term       : t -> term -> term -> term
    val mk_ProofStepWitness_term : t -> term
    val mk_SimpleStep_term       : t -> term -> term -> term -> term -> term
    val mk_Sequent_term          : t -> term
    val mk_meta_type_term        : t -> term
+   val is_meta_type_term        : t -> term -> bool
    val mk_meta_member_term      : t -> term -> term -> term
    val mk_Logic_term            : t -> term
    val mk_type_term             : t -> term -> term
@@ -195,67 +198,69 @@ struct
          incr hash_index;
          index, info
 
-   let info_BTerm             = hash ("BTerm",           [],  [])
-   let info_BTerm2            = hash ("BTerm",           [],  [0])
-   let info_CVar              = hash ("CVar",            [],  [0])
-   let info_Logic             = hash ("Logic",           [],  [])
-   let info_ProofRule         = hash ("ProofRule",       [],  [])
-   let info_ProofCheck        = hash ("ProofCheck",      [],  [0; 0; 0; 0])
-   let info_ProofStepWitness  = hash ("ProofStepWitness",[],  [])
-   let info_Provable          = hash ("Provable",        [],  [0; 0])
-   let info_ProvableSequent   = hash ("ProvableSequent", [],  [0; 0])
-   let info_Sequent           = hash ("Sequent",         [],  [])
-   let info_SimpleStep        = hash ("SimpleStep",      [],  [0; 0; 0; 0])
-   let info_add               = hash ("add",             [],  [0; 0])
-   let info_append            = hash ("append",          [],  [0; 0])
-   let info_all_list          = hash ("all_list",        [],  [0; 1])
-   let info_assert            = hash ("assert",          [],  [0])
-   let info_beq_proof_step    = hash ("beq_proof_step",  [],  [0; 0])
-   let info_bind_vec          = hash ("bind",            [],  [0; 1])
-   let info_bind              = hash ("bind",            [],  [1])
-   let info_cons              = hash ("cons",            [],  [0; 0])
-   let info_equal             = hash ("equal",           [],  [0; 0; 0])
-   let info_implies           = hash ("implies",         [],  [0; 0])
-   let info_exists            = hash ("exists",          [],  [0; 1])
-   let info_all               = hash ("all",             [],  [0; 1])
-   let info_lambda            = hash ("lambda",          [],  [1])
-   let info_length            = hash ("length",          [],  [0])
-   let info_let_cvar          = hash ("let_cvar",        [ShapeString],  [0; 0; 0; 1])
-   let info_let_sovar         = hash ("let_sovar",       [ShapeString],  [0; 0; 0; 1])
-   let info_list              = hash ("list",            [],  [0])
-   let info_map               = hash ("map",             [],  [1; 0])
-   let info_meta_member       = hash ("meta_member",     [],  [0; 0])
-   let info_meta_type         = hash ("meta_type",       [],  [])
-   let info_mk_bterm          = hash ("mk_bterm",        [],  [0; 0; 0])
-   let info_mk_term           = hash ("mk_term",         [],  [0; 0])
-   let info_nat               = hash ("nat",             [],  [])
-   let info_nil               = hash ("nil",             [],  [])
-   let info_number            = hash ("number",          [ShapeNumber],  [])
-   let info_operator          = hash ("operator",        [ShapeOperator],  [])
-   let info_pair              = hash ("pair",            [],  [0; 0])
-   let info_proof_step        = hash ("proof_step",      [],  [0; 0])
-   let info_sequent           = hash ("sequent",         [],  [0; 0; 0])
-   let info_sequent_arg       = hash ("sequent_arg",     [],  [])
-   let info_spread            = hash ("spread",          [],  [0; 2])
-   let info_subst             = hash ("subst",           [],  [0; 0])
-   let info_substl            = hash ("substl",          [],  [0; 0])
-   let info_type              = hash ("type",            [],  [0])
-   let info_sequent_bterm     = hash ("sequent_bterm",   [],  [0])
-   let info_vsequent          = hash ("vsequent",        [],  [0])
-   let info_bsequent          = hash ("bsequent",        [],  [0])
-   let info_empty_logic       = hash ("empty_logic",     [],  [])
-   let info_rules_logic       = hash ("rules_logic",     [],  [0; 0])
-   let info_union_logic       = hash ("union_logic",     [],  [0; 0])
-   let info_SubLogic          = hash ("SubLogic",        [],  [0; 0])
-   let info_MemLogic          = hash ("MemLogic",        [],  [0; 0])
-   let info_it                = hash ("it",              [],  [])
-   let info_xconcl            = hash ("xconcl",          [],  [])
-   let info_hyplist           = hash ("hyplist",         [],  [])
-   let info_vlist             = hash ("vlist",           [],  [])
-   let info_hyp_context       = hash ("hyp_context",     [],  [])
-   let info_vbind             = hash ("vbind",           [],  [])
-   let info_reflect_df1       = hash ("reflect_df",      [],  [0])
-   let info_reflect_df2       = hash ("reflect_df",      [],  [0; 0])
+   let info_BTerm             = hash ("BTerm",            [],   [])
+   let info_BTerm2            = hash ("BTerm",            [],   [0])
+   let info_CVar              = hash ("CVar",             [],   [0])
+   let info_Logic             = hash ("Logic",            [],   [])
+   let info_ProofRule         = hash ("ProofRule",        [],   [])
+   let info_ProofCheck        = hash ("ProofCheck",       [],   [0; 0; 0; 0])
+   let info_ProofStepWitness  = hash ("ProofStepWitness", [],   [])
+   let info_Provable          = hash ("Provable",         [],   [0; 0])
+   let info_ProvableSequent   = hash ("ProvableSequent",  [],   [0; 0])
+   let info_ProvableJudgment  = hash ("ProvableJudgment", [],   [0; 0])
+   let info_IsJudgment        = hash ("IsJudgment",       [],   [0; 0])
+   let info_Sequent           = hash ("Sequent",          [],   [])
+   let info_SimpleStep        = hash ("SimpleStep",       [],   [0; 0; 0; 0])
+   let info_add               = hash ("add",              [],   [0; 0])
+   let info_append            = hash ("append",           [],   [0; 0])
+   let info_all_list          = hash ("all_list",         [],   [0; 1])
+   let info_assert            = hash ("assert",           [],   [0])
+   let info_beq_proof_step    = hash ("beq_proof_step",   [],   [0; 0])
+   let info_bind_vec          = hash ("bind",             [],   [0; 1])
+   let info_bind              = hash ("bind",             [],   [1])
+   let info_cons              = hash ("cons",             [],   [0; 0])
+   let info_equal             = hash ("equal",            [],   [0; 0; 0])
+   let info_implies           = hash ("implies",          [],   [0; 0])
+   let info_exists            = hash ("exists",           [],   [0; 1])
+   let info_all               = hash ("all",              [],   [0; 1])
+   let info_lambda            = hash ("lambda",           [],   [1])
+   let info_length            = hash ("length",           [],   [0])
+   let info_let_cvar          = hash ("let_cvar",         [ShapeString],   [0; 0; 0; 1])
+   let info_let_sovar         = hash ("let_sovar",        [ShapeString],   [0; 0; 0; 1])
+   let info_list              = hash ("list",             [],   [0])
+   let info_map               = hash ("map",              [],   [1; 0])
+   let info_meta_member       = hash ("meta_member",      [],   [0; 0])
+   let info_meta_type         = hash ("meta_type",        [],   [])
+   let info_mk_bterm          = hash ("mk_bterm",         [],   [0; 0; 0])
+   let info_mk_term           = hash ("mk_term",          [],   [0; 0])
+   let info_nat               = hash ("nat",              [],   [])
+   let info_nil               = hash ("nil",              [],   [])
+   let info_number            = hash ("number",           [ShapeNumber],   [])
+   let info_operator          = hash ("operator",         [ShapeOperator],   [])
+   let info_pair              = hash ("pair",             [],   [0; 0])
+   let info_proof_step        = hash ("proof_step",       [],   [0; 0])
+   let info_sequent           = hash ("sequent",          [],   [0; 0; 0])
+   let info_sequent_arg       = hash ("sequent_arg",      [],   [])
+   let info_spread            = hash ("spread",           [],   [0; 2])
+   let info_subst             = hash ("subst",            [],   [0; 0])
+   let info_substl            = hash ("substl",           [],   [0; 0])
+   let info_type              = hash ("type",             [],   [0])
+   let info_sequent_bterm     = hash ("sequent_bterm",    [],   [0])
+   let info_vsequent          = hash ("vsequent",         [],   [0])
+   let info_bsequent          = hash ("bsequent",         [],   [0])
+   let info_empty_logic       = hash ("empty_logic",      [],   [])
+   let info_rules_logic       = hash ("rules_logic",      [],   [0; 0])
+   let info_union_logic       = hash ("union_logic",      [],   [0; 0])
+   let info_SubLogic          = hash ("SubLogic",         [],   [0; 0])
+   let info_MemLogic          = hash ("MemLogic",         [],   [0; 0])
+   let info_it                = hash ("it",               [],   [])
+   let info_xconcl            = hash ("xconcl",           [],   [])
+   let info_hyplist           = hash ("hyplist",          [],   [])
+   let info_vlist             = hash ("vlist",            [],   [])
+   let info_hyp_context       = hash ("hyp_context",      [],   [])
+   let info_vbind             = hash ("vbind",            [],   [])
+   let info_reflect_df1       = hash ("reflect_df",       [],   [0])
+   let info_reflect_df2       = hash ("reflect_df",       [],   [0; 0])
 
    (*
     * Lazy opname creation.
@@ -441,11 +446,20 @@ struct
    let mk_ProvableSequent_term info t1 t2 =
       mk_dep0_dep0_term (find_opname info info_ProvableSequent) t1 t2
 
+   let mk_ProvableJudgment_term info t1 t2 =
+      mk_dep0_dep0_term (find_opname info info_ProvableJudgment) t1 t2
+
+   let mk_IsJudgment_term info t1 t2 =
+      mk_dep0_dep0_term (find_opname info info_IsJudgment) t1 t2
+
    let mk_meta_member_term info t1 t2 =
       mk_dep0_dep0_term (find_opname info info_meta_member) t1 t2
 
    let mk_meta_type_term info =
       mk_simple_term (find_opname info info_meta_type) []
+
+   let is_meta_type_term info t =
+      is_no_subterms_term (find_opname info info_meta_type) t
 
    let mk_type_term info t =
       mk_dep0_term (find_opname info info_type) t
@@ -570,14 +584,11 @@ type parse_info = Reflect.t
 let create_parse_info = Reflect.create
 
 (*
- * Display forms.
+ * Export various term operations.
  *)
 let mk_reflect_df1_term = Reflect.mk_reflect_df1_term
 let mk_reflect_df2_term = Reflect.mk_reflect_df2_term
 
-(*
- * Logic construction.
- *)
 let mk_empty_logic_term = Reflect.mk_empty_logic_term
 
 let mk_rules_logic_term info t_rules t_logic =
@@ -585,6 +596,8 @@ let mk_rules_logic_term info t_rules t_logic =
       Reflect.mk_rules_logic_term info t_rules t_logic
 
 let mk_union_logic_term = Reflect.mk_union_logic_term
+
+let is_meta_type_term = Reflect.is_meta_type_term
 
 (*
  * Some generic constructors.
@@ -1287,10 +1300,25 @@ let mk_provable_sequent_term info h_v t_logic t =
    let t = Reflect.mk_ProvableSequent_term info t_logic t in
       mk_normal_sequent_term info h_v t
 
-let mk_intro_thm info t_logic t params =
+let mk_provable_judgment_term info h_v t_logic t =
+   let t = Reflect.mk_ProvableJudgment_term info t_logic t in
+      mk_normal_sequent_term info h_v t
+
+let mk_is_judgment_premise info h_v t_logic t =
+   let t = Reflect.mk_IsJudgment_term info t_logic t in
+      mk_normal_sequent_term info h_v t
+
+let mk_intro_thm info t_logic provable_kind t params =
    (* Convert the terms in the rule *)
    let premises, goal = unzip_mfunction t in
    let premises = List.map (fun (_, _, premise) -> premise) premises in
+   let mk_provable_term =
+      match provable_kind with
+         ProvableJudgment ->
+            mk_provable_judgment_term
+       | ProvableSequent ->
+            mk_provable_sequent_term
+   in
 
    (* Choose a new context variable *)
    let fv = all_vars_terms (goal :: premises @ collect_terms params) in
@@ -1330,8 +1358,8 @@ let mk_intro_thm info t_logic t params =
    in
 
    (* Add the Provable predicates *)
-   let premises = List.map (fun t -> [], mk_provable_sequent_term info h_v logic_t t) premises in
-   let t_goal = mk_provable_sequent_term info h_v logic_t goal in
+   let premises = List.map (fun t -> [], mk_provable_term info h_v logic_t t) premises in
+   let t_goal = mk_provable_term info h_v logic_t goal in
 
    (* The logic should be a Logic{Sequent} *)
    let t_Logic = Reflect.mk_Logic_term info in
@@ -1344,9 +1372,18 @@ let mk_intro_thm info t_logic t params =
 
    (* Add the well-formedness subgoals *)
    let wf_premises = mk_infer_wf_premises info h_v fv socvars in
+   let core_premises = wf_premises @ premises in
+
+   (* Add the IsJudgment premise if this rule is an axiom *)
+   let core_premises =
+      if provable_kind = ProvableJudgment && premises = [] then
+         (["wf"], mk_is_judgment_premise info h_v t_logic goal) :: core_premises
+      else
+         core_premises
+   in
 
    (* Add all the premises *)
-   let premises = logic_premise :: sublogic_premise :: (wf_premises @ premises) in
+   let premises = logic_premise :: sublogic_premise :: core_premises in
 
    (* Build the sequent *)
    let mt = zip_mlabeled premises t_goal in

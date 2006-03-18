@@ -642,43 +642,38 @@ let add_mem_logic info logic_name t_logic (loc, item) =
 
 (*
  * Add an introduction rule in "Provable" form.
+ *
+ * XXX: JYH: this is a minor hack.  If the rule is a meta_type
+ * judgment, then we use ProvableSequent.
  *)
-let add_intro info t_logic loc item =
+let add_intro info t_logic loc is_prim item =
    let { ref_rule_name      = name;
          ref_rule_params    = params;
          ref_rule_resources = res;
          ref_rule_term      = mt
        } = item
    in
+   let provable_kind =
+      let _, goal = unzip_mfunction mt in
+         if is_sequent_term goal && Filter_reflection.is_meta_type_term info.info_parse_info (explode_sequent goal).sequent_args then
+            ProvableSequent
+         else
+            ProvableJudgment
+   in
    let rule_name = "intro_" ^ name in
    let mt_rule = parse_rule info loc rule_name mt params in
-   let _, mt, params = Filter_reflection.mk_intro_thm info.info_parse_info t_logic mt_rule params in
-   let tac = Printf.sprintf "provableRuleT << %s >> unfold_%s" name name in
+   let _, mt, params = Filter_reflection.mk_intro_thm info.info_parse_info t_logic provable_kind mt_rule params in
+   let tac =
+      if is_prim then
+         Printf.sprintf "provableRuleT << %s >> unfold_%s" name name
+      else
+         "idT"
+   in
       define_thm info loc rule_name params mt tac res;
       { item with ref_rule_term = mt_rule }
 
-let add_intro info t_logic (loc, item) =
-   try add_intro info t_logic loc item with
-      exn when not_exn_located exn ->
-         Stdpp.raise_with_loc loc exn
-
-(*
- * Add a theorem.
- *)
-let add_intro_theorem info t_logic loc item =
-   let { ref_rule_name      = name;
-         ref_rule_params    = params;
-         ref_rule_resources = res;
-         ref_rule_term      = mt
-       } = item
-   in
-   let rule_name = "intro_" ^ name in
-   let mt_rule = parse_rule info loc rule_name mt params in
-   let _, mt, params = Filter_reflection.mk_intro_thm info.info_parse_info t_logic mt_rule params in
-      define_thm info loc rule_name params mt "idT" res
-
-let add_intro_theorem info t_logic (loc, item) =
-   try add_intro_theorem info t_logic loc item with
+let add_intro info t_logic is_prim (loc, item) =
+   try add_intro info t_logic loc is_prim item with
       exn when not_exn_located exn ->
          Stdpp.raise_with_loc loc exn
 
@@ -794,7 +789,7 @@ let postprocess_rules info current loc name parents items =
    let () = List.iter (add_mem_logic info name t_logic) items in
 
    (* Add an introduction form for each of the rules *)
-   let intro_rules = List.map (add_intro info t_logic) items in
+   let intro_rules = List.map (add_intro info t_logic true) items in
       (* Add the multi-step elimination rule for the entire logic *)
       add_multi_step_elim info loc name t_logic rules intro_rules parents;
 
@@ -808,7 +803,7 @@ let postprocess_rules info current loc name parents items =
  * Postprocessing theorems.
  *)
 let postprocess_theorems info t_logic items =
-   List.iter (add_intro_theorem info t_logic) items
+   List.iter (fun item -> ignore (add_intro info t_logic false item)) items
 
 (*
  * Copy items directly.
