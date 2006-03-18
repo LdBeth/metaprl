@@ -161,6 +161,21 @@ let not_exn_located exn =
     | _ ->
          true
 
+(*
+ * Create a declaration for a 0-arity opname.
+ *)
+let declare_simple_term opname =
+   let t = mk_term (mk_op opname []) [] in
+   let quote =
+      { ty_term   = t;
+        ty_opname = opname;
+        ty_params = [];
+        ty_bterms = [];
+        ty_type   = term_type
+      }
+   in
+      t, shape_normal, quote
+
 (************************************************************************
  * Signature conversion.
  *
@@ -168,6 +183,9 @@ let not_exn_located exn =
  * where we need to convert the extensions to point to the
  * reflect_ theories.
  *)
+let opname_prefix info loc =
+   (SigFilterCache.get_parsing_state info).opname_prefix loc
+
 let declare_parent_path cache loc path =
    (* Lots of errors can occur here *)
    let () =
@@ -240,13 +258,21 @@ let compile_sig_item info (item, loc) =
          Stdpp.raise_with_loc loc (Invalid_argument "Filter_reflect.extract_sig_item")
 
       (*
+       * Rules and rewrites become declared terms.
+       *)
+    | Rule { rule_name = name }
+    | Rewrite { rw_name = name }
+    | CondRewrite { crw_name = name } ->
+         let opname = Opname.mk_opname name (opname_prefix info loc) in
+         let _, sc, t = declare_simple_term opname in
+            SigFilterCache.declare_term info sc t;
+            copy_sig_item info loc (DeclareTerm(sc, t))
+
+      (*
        * The rest are ignored.
        *)
-    | Rewrite _
-    | CondRewrite _
     | MLAxiom _
     | MLRewrite _
-    | Rule _
     | SummaryItem _
     | MagicBlock _
     | ToploopItem _
@@ -263,7 +289,11 @@ let compile_sig_item info (item, loc) =
 
 let compile_sig info orig_name orig_info =
    declare_parent_path info dummy_loc ["itt_hoas_theory"];
-   List.iter (compile_sig_item info) (info_items orig_info)
+   List.iter (compile_sig_item info) (info_items orig_info);
+   let opname = Opname.mk_opname orig_name (opname_prefix info dummy_loc) in
+   let _, sc, t = declare_simple_term opname in
+      SigFilterCache.declare_term info sc t;
+      copy_sig_item info dummy_loc (DeclareTerm(sc, t))
 
 (************************************************************************
  * Implementation conversion.
@@ -338,7 +368,7 @@ let add_open info _loc name =
 (*
  * Adding to the cache.
  *)
-let declare_define_term info shapeclass ty_term =
+let declare_term info shapeclass ty_term =
    StrFilterCache.declare_term info.info_cache shapeclass ty_term
 
 let define_term info loc shapeclass name ty_term contractum res =
@@ -464,19 +494,10 @@ let add_define info rules loc item =
        } = item
    in
    let opname = Opname.mk_opname name (opname_prefix info loc) in
-   let t_rule = mk_term (mk_op opname []) [] in
-   let quote =
-      { ty_term   = t_rule;
-        ty_opname = opname;
-        ty_params = [];
-        ty_bterms = [];
-        ty_type   = term_type
-      }
-   in
-   let sc = shape_normal in
+   let t_rule, sc, quote = declare_simple_term opname in
+   let () = declare_term info sc quote in
    let _, def, _ = parse_rule info loc name def [] in
    let def = Filter_reflection.mk_rule_term info.info_parse_info def in
-   let () = declare_define_term info sc quote in
    let () = define_term info loc sc ("unfold_" ^ name) quote def no_resources in
 
    (* The wf theorem is (<H> >- t IN ProofRule) *)
@@ -657,19 +678,8 @@ let postprocess_rules info current loc name items =
 
    (* Define the logic term *)
    let opname = Opname.mk_opname name (opname_prefix info loc) in
-   let t_logic = mk_term (mk_op opname []) [] in
-
-   (* Define the logic *)
-   let quote =
-      { ty_term   = t_logic;
-        ty_opname = opname;
-        ty_params = [];
-        ty_bterms = [];
-        ty_type   = term_type
-      }
-   in
-   let sc = shape_normal in
-   let () = declare_define_term info sc quote in
+   let t_logic, sc, quote = declare_simple_term opname in
+   let () = declare_term info sc quote in
    let () = define_term info loc sc ("unfold_" ^ name) quote t_rules no_resources in
 
    (* State that it is a logic *)
@@ -810,7 +820,8 @@ let compile_str_item info rules item loc =
        * Convert a rule.
        *)
     | Rule info ->
-         eprintf "Processing rule %s@." info.rule_name;
+         if !debug_filter_reflect then
+            eprintf "Filter_reflect.compile_str_item: rule %s@." info.rule_name;
          rules
 
       (*
