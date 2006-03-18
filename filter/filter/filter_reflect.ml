@@ -186,6 +186,9 @@ let declare_simple_term opname =
 let opname_prefix info loc =
    (SigFilterCache.get_parsing_state info).opname_prefix loc
 
+let copy_sig_item cache loc item =
+   SigFilterCache.add_command cache (item, loc)
+
 let declare_parent_path cache loc path =
    (* Lots of errors can occur here *)
    let () =
@@ -214,10 +217,23 @@ let declare_parent cache loc item =
       declare_parent_path cache loc path
 
 (*
- * Copy items directly.
+ * When a term is declared, we will also generate a type-checking
+ * term, prefixed with "term_".
  *)
-let copy_sig_item cache loc item =
-   SigFilterCache.add_command cache (item, loc)
+let add_simple_term info loc name =
+   let opname = Opname.mk_opname name (opname_prefix info loc) in
+   let _, sc, t = declare_simple_term opname in
+      SigFilterCache.declare_term info sc t;
+      copy_sig_item info loc (DeclareTerm (sc, t))
+
+let add_declare_term info loc sc t =
+   let name, _ = dst_opname t.ty_opname in
+      (* Declare the original term *)
+      SigFilterCache.declare_term info sc t;
+      copy_sig_item info loc (DeclareTerm (sc, t));
+
+      (* Also declare the proof-checking term *)
+      add_simple_term info loc ("term_" ^ name)
 
 (*
  * Translate the interface.
@@ -237,8 +253,7 @@ let compile_sig_item info (item, loc) =
        *)
     | DefineTerm (sc, t, _)
     | DeclareTerm (sc, t) ->
-         SigFilterCache.declare_term info sc t;
-         copy_sig_item info loc item
+         add_declare_term info loc sc t
     | DeclareTypeClass (sc, opname, ty_term, ty_parent) ->
          SigFilterCache.declare_typeclass info sc opname ty_term ty_parent;
          copy_sig_item info loc item
@@ -258,16 +273,19 @@ let compile_sig_item info (item, loc) =
          Stdpp.raise_with_loc loc (Invalid_argument "Filter_reflect.extract_sig_item")
 
       (*
-       * Declare the terms that correspond to rules and rewrites.
+       * MetaPRL will ensure that the implementation has exactly the same
+       * rule, so we just declare the term corresponding to the rule here.
        *)
-    | Rule { rule_name = name }
+    | Rule { rule_name = name } ->
+         add_simple_term info loc ("rule_" ^ name)
+
+      (*
+       * We want to support rewrites eventually, but they are currently
+       * unsupported.
+       *)
     | Rewrite { rw_name = name }
     | CondRewrite { crw_name = name } ->
-         let name = "term_" ^ name in
-         let opname = Opname.mk_opname name (opname_prefix info loc) in
-         let _, sc, t = declare_simple_term opname in
-            SigFilterCache.declare_term info sc t;
-            copy_sig_item info loc (DeclareTerm (sc, t))
+         Stdpp.raise_with_loc loc (Failure (Printf.sprintf "Filter_reflect.compile_str_item: %s: rewrites are not implemented" name))
 
       (*
        * The rest are ignored.
