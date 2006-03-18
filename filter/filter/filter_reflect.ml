@@ -577,13 +577,24 @@ let add_declare info rules loc quote =
  * JYH: this is of course completely broken.
  * Will fix 3/18/2006.
  *)
-let add_rule info rules loc item =
+let add_rule info theorems rules loc item =
    let { rule_name      = name;
          rule_params    = params;
          rule_stmt      = mt;
-         rule_proof     = _proof;
+         rule_proof     = proof;
          rule_resources = res
        } = item
+   in
+
+   (* Declare only primitive rules *)
+   let is_prim =
+      match proof with
+         Primitive _ ->
+            true
+       | Derived _
+       | Interactive _
+       | Incomplete ->
+            false
    in
 
    (* Build the reflected rule *)
@@ -594,7 +605,10 @@ let add_rule info rules loc item =
         ref_rule_term      = mt
       }
    in
-      add_define info rules loc item
+      if is_prim then
+         theorems, add_define info rules loc item
+      else
+         (loc, item) :: theorems, rules
 
 (************************************************
  * Postprocessing.  This adds:
@@ -645,6 +659,26 @@ let add_intro info t_logic loc item =
 
 let add_intro info t_logic (loc, item) =
    try add_intro info t_logic loc item with
+      exn when not_exn_located exn ->
+         Stdpp.raise_with_loc loc exn
+
+(*
+ * Add a theorem.
+ *)
+let add_intro_theorem info t_logic loc item =
+   let { ref_rule_name      = name;
+         ref_rule_params    = params;
+         ref_rule_resources = res;
+         ref_rule_term      = mt
+       } = item
+   in
+   let rule_name = "intro_" ^ name in
+   let mt_rule = parse_rule info loc rule_name mt params in
+   let _, mt, params = Filter_reflection.mk_intro_thm info.info_parse_info t_logic mt_rule params in
+      define_thm info loc rule_name params mt "idT" res
+
+let add_intro_theorem info t_logic (loc, item) =
+   try add_intro_theorem info t_logic loc item with
       exn when not_exn_located exn ->
          Stdpp.raise_with_loc loc exn
 
@@ -728,7 +762,7 @@ let add_elim info loc name t_logic rules =
          Stdpp.raise_with_loc loc exn
 
 (*
- * Postprocessing theorems.
+ * Postprocessing primitive rules.
  *)
 let postprocess_rules info current loc name parents items =
    (* Collect all the names of the term, and build a logic *)
@@ -765,7 +799,16 @@ let postprocess_rules info current loc name parents items =
       add_multi_step_elim info loc name t_logic rules intro_rules parents;
 
       (* Add an elimination rule for the entire logic *)
-      add_elim info loc name t_logic intro_rules parents
+      add_elim info loc name t_logic intro_rules parents;
+
+      (* Need the logic for the theorems *)
+      t_logic
+
+(*
+ * Postprocessing theorems.
+ *)
+let postprocess_theorems info t_logic items =
+   List.iter (add_intro_theorem info t_logic) items
 
 (*
  * Copy items directly.
@@ -872,11 +915,11 @@ let compile_str_item_parent info parents item loc =
     | _ ->
          parents
 
-let compile_str_item info rules item loc =
+let compile_str_item info theorems rules item loc =
    match item with
       (* We have already processed the parents *)
       Parent _ ->
-         rules
+         theorems, rules
 
       (*
        * Term declarations are coded as type-checking rules.
@@ -886,17 +929,17 @@ let compile_str_item info rules item loc =
          (* Treat them both as declarations *)
          StrFilterCache.declare_term info.info_cache sc t;
          copy_str_item info loc item;
-         add_declare info rules loc t
+         theorems, add_declare info rules loc t
     | DeclareTypeClass (sc, opname, ty_term, ty_parent) ->
          (* Type declarations can be ignored -- we just use the terms directly *)
          StrFilterCache.declare_typeclass info.info_cache sc opname ty_term ty_parent;
          copy_str_item info loc item;
-         rules
+         theorems, rules
     | DeclareType (sc, ty_term, ty_parent) ->
          (* Type declarations can be ignored -- we just use the terms directly *)
          StrFilterCache.declare_type info.info_cache sc ty_term ty_parent;
          copy_str_item info loc item;
-         rules
+         theorems, rules
     | DeclareTypeRewrite _ ->
          (* JYH: probably we will never support type equalities *)
          Stdpp.raise_with_loc loc (Failure "Filter_reflect.compile_str_item: type rewrites are not supported")
@@ -905,21 +948,21 @@ let compile_str_item info rules item loc =
        * Convert a rule.
        *)
     | Rule item ->
-         add_rule info rules loc item
+         add_rule info theorems rules loc item
 
       (*
        * DForms are copied in quoted form.
        *)
     | DForm df ->
          define_dform info loc df;
-         rules
+         theorems, rules
 
       (*
        * Open statements need to be copied.
        *)
     | SummaryItem item ->
          define_summary_item info loc item;
-         rules
+         theorems, rules
 
       (*
        * We want to support rewrites eventually, but they are currently
@@ -953,15 +996,15 @@ let compile_str_item info rules item loc =
     | Comment _
     | MLGramUpd _
     | PRLGrammar _ ->
-         rules
+         theorems, rules
 
 let compile_str_item_parent info parents (item, loc) =
    try compile_str_item_parent info parents item loc with
       exn when not_exn_located exn ->
          Stdpp.raise_with_loc loc exn
 
-let compile_str_item info rules (item, loc) =
-   try compile_str_item info rules item loc with
+let compile_str_item info theorems rules (item, loc) =
+   try compile_str_item info theorems rules item loc with
       exn when not_exn_located exn ->
          Stdpp.raise_with_loc loc exn
 
@@ -974,10 +1017,15 @@ let compile_str cache orig_name orig_info =
       List.fold_left (compile_str_item_parent info) [] items
    in
    let parents = List.rev_map (make_parent_term info) parents in
-   let rules = List.fold_left (compile_str_item info) [] items in
+   let theorems, rules =
+      List.fold_left (fun (theorems, rules) item ->
+            compile_str_item info theorems rules item) ([], []) items
+   in
+   let theorems = List.rev theorems in
    let rules = List.rev rules in
-   let current = compile_parent_logic info parents in
-      postprocess_rules info current dummy_loc orig_name parents rules
+   let t_logic = compile_parent_logic info parents in
+   let t_logic = postprocess_rules info t_logic dummy_loc orig_name parents rules in
+      postprocess_theorems info t_logic theorems
 
 (*
  * -*-
