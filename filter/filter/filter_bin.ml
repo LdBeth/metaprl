@@ -77,7 +77,12 @@ let add_include path =
  * Reflection prefix, in case we are generating reflected versions
  * of the file.
  *)
-let reflect_flag = ref false
+type reflect_kind =
+   InterfaceKind
+ | ImplementationKind
+ | DefaultKind
+
+let reflect_kind = ref DefaultKind
 let reflect_name = ref None
 
 (*
@@ -133,19 +138,20 @@ let compile_str name =
  * Generate a reflected signature.
  *)
 let compile_reflect_sig name =
-   let cache = SigFilterCache.create !include_path in
+   let str_cache = StrFilterCache.create !include_path in
    let orig_path = Lm_filename_util.root name in
    let orig_base = Lm_filename_util.basename orig_path in
-   let orig_info = SigFilterCache.load cache () orig_path InterfaceType AnySuffix in
+   let orig_info = StrFilterCache.load str_cache () orig_path ImplementationType AnySuffix in
 
    (* Create the new cache *)
    let new_base, new_path = Filter_reflect.reflect_filename !reflect_name orig_path in
-   let new_info = SigFilterCache.create_cache cache new_path InterfaceType in
+   let sig_cache = SigFilterCache.create !include_path in
+   let new_info = SigFilterCache.create_cache sig_cache new_path InterfaceType in
    let () = SigFilterCache.reset_hack new_info in
 
    (* Process the file *)
    let () =
-      Filter_reflect.compile_sig new_info orig_base (SigFilterCache.info orig_info);
+      Filter_reflect.compile_sig new_info orig_base (StrFilterCache.info orig_info);
       SigFilterCache.save new_info () AnySuffix
    in
 
@@ -227,15 +233,21 @@ let compile_reflect_str name =
 let process_file file =
    let compile =
       if Filename.check_suffix file ".cmiz" || Filename.check_suffix file ".cmit" then
-         if !reflect_flag then
-            compile_reflect_sig
-         else
-            compile_sig
+         match !reflect_kind with
+            InterfaceKind ->
+               compile_reflect_sig
+          | ImplementationKind ->
+               compile_reflect_str
+          | DefaultKind ->
+               compile_sig
       else if Filename.check_suffix file ".cmoz" || Filename.check_suffix file ".cmot" then
-         if !reflect_flag then
-            compile_reflect_str
-         else
-            compile_str
+         match !reflect_kind with
+            InterfaceKind ->
+               compile_reflect_sig
+          | ImplementationKind ->
+               compile_reflect_str
+          | DefaultKind ->
+               compile_str
       else
          raise (Bad "Filter_bin.main: file has a bogus suffix")
    in
@@ -245,11 +257,11 @@ let process_file file =
  * Argument specification.
  *)
 let spec =
-   ["-I",        Arg.String add_include,                            "add an directory to the path for include files";
-    "-r",        Arg.Set reflect_flag,                              "generate a reflected file";
-    "--reflect", Arg.Set reflect_flag,                              "generate a reflected file";
-    "--name",    Arg.String (fun s -> reflect_name := Some s),      "specify the name of the reflected file";
-    "-o",        Arg.String (fun s -> Pcaml.output_file := Some s), "specify the output file (defaults to stdout)"]
+   ["-I",        Arg.String add_include,                               "add an directory to the path for include files";
+    "--reflect-intf", Arg.Unit (fun () -> reflect_kind := InterfaceKind),      "generate a reflected interface file";
+    "--reflect-impl", Arg.Unit (fun () -> reflect_kind := ImplementationKind), "generate a reflected implementation file";
+    "--name",    Arg.String (fun s -> reflect_name := Some s),         "specify the name of the reflected file";
+    "-o",        Arg.String (fun s -> Pcaml.output_file := Some s),    "specify the output file (defaults to stdout)"]
 
 (*
  * Everything standard is taken care of.

@@ -45,7 +45,7 @@ val reflect_filename : string option -> string -> string * string
 val compile_sig :
    SigFilterCache.info ->
    string ->
-   (term, meta_term, unit, MLast.ctyp resource_sig, MLast.ctyp, MLast.expr, MLast.sig_item) module_info ->
+   (term, meta_term, Convert.cooked proof_type, (MLast.ctyp, MLast.expr) resource_str, MLast.ctyp, MLast.expr, MLast.str_item) module_info ->
    unit
 
 val compile_str :

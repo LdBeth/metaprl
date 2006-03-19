@@ -50,16 +50,16 @@ OCAMLDEPFLAGS += -prl
 # Reflected theories
 #
 reflect_%.ppo reflect_%.cmoz: %.cmoz reflect_%.cmiz $(PRLCN) :optional: %.prla :effects: %.prlb :scanner: scan-ocaml-%.ml
-   $(WrapC $(PRLCN)) --reflect -o $*.ppo $<
+   $(WrapC $(PRLCN)) --reflect-impl -o $*.ppo $<
 
-reflect_%.ppi reflect_%.cmiz: %.cmiz $(PRLCN) :scanner: scan-ocaml-%.mli
-   $(WrapC $(PRLCN)) --reflect -o $*.ppi $<
-
-reflect_%.p4i: %.cmiz $(PRLCO) :value: $(prlc-deps)
-   $(WrapC $(PRLCO)) --reflect -o $@ $(CAMLP4FLAGS) $<
+reflect_%.ppi reflect_%.cmiz: %.cmoz $(PRLCN) :scanner: scan-ocaml-%.mli
+   $(WrapC $(PRLCN)) --reflect-intf -o $*.ppi $<
 
 reflect_%.p4: %.cmoz reflect_%.cmiz $(PRLCO) :value: $(prlc-deps)
-   $(WrapC $(PRLCO)) --reflect -o $@ $(CAMLP4FLAGS) $<
+   $(WrapC $(PRLCO)) --reflect-impl -o $@ $(CAMLP4FLAGS) $<
+
+reflect_%.p4i: %.cmoz $(PRLCO) :value: $(prlc-deps)
+   $(WrapC $(PRLCO)) --reflect-intf -o $@ $(CAMLP4FLAGS) $<
 
 reflect_%.cmi: reflect_%.ppi :scanner: scan-ocaml-%.ml
    $(OCAMLC) $(OCAMLFLAGS) $(OCAMLCFLAGS) $(PREFIXED_OCAMLINCLUDES) -c -intf $<

@@ -264,7 +264,7 @@ let add_declare info loc sc quote =
 (*
  * Translate the interface.
  *)
-let compile_sig_item info (item, loc) =
+let compile_sig_item (info : SigFilterCache.info) ((item : StrFilterCache.str_elem), loc) =
    match item with
       (*
        * Supported items.
@@ -282,10 +282,10 @@ let compile_sig_item info (item, loc) =
     | DefineTerm (sc, t, _)
     | DeclareTerm (sc, t) ->
          add_declare info loc sc t
-    | DeclareTypeClass (sc, opname, ty_term, ty_parent) ->
+    | DeclareTypeClass (sc, opname, ty_term, ty_parent) as item ->
          SigFilterCache.declare_typeclass info sc opname ty_term ty_parent;
          copy_sig_item info loc item
-    | DeclareType (sc, ty_term, ty_parent) ->
+    | DeclareType (sc, ty_term, ty_parent) as item ->
          SigFilterCache.declare_type info sc ty_term ty_parent;
          copy_sig_item info loc item
     | DeclareTypeRewrite _ ->
@@ -333,10 +333,6 @@ let compile_sig_item info (item, loc) =
     | MLGramUpd _
     | PRLGrammar _ ->
          ()
-
-(************************************************
- * Postprocessing.
- *)
 
 (*
  * Declare the term that defines the logic.
