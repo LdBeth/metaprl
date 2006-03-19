@@ -258,6 +258,15 @@ let dest_ty_sequent_term =
 let is_ty_sequent_term =
    is_dep0_dep0_dep0_term sequent_opname
 
+let dest_ty_sequent_cases t =
+   let ty_hyps, ty_concl, ty_seq = dest_ty_sequent_term t in
+      if is_ty_hyp_term ty_hyps then
+         let ty_var, ty_hyp = dest_ty_hyp_term ty_hyps in
+            [ty_var, ty_hyp], ty_concl, ty_seq
+      else
+         let cases = dest_ty_hyp_cases_term ty_hyps in
+            cases, ty_concl, ty_seq
+
 (*
  * Type constraints.
  *)

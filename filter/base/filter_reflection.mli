@@ -74,8 +74,10 @@ val mk_rule_term      : parse_info -> meta_term -> term
 val mk_rule_wf_thm    : parse_info -> term -> meta_term
 val mk_logic_wf_thm   : parse_info -> term -> meta_term
 val mk_intro_thm      : parse_info -> term -> provable_kind -> meta_term -> term_param list -> socvars_info * meta_term * term_param list
-val mk_type_check_thm : parse_info -> (term, term) poly_ty_term -> meta_term
 val mk_mem_logic_thm  : parse_info -> term -> term -> meta_term
+val mk_type_check_thm : parse_info -> (term, term) poly_ty_term -> meta_term
+val mk_sequent_concl_check_thm : parse_info -> (term, term) poly_ty_term -> term -> term -> meta_term
+val mk_sequent_step_check_thm  : parse_info -> (term, term) poly_ty_term -> term -> term -> term -> term * meta_term
 
 (*
  * Elimination theorems.

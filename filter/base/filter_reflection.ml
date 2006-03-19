@@ -76,8 +76,9 @@ let var_A        = Lm_symbol.add "A"
 let var_C        = Lm_symbol.add "C"
 let var_H        = Lm_symbol.add "H"
 let var_J        = Lm_symbol.add "J"
-let var_u        = Lm_symbol.add "u"
+let var_T        = Lm_symbol.add "T"
 let var_U        = Lm_symbol.add "U"
+let var_u        = Lm_symbol.add "u"
 let var_v        = Lm_symbol.add "v"
 let var_w        = Lm_symbol.add "w"
 let var_x        = Lm_symbol.add "x"
@@ -90,6 +91,7 @@ let var_premise  = Lm_symbol.add "premise"
 let var_premises = Lm_symbol.add "premises"
 let var_none     = Lm_symbol.add "_"
 let var_logic    = Lm_symbol.add "logic"
+let var_concl    = Lm_symbol.add "concl"
 
 (*
  * Additional term constructors missing from TermOp.
@@ -500,10 +502,13 @@ struct
       in
          TermMan.mk_sequent_term seq
 
+   let mk_bsequent_arg_term info t =
+      mk_dep0_term (find_opname info info_bsequent) t
+
    let mk_bsequent_term info arg hyps concl =
       let seq =
-         { sequent_args = mk_dep0_term (find_opname info info_bsequent) arg;
-           sequent_hyps = hyps;
+         { sequent_args  = mk_bsequent_arg_term info arg;
+           sequent_hyps  = hyps;
            sequent_concl = concl
          }
       in
@@ -1029,6 +1034,10 @@ let sweep_min_rulequote_term info h_v socvars t =
    in
       sweepdn socvars t
 
+(************************************************************************
+ * Type checking.
+ *)
+
 (*
  * Rule quoting in "ugly" form.
  *)
@@ -1107,13 +1116,12 @@ let mk_logic_wf_thm info t =
 (*
  * Build a type checking rule.
  *)
-let mk_type_check_thm info quote =
+let mk_type_check_premises info quote =
    (* Get the parts of the quoted term *)
    let { ty_term   = t;
          ty_opname = opname;
          ty_params = params;
-         ty_bterms = bterms;
-         ty_type   = ty
+         ty_bterms = bterms
        } = quote
    in
    let () =
@@ -1158,22 +1166,139 @@ let mk_type_check_thm info quote =
             let bterm = mk_bterm (List.rev vars) t in
                premise :: premises, bterm :: bterms, succ index) ([], [], 1) bterms
    in
+   let premises = List.rev premises in
+   let bterms = List.rev bterms in
+      q_arg, h_v, premises, bterms
+
+(*
+ * Build a type checking rule.
+ *)
+let mk_type_check_thm info quote =
+   (* Get the parts of the quoted term *)
+   let { ty_opname = opname;
+         ty_type   = ty
+       } = quote
+   in
+
+   (* Get premises *)
+   let q_arg, h_v, premises, bterms = mk_type_check_premises info quote in
 
    (* Build the goal sequent *)
-   let t = mk_term (mk_op opname []) (List.rev bterms) in
+   let t = mk_term (mk_op opname []) bterms in
    let t = Reflect.mk_meta_member_term info t ty in
-   let h = Context (h_v, [], []) in
    let seq_info =
-      { sequent_args = q_arg;
-        sequent_hyps = SeqHyp.singleton h;
+      { sequent_args  = q_arg;
+        sequent_hyps  = SeqHyp.singleton (Context (h_v, [], []));
         sequent_concl = t
       }
    in
    let goal = mk_sequent_term seq_info in
+      zip_mimplies premises goal
 
-   (* Zip the rule *)
-   let mt = zip_mimplies (List.rev premises) goal in
-      mt
+(*
+ * Sequent conclusion-only type-check theorem.
+ *)
+let mk_sequent_concl_check_thm info quote ty_concl ty_seq =
+   let opname = quote.ty_opname in
+
+   (* Get premises *)
+   let q_arg, h_v, premises, bterms = mk_type_check_premises info quote in
+
+   (* Concl premise *)
+   let t_concl = mk_so_var_term var_concl [h_v] [] in
+   let concl = Reflect.mk_meta_member_term info t_concl ty_concl in
+   let seq_info =
+      { sequent_args  = q_arg;
+        sequent_hyps  = SeqHyp.singleton (Context (h_v, [], []));
+        sequent_concl = concl
+      }
+   in
+   let concl_premise = mk_sequent_term seq_info in
+
+   (* Build the goal sequent *)
+   let t_arg = mk_term (mk_op opname []) bterms in
+   let seq_info =
+      { sequent_args  = t_arg;
+        sequent_hyps  = SeqHyp.empty;
+        sequent_concl = t_concl
+      }
+   in
+   let t_seq = mk_sequent_term seq_info in
+   let t = Reflect.mk_meta_member_term info t_seq ty_seq in
+   let seq_info =
+      { sequent_args  = q_arg;
+        sequent_hyps  = SeqHyp.singleton (Context (h_v, [], []));
+        sequent_concl = t
+      }
+   in
+   let goal = mk_sequent_term seq_info in
+      zip_mimplies (premises @ [concl_premise]) goal
+
+(*
+ * Sequent hyp-step type-check theorem.
+ *)
+let mk_sequent_step_check_thm info quote ty_var ty_hyp ty_seq =
+   let opname = quote.ty_opname in
+
+   (* Get premises *)
+   let q_arg, h_v, premises, bterms = mk_type_check_premises info quote in
+
+   (* Some variables *)
+   let x_v = var_x in
+   let j_v = var_J in
+
+   (* Check the hyp term *)
+   let t_T      = mk_so_var_term var_T [h_v] [] in
+   let concl    = Reflect.mk_meta_member_term info t_T ty_hyp in
+   let seq_info =
+      { sequent_args  = q_arg;
+        sequent_hyps  = SeqHyp.singleton (Context (h_v, [], []));
+        sequent_concl = concl
+      }
+   in
+   let hyp_premise = mk_sequent_term seq_info in
+
+   (* Check the rest of the sequent *)
+   let t_arg    = mk_term (mk_op opname []) bterms in
+   let t_x      = mk_var_term x_v in
+   let t_concl  = mk_so_var_term var_concl [j_v; h_v] [t_x] in
+   let seq_info =
+      { sequent_args   = t_arg;
+        sequent_hyps   = SeqHyp.singleton (Context (j_v, [h_v], [t_x]));
+        sequent_concl  = t_concl
+      }
+   in
+   let t_seq = mk_sequent_term seq_info in
+   let concl = Reflect.mk_meta_member_term info t_seq ty_seq in
+   let seq_info =
+      { sequent_args  = q_arg;
+        sequent_hyps  = SeqHyp.of_list [Context (h_v, [], []); Hypothesis (x_v, t_T)];
+        sequent_concl = concl
+      }
+   in
+   let step_premise = mk_sequent_term seq_info in
+
+   (* Build the goal sequent *)
+   let seq_info =
+      { sequent_args   = t_arg;
+        sequent_hyps   = SeqHyp.of_list [Hypothesis (x_v, t_T); Context (j_v, [h_v], [t_x])];
+        sequent_concl  = t_concl
+      }
+   in
+   let t_seq = mk_sequent_term seq_info in
+   let concl = Reflect.mk_meta_member_term info t_seq ty_seq in
+   let seq_info =
+      { sequent_args  = q_arg;
+        sequent_hyps  = SeqHyp.singleton (Context (h_v, [], []));
+        sequent_concl = concl
+      }
+   in
+   let goal = mk_sequent_term seq_info in
+      t_T, zip_mimplies (premises @ [hyp_premise; step_premise]) goal
+
+(************************************************************************
+ * Introduction rule.
+ *)
 
 (*
  * Collect the contexts for a well-formedness goal.

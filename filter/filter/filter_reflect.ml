@@ -234,14 +234,32 @@ let add_simple_term info loc name =
       SigFilterCache.declare_term info sc t;
       copy_sig_item info loc (DeclareTerm (sc, t))
 
-let add_declare_term info loc sc t =
+let add_declare_simple info loc sc t =
    let name, _ = dst_opname t.ty_opname in
-      (* Declare the original term *)
-      SigFilterCache.declare_term info sc t;
-      copy_sig_item info loc (DeclareTerm (sc, t));
-
-      (* Also declare the proof-checking term *)
       add_simple_term info loc ("term_" ^ name)
+
+let add_declare_sequent info loc quote cases =
+   let name, _ = Opname.dst_opname quote.ty_opname in
+   let _ =
+      List.fold_left (fun index _ ->
+            add_simple_term info loc (Printf.sprintf "term_step_%s_%d" name index);
+            succ index) 1 cases
+   in
+      add_simple_term info loc ("term_concl_" ^ name)
+
+let add_declare info loc sc quote =
+   (* Declare the original term *)
+   SigFilterCache.declare_term info sc quote;
+   copy_sig_item info loc (DeclareTerm (sc, quote));
+
+   try
+      (* Declare all the sequent checking terms *)
+      let cases, _, _ = dest_ty_sequent_cases quote.ty_type in
+         add_declare_sequent info loc quote cases
+   with
+      RefineError _ ->
+         (* Declare the type checking term *)
+         add_declare_simple info loc sc quote
 
 (*
  * Translate the interface.
@@ -263,7 +281,7 @@ let compile_sig_item info (item, loc) =
        *)
     | DefineTerm (sc, t, _)
     | DeclareTerm (sc, t) ->
-         add_declare_term info loc sc t
+         add_declare info loc sc t
     | DeclareTypeClass (sc, opname, ty_term, ty_parent) ->
          SigFilterCache.declare_typeclass info sc opname ty_term ty_parent;
          copy_sig_item info loc item
@@ -559,7 +577,7 @@ let add_define info rules loc item =
 (*
  * When a term is declared, add the type-checking rule.
  *)
-let add_declare info rules loc quote =
+let add_declare_simple info rules loc quote =
    let name, _ = Opname.dst_opname quote.ty_opname in
    let mt = Filter_reflection.mk_type_check_thm info.info_parse_info quote in
    let item =
@@ -570,6 +588,54 @@ let add_declare info rules loc quote =
       }
    in
       add_define info rules loc item
+
+(*
+ * Add a sequent declaration.
+ *)
+let add_declare_sequent info rules loc quote cases ty_concl ty_seq =
+   let name, _ = Opname.dst_opname quote.ty_opname in
+
+   (* Base case, when the sequent has no hyps *)
+   let mt = Filter_reflection.mk_sequent_concl_check_thm info.info_parse_info quote ty_concl ty_seq in
+   let item =
+      { ref_rule_name      = "term_concl_" ^ name;
+        ref_rule_resources = no_resources;
+        ref_rule_params    = [];
+        ref_rule_term      = mt
+      }
+   in
+   let rules = add_define info rules loc item in
+
+   (* Add another step rule for each of the cases *)
+   let rules, _ =
+      List.fold_left (fun (rules, index) (ty_var, ty_hyp) ->
+            let t_hyp, mt = Filter_reflection.mk_sequent_step_check_thm info.info_parse_info quote ty_var ty_hyp ty_seq in
+            let item =
+               { ref_rule_name      = Printf.sprintf "term_step_%s_%d" name index;
+                 ref_rule_resources = no_resources;
+                 ref_rule_params    = [TermParam (mk_ty_constrain_term t_hyp ty_hyp)];
+                 ref_rule_term      = mt
+               }
+            in
+            let rules = add_define info rules loc item in
+               rules, succ index) (rules, 1) cases
+   in
+      rules
+
+(*
+ * Add a general declaration.
+ *)
+let add_declare info rules loc quote =
+   let kind =
+      try Some (dest_ty_sequent_cases quote.ty_type) with
+         RefineError _ ->
+            None
+   in
+      match kind with
+         Some (cases, ty_concl, ty_seq) ->
+            add_declare_sequent info rules loc quote cases ty_concl ty_seq
+       | None ->
+            add_declare_simple info rules loc quote
 
 (*
  * Define a declared rule.

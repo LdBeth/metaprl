@@ -51,6 +51,8 @@ val mk_ty_exists_term    : var -> term -> term -> term
 val mk_ty_constrain_term : term -> term -> term
 val mk_ty_hyp_cases_term : (term * term) list -> term
 
+val dest_ty_sequent_cases : term -> (term * term) list * term * term
+
 (*
  * A type environment has 3 parts.
  *   tenv_typeclasses : the set of typeclasses
