@@ -184,8 +184,6 @@ sig
    val mk_vlist_term            : t -> seq_hyps -> term
    val mk_hyp_context_term      : t -> seq_hyps -> term -> term
    val mk_vbind_term            : t -> seq_hyps -> term -> term
-   val mk_reflect_df1_term      : t -> term -> term
-   val mk_reflect_df2_term      : t -> term -> term -> term
 end;;
 
 module Reflect : ReflectSig =
@@ -261,8 +259,6 @@ struct
    let info_vlist             = hash ("vlist",            [],   [])
    let info_hyp_context       = hash ("hyp_context",      [],   [])
    let info_vbind             = hash ("vbind",            [],   [])
-   let info_reflect_df1       = hash ("reflect_df",       [],   [0])
-   let info_reflect_df2       = hash ("reflect_df",       [],   [0; 0])
 
    (*
     * Lazy opname creation.
@@ -576,12 +572,6 @@ struct
          }
       in
          TermMan.mk_sequent_term seq
-
-   let mk_reflect_df1_term info t1 =
-      mk_dep0_term (find_opname info info_reflect_df1) t1
-
-   let mk_reflect_df2_term info t1 t2 =
-      mk_dep0_dep0_term (find_opname info info_reflect_df2) t1 t2
 end;;
 
 type parse_info = Reflect.t
@@ -591,9 +581,6 @@ let create_parse_info = Reflect.create
 (*
  * Export various term operations.
  *)
-let mk_reflect_df1_term = Reflect.mk_reflect_df1_term
-let mk_reflect_df2_term = Reflect.mk_reflect_df2_term
-
 let mk_empty_logic_term = Reflect.mk_empty_logic_term
 
 let mk_rules_logic_term info t_rules t_logic =

@@ -91,9 +91,6 @@ val mk_proof_check_elim_thm : parse_info -> term -> meta_term -> var * meta_term
 (*
  * Various terms.
  *)
-val mk_reflect_df1_term : parse_info -> term -> term
-val mk_reflect_df2_term : parse_info -> term -> term -> term
-
 val mk_empty_logic_term : parse_info -> term
 val mk_rules_logic_term : parse_info -> term list -> term -> term
 val mk_union_logic_term : parse_info -> term -> term -> term
