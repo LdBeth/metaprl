@@ -342,41 +342,52 @@ let print_dependencies table =
  * Find the file in the search path given a set of extensions.
  * For reflected theories, allow searching on the non-reflected name.
  *)
-let rec find_file_by_path path name ext =
-   match path with
-      dir :: path ->
-         let fullname = Filename.concat dir name ^ ext in
-            if Sys.file_exists fullname then
-               Some dir
-            else
-               find_file_by_path path name ext
-    | [] ->
-         None
+let rec find_file_by_path stale_found name stale_ext ext = function
+   dir :: path ->
+      let fullname = Filename.concat dir name ^ ext in
+         if Sys.file_exists fullname then begin
+            match stale_found, stale_ext with
+               Some dir', Some ext' ->
+                  Format.eprintf "@[<hv3>Ocamldep Error:@ source file@ %s/%s%s@ is shadowed by the (stale?) binary file@ %s/%s%s@]@." dir name ext dir' name ext';
+                  exit 3
+             | Some dir', None ->
+                  raise (Invalid_argument "internal error")
+             | None, _ ->
+                  Some dir
+         end else
+            let stale_found = 
+               match stale_found, stale_ext with
+                  Some _, _ -> stale_found
+                | None, Some ext when Sys.file_exists (Filename.concat dir name ^ ext) -> Some dir
+                | _ -> None
+            in
+               find_file_by_path stale_found name stale_ext ext path
+ | [] ->
+      None
 
-let rec find_file_by_ext name exts =
-   match exts with
-      ext :: exts ->
-         let dir = find_file_by_path options.opt_path name ext in
-            (match dir with
-                Some _ ->
-                   dir
-              | None ->
-                   find_file_by_ext name exts)
-    | [] ->
-         None
+let rec find_file_by_ext name stale_ext = function
+   ext :: exts ->
+      let dir = find_file_by_path None name stale_ext ext options.opt_path in
+         (match dir with
+             Some _ ->
+                dir
+           | None ->
+                find_file_by_ext name stale_ext exts)
+ | [] ->
+      None
 
-let rec find_file_by_name names exts =
+let rec find_file_by_name names stale_ext exts =
    match names with
       (name, realname) :: names ->
-         (match find_file_by_ext name exts with
+         (match find_file_by_ext name stale_ext exts with
              Some dir ->
                 Some (Filename.concat dir realname)
            | None ->
-                find_file_by_name names exts)
+                find_file_by_name names stale_ext exts)
     | [] ->
          None
 
-let find_file name exts =
+let find_file name exts stale_ext =
    (* Look for lowercase and uppercase forms *)
    let uc_name = name in
    let lc_name = String.uncapitalize name in
@@ -390,34 +401,37 @@ let find_file name exts =
       else
          names
    in
-      find_file_by_name names exts
+      find_file_by_name names stale_ext exts
+
+(*
+ * Find a dependency. Watch out for stale binaries.
+ *)
+let find_dependency modname src_exts bin_ext other_exts =
+   match find_file modname src_exts (Some bin_ext) with
+      Some filename ->
+         Some (filename ^ bin_ext)
+    | None ->
+         begin match find_file modname (bin_ext :: other_exts) None with
+            Some filename ->
+               Some (filename ^ bin_ext)
+          | None ->
+               None
+         end
 
 (*
  * Find various kinds of files.
  *)
 let find_dependency_cmi modname =
-   match find_file modname [".mli"; ".cmi"; ".mlz"; ".ml"; ".cmo"; ".cmx"] with
-      Some filename ->
-         Some (filename ^ ".cmi")
-    | None ->
-         None
+   find_dependency modname [".mli"; ".mlz"; ".ml"] ".cmi" [".cmo"; ".cmx"]
 
 let find_dependency_cmiz modname =
-   match find_file modname [".mli"; ".cmiz"; ".mlz"; ".ml"; ".cmi"; ".cmo"; ".cmx"] with
-      Some filename ->
-         Some (filename ^ ".cmiz")
-    | None ->
-         None
+   find_dependency modname [".mli"; ".mlz"] ".cmiz" [".ml"; ".cmi"; ".cmo"; ".cmx"]
 
 let find_dependency_cmx modname =
-   match find_file modname [".ml"; ".cmx"; ".mlz"; ".cmo"] with
-      Some filename ->
-         Some (filename ^ ".cmx")
-    | None ->
-         None
+   find_dependency modname [".ml"; ".mlz"] ".cmx" [".cmo"]
 
 let find_include name =
-   find_file name [""; ".mlh"]
+   find_file name [""] None
 
 (************************************************************************
  * Adding dependencies to the table.
