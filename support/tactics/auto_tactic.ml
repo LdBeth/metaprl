@@ -356,7 +356,6 @@ let explode t =
    let t = TermMan.explode_sequent t in
       SeqHyp.to_list t.sequent_hyps, t.sequent_concl
 
-
 let process_nth_hyp_resource_annotation ?labels name args term_args statement loc pre_tactic =
    let assums, goal = unzip_mfunction statement in
       rule_labels_not_allowed loc labels;
@@ -415,6 +414,11 @@ let process_nth_hyp_resource_annotation ?labels name args term_args statement lo
                      "%s: Auto_tactic.improve_nth_hyp: %s: is not an appropriate rule" (string_of_loc loc) name))
             in
                collect (- (List.length rest)) rest
+       | [| _ |], [||], [], _ :: _, ([ Context (h, _, _); Hypothesis(v,t1); Context(j, jc, jv) ], t2) ->
+            let tac i =
+               Tactic_type.Tactic.tactic_of_rule pre_tactic { arg_ints = [| i |]; arg_addrs = [||] } []
+            in
+               [t1, t2, NthUncertain tac]
        | _ ->
             raise (Invalid_argument (sprintf
                "%s: Auto_tactic.improve_nth_hyp: %s: is not an appropriate rule" (string_of_loc loc) name))
