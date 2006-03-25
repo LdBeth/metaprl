@@ -414,7 +414,14 @@ let process_nth_hyp_resource_annotation ?labels name args term_args statement lo
                      "%s: Auto_tactic.improve_nth_hyp: %s: is not an appropriate rule" (string_of_loc loc) name))
             in
                collect (- (List.length rest)) rest
-       | [| _ |], [||], [], _ :: _, ([ Context (h, _, _); Hypothesis(v,t1); Context(j, jc, jv) ], t2) ->
+       | [| _ |], [||], [], _ :: _, ([ Context (h, _, _); Hypothesis(v,t1); Context(j, jc, jv) ], t2)
+         when not (is_so_var_term t2) ->
+            (*
+             * XXX: nogin (2006/03/25): Strictly speaking this needs to go into a special section of nthHypT
+             * so that autoT would use this only in its "Normal" stage, as it generates subgoals and is not
+             * appropriate for the trivialT. But for now, this seems to be a sufficiently minot violation of
+             * the trivialT policies.
+             *)
             let tac i =
                Tactic_type.Tactic.tactic_of_rule pre_tactic { arg_ints = [| i |]; arg_addrs = [||] } []
             in

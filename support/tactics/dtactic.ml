@@ -399,8 +399,6 @@ let process_intro_resource_annotation ?(options = []) ?labels name args term_arg
                Tactic_type.Tactic.tactic_of_rule pre_tactic empty_rw_args []
             else
                funT (fun p -> Tactic_type.Tactic.tactic_of_rule pre_tactic empty_rw_args (term_args_fun p))
-       | [|_|], [Context _; Hypothesis _; Context _] when not (is_so_var_term t) ->
-            onSomeHypT (argfunT (fun i p -> Tactic_type.Tactic.tactic_of_rule pre_tactic (one_rw_arg i) (term_args_fun p)))
        | _ ->
             raise (Invalid_argument (sprintf
                "%s: intro annotation: %s: not an introduction rule" (string_of_loc loc) name))
