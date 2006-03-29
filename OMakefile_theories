@@ -64,10 +64,10 @@ reflect_%.p4i: %.cmoz $(PRLCO) :value: $(prlc-deps)
 reflect_%.cmi: reflect_%.ppi :scanner: scan-ocaml-%.ml
    $(OCAMLC) $(OCAMLFLAGS) $(OCAMLCFLAGS) $(PREFIXED_OCAMLINCLUDES) -c -intf $<
 
-reflect_%.cmo: reflect_%.ppo :scanner: scan-ocaml-%.ml
+reflect_%.cmo: reflect_%.ppo reflect_%.cmi :scanner: scan-ocaml-%.ml
    $(OCAMLC) $(OCAMLFLAGS) $(OCAMLCFLAGS) $(PREFIXED_OCAMLINCLUDES) -c -impl $<
 
-reflect_%.cmx reflect_%$(EXT_OBJ): reflect_%.ppo :scanner: scan-ocaml-%.ml
+reflect_%.cmx reflect_%$(EXT_OBJ): reflect_%.ppo reflect_%.cmi :scanner: scan-ocaml-%.ml
    $(OCAMLOPT) $(OCAMLFLAGS) $(OCAMLOPTFLAGS) $(PREFIXED_OCAMLINCLUDES) -c -impl $<
 
 #
