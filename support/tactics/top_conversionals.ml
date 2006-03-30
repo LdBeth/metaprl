@@ -426,11 +426,11 @@ let wrap_reduce_crw ?labels conv =
    in
       rule_labels_of_opt_terms (Some labels), conv
 
-let rec mapsnd recrw = function
-   [] -> recrw
- | (_, h) :: tl -> h orelseC (mapsnd recrw tl)
-
 let extract_data =
+   let rec mapsnd recrw = function
+      [] -> recrw
+    | (_, h) :: tl -> h orelseC (mapsnd recrw tl)
+   in
    let select_option options (opts, _) =
       rule_labels_are_allowed options opts
    in
