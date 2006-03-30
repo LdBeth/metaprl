@@ -215,7 +215,7 @@ and it should produce exactly one" main_count,
             if i > length then
                step thinT precs hyps concl length length p
             else
-               step_cont thinT precs hyps concl (Sequent.hyp_count p) i cont p
+               step_cont thinT precs hyps concl length i cont p
       (* Process a table lookup *)
       and step_cont thinT precs hyps concl length i (cont : forward_info lazy_lookup) _ =
          match cont () with
