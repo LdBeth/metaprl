@@ -103,6 +103,10 @@ val intro_typeinf_plusone : term -> intro_option
 val elim_typeinf_plusone : term -> elim_option
 val elim_univ_arg : elim_option
 val intro_univ_arg : intro_option
+val intro_univ_typeinf : term -> intro_option
+val elim_univ_typeinf : term -> elim_option
+val intro_univ_with_args : intro_option
+val elim_univ_with_args : elim_option
 
 (*
  * -*-

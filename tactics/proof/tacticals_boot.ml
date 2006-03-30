@@ -10,7 +10,7 @@
  * See the file doc/htmlman/default.html or visit http://metaprl.org/
  * for more information.
  *
- * Copyright (C) 1998-2005 MetaPRL Group, Cornell University and Caltech
+ * Copyright (C) 1998-2006 MetaPRL Group, Cornell University and Caltech
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -806,10 +806,8 @@ struct
 
    let get_with_arg p =
       match get_with_args p with
-         t :: _ ->
-            t
-       | [] ->
-            raise (RefineError ("get_with_arg", StringError "no arguments"))
+         Some (t :: _) -> Some t
+       | _ -> None
 
    let get_univ_arg arg =
       Sequent.get_type_arg arg "univ"

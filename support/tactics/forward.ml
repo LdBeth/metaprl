@@ -324,8 +324,10 @@ let process_forward_resource_annotation ?(options = []) ?labels name args term_a
                            let length = List.length term_args in
                               (fun _ p ->
                                     let args =
-                                       try get_with_args p with
-                                          RefineError _ ->
+                                       match get_with_args p with
+                                          Some args ->
+                                             args
+                                        | None ->
                                              raise (RefineError (name, StringIntError ("arguments required", length)))
                                     in
                                     let length' = List.length args in

@@ -364,9 +364,9 @@ sig
    (*
     * Fetch attributes.
     *)
-   val get_term      : tactic_arg -> string -> term
-   val get_term_list : tactic_arg -> string -> term list
-   val get_type      : tactic_arg -> string -> term
+   val get_term      : tactic_arg -> string -> term option
+   val get_term_list : tactic_arg -> string -> term list option
+   val get_type      : tactic_arg -> string -> term option
    val get_int       : tactic_arg -> string -> int option
    val get_bool      : tactic_arg -> string -> bool option
    val get_string    : tactic_arg -> string -> string option
@@ -811,9 +811,9 @@ sig
    (*
     * Argument functions.
     *)
-   val get_term_arg       : tactic_arg -> string -> term
-   val get_term_list_arg  : tactic_arg -> string -> term list
-   val get_type_arg       : tactic_arg -> string -> term
+   val get_term_arg       : tactic_arg -> string -> term option
+   val get_term_list_arg  : tactic_arg -> string -> term list option
+   val get_type_arg       : tactic_arg -> string -> term option
    val get_int_arg        : tactic_arg -> string -> int option
    val get_bool_arg       : tactic_arg -> string -> bool option
    val get_string_arg     : tactic_arg -> string -> string option
@@ -1025,9 +1025,9 @@ sig
    val altT : tactic -> tactic
    val thinningT : bool -> tactic -> tactic
 
-   val get_with_arg : tactic_arg -> term
-   val get_with_args : tactic_arg -> term list
-   val get_univ_arg : tactic_arg -> term
+   val get_with_arg : tactic_arg -> term option
+   val get_with_args : tactic_arg -> term list option
+   val get_univ_arg : tactic_arg -> term option
    val get_sel_arg : tactic_arg -> int option
    val get_thinning_arg : tactic_arg -> bool
    val get_alt_arg : tactic_arg -> bool

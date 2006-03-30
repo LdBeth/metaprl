@@ -38,8 +38,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * @email{jyh@cs.caltech.edu}
+ * Author: Jason Hickey @email{jyh@cs.caltech.edu}
+ * Modified by: Aleksey Nogin @email{nogin@cs.caltech.edu}
  *
  * @end[license]
  *)
@@ -228,18 +228,17 @@ let infer_type p t =
 
 let infer_type_args p t =
    let t =
-      try get_with_arg p with
-         RefineError _ ->
-            infer_type p t
+      match get_with_arg p with
+         Some t -> t
+       | None -> infer_type p t
    in
       [t]
 
 let infer_type_2args p t =
    match get_with_args p with
-      [_] as l ->
-         infer_type p t :: l
-    | l ->
-         l
+      Some ([_] as l) -> infer_type p t :: l
+    | Some l -> l
+    | None -> []
 
 let vnewname consts defs v =
    new_name v (fun v -> SymbolSet.mem consts v || List.mem_assoc v defs)
@@ -251,7 +250,6 @@ let infer_map f inf consts decls eqs opt_eqs defs t =
 (*
  * -*-
  * Local Variables:
- * Caml-master: "editor.run"
  * End:
  * -*-
  *)

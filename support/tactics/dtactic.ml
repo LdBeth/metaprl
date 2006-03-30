@@ -383,8 +383,10 @@ let process_intro_resource_annotation ?(options = []) ?labels name args term_arg
                   let length = List.length term_args in
                      (fun p ->
                            let args =
-                              try get_with_args p with
-                                 RefineError _ ->
+                              match get_with_args p with
+                                 Some args ->
+                                    args
+                               | None ->
                                     raise (RefineError (name, StringIntError ("arguments required", length)))
                            in
                            let length' = List.length args in
@@ -473,8 +475,10 @@ let process_elim_resource_annotation ?(options = []) ?labels name args term_args
                         let length = List.length term_args in
                            (fun _ p ->
                                  let args =
-                                    try get_with_args p with
-                                       RefineError _ ->
+                                    match get_with_args p with
+                                       Some args ->
+                                          args
+                                     | None ->
                                           raise (RefineError (name, StringIntError ("arguments required", length)))
                                  in
                                  let length' = List.length args in
@@ -673,9 +677,35 @@ let intro_typeinf t = IntroArgsOption (infer_type_args, Some t)
 let simp_intro_typeinf t = IntroArgsOption (simp_infer_type_args, Some t)
 let elim_typeinf_plusone t = ElimArgsOption (infer_type_2args, Some t)
 let intro_typeinf_plusone t = IntroArgsOption (infer_type_2args, Some t)
-let univ_arg_fun p _ = [get_univ_arg p]
+
+let univ_arg_fun p _ =
+   match get_univ_arg p with
+      Some t -> [t]
+    | None -> raise (RefineError("univ_arg", StringError "univ arg required"))
+
 let elim_univ_arg = ElimArgsOption (univ_arg_fun, None)
 let intro_univ_arg = IntroArgsOption (univ_arg_fun, None)
+
+let univ_typeinf_arg p t =
+   match get_univ_arg p, get_with_arg p with
+      Some u, Some t -> [u; t]
+    | Some u, None -> [u; infer_type p t]
+    | None, _ -> raise (RefineError("univ_typeinf_arg", StringError "univ arg required"))
+
+let intro_univ_typeinf t = IntroArgsOption (univ_typeinf_arg, Some t)
+let elim_univ_typeinf t = ElimArgsOption (univ_typeinf_arg, Some t)
+
+let univ_with_args_fun p _ =
+   match get_univ_arg p, get_with_arg p with
+      Some u, Some t ->
+         [u; t]
+    | None, _ ->
+         raise (RefineError("univ_with_args", StringError "univ argument required"))
+    | _, None ->
+         raise (RefineError("univ_with_args", StringError "term argument required"))
+
+let intro_univ_with_args = IntroArgsOption (univ_with_args_fun, None)
+let elim_univ_with_args = ElimArgsOption (univ_with_args_fun, None)
 
 (*
  * Add dT 0 to the browser.

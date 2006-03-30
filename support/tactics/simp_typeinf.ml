@@ -133,9 +133,9 @@ let simp_infer_type p t =
 
 let simp_infer_type_args p t =
    let t =
-      try get_with_arg p with
-         RefineError _ ->
-            snd (simp_infer_type p t)
+      match get_with_arg p with
+         Some t -> t
+       | None -> snd (simp_infer_type p t)
    in
       [t]
 

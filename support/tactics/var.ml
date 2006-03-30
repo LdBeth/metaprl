@@ -123,20 +123,14 @@ let var_subst_to_bind2 ?(var=bv) t t1 t2 =
       mk_bind2_term v1 v2 (var_subst (var_subst t t1 v1) t2 v2)
 
 let get_bind_from_arg_or_concl_subst p t =
-   try
-      let b = Tacticals.get_with_arg p in
-         if is_bind1_term b then b
-         else raise generic_refiner_exn (* will be immedeiatelly caugh *)
-   with RefineError _ ->
-      var_subst_to_bind (Sequent.concl p) t
+   match Tacticals.get_with_arg p with
+      Some b when is_bind1_term b  -> b
+    | _ -> var_subst_to_bind (Sequent.concl p) t
 
 let get_bind_from_arg_or_hyp_subst p i t =
-   try
-      let b = Tacticals.get_with_arg p in
-         if is_bind1_term b then b
-         else raise generic_refiner_exn (* will be immedeiatelly caugh *)
-   with RefineError _ ->
-      var_subst_to_bind (Sequent.nth_hyp p i) t
+   match Tacticals.get_with_arg p with
+      Some b when is_bind1_term b -> b
+    | _ -> var_subst_to_bind (Sequent.nth_hyp p i) t
 
 (*
  * Symbol generation.
@@ -150,7 +144,6 @@ let new_symbol_string_term s =
 (*
  * -*-
  * Local Variables:
- * Caml-master: "editor.run"
  * End:
  * -*-
  *)

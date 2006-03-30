@@ -828,11 +828,6 @@ struct
    (*
     * Fetch the attributes.
     *)
-   let rec assoc name = function
-      (name', h) :: _ when name = name' -> h
-    | _ :: t -> assoc name t
-    | [] -> raise (RefineError ("get_attribute", StringStringError ("attribute not found", name)))
-
    let rec assoc_option name = function
       (name', h) :: _ when name = name' -> Some h
     | _ :: t -> assoc_option name t
@@ -846,13 +841,13 @@ struct
                vals) [] l
 
    let get_term arg name =
-      assoc name arg.ref_attributes.attr_terms
+      assoc_option name arg.ref_attributes.attr_terms
 
    let get_term_list arg name =
-      assoc name arg.ref_attributes.attr_term_lists
+      assoc_option name arg.ref_attributes.attr_term_lists
 
    let get_type arg name =
-      assoc name arg.ref_attributes.attr_types
+      assoc_option name arg.ref_attributes.attr_types
 
    let get_int arg name =
       assoc_option name arg.ref_attributes.attr_ints
