@@ -217,7 +217,7 @@ and it should produce exactly one" main_count,
             else
                step_cont thinT precs hyps concl length i cont p
       (* Process a table lookup *)
-      and step_cont thinT precs hyps concl length i (cont : forward_info lazy_lookup) _ =
+      and step_cont thinT precs hyps concl length i (cont : forward_info lazy_lookup) p =
          match cont () with
             Some (item, cont) ->
                ((let tac = item.forward_tac in
@@ -225,7 +225,7 @@ and it should produce exactly one" main_count,
                thenMT (funT (progress_check thinT precs hyps concl length i cont)))
                orelseT (funT (step_cont thinT precs hyps concl length i cont))
           | None ->
-               funT (step thinT precs hyps concl length i)
+               step thinT precs hyps concl length i p
       (* Process a hyp *)
       and step thinT all_precs hyps concl length i p =
          match all_precs with
