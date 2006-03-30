@@ -52,6 +52,7 @@ open Tactic_type
 open Tactic_type.Tactic
 open Tactic_type.Tacticals
 open Options_boot
+open Top_conversionals
 
 let debug_forward =
    create_debug (**)
@@ -172,21 +173,21 @@ and it should produce exactly one" main_count,
    (* We assume no progress when there are no new hyps and the concl has not changed. *)
    let not_changed_err = RefineError("forwardChainT", StringError "no progress") in
    (* Merge the new hyps into the list, chacking if any are new *)
-   let rec search hyps length new_hyps thin_hyps changed i =
+   let rec search hyps length new_hyps thin_hyps reduce_hyps changed i =
       if i = length then
-         new_hyps, thin_hyps, changed
+         new_hyps, thin_hyps, reduce_hyps, changed
       else
-         let new_hyps, thin_hyps, changed =
+         let new_hyps, thin_hyps, reduce_hyps, changed =
             match SeqHyp.get hyps i with
                Hypothesis (_, t) ->
                   if TermTable.mem new_hyps t then
-                     new_hyps, (i+1) :: thin_hyps, changed
+                     new_hyps, (i+1) :: thin_hyps, reduce_hyps, changed
                   else
-                     TermTable.add new_hyps t, thin_hyps, true
+                     TermTable.add new_hyps t, thin_hyps, (i+1) :: reduce_hyps, true
              | Context _ ->
-                  new_hyps, thin_hyps, changed
+                  new_hyps, thin_hyps, (i+1) :: reduce_hyps, changed
          in
-            search hyps length new_hyps thin_hyps changed (succ i)
+            search hyps length new_hyps thin_hyps reduce_hyps changed (succ i)
    in
    (fun tbl ->
       (* Check progress and either abort or do to next tactic in the current table lookup *)
@@ -196,16 +197,16 @@ and it should produce exactly one" main_count,
              } = explode_sequent (Sequent.goal p)
          in
          let length = SeqHyp.length hyps in
-         let hyps, thin_hyps, changed =
+         let hyps, thin_hyps, reduce_hyps, changed =
             if length < orig_length then
-               orig_hyps, [], true
-            else if length = orig_length then
-               orig_hyps, [], false
+               orig_hyps, [], [], true
             else
-               search hyps length orig_hyps [] false orig_length
+               search hyps length orig_hyps [] [] false orig_length
          in
             if changed || not (alpha_equal concl orig_concl) then
-               tryOnHypsT thin_hyps thinT thenT funT (upd_length thinT precs hyps concl i cont)
+               onHypsT reduce_hyps (rw simpleReduceC) thenT (**)
+                  tryOnHypsT thin_hyps thinT thenT (**)
+                  funT (upd_length thinT precs hyps concl i cont)
             else
                raise not_changed_err
       (* Update the length - it might be incorrect after the thinning *)
