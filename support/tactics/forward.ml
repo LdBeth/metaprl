@@ -21,8 +21,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * @email{jyh@cs.caltech.edu}
+ * Author: Jason Hickey @email{jyh@cs.caltech.edu}
+ * Modified by: Aleksey Nogin @email{nogin@cs.caltech.edu}
  * @end[license]
  *)
 extends Top_tacticals
@@ -75,6 +75,8 @@ type forward_info =
      forward_tac  : int -> tactic
    }
 
+type forward_result = (int -> tactic) -> int -> tactic_arg -> tactic
+
 (*
  * Precedences.
  *)
@@ -95,51 +97,152 @@ let equal_forward_prec = ImpDag.eq
 let forward_precs () =
    ImpDag.sort dag
 
-(*
- * Check that only one subgoal is labeled "main" (or "empty")
+(************************************************************************
+ * Build a term table from the sequent.
+ * This is a term set indexed by hash code.
  *)
-let check_main_fun loc pl =
-   let main_count =
-      List.fold_left (fun main_count p ->
-            match Sequent.label p with
-               "main"
-             | "" ->
-                  succ main_count
-             | _ ->
-                  main_count) 0 pl
-   in
-      if main_count <> 1 then
-         raise (RefineForceError ("Forward.check_main",
-                                  Printf.sprintf "this rule produced %d subgoals labeled \"main\"
-and it should produce exactly one" main_count,
-                                  StringError (string_of_loc loc)))
+module type TermTableSig =
+sig
+   type t
 
-let checkMainT loc tac =
-   subgoalsCheckT (check_main_fun loc) tac
+   val empty : t
+   val add : t -> term -> t
+   val mem : t -> term -> bool
+end;;
+
+module TermTable =
+struct
+   type t
+
+   let empty = IntMTable.empty
+
+   let add table t =
+      IntMTable.add table (hash_term t) t
+
+   let mem table t =
+      try
+         let tl = IntMTable.find_all table (hash_term t) in
+            List.exists (fun t' -> alpha_equal t' t) tl
+      with
+         Not_found ->
+            false
+end;;
 
 (*
  * Extract the elimination tactic from the table.
  *)
 let extract_forward_data =
-   let rec alliT i (cont : forward_info lazy_lookup) =
-      match cont () with
-         Some ({ forward_loc = loc; forward_tac = tac }, cont) ->
-            tryT (checkMainT loc (tac i)) thenMT alliT i cont
-       | None ->
-            idT
+   (*
+    * Build a table from the hyps.
+    *)
+   let term_table_of_hyps hyps =
+      SeqHyp.fold (fun table _ h ->
+            match h with
+               Hypothesis (_, t) ->
+                  TermTable.add table t
+             | Context _ ->
+                  table) TermTable.empty hyps
    in
-   let step tbl =
-      argfun2T (fun select i p ->
-            let t = Sequent.nth_hyp p i in
-            let () =
-               if !debug_forward then
-                  eprintf "forwardT: elim: lookup %s%t" (SimplePrint.short_string_of_term t) eflush
-            in
-               alliT i (lookup_all tbl select t))
+   (*
+    * Check that only one subgoal is labeled "main" (or "empty")
+    *)
+   let check_main_fun loc pl =
+      let main_count =
+         List.fold_left (fun main_count p ->
+               match Sequent.label p with
+                  "main"
+                | "" ->
+                     succ main_count
+                | _ ->
+                     main_count) 0 pl
+      in
+         if main_count <> 1 then
+            raise (RefineForceError ("Forward.check_main",
+                                     Printf.sprintf "this rule produced %d subgoals labeled \"main\"
+and it should produce exactly one" main_count,
+                                     StringError (string_of_loc loc)))
    in
-      step
+   let checkMainT loc tac =
+      subgoalsCheckT (check_main_fun loc) tac
+   in
+   (* Select the correct precedence *)
+   let select pre1 { forward_prec = pre2 } =
+      equal_forward_prec pre2 pre1
+   in
+   (* We assume no progress when there are no new hyps and the concl has not changed. *)
+   let not_changed_err = RefineError("forwardChainT", StringError "no progress") in
+   (* Merge the new hyps into the list, chacking if any are new *)
+   let rec search hyps length new_hyps thin_hyps changed i =
+      if i = length then
+         new_hyps, thin_hyps, changed
+      else
+         let new_hyps, thin_hyps, changed =
+            match SeqHyp.get hyps i with
+               Hypothesis (_, t) ->
+                  if TermTable.mem new_hyps t then
+                     new_hyps, (i+1) :: thin_hyps, changed
+                  else
+                     TermTable.add new_hyps t, thin_hyps, true
+             | Context _ ->
+                  new_hyps, thin_hyps, changed
+         in
+            search hyps length new_hyps thin_hyps changed (succ i)
+   in
+   (fun tbl ->
+      (* Check progress and either abort or do to next tactic in the current table lookup *)
+      let rec progress_check thinT precs orig_hyps orig_concl orig_length i cont p =
+         let { sequent_hyps = hyps;
+               sequent_concl = concl
+             } = explode_sequent (Sequent.goal p)
+         in
+         let length = SeqHyp.length hyps in
+         let hyps, thin_hyps, changed =
+            if length <= orig_length then
+               orig_hyps, [], false
+            else
+               search hyps length orig_hyps [] false orig_length
+         in
+            if changed || not (alpha_equal concl orig_concl) then
+               tryOnHypsT thin_hyps thinT thenT funT (upd_length thinT precs hyps concl i cont)
+            else
+               raise not_changed_err
+      (* Update the length - it might be incorrect after the thinning *)
+      and upd_length thinT precs hyps concl i cont p =
+         step_cont thinT precs hyps concl (Sequent.hyp_count p) i cont p
+      (* Process a table lookup *)
+      and step_cont thinT precs hyps concl length i (cont : forward_info lazy_lookup) _ =
+         match cont () with
+            Some (item, cont) ->
+               ((let tac = item.forward_tac in
+                  if !debug_forward then checkMainT item.forward_loc (tac i) else tac i)
+               thenMT (funT (progress_check thinT precs hyps concl length i cont)))
+               orelseT (funT (step_cont thinT precs hyps concl length i cont))
+          | None ->
+               funT (step thinT precs hyps concl length i)
+      (* Process a hyp *)
+      and step thinT all_precs hyps concl length i p =
+         match all_precs with
+            pre :: precs ->
+               if i = length then
+                  step thinT precs hyps concl length 0 p
+               else
+                  begin match SeqHyp.get (Sequent.explode_sequent_arg p).sequent_hyps i with
+                     Hypothesis(_, t) ->
+                        step_cont thinT all_precs hyps concl length (i + 1) (lookup_all tbl (select pre) t) p
+                   | Context _ ->
+                        step thinT all_precs hyps concl length (i + 1) p
+                  end
+          | _ ->
+               idT
+      in
+      (fun thinT i p ->
+         let { sequent_hyps = hyps;
+               sequent_concl = concl
+             } = Sequent.explode_sequent_arg p
+         in
+            step thinT (forward_precs ()) (term_table_of_hyps hyps) concl (SeqHyp.length hyps) i p))
 
-let resource (term * forward_info, (forward_info -> bool) -> int -> tactic) forward =
+let resource (term * forward_info, forward_result) forward =
    table_resource_info extract_forward_data
 
 (*
@@ -252,162 +355,12 @@ let process_forward_resource_annotation ?(options = []) ?labels name args term_a
        | _ ->
             raise (Invalid_argument (sprintf "forwardT.improve_elim: %s: must be an elimination rule" name))
 
-let forward_proof p =
-   Sequent.get_resource_arg p get_forward_resource
+let doForwardChainT =
+   argfunT (fun thinT p -> Sequent.get_resource_arg p get_forward_resource thinT 0 p)
 
-(************************************************************************
- * Build a term table from the sequent.
- * This is a term set indexed by hash code.
- *)
-module type TermTableSig =
-sig
-   type t
-
-   val empty : t
-   val add : t -> term -> t
-   val mem : t -> term -> bool
-end;;
-
-module TermTable =
-struct
-   type t
-
-   let empty = IntMTable.empty
-
-   let add table t =
-      IntMTable.add table (hash_term t) t
-
-   let mem table t =
-      try
-         let tl = IntMTable.find_all table (hash_term t) in
-            List.exists (fun t' -> alpha_equal t' t) tl
-      with
-         Not_found ->
-            false
-end;;
-
-(*
- * Build a table from the hyps.
- *)
-let term_table_of_hyps hyps =
-   SeqHyp.fold (fun table _ h ->
-         match h with
-            Hypothesis (_, t) ->
-               TermTable.add table t
-          | Context _ ->
-               table) TermTable.empty hyps
-
-(*
- * Merge the new hyps into the list.
- * Fails if there are no new hyps and the concl has not changed.
- *)
-let progress_check orig_hyps orig_concl orig_length p =
-   let { sequent_hyps = hyps;
-         sequent_concl = concl
-       } = explode_sequent (Sequent.goal p)
-   in
-   let length = SeqHyp.length hyps in
-   let rec search new_hyps changed i =
-      if i = length then
-         new_hyps, changed
-      else
-         let new_hyps, changed =
-            match SeqHyp.get hyps i with
-               Hypothesis (_, t) ->
-                  if TermTable.mem new_hyps t then
-                     new_hyps, changed
-                  else
-                     TermTable.add new_hyps t, true
-             | Context _ ->
-                  new_hyps, changed
-         in
-            search new_hyps changed (succ i)
-   in
-   let hyps, changed =
-      if length <= orig_length then
-         orig_hyps, false
-      else
-         search orig_hyps false orig_length
-   in
-   let changed = changed || not (alpha_equal concl orig_concl) in
-      hyps, concl, length, changed
-
-(*
- * Forward-chain, then repeat if something has changed.
- *)
-let rec step forward_tac orig_hyps orig_concl orig_length i depth bound =
-   if depth = bound || i = orig_length then
-      idT
-   else
-      let i = succ i in
-      let depth = succ depth in
-         funT (fun p -> (**)
-            (forward_tac i thenMT progress forward_tac orig_hyps orig_concl orig_length i depth bound)
-            orelseT step forward_tac orig_hyps orig_concl orig_length i depth bound)
-
-and progress forward_tac orig_hyps orig_concl orig_length i depth bound =
-   funT (fun p -> (**)
-      let new_hyps, new_concl, new_length, changed = progress_check orig_hyps orig_concl orig_length p in
-         if changed then
-            step forward_tac new_hyps new_concl new_length i depth bound
-         else
-            raise (RefineError ("Forward.progress", StringError "no progress")))
-
-(*
- * Single step.
- *)
-let single_progress orig_hyps orig_concl orig_length =
-   funT (fun p -> (**)
-      let _, _, _, changed = progress_check orig_hyps orig_concl orig_length p in
-         if changed then
-            idT
-         else
-            raise (RefineError ("Forward.progress", StringError "no progress")))
-
-let single_step forward_tac orig_hyps orig_concl orig_length i =
-   funT (fun p -> forward_tac i thenMT single_progress orig_hyps orig_concl orig_length)
-
-(*
- * Describe the original sequent.
- *)
-let start_info p =
-   let { sequent_hyps = hyps;
-         sequent_concl = concl
-       } = explode_sequent (Sequent.goal p)
-   in
-   let len = SeqHyp.length hyps in
-   let hyps = term_table_of_hyps hyps in
-      len, hyps, concl
-
-let forwardT i =
-   funT (fun p ->
-         let forward_tac = forward_proof p select_all in
-         let len, hyps, concl = start_info p in
-         let i = Sequent.get_pos_hyp_num p i in
-            single_step forward_tac hyps concl len i)
-
-let forwardChainBoundPrecT pre bound =
-   funT (fun p ->
-         let forward_tac = forward_proof p pre in
-         let len, hyps, concl = start_info p in
-            step forward_tac hyps concl len 1 0 bound)
-
-let forwardChainBoundT bound =
-   funT (fun p -> (**)
-      let rec searchT precs =
-         match precs with
-            pre1 :: precs ->
-               let select { forward_prec = pre2 } =
-                  equal_forward_prec pre2 pre1
-               in
-                  forwardChainBoundPrecT select bound
-                  thenMT searchT precs
-          | [] ->
-               idT
-      in
-         searchT (forward_precs ()))
-
-let forwardChainT = forwardChainBoundT max_int
+let doForwardT =
+   argfun2T (fun thinT i p ->
+      Sequent.get_resource_arg p get_forward_resource thinT ((Sequent.get_pos_hyp_num p i) - 1) p)
 
 (*
  * -*-

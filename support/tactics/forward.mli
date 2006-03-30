@@ -4,7 +4,7 @@
  * ----------------------------------------------------------------
  *
  * @begin[license]
- * Copyright (C) 2005 Mojave Group, Caltech
+ * Copyright (C) 2005-2006 Mojave Group, Caltech
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -20,8 +20,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * @email{jyh@cs.caltech.edu}
+ * Author: Jason Hickey @email{jyh@cs.caltech.edu}
+ * Modified by: Aleksey Nogin @email{nogin@cs.caltech.edu}
  * @end[license]
  *)
 open Refiner.Refiner.Refine
@@ -67,21 +67,20 @@ type forward_info =
      forward_tac  : int -> tactic
    }
 
-resource (term * forward_info, (forward_info -> bool) -> int -> tactic) forward
+type forward_result
+
+resource (term * forward_info, forward_result) forward
 
 val process_forward_resource_annotation :
    ?options: forward_option list -> (term * forward_info) annotation_processor
 
-topval forwardT : int -> tactic
-topval forwardChainBoundT : int -> tactic
-topval forwardChainT : tactic
+(* The input should be a thinT *)
+topval doForwardT : (int -> tactic) -> int -> tactic (* int specifies where to start *)
+topval doForwardChainT : (int -> tactic) -> tactic
 
-(*!
- * @docoff
- *
+(*
  * -*-
  * Local Variables:
- * Caml-master: "compile"
  * End:
  * -*-
  *)
