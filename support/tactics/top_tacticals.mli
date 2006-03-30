@@ -64,6 +64,9 @@ topval addHiddenLabelT : string -> tactic
 topval removeHiddenLabelT : tactic
 topval keepingLabelT : tactic -> tactic
 topval ifLabT : string -> tactic -> tactic -> tactic
+topval ifWT : tactic -> tactic
+topval ifAT : tactic -> tactic
+topval ifMT : tactic -> tactic
 topval prefix_thenMT : tactic -> tactic -> tactic
 topval prefix_thenMLT : tactic -> tactic list -> tactic
 topval prefix_thenAT : tactic -> tactic -> tactic

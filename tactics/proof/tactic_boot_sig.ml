@@ -885,6 +885,9 @@ sig
     * Conditionals.
     *)
    val ifT : (tactic_arg -> bool) -> tactic -> tactic -> tactic
+   val ifWT : tactic -> tactic
+   val ifAT : tactic -> tactic
+   val ifMT : tactic -> tactic
    val ifOnConclT : (term -> bool) -> tactic -> tactic -> tactic
    val ifOnHypT : (term -> bool) -> (int -> tactic) -> (int -> tactic) -> int -> tactic
    val ifThenT : (term -> bool) -> tactic -> tactic
