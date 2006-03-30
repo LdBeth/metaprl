@@ -197,7 +197,9 @@ and it should produce exactly one" main_count,
          in
          let length = SeqHyp.length hyps in
          let hyps, thin_hyps, changed =
-            if length <= orig_length then
+            if length < orig_length then
+               orig_hyps, [], true
+            else if length = orig_length then
                orig_hyps, [], false
             else
                search hyps length orig_hyps [] false orig_length
@@ -208,7 +210,11 @@ and it should produce exactly one" main_count,
                raise not_changed_err
       (* Update the length - it might be incorrect after the thinning *)
       and upd_length thinT precs hyps concl i cont p =
-         step_cont thinT precs hyps concl (Sequent.hyp_count p) i cont p
+         let length = Sequent.hyp_count p in
+            if i > length then
+               step thinT precs hyps concl length length p
+            else
+               step_cont thinT precs hyps concl (Sequent.hyp_count p) i cont p
       (* Process a table lookup *)
       and step_cont thinT precs hyps concl length i (cont : forward_info lazy_lookup) _ =
          match cont () with
