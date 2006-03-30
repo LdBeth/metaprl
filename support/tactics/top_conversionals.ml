@@ -426,6 +426,10 @@ let wrap_reduce_crw ?labels conv =
    in
       rule_labels_of_opt_terms (Some labels), conv
 
+let rec mapsnd recrw = function
+   [] -> recrw
+ | (_, h) :: tl -> h orelseC (mapsnd recrw tl)
+
 let extract_data =
    let select_option options (opts, _) =
       rule_labels_are_allowed options opts
@@ -438,11 +442,11 @@ let extract_data =
             (* Find and apply the right tactic *)
             if !debug_reduce then
                eprintf "Conversionals: lookup %a%t" debug_print t eflush;
-            match Term_match_table.lookup tbl (select_option options) t with
-               Some (_, conv) ->
+            match Term_match_table.lookup_bucket tbl (select_option options) t with
+               Some convs ->
                   if !debug_reduce then
                      eprintf "Conversionals: applying %a%t" debug_print t eflush;
-                  conv
+                  firstC (List.map snd convs)
              | None ->
                   raise (RefineError ("Conversionals.extract_data", StringTermError ("no reduction for", t))))
    in
@@ -452,11 +456,11 @@ let extract_data =
             (* Find and apply the right tactic *)
             if !debug_reduce then
                eprintf "Conversionals: lookup %a%t" debug_print t eflush;
-            match Term_match_table.lookup tbl (select_option options) t with
-               Some (_, conv) ->
+            match Term_match_table.lookup_bucket tbl (select_option options) t with
+               Some convs ->
                   if !debug_reduce then
                      eprintf "Conversionals: applying %a%t" debug_print t eflush;
-                  conv orelseC recrw
+                  mapsnd recrw convs
              | None ->
                   recrw
       in termC hrw
