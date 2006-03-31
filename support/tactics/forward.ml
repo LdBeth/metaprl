@@ -189,40 +189,53 @@ and it should produce exactly one" main_count,
          in
             search hyps length new_hyps thin_hyps reduce_hyps changed (succ i)
    in
+   let rec search_tac thinT hyps length new_hyps tac changed i =
+      if i = length then
+         tac, changed
+      else
+         match SeqHyp.get hyps i with 
+            Hypothesis (_, t) when TermTable.mem new_hyps t ->
+               let i = i + 1 in
+                  search_tac thinT hyps length new_hyps (thinT i thenT tac) changed i
+          | _ ->
+               let i = i + 1 in
+                  search_tac thinT hyps length new_hyps (rw simpleReduceC i thenT tac) true i
+   in
    (fun tbl ->
       (* Check progress and either abort or do to next tactic in the current table lookup *)
       let rec progress_check thinT precs orig_hyps orig_concl orig_length i cont p =
-         let { sequent_hyps = hyps;
-               sequent_concl = concl
-             } = explode_sequent (Sequent.goal p)
-         in
+         let seq = Sequent.explode_sequent_arg p in
+         let hyps = seq.sequent_hyps in
          let length = SeqHyp.length hyps in
-         let hyps, thin_hyps, reduce_hyps, changed =
-            if length < orig_length then
-               orig_hyps, [], [], true
-            else
-               search hyps length orig_hyps [] [] false orig_length
-         in
+         let hyps, thin_hyps, reduce_hyps, changed = search hyps length orig_hyps [] [] false orig_length in
+         let concl = seq.sequent_concl in
             if changed || not (alpha_equal concl orig_concl) then
                onHypsT reduce_hyps (rw simpleReduceC) thenT (**)
                   tryOnHypsT thin_hyps thinT thenT (**)
-                  funT (upd_length thinT precs hyps concl i cont)
+                  funT (step_cont thinT precs hyps concl length i cont)
             else
                raise not_changed_err
-      (* Update the length - it might be incorrect after the thinning *)
-      and upd_length thinT precs hyps concl i cont p =
-         let length = Sequent.hyp_count p in
-            if i > length then
-               step thinT precs hyps concl length length p
+      (* Follow-up tactic: thin repeats, simple reduce new hyps *)
+      and follow_up thinT precs orig_hyps (orig_concl:term) orig_length i cont p =
+         let seq = Sequent.explode_sequent_arg p in
+         let hyps = seq.sequent_hyps in
+         let length = SeqHyp.length hyps in
+            if length < orig_length then
+               (* This was a thinning step, no new hyps to post-process *)
+               step thinT precs orig_hyps orig_concl length (min i length) p
             else
-               step_cont thinT precs hyps concl length i cont p
+               let tac, changed = search_tac thinT hyps length orig_hyps idT false orig_length in
+                  if changed || not (alpha_equal seq.sequent_concl orig_concl) then
+                     tac thenT funT (progress_check thinT precs orig_hyps orig_concl orig_length i cont)
+                  else
+                     raise not_changed_err
       (* Process a table lookup *)
       and step_cont thinT precs hyps concl length i (cont : forward_info lazy_lookup) p =
          match cont () with
             Some (item, cont) ->
                ((let tac = item.forward_tac in
                   if !debug_forward then checkMainT item.forward_loc (tac i) else tac i)
-               thenMT (funT (progress_check thinT precs hyps concl length i cont)))
+               thenMT (funT (follow_up thinT precs hyps concl length i cont)))
                orelseT (funT (step_cont thinT precs hyps concl length i cont))
           | None ->
                step thinT precs hyps concl length i p
