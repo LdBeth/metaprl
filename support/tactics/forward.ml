@@ -173,21 +173,21 @@ and it should produce exactly one" main_count,
    (* We assume no progress when there are no new hyps and the concl has not changed. *)
    let not_changed_err = RefineError("forwardChainT", StringError "no progress") in
    (* Merge the new hyps into the list, chacking if any are new *)
-   let rec search hyps length new_hyps thin_hyps reduce_hyps changed i =
+   let rec search hyps length new_hyps thin_hyps changed i =
       if i = length then
-         new_hyps, thin_hyps, reduce_hyps, changed
+         new_hyps, thin_hyps, changed
       else
-         let new_hyps, thin_hyps, reduce_hyps, changed =
+         let new_hyps, thin_hyps, changed =
             match SeqHyp.get hyps i with
                Hypothesis (_, t) ->
                   if TermTable.mem new_hyps t then
-                     new_hyps, (i+1) :: thin_hyps, reduce_hyps, changed
+                     new_hyps, (i+1) :: thin_hyps, changed
                   else
-                     TermTable.add new_hyps t, thin_hyps, (i+1) :: reduce_hyps, true
+                     TermTable.add new_hyps t, thin_hyps, true
              | Context _ ->
-                  new_hyps, thin_hyps, (i+1) :: reduce_hyps, changed
+                  new_hyps, thin_hyps, changed
          in
-            search hyps length new_hyps thin_hyps reduce_hyps changed (succ i)
+            search hyps length new_hyps thin_hyps changed (succ i)
    in
    let rec search_tac thinT hyps length new_hyps tac changed i =
       if i = length then
@@ -196,7 +196,7 @@ and it should produce exactly one" main_count,
          match SeqHyp.get hyps i with 
             Hypothesis (_, t) when TermTable.mem new_hyps t ->
                let i = i + 1 in
-                  search_tac thinT hyps length new_hyps (thinT i thenT tac) changed i
+                  search_tac thinT hyps length new_hyps ((tryT (thinT i)) thenT tac) changed i
           | _ ->
                let i = i + 1 in
                   search_tac thinT hyps length new_hyps (rw simpleReduceC i thenT tac) true i
@@ -207,10 +207,9 @@ and it should produce exactly one" main_count,
          let seq = Sequent.explode_sequent_arg p in
          let hyps = seq.sequent_hyps in
          let length = SeqHyp.length hyps in
-         let hyps, thin_hyps, reduce_hyps, changed = search hyps length orig_hyps [] [] false orig_length in
+         let hyps, thin_hyps, changed = search hyps length orig_hyps [] false orig_length in
          let concl = seq.sequent_concl in
             if changed || not (alpha_equal concl orig_concl) then
-               onHypsT reduce_hyps (rw simpleReduceC) thenT (**)
                   tryOnHypsT thin_hyps thinT thenT (**)
                   funT (step_cont thinT precs hyps concl length i cont)
             else
