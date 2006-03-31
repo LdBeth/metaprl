@@ -1819,7 +1819,7 @@ type celim =
    { celim_h_v      : var;
      celim_j_v      : var;
      celim_x_v      : var;
-     celim_c_v_t    : term;
+     celim_c_v_t    : term -> term;
      celim_rule     : term;
      celim_premises : term;
      celim_goal     : term;
@@ -1839,7 +1839,7 @@ let mk_celim_info all_vars =
       { celim_h_v      = h_v;
         celim_j_v      = j_v;
         celim_x_v      = x_v;
-        celim_c_v_t    = mk_so_var_term c_v        [j_v; h_v] [mk_var_term x_v];
+        celim_c_v_t    = (fun t -> mk_so_var_term c_v [j_v; h_v] [t]);
         celim_rule     = mk_so_var_term rule_v     [h_v] [];
         celim_premises = mk_so_var_term premises_v [h_v] [];
         celim_goal     = mk_so_var_term goal_v     [h_v] [];
@@ -1857,20 +1857,21 @@ let mk_proof_check_case info cinfo t_rule =
          celim_witness  = t_witness
        } = cinfo
    in
+   let it = Reflect.mk_it_term info in
    let hyps =
       [Context    (h_v, [], []);
        Hypothesis (x_v,        Reflect.mk_ProofCheck_term info t_rule t_premises t_goal t_witness);
-       Context    (j_v, [h_v], [mk_var_term x_v])]
+       Context    (j_v, [h_v], [it])]
    in
    let seq =
       { sequent_args  = Reflect.mk_sequent_arg_term info;
         sequent_hyps  = SeqHyp.of_list hyps;
-        sequent_concl = c_v_t
+        sequent_concl = c_v_t (it)
       }
    in
       [], mk_sequent_term seq
 
-let mk_simple_step_goal info cinfo t_logic =
+let mk_simple_step_goal info cinfo t_logic squash =
    let { celim_h_v      = h_v;
          celim_j_v      = j_v;
          celim_x_v      = x_v;
@@ -1880,24 +1881,25 @@ let mk_simple_step_goal info cinfo t_logic =
          celim_witness  = t_witness
        } = cinfo
    in
+   let witness = if squash then Reflect.mk_it_term info else mk_var_term x_v in
    let hyps =
       [Context    (h_v, [], []);
        Hypothesis (x_v,        Reflect.mk_SimpleStep_term info t_premises t_goal t_witness t_logic);
-       Context    (j_v, [h_v], [mk_var_term x_v])]
+       Context    (j_v, [h_v], [witness])]
    in
    let seq =
       { sequent_args  = Reflect.mk_sequent_arg_term info;
         sequent_hyps  = SeqHyp.of_list hyps;
-        sequent_concl = c_v_t
+        sequent_concl = c_v_t witness
       }
    in
       mk_sequent_term seq
 
 let mk_simple_step_elim_thm info t_logic rules parents =
    let cinfo = mk_celim_info SymbolSet.empty in
-   let parent_premises = List.map (fun parent -> [], mk_simple_step_goal info cinfo parent) parents in
+   let parent_premises = List.map (fun parent -> [], mk_simple_step_goal info cinfo parent true) parents in
    let rule_premises = List.map (mk_proof_check_case info cinfo) rules in
-   let goal = mk_simple_step_goal info cinfo t_logic in
+   let goal = mk_simple_step_goal info cinfo t_logic false in
       var_H, zip_mlabeled (parent_premises @ rule_premises) goal
 
 (*
@@ -1962,7 +1964,7 @@ let mk_proof_check_premise info cinfo t =
    let seq =
       { sequent_args  = Reflect.mk_sequent_arg_term info;
         sequent_hyps  = SeqHyp.of_list premises;
-        sequent_concl = c_v_t
+        sequent_concl = c_v_t (mk_var_term x_v)
       }
    in
       [], mk_sequent_term seq
@@ -1986,7 +1988,7 @@ let mk_proof_check_goal info cinfo =
    let seq =
       { sequent_args  = Reflect.mk_sequent_arg_term info;
         sequent_hyps  = SeqHyp.of_list premises;
-        sequent_concl = c_v_t
+        sequent_concl = c_v_t (mk_var_term x_v)
       }
    in
       mk_sequent_term seq

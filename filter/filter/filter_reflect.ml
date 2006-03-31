@@ -771,8 +771,7 @@ let add_simple_step_elim info loc name t_logic rules parents =
    let params = [IntParam h_v] in
    let mt = parse_rule info loc rule_name mt params in
 
-   (* TODO: more accurate tactic *)
-   let tac = "elimSimpleStepT" in
+   let tac = "elimSimpleStepT unfold_" ^ name in
    let res = elim_resources loc in
       define_thm info loc rule_name params mt tac res
 

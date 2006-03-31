@@ -49,7 +49,7 @@ OCAMLDEPFLAGS += -prl
 #
 # Reflected theories
 #
-reflect_%.ppo reflect_%.cmoz: %.cmoz reflect_%.cmiz $(PRLCN) :optional: %.prla :effects: %.prlb :scanner: scan-ocaml-%.ml
+reflect_%.ppo reflect_%.cmoz: %.cmoz reflect_%.cmiz $(PRLCN) :optional: reflect_%.prla :effects: reflect_%.prlb :scanner: scan-ocaml-%.ml
    $(WrapC $(PRLCN)) --reflect-impl -o $*.ppo $<
 
 reflect_%.ppi reflect_%.cmiz: %.cmoz $(PRLCN) :scanner: scan-ocaml-%.mli
