@@ -170,7 +170,7 @@ sig
    val mk_let_cvar_term         : t -> var -> term -> term -> int -> term -> term
    val mk_let_sovar_term        : t -> var -> term -> term -> int -> term -> term
    val mk_spread_term           : t -> term -> var -> var -> term -> term
-   val mk_sequent_bterm_term    : t -> term -> term
+   val mk_sequent_bterm_term    : t -> term -> term -> term
    val mk_vsequent_term         : t -> term -> term list -> term -> term
    val mk_bsequent_term         : t -> term -> SeqHyp.t -> term -> term
    val mk_empty_logic_term      : t -> term
@@ -245,7 +245,7 @@ struct
    let info_subst             = hash ("subst",            [],   [0; 0])
    let info_substl            = hash ("substl",           [],   [0; 0])
    let info_type              = hash ("type",             [],   [0])
-   let info_sequent_bterm     = hash ("sequent_bterm",    [],   [0])
+   let info_sequent_bterm     = hash ("sequent_bterm",    [],   [0; 0])
    let info_vsequent          = hash ("vsequent",         [],   [0])
    let info_bsequent          = hash ("bsequent",         [],   [0])
    let info_empty_logic       = hash ("empty_logic",      [],   [])
@@ -486,8 +486,8 @@ struct
    let mk_spread_term info t1 v1 v2 t2 =
       mk_dep0_dep2_term (find_opname info info_spread) v1 v2 t1 t2
 
-   let mk_sequent_bterm_term info t =
-      mk_dep0_term (find_opname info info_sequent_bterm) t
+   let mk_sequent_bterm_term info d t =
+      mk_dep0_dep0_term (find_opname info info_sequent_bterm) d t
 
    let mk_vsequent_term info arg hyps concl =
       let seq =
@@ -827,7 +827,7 @@ let sweep_rulequote_term info socvars t =
       let socvars, concl = sweepdn socvars concl in
       let concl = Reflect.mk_rev_bind_terms info vars concl in
       let t = Reflect.mk_vsequent_term info arg (List.rev hyps) concl in
-      let t = Reflect.mk_sequent_bterm_term info t in
+      let t = Reflect.mk_sequent_bterm_term info (Reflect.mk_number_term info 0) t in
          socvars, t
    in
       sweepdn socvars t
