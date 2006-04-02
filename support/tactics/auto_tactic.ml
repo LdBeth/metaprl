@@ -111,6 +111,7 @@ open Refiner.Refiner.TermType
 open Refiner.Refiner.TermMan
 open Refiner.Refiner.TermMeta
 open Refiner.Refiner.TermOp
+open Refiner.Refiner.TermShape
 open Refiner.Refiner.TermSubst
 open Refiner.Refiner.TermAddr
 open Refiner.Refiner.Rewrite
@@ -482,9 +483,17 @@ let completeP tac = (tac.auto_type == AutoComplete)
 let make_progressT goals tac tacelse =
    funT (fun p ->
       let goal = Sequent.goal p in
-      if List.exists (alpha_equal goal) goals then tacelse
-      else tac (goal::goals))
-
+      let shape = shape_of_term goal in 
+      let shape =
+         if shape == sequent_shape then
+            shape_of_term (explode_sequent goal).sequent_concl
+         else 
+            shape
+      in
+         if List.exists (alpha_equal goal) (ShapeMTable.find_all goals shape) then
+            tacelse
+         else
+            tac (ShapeMTable.add goals shape goal))
 (*
  * XXX: TODO: this is suboptimal. See http://bugzilla.metaprl.org/show_bug.cgi?id=549
  *)
@@ -520,13 +529,13 @@ let extract tactics =
    in
    let next_idT _ = idT in
    let next_failT _ = failT in
-   let trivT = make_progress_first trivial next_idT idT trivial [] in
+   let trivT = make_progress_first trivial next_idT idT trivial ShapeMTable.empty in
    let normal_tacs = trivial @ normal in
    let all_tacs = trivial @ normal @ complete in
    let try_complete goals = tryT (make_progress_first all_tacs next_failT failT complete goals) in
-   let autoT = make_progress_first normal_tacs try_complete idT normal_tacs [] in
-   let strongAutoT = make_progress_first all_tacs next_idT idT all_tacs [] in
-   let caT = make_progress_first all_tacs next_failT failT all_tacs [] in
+   let autoT = make_progress_first normal_tacs try_complete idT normal_tacs ShapeMTable.empty in
+   let strongAutoT = make_progress_first all_tacs next_idT idT all_tacs ShapeMTable.empty in
+   let caT = make_progress_first all_tacs next_failT failT all_tacs ShapeMTable.empty in
       (trivT, autoT, strongAutoT, caT)
 
 let improve_resource data info = info::data
