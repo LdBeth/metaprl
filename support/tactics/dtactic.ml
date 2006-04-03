@@ -233,7 +233,11 @@ type intro_item = {
 }
 
 type elim_item  = rule_labels * bool * (int -> tactic)
-type elim_result = (tactic_arg -> int -> tactic) * (tactic_arg -> tactic)
+type elim_result = {
+   elim_dt: tactic_arg -> int -> tactic;
+   elim_auto_dt: tactic_arg -> tactic;
+   elim_auto_ok_dt: tactic_arg -> tactic
+}
 
 (************************************************************************
  * IMPLEMENTATION                                                       *
@@ -251,11 +255,15 @@ let d_in_auto p =
  * The tactic checks for an optable.
  *)
 let extract_elim_data =
+   let eq_exn = RefineError ("dT", StringError "elim rule not suitable for autoT") in
+   let select_auto_ok options (opts, auto_ok, _) =
+      auto_ok && rule_labels_are_allowed options opts
+   in
    let select_complete options (opts, auto_ok, _) =
       (not auto_ok) && rule_labels_are_allowed options opts
    in
-   let select_options options d_in_auto (opts, auto_ok, _) =
-      ((not d_in_auto) || auto_ok) && rule_labels_are_allowed options opts
+   let select_options options (opts, _, _) =
+      rule_labels_are_allowed options opts
    in
    let rec firstiT i = function
       [] ->
@@ -265,8 +273,6 @@ let extract_elim_data =
     | (_, _, tac) :: tacs ->
          tac i orelseT firstiT i tacs
    in
-   let eq_exn = RefineError ("dT", StringError "elim rule not suitable for autoT") in
-   let nothing_exn = RefineError ("auto_dT", StringError "Nothing appropriate found") in
    let rec num_equal_aux t hyps i =
       if i <= 0 then 0 else
          let i = pred i in
@@ -283,14 +289,38 @@ let extract_elim_data =
       if num_equal t p >= n then raise eq_exn else idT)
    in
       (fun tbl ->
-         let rec auto_dT hyps select i p =
+         let rec auto_ok_dT hyps select i p =
             if i = 0 then
-               raise nothing_exn
+               idT
             else
                match SeqHyp.get hyps (i - 1) with
                   Hypothesis (_, t) ->
                      if !debug_dtactic then
-                        eprintf "Dtactic: elim: lookup %s%t" (SimplePrint.short_string_of_term t) eflush;
+                        eprintf "Auto: elim (\"AutoOK\"): lookup %s%t" (SimplePrint.short_string_of_term t) eflush;
+                     begin match lookup_bucket tbl select t with
+                        Some tacs ->
+                           auto_ok_firstiT hyps select i tacs
+                      | None ->
+                           auto_ok_dT hyps select (i - 1) p
+                     end
+                | Context _ ->
+                     auto_ok_dT hyps select (i - 1) p
+         and auto_ok_firstiT hyps select i = function
+            [] ->
+               funT (auto_ok_dT hyps select (i - 1))
+          | [_, _, tac] when i = 1 ->
+               tac i
+          | (_, _, tac) :: tacs ->
+               tac i orelseT auto_ok_firstiT hyps select i tacs
+         in
+         let rec auto_dT hyps select i p =
+            if i = 0 then
+               idT
+            else
+               match SeqHyp.get hyps (i - 1) with
+                  Hypothesis (_, t) ->
+                     if !debug_dtactic then
+                        eprintf "Auto: elim: lookup %s%t" (SimplePrint.short_string_of_term t) eflush;
                      begin match lookup_bucket tbl select t with
                         Some tacs ->
                            auto_firstiT hyps select (num_equal t p) t i tacs
@@ -312,18 +342,22 @@ let extract_elim_data =
             let t = Sequent.nth_hyp p i in
                if !debug_dtactic then
                   eprintf "Dtactic: elim: lookup %s%t" (SimplePrint.short_string_of_term t) eflush;
-               match lookup_bucket tbl (select_options options (d_in_auto p)) t with
+               match lookup_bucket tbl (select_options options) t with
                   Some tacs ->
                      firstiT i tacs
                 | None ->
                      raise (RefineError ("extract_elim_data",
                         StringTermError ("D tactic doesn't know about", t)))
          in
+         let auto_ok_dT p =
+            let hyps = (Sequent.explode_sequent_arg p).sequent_hyps in
+               auto_ok_dT hyps (select_auto_ok (get_options p)) (SeqHyp.length hyps) p
+         in
          let auto_dT p =
             let hyps = (Sequent.explode_sequent_arg p).sequent_hyps in
                auto_dT hyps (select_complete (get_options p)) (SeqHyp.length hyps) p
          in
-            dT, auto_dT)
+            { elim_dt = dT; elim_auto_dt = auto_dT; elim_auto_ok_dt = auto_ok_dT })
 
 let extract_intro_data =
    let select_intro p options in_auto_type item =
@@ -659,7 +693,7 @@ let dT =
          if i = 0 then
             Sequent.get_resource_arg p get_intro_resource
          else
-            fst (Sequent.get_resource_arg p get_elim_resource) p (Sequent.get_pos_hyp_num p i))
+            (Sequent.get_resource_arg p get_elim_resource).elim_dt p (Sequent.get_pos_hyp_num p i))
 
 let rec dForT i =
    if i <= 0 then
@@ -688,7 +722,8 @@ let resource auto += [ {
 }; {
    auto_name = "dT elim-simple";
    auto_prec = d_elim_prec;
-   auto_tac = withIntT "d_auto" 1 (onSomeHypT dT);
+   auto_tac = withIntT "d_auto" 1 (funT
+      (fun p -> (Sequent.get_resource_arg p get_elim_resource).elim_auto_ok_dt p));
    auto_type = AutoNormal;
 }; {
    auto_name = "dT complete";
@@ -698,7 +733,7 @@ let resource auto += [ {
 }; {
    auto_name = "dT elim-complete";
    auto_prec = d_elim_prec;
-   auto_tac = funT (fun p -> snd (Sequent.get_resource_arg p get_elim_resource) p);
+   auto_tac = funT (fun p -> (Sequent.get_resource_arg p get_elim_resource).elim_auto_dt p);
    auto_type = AutoComplete;
 }]
 
