@@ -117,6 +117,7 @@ val wrap_reduce_crw : ?labels:term list -> conv -> reduce_info
 topval reduceTopC : conv
 topval reduceC : conv
 topval reduceT : tactic
+val reduceHypsT : tactic
 
 topval simpleReduceTopC : conv
 topval simpleReduceC : conv
@@ -131,7 +132,6 @@ val apply_rewrite : tactic_arg -> conv -> term -> term
 (*
  * -*-
  * Local Variables:
- * Caml-master: "refiner"
  * End:
  * -*-
  *)

@@ -637,8 +637,9 @@ let repeatWithRwsT convs tac  = repeatT (firstT (List.map (fun conv-> progressT 
  *)
 let trivial_prec = create_auto_prec [] []
 let nth_hyp_prec = create_auto_prec [trivial_prec] []
-let reduce_prec = create_auto_prec [trivial_prec; nth_hyp_prec] []
-let large_prec = create_auto_prec [trivial_prec; nth_hyp_prec; reduce_prec] []
+let reduce_concl_prec = create_auto_prec [nth_hyp_prec] []
+let reduce_hyps_prec = create_auto_prec [reduce_concl_prec] []
+let large_prec = create_auto_prec [reduce_hyps_prec] []
 
 (*
  * Some trivial tactics.
@@ -650,13 +651,18 @@ let resource auto += [{
    auto_type = AutoTrivial;
 }; {
    auto_name = "simpleReduceT";
-   auto_prec = reduce_prec;
+   auto_prec = reduce_hyps_prec;
    auto_tac = simpleReduceT;
    auto_type = AutoNormal
 }; {
-   auto_name = "reduceT";
-   auto_prec = reduce_prec;
-   auto_tac = reduceT;
+   auto_name = "rw reduceC 0";
+   auto_prec = reduce_concl_prec;
+   auto_tac = rw reduceC 0;
+   auto_type = AutoComplete
+}; {
+   auto_name = "reduceHypsT";
+   auto_prec = reduce_hyps_prec;
+   auto_tac = reduceHypsT;
    auto_type = AutoComplete
 }]
 

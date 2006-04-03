@@ -108,7 +108,8 @@ val create_auto_prec : auto_prec list -> auto_prec list -> auto_prec
  *)
 val trivial_prec : auto_prec
 val nth_hyp_prec : auto_prec
-val reduce_prec : auto_prec
+val reduce_concl_prec : auto_prec
+val reduce_hyps_prec : auto_prec
 val large_prec : auto_prec
 
 (*

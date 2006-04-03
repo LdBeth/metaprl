@@ -487,6 +487,10 @@ let reduceT = funT (fun p ->
    let reduceHigherC = snd (get_resource_arg p get_reduce_resource) (get_options p) in
       rwAll (repeatC reduceHigherC))
 
+let reduceHypsT = funT (fun p ->
+   let reduceHigherC = snd (get_resource_arg p get_reduce_resource) (get_options p) in
+      onAllMHypsT (rw (repeatC reduceHigherC)))
+
 let simpleReduceTopC = withOptionInfoC Perv.select_crw OptionExclude reduceTopC
 let simpleReduceC = withOptionInfoC Perv.select_crw OptionExclude reduceC
 let simpleReduceT = withOptionInfoT Perv.select_crw OptionExclude reduceT
