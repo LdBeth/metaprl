@@ -758,8 +758,7 @@ let add_proof_check_elim info loc item =
    let params = [IntParam h_v] in
    let mt = parse_rule info loc rule_name mt params in
 
-   (* TODO: more accurate tactic *)
-   let tac = "elimProofCheckT" in
+   let tac = "elimProofCheckT unfold_" ^ name in
    let res = elim_resources loc in
       define_thm info loc rule_name params mt tac res
 
