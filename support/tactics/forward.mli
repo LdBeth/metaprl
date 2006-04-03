@@ -54,6 +54,7 @@ val create_forward_prec : forward_prec list -> forward_prec list -> forward_prec
 type forward_option =
    ForwardArgsOption of (tactic_arg -> term -> term list) * term option
  | ForwardPrec of forward_prec
+ | ForwardPost of (int -> tactic)
 
 (*
  * Rules for forward chaning.

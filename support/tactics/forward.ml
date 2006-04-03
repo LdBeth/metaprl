@@ -69,6 +69,7 @@ type forward_prec = unit ImpDag.node
 type forward_option =
    ForwardArgsOption of (tactic_arg -> term -> term list) * term option
  | ForwardPrec of forward_prec
+ | ForwardPost of (int -> tactic)
 
 type forward_info =
    { forward_loc  : MLast.loc;
@@ -203,39 +204,54 @@ and it should produce exactly one" main_count,
    in
    (fun tbl ->
       (* Check progress and either abort or do to next tactic in the current table lookup *)
-      let rec progress_check thinT precs orig_hyps orig_concl orig_length i cont p =
+      let rec progress_check thinT precs orig_hyps orig_concl orig_length orig_hyp thinned i cont p =
          let seq = Sequent.explode_sequent_arg p in
          let hyps = seq.sequent_hyps in
          let length = SeqHyp.length hyps in
-         let hyps, thin_hyps, changed = search hyps length orig_hyps [] false orig_length in
+         let hyps, thin_hyps, changed = search hyps length orig_hyps [] thinned orig_length in
          let concl = seq.sequent_concl in
             if changed || not (alpha_equal concl orig_concl) then
                   tryOnHypsT thin_hyps thinT thenT (**)
-                  funT (step_cont thinT precs hyps concl length i cont)
+                  funT (
+                     if thinned then
+                        upd_length_and_step thinT precs hyps concl (i - 1)
+                     else
+                        step_cont thinT precs hyps concl length orig_hyp i cont)
             else
                raise not_changed_err
+      (* Update the length before calling step *)
+      and upd_length_and_step thinT precs hyps concl i p =
+         step thinT precs hyps concl (Sequent.hyp_count p) i p
       (* Follow-up tactic: thin repeats, simple reduce new hyps *)
-      and follow_up thinT precs orig_hyps (orig_concl:term) orig_length i cont p =
+      and follow_up thinT precs orig_hyps orig_concl orig_length orig_hyp i cont p =
          let seq = Sequent.explode_sequent_arg p in
          let hyps = seq.sequent_hyps in
          let length = SeqHyp.length hyps in
             if length < orig_length then
-               (* This was a thinning step, no new hyps to post-process *)
-               step thinT precs orig_hyps orig_concl length (min i length) p
+               (* This was a pure thinning step, no new hyps to post-process *)
+               step thinT precs orig_hyps seq.sequent_concl length (i - 1) p
             else
-               let tac, changed = search_tac thinT hyps length orig_hyps idT false orig_length in
-                  if changed || not (alpha_equal seq.sequent_concl orig_concl) then
-                     tac thenT funT (progress_check thinT precs orig_hyps orig_concl orig_length i cont)
+               (* Did the step thin the original hyp? *)
+               let thinned = 
+                  match SeqHyp.get hyps (i-1) with
+                     Hypothesis(_, t) -> not (alpha_equal orig_hyp t)
+                   | _ -> true
+               in
+               let orig_length = if thinned then orig_length - 1 else orig_length in
+               let tac, changed = search_tac thinT hyps length orig_hyps idT thinned orig_length in
+               let concl = seq.sequent_concl in
+                  if changed || not (alpha_equal concl orig_concl) then
+                     tac thenT funT (progress_check thinT precs orig_hyps orig_concl orig_length orig_hyp thinned i cont)
                   else
                      raise not_changed_err
       (* Process a table lookup *)
-      and step_cont thinT precs hyps concl length i (cont : forward_info lazy_lookup) p =
+      and step_cont thinT precs hyps concl length hyp i (cont : forward_info lazy_lookup) p =
          match cont () with
             Some (item, cont) ->
                ((let tac = item.forward_tac in
                   if !debug_forward then checkMainT item.forward_loc (tac i) else tac i)
-               thenMT (funT (follow_up thinT precs hyps concl length i cont)))
-               orelseT (funT (step_cont thinT precs hyps concl length i cont))
+               thenMT (funT (follow_up thinT precs hyps concl length hyp i cont)))
+               orelseT (funT (step_cont thinT precs hyps concl length hyp i cont))
           | None ->
                step thinT precs hyps concl length i p
       (* Process a hyp *)
@@ -243,11 +259,12 @@ and it should produce exactly one" main_count,
          match all_precs with
             pre :: precs ->
                if i = length then
+                  (* This precedence level is done, go to the next one *)
                   step thinT precs hyps concl length 0 p
                else
                   begin match SeqHyp.get (Sequent.explode_sequent_arg p).sequent_hyps i with
                      Hypothesis(_, t) ->
-                        step_cont thinT all_precs hyps concl length (i + 1) (lookup_all tbl (select pre) t) p
+                        step_cont thinT all_precs hyps concl length t (i + 1) (lookup_all tbl (select pre) t) p
                    | Context _ ->
                         step thinT all_precs hyps concl length (i + 1) p
                   end
@@ -294,6 +311,13 @@ let rec get_prec_arg assums = function
       match assums with
          [_] -> forward_trivial_prec
        | _ -> forward_max_prec
+(*
+ * Post-processing tactic (presumably thinning).
+ *)
+let rec find_post_arg tac = function
+   [] -> tac
+ | ForwardPost tac' :: _ -> (fun i -> tac i thenT tac' i)
+ | _ :: args -> find_post_arg tac args
 
 (*
  * Process a forward-chaining rule.
@@ -366,6 +390,7 @@ let process_forward_resource_annotation ?(options = []) ?labels name args term_a
                 | _ ->
                      raise (Invalid_argument (sprintf "forwardT: %s: not an elimination rule" name))
             in
+            let tac = find_post_arg tac options in
             let info =
                { forward_loc  = loc;
                  forward_prec = pre;
