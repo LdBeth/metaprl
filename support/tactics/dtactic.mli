@@ -57,8 +57,9 @@ type elim_option =
 
 type intro_item
 type elim_item  = rule_labels * bool * (int -> tactic)
+type elim_result
 
-resource (term * elim_item, int -> tactic) elim
+resource (term * elim_item, elim_result) elim
 resource (term * intro_item, tactic) intro
 
 val process_elim_resource_annotation :

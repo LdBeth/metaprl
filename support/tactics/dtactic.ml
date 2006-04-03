@@ -233,6 +233,7 @@ type intro_item = {
 }
 
 type elim_item  = rule_labels * bool * (int -> tactic)
+type elim_result = (tactic_arg -> int -> tactic) * (tactic_arg -> tactic)
 
 (************************************************************************
  * IMPLEMENTATION                                                       *
@@ -250,6 +251,9 @@ let d_in_auto p =
  * The tactic checks for an optable.
  *)
 let extract_elim_data =
+   let select_complete options (opts, auto_ok, _) =
+      (not auto_ok) && rule_labels_are_allowed options opts
+   in
    let select_options options d_in_auto (opts, auto_ok, _) =
       ((not d_in_auto) || auto_ok) && rule_labels_are_allowed options opts
    in
@@ -261,17 +265,65 @@ let extract_elim_data =
     | (_, _, tac) :: tacs ->
          tac i orelseT firstiT i tacs
    in
+   let eq_exn = RefineError ("dT", StringError "elim rule not suitable for autoT") in
+   let nothing_exn = RefineError ("auto_dT", StringError "Nothing appropriate found") in
+   let rec num_equal_aux t hyps i =
+      if i <= 0 then 0 else
+         let i = pred i in
+            (num_equal_aux t hyps i) +
+            match SeqHyp.get hyps i with
+               Hypothesis (_, t') when alpha_equal t t' -> 1
+             | _ -> 0
+   in
+   let num_equal t p =
+      let hyps = (TermMan.explode_sequent (Sequent.goal p)).sequent_hyps in
+         num_equal_aux t hyps (SeqHyp.length hyps)
+   in
+   let check_num_equalT n t = funT (fun p ->
+      if num_equal t p >= n then raise eq_exn else idT)
+   in
       (fun tbl ->
-            argfunT (fun i p ->
-                  let options = get_options p in
-                  let t = Sequent.nth_hyp p i in
+         let rec auto_dT hyps select i p =
+            if i = 0 then
+               raise nothing_exn
+            else
+               match SeqHyp.get hyps (i - 1) with
+                  Hypothesis (_, t) ->
                      if !debug_dtactic then
                         eprintf "Dtactic: elim: lookup %s%t" (SimplePrint.short_string_of_term t) eflush;
-                     match lookup_bucket tbl (select_options options (d_in_auto p)) t with
+                     begin match lookup_bucket tbl select t with
                         Some tacs ->
-                           firstiT i tacs
+                           auto_firstiT hyps select (num_equal t p) t i tacs
                       | None ->
-                           raise (RefineError ("extract_elim_data", StringTermError ("D tactic doesn't know about", t)))))
+                           auto_dT hyps select (i - 1) p
+                     end
+                | Context _ ->
+                     auto_dT hyps select (i - 1) p
+         and auto_firstiT hyps select num t i = function
+            [] ->
+               funT (auto_dT hyps select (i - 1))
+          | [_, _, tac] when i = 1 ->
+               tac i thenT check_num_equalT num t
+          | (_, _, tac) :: tacs ->
+               (tac i thenT check_num_equalT num t) orelseT auto_firstiT hyps select num t i tacs
+         in
+         let dT p i = 
+            let options = get_options p in
+            let t = Sequent.nth_hyp p i in
+               if !debug_dtactic then
+                  eprintf "Dtactic: elim: lookup %s%t" (SimplePrint.short_string_of_term t) eflush;
+               match lookup_bucket tbl (select_options options (d_in_auto p)) t with
+                  Some tacs ->
+                     firstiT i tacs
+                | None ->
+                     raise (RefineError ("extract_elim_data",
+                        StringTermError ("D tactic doesn't know about", t)))
+         in
+         let auto_dT p =
+            let hyps = (Sequent.explode_sequent_arg p).sequent_hyps in
+               auto_dT hyps (select_complete (get_options p)) (SeqHyp.length hyps) p
+         in
+            dT, auto_dT)
 
 let extract_intro_data =
    let select_intro p options in_auto_type item =
@@ -596,7 +648,7 @@ let wrap_elim_auto_ok ?labels tac =
 (*
  * Resources
  *)
-let resource (term * elim_item, int -> tactic) elim =
+let resource (term * elim_item, elim_result) elim =
    table_resource_info extract_elim_data
 
 let resource (term * intro_item, tactic) intro =
@@ -607,7 +659,7 @@ let dT =
          if i = 0 then
             Sequent.get_resource_arg p get_intro_resource
          else
-            Sequent.get_resource_arg p get_elim_resource (Sequent.get_pos_hyp_num p i))
+            fst (Sequent.get_resource_arg p get_elim_resource) p (Sequent.get_pos_hyp_num p i))
 
 let rec dForT i =
    if i <= 0 then
@@ -620,28 +672,6 @@ let rec dForT i =
  *)
 let d_prec = create_auto_prec [trivial_prec] [nth_hyp_prec]
 let d_elim_prec = create_auto_prec [trivial_prec; d_prec] [reduce_prec]
-
-let eq_exn = RefineError ("dT", StringError "elim rule not suitable for autoT")
-
-let rec num_equal_aux t hyps i =
-   if i <= 0 then 0 else
-   let i = pred i in
-      (num_equal_aux t hyps i) +
-      match SeqHyp.get hyps i with
-         Hypothesis (_, t') when alpha_equal t t' -> 1
-       | _ -> 0
-
-let num_equal t p =
-   let hyps = (TermMan.explode_sequent (Sequent.goal p)).sequent_hyps in
-      num_equal_aux t hyps (SeqHyp.length hyps)
-
-let check_num_equalT n t = funT (fun p ->
-   if num_equal t p >= n then raise eq_exn else idT)
-
-let auto_dT =
-   argfunT (fun i p ->
-      let t = Sequent.nth_hyp p i in
-         dT i thenT check_num_equalT (num_equal t p) t)
 
 let d_outside_auto tac = withoutIntT "d_auto" tac
 
@@ -668,7 +698,7 @@ let resource auto += [ {
 }; {
    auto_name = "dT elim-complete";
    auto_prec = d_elim_prec;
-   auto_tac = onSomeHypT auto_dT;
+   auto_tac = funT (fun p -> snd (Sequent.get_resource_arg p get_elim_resource) p);
    auto_type = AutoComplete;
 }]
 
