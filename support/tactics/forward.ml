@@ -216,12 +216,14 @@ and it should produce exactly one" main_count,
                      if thinned then
                         upd_length_and_step thinT precs hyps concl (i - 1)
                      else
-                        step_cont thinT precs hyps concl length orig_hyp i cont)
+                        upd_length_and_step_cont thinT precs hyps concl length orig_hyp i cont)
             else
                raise not_changed_err
       (* Update the length before calling step *)
       and upd_length_and_step thinT precs hyps concl i p =
          step thinT precs hyps concl (Sequent.hyp_count p) i p
+      and upd_length_and_step_cont thinT precs hyps concl length orig_hyp i cont p =
+         step_cont thinT precs hyps concl (Sequent.hyp_count p) orig_hyp i cont p
       (* Follow-up tactic: thin repeats, simple reduce new hyps *)
       and follow_up thinT precs orig_hyps orig_concl orig_length orig_hyp i cont p =
          let seq = Sequent.explode_sequent_arg p in
