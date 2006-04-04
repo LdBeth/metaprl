@@ -1567,7 +1567,7 @@ let mk_elim_assum info einfo t_logic t =
    let clauses =
       [Hypothesis (v_v, u_ty);
        Hypothesis (w1_v, Reflect.mk_equal_term info hyp_goal goal ty_bterm);
-       Hypothesis (w2_v, Reflect.mk_ProvableSequent_term info t_logic hyp_goal)]
+       (* Hypothesis (w2_v, Reflect.mk_ProvableSequent_term info t_logic hyp_goal) *)]
    in
 
    (* Convert the premises and the goal *)
