@@ -1743,7 +1743,6 @@ let mk_elim_premise info einfo t_logic =
    let w1_v, all_vars       = maybe_new_var var_w all_vars in
    let w2_v, all_vars       = maybe_new_var var_w all_vars in
    let w3_v, all_vars       = maybe_new_var var_w all_vars in
-   let w4_v, all_vars       = maybe_new_var var_w all_vars in
 
    (* Some terms *)
    let a_v_t        = mk_so_var_term hyp_v [h_v] [mk_var_term v_v] in
@@ -1765,9 +1764,8 @@ let mk_elim_premise info einfo t_logic =
        Hypothesis (premises_v, t_BTerm_list);
        Hypothesis (witness_v,  t_ProofStepWitness);
        Hypothesis (w1_v,       Reflect.mk_SimpleStep_term info t_premises a_v_t t_witness t_logic);
-       Hypothesis (w2_v,       Reflect.mk_ProvableSequent_term info t_logic a_v_t);
-       Hypothesis (w3_v,       Reflect.mk_all_list_term info premise_v t_premises (Reflect.mk_Provable_term info t_logic t_premise));
-       Hypothesis (w4_v,       Reflect.mk_all_list_term info premise_v t_premises (**)
+       Hypothesis (w2_v,       Reflect.mk_all_list_term info premise_v t_premises (Reflect.mk_Provable_term info t_logic t_premise));
+       Hypothesis (w3_v,       Reflect.mk_all_list_term info premise_v t_premises (**)
                       (Reflect.mk_all_term info v_v u_ty (**)
                           (Reflect.mk_implies_term info (**)
                               (Reflect.mk_equal_term info a_v_t t_premise t_BTerm)

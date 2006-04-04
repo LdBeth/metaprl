@@ -782,7 +782,6 @@ let add_elim_start info loc name t_logic =
    let params = [IntParam h_v] in
    let mt = parse_rule info loc rule_name mt params in
 
-   (* TODO: more accurate tactic *)
    let tac = "elimRuleStartT" in
       define_thm info loc rule_name params mt tac no_resources
 
