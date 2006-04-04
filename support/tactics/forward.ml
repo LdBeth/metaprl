@@ -77,7 +77,8 @@ type forward_info =
      forward_tac  : int -> tactic
    }
 
-type forward_result = (int -> tactic) -> int -> tactic_arg -> tactic
+type forward_result =
+   (int -> tactic) -> int option -> tactic_arg -> tactic
 
 (*
  * Precedences.
@@ -129,6 +130,12 @@ struct
          Not_found ->
             false
 end;;
+
+type fwd_state = {
+   fwd_thin : int -> tactic;
+   fwd_chain : term option; (* None - chain; Some t - only process hyp t, no chaining *)
+   fwd_precs : forward_prec list
+}
 
 (*
  * Extract the elimination tactic from the table.
@@ -190,48 +197,51 @@ and it should produce exactly one" main_count,
          in
             search hyps length new_hyps thin_hyps changed (succ i)
    in
-   let rec search_tac thinT hyps length new_hyps tac changed i =
+   let rec search_tac state hyps length new_hyps tac changed i =
       if i = length then
          tac, changed
       else
          match SeqHyp.get hyps i with 
             Hypothesis (_, t) when TermTable.mem new_hyps t ->
                let i = i + 1 in
-                  search_tac thinT hyps length new_hyps ((tryT (thinT i)) thenT tac) changed i
+                  search_tac state hyps length new_hyps ((tryT (state.fwd_thin i)) thenT tac) changed i
           | _ ->
                let i = i + 1 in
-                  search_tac thinT hyps length new_hyps (rw simpleReduceC i thenT tac) true i
+                  search_tac state hyps length new_hyps (rw simpleReduceC i thenT tac) true i
    in
    (fun tbl ->
       (* Check progress and either abort or do to next tactic in the current table lookup *)
-      let rec progress_check thinT precs orig_hyps orig_concl orig_length orig_hyp thinned i cont p =
+      let rec progress_check state orig_hyps orig_concl orig_length orig_hyp thinned i cont p =
          let seq = Sequent.explode_sequent_arg p in
          let hyps = seq.sequent_hyps in
          let length = SeqHyp.length hyps in
          let hyps, thin_hyps, changed = search hyps length orig_hyps [] thinned orig_length in
          let concl = seq.sequent_concl in
             if changed || not (alpha_equal concl orig_concl) then
-                  tryOnHypsT thin_hyps thinT thenT (**)
-                  funT (
-                     if thinned then
-                        upd_length_and_step thinT precs hyps concl (i - 1)
+                  tryOnHypsT thin_hyps state.fwd_thin thenT (**)
+                     (if thinned then
+                        match state.fwd_chain with
+                           Some _ -> idT
+                         | None -> (* Chain *) funT (upd_length_and_step state hyps concl (i - 1))
                      else
-                        upd_length_and_step_cont thinT precs hyps concl length orig_hyp i cont)
+                        funT (upd_length_and_step_cont state hyps concl length orig_hyp i cont))
             else
                raise not_changed_err
       (* Update the length before calling step *)
-      and upd_length_and_step thinT precs hyps concl i p =
-         step thinT precs hyps concl (Sequent.hyp_count p) i p
-      and upd_length_and_step_cont thinT precs hyps concl length orig_hyp i cont p =
-         step_cont thinT precs hyps concl (Sequent.hyp_count p) orig_hyp i cont p
+      and upd_length_and_step state hyps concl i p =
+         step state hyps concl (Sequent.hyp_count p) i p
+      and upd_length_and_step_cont state hyps concl length orig_hyp i cont p =
+         step_cont state hyps concl (Sequent.hyp_count p) orig_hyp i cont p
       (* Follow-up tactic: thin repeats, simple reduce new hyps *)
-      and follow_up thinT precs orig_hyps orig_concl orig_length orig_hyp i cont p =
+      and follow_up state orig_hyps orig_concl orig_length orig_hyp i cont p =
          let seq = Sequent.explode_sequent_arg p in
          let hyps = seq.sequent_hyps in
          let length = SeqHyp.length hyps in
             if length < orig_length then
                (* This was a pure thinning step, no new hyps to post-process *)
-               step thinT precs orig_hyps seq.sequent_concl length (i - 1) p
+               match state.fwd_chain with
+                  Some _ -> idT
+                | None -> (* Chain *) step state orig_hyps seq.sequent_concl length (i - 1) p
             else
                (* Did the step thin the original hyp? *)
                let thinned = 
@@ -240,37 +250,44 @@ and it should produce exactly one" main_count,
                    | _ -> true
                in
                let orig_length = if thinned then orig_length - 1 else orig_length in
-               let tac, changed = search_tac thinT hyps length orig_hyps idT thinned orig_length in
+               let tac, changed = search_tac state hyps length orig_hyps idT thinned orig_length in
                let concl = seq.sequent_concl in
                   if changed || not (alpha_equal concl orig_concl) then
-                     tac thenT funT (progress_check thinT precs orig_hyps orig_concl orig_length orig_hyp thinned i cont)
+                     tac thenT funT (progress_check state orig_hyps orig_concl orig_length orig_hyp thinned i cont)
                   else
                      raise not_changed_err
       (* Process a table lookup *)
-      and step_cont thinT precs hyps concl length hyp i (cont : forward_info lazy_lookup) p =
+      and step_cont state hyps concl length hyp i (cont : forward_info lazy_lookup) p =
          match cont () with
             Some (item, cont) ->
                ((let tac = item.forward_tac in
                   if !debug_forward then checkMainT item.forward_loc (tac i) else tac i)
-               thenMT (funT (follow_up thinT precs hyps concl length hyp i cont)))
-               orelseT (funT (step_cont thinT precs hyps concl length hyp i cont))
+               thenMT (funT (follow_up state hyps concl length hyp i cont)))
+               orelseT (funT (step_cont state hyps concl length hyp i cont))
           | None ->
-               step thinT precs hyps concl length i p
-      (* Process a hyp *)
-      and step thinT all_precs hyps concl length i p =
-         match all_precs with
-            pre :: precs ->
+               step state hyps concl length i p
+      (*
+       * Process a hyp.
+       * forwardT : i is the hyp high-level index (starting at 1)
+       * forwardChainT : i is the hyp low-level index (starting at 0)
+       *)
+      and step state hyps concl length i p =
+         match state with
+            { fwd_precs = pre :: precs; fwd_chain = None } ->
                if i = length then
                   (* This precedence level is done, go to the next one *)
-                  step thinT precs hyps concl length 0 p
+                  step {state with fwd_precs = precs} hyps concl length 0 p
                else
+                  (* Chain to next hyp *)
                   begin match SeqHyp.get (Sequent.explode_sequent_arg p).sequent_hyps i with
                      Hypothesis(_, t) ->
-                        step_cont thinT all_precs hyps concl length t (i + 1) (lookup_all tbl (select pre) t) p
+                        step_cont state hyps concl length t (i + 1) (lookup_all tbl (select pre) t) p
                    | Context _ ->
-                        step thinT all_precs hyps concl length (i + 1) p
+                        step state hyps concl length (i + 1) p
                   end
-          | _ ->
+          | { fwd_precs = pre :: precs; fwd_chain = Some t } ->
+               step_cont {state with fwd_precs = precs} hyps concl length t i (lookup_all tbl (select pre) t) p
+          | { fwd_precs = [] } ->
                idT
       in
       (fun thinT i p ->
@@ -278,7 +295,23 @@ and it should produce exactly one" main_count,
                sequent_concl = concl
              } = Sequent.explode_sequent_arg p
          in
-            step thinT (forward_precs ()) (term_table_of_hyps hyps) concl (SeqHyp.length hyps) i p))
+         let i, chain =
+            match i with
+               Some i ->  (* forwardT *)
+                  begin match SeqHyp.get hyps (i - 1) with
+                     Hypothesis (_, t) -> i, Some t
+                   | Context _ -> raise (RefineError ("forwardT", StringError "is a context"))
+                  end
+             | None -> (* forwardChainT *)
+                  0, None
+         in
+         let state = {
+            fwd_thin = thinT;
+            fwd_precs = forward_precs ();
+            fwd_chain = chain;
+         }
+         in
+            step state (term_table_of_hyps hyps) concl (SeqHyp.length hyps) i p))
 
 let resource (term * forward_info, forward_result) forward =
    table_resource_info extract_forward_data
@@ -404,11 +437,11 @@ let process_forward_resource_annotation ?(options = []) ?labels name args term_a
             raise (Invalid_argument (sprintf "forwardT.improve_elim: %s: must be an elimination rule" name))
 
 let doForwardChainT =
-   argfunT (fun thinT p -> Sequent.get_resource_arg p get_forward_resource thinT 0 p)
+   argfunT (fun thinT p -> Sequent.get_resource_arg p get_forward_resource thinT None p)
 
 let doForwardT =
    argfun2T (fun thinT i p ->
-      Sequent.get_resource_arg p get_forward_resource thinT ((Sequent.get_pos_hyp_num p i) - 1) p)
+      Sequent.get_resource_arg p get_forward_resource thinT (Some (Sequent.get_pos_hyp_num p i)) p)
 
 (*
  * -*-
