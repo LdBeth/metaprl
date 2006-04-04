@@ -65,10 +65,10 @@ reflect_%.cmi: reflect_%.ppi :scanner: scan-ocaml-%.ml
    $(OCAMLC) $(OCAMLFLAGS) $(OCAMLCFLAGS) $(PREFIXED_OCAMLINCLUDES) -c -intf $<
 
 reflect_%.cmo: reflect_%.ppo reflect_%.cmi :scanner: scan-ocaml-%.ml
-   $(OCAMLC) $(OCAMLFLAGS) $(OCAMLCFLAGS) $(PREFIXED_OCAMLINCLUDES) -c -impl $<
+   $(OCAMLC) -intf-suffix .ppi $(OCAMLFLAGS) $(OCAMLCFLAGS) $(PREFIXED_OCAMLINCLUDES) -c -impl $<
 
 reflect_%.cmx reflect_%$(EXT_OBJ): reflect_%.ppo reflect_%.cmi :scanner: scan-ocaml-%.ml
-   $(OCAMLOPT) $(OCAMLFLAGS) $(OCAMLOPTFLAGS) $(PREFIXED_OCAMLINCLUDES) -c -impl $<
+   $(OCAMLOPT) -intf-suffix .ppi $(OCAMLFLAGS) $(OCAMLOPTFLAGS) $(PREFIXED_OCAMLINCLUDES) -c -impl $<
 
 #
 # For theory files, generate intermediate .ppo files
