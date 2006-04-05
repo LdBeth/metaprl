@@ -29,7 +29,7 @@ THEORIES = itt/core
 THEORIES_ALL = meta ocaml_doc itt ocaml_sos fol czf sil tptp fir experimental/compile s4lp poplmark/naive
 
 #
-# The following theories exisit but are not (yet?) inclused in THEORIES_ALL:
+# The following theories exist but are not (yet?) inclused in THEORIES_ALL:
 # - Do not have too many proofs yet: mesa kat
 # - Outdated and does not currently compile: lf
 # - Lives in a separate CVS repository: mmc
@@ -48,7 +48,7 @@ DEFAULT_BROWSER_COMMANDS[] =
 # Location of OCAML libraries
 #
 if $(equal $(OSTYPE), Win32)
-   CAMLLIB_DEFAULT = C:\Program Files\Objective Caml\lib
+   CAMLLIB_DEFAULT = $(shell ocamlc -where)
    export
 
 else
