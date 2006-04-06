@@ -335,7 +335,7 @@ struct
           | addr' :: addrs ->
                List.fold_left (**)
                   (fun tac addr' ->
-                     prefix_then_OnFirstT (apply assum addr t (AddressConv (addr', conv))) tac)
+                     prefix_then_OnFirstT tac (apply assum addr t (AddressConv (addr', conv))))
                   (apply assum addr t (AddressConv (addr', conv)))
                   addrs
          end
