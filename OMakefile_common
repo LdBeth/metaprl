@@ -1,7 +1,7 @@
 #
 # Make sure omake is up-to-date
 #
-OMakeVersion(0.9.6.8)
+OMakeVersion(0.9.6.9)
 
 ########################################################################
 # OS-specific config.
@@ -388,7 +388,7 @@ if $(not $(defined FORCE_REALCLEAN))
 realclean: clean
     # XXX: HACK: What we really want is
     #    -$`(RM) $(find -name *.prlb)
-    # But this is way too slow because of http://bugzilla.metaprl.org/show_bug.cgi?id=533
+    # But this is way too slow because of http://bugzilla.metaprl.org/show_bug.cgi?id=574
     -$`(RM) $(file theories/*/*.prlb theories/*/*/*.prlb theories/*/*/*/*.prlb theories/*/*/*/*/*.prlb)
     # cvs_realclean $(if $(FORCE_REALCLEAN), -f) -i .omakedb -i .omakedb.lock -i mk/config -i mk/config.local
     println(The realclean target is not yet reimplemented for subversion)

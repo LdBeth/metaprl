@@ -20,12 +20,6 @@ $(BIN):
 $(LIB):
     mkdir -p $@
 
-#
-# XXX: HACK: should not be necessary in OMake >= 0.9.6.9
-#
-lib/liblmcutil.a lib/macropp lib/clib.a lib/lm.cmxa lib/lm.a lib/lm.cma:  $(LIB)
-bin/ocamldep: $(BIN)
-
 ########################################################################
 # Directories needing only the standard config
 #

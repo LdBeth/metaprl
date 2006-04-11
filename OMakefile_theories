@@ -79,27 +79,12 @@ reflect_%.cmx reflect_%$(EXT_OBJ): reflect_%.ppo reflect_%.cmi :scanner: scan-oc
 %.cmi %.cmiz: %.mli :scanner: scan-ocaml-%.mli
    $(PrlC $(OCAMLC)) $(OCAMLFLAGS) $(OCAMLCFLAGS) $(OCAMLPPFLAGS) $(PREFIXED_OCAMLINCLUDES) -c $<
 
-#
-# This will go away.  As of omake version 0.9.6.8.1, we can squash the
-# dependency on the .ml file.
-#
-if $(lt $(cmp-versions $(OMAKE_VERSION), 0.9.6.8.1), 0)
-    %.cmo: %.ppo %.ml :scanner: scan-ocaml-%.ml
-       $(OCAMLC) $(OCAMLFLAGS) $(OCAMLCFLAGS) $(PREFIXED_OCAMLINCLUDES) -c -impl $<
-    
-    %.cmx %$(EXT_OBJ): %.ppo %.ml :scanner: scan-ocaml-%.ml
-       $(OCAMLOPT) $(OCAMLFLAGS) $(OCAMLOPTFLAGS) $(PREFIXED_OCAMLINCLUDES) -c -impl $<
+%.cmo: %.ppo :squash: %.ml :scanner: scan-ocaml-%.ml
+   $(OCAMLC) $(OCAMLFLAGS) $(OCAMLCFLAGS) $(PREFIXED_OCAMLINCLUDES) -c -impl $<
    
-    export
-else
-    %.cmo: %.ppo :squash: %.ml :scanner: scan-ocaml-%.ml
-       $(OCAMLC) $(OCAMLFLAGS) $(OCAMLCFLAGS) $(PREFIXED_OCAMLINCLUDES) -c -impl $<
-    
-    %.cmx %$(EXT_OBJ): %.ppo :squash: %.ml :scanner: scan-ocaml-%.ml
-       $(OCAMLOPT) $(OCAMLFLAGS) $(OCAMLOPTFLAGS) $(PREFIXED_OCAMLINCLUDES) -c -impl $<
+%.cmx %$(EXT_OBJ): %.ppo :squash: %.ml :scanner: scan-ocaml-%.ml
+   $(OCAMLOPT) $(OCAMLFLAGS) $(OCAMLOPTFLAGS) $(PREFIXED_OCAMLINCLUDES) -c -impl $<
    
-    export
- 
 #
 # Dependency management
 #
