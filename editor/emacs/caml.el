@@ -268,6 +268,7 @@ point is outside the region."
 
     ;; Caml productions
     (5  t   (opt &+) let & = & (* and & = &) (opt in &let))
+    (5  t   (opt &+) method & (alt = :) &)
     (5  t   (opt &+) type & (opt (alt = ==) & (* | &)) (* and & (opt (alt = ==) & (* | &))))
     (5  t   try & with & (* | &) -> &2 (* (+ | &) -> &2))
     (5  t   match & with & (* | &) -> &2 (* (+ | &) -> &2))
@@ -278,9 +279,11 @@ point is outside the region."
     (1  t   while & do & done)
     (5  t   (opt &+) (alt val open extends include exception external) &)
     (4  t   (opt &+) module (opt type) word (* \( & : & \)) (opt : &) (opt = &))
+    (4  t   (opt &+) class (opt type) (opt &) (opt = &) (* and & = &))
     (5  t   (opt &+) magic_block word = &)
     (1  nil sig & end)
     (1  nil struct & end)
+    (1  nil object \( & \) & end)
     (10 nil &+ -> &)
     (20 nil (opt &+) begin & end)
     (20 nil (opt &+) termbegin & end)
@@ -305,7 +308,7 @@ point is outside the region."
   "This list is a description of the syntax of the program")
 
 (defconst caml-initial-terminals
-  '(let type val value open extends include exception module
+  '(let type val value open extends include exception module class method
 	dform condition prec declare define rewrite axiom primrw prim
 	infix external magic_block mlterm lex_token production parser)
   "Tokens that may start a top level production")
