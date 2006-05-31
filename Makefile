@@ -3,8 +3,7 @@ all opt lib:
 	@echo You need to use the OMake tool in order to build MetaPRL!
 	@echo ""
 	@echo Download OMake from http://omake.metaprl.org/download.html
-	@echo "(source packages, Linux, OS X, and Windows binaries are available)."
-	@echo ""
-	@echo Get OMake sources via Subversion from svn://svn.metaprl.org/omake
+	@echo Source packages, Subversion repository, Linux, OS X,
+	@echo and Windows binaries are available.
 	@echo ""
 	@exit 1
