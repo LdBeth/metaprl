@@ -1,4 +1,5 @@
 doc <:doc<
+   @spelling{thinned}
    @module[Dtactic]
 
    The @tactic[dT] tactic is the cornerstone of reasoning in
@@ -113,7 +114,7 @@ doc <:doc<
    @tt[IntroArgsOption].  The @tt[ThinOption] is an argument that provides an
    optional tactic to ``thin'' the hypothesis after application of the
    elimination rule. The @tt[AutoOK] option specifies that the rule can be used
-   by @hreftactic[autoT] on @tt[AutoNormal] level (by default, elim rules will only
+   by @hreftactic[autoT] on @tt[AutoNormal] level (by default, @hrefresource[elim] rules will only
    be used by @hreftactic[autoT] on @tt[AutoMustComplete] level). The @tt[ThinFirst]
    option specifies that the rule only makes sense when something actually depends on
    the variable introduced by the given hypothesis; otherwise the hypothesis should be
