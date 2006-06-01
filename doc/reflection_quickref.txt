@@ -1,0 +1,127 @@
+
+******************************
+*     Reflection  CORE       *
+******************************
+
+Operators:
+==========
+
+* Operator is the type of operators.
+
+The type Operator contains elements of the form
+* operator[opname{...}:op]
+     E.g.  operator[(apply{'x;'y}):op],  operator[(lambda{x.it}):op]
+
+
+There are following operations with operators
+---------------------------------------------
+
+* shape{'op} is the shape of the operator is the list of the number of bindings of its subterms
+     E.g. shape{operator[(apply{'x;'y}):op]}=[0;0]
+          shape{operator[(lambda{x.it}):op]}=[1]
+
+* arity_of{'op} = |shape{op}|
+
+* is_same_op{'op_1;'op_2} :bool  is true when two operators are equal
+
+
+
+Terms:
+=======
+
+From the "HOAS point of view" each term is a binding (bind{x.t[x]) or mk_term{op;subterms}.
+From the "deBruijn point of view" each term either a variable or mk_bterm{n;op;subterms}.
+E.g. bind{x.x}=var{0;0}
+
+HOAS Terms:
+-----------
+
+* mk_term{'op; 'subterms}
+  always has binding depth 0 (Itt_hoas_base)
+
+* bind{x.t[x]}
+  is the binding operator (Itt_hoas_base)
+
+* bind{n; x.t[x]} List binding (Itt_hoas_vector)
+        = bind{v1. ... bind{vn.t[v1:...:vn]}...}
+
+* bind{n; t} = bind{n;t} (iform)
+             = bind{x. ... bind{x.t}...}
+  This operator just increases the binding depth. (Itt_hoas_vector)
+
+* vbind{| <J> >- C |}  Vector binding (Itt_hoas_vbind)
+      (vbind{|x,y,z >- C[x;y;z] = bind{x.bind{y.bind{z.C[x,y,z]}}})
+
+
+DeBruijn Terms are defined as HOAS terms:
+------------------------------------------
+
+* var{l;r} =  bind{l; bind{v. bind{'r; 'v}}}     (Itt_hoas_debruijn)
+     i.e., vbind{x_1;....;x_n >- x_i} = var{i-1;n-i}
+
+* mk_bterm{n;op;subterms} is a bterm of the depth n (Itt_hoas_debruijn)
+
+
+Operation with terms:
+---------------------
+
+* subst{bt;t}  is substitution (Itt_hoas_base)
+
+* subst{n;bt;t} is substitution for the n+1-st binding (Itt_hoas_vector)
+
+* substl{bt;tl} is substitution for the list of terms (Itt_hoas_vector)
+
+* bdepth{t}  the ``binding depth'' of t  (Itt_hoas_debruijn)
+
+* left{v} and right{v} provide a way of computing the l and r indices of a
+  variable var{l; r}. (Itt_hoas_debruijn)
+
+* get_op{t,op} returns the t's operator, if t is a mk_bterm and returns
+   op if t is a variable.  (Itt_hoas_debruijn)
+* get_op{t} = get_op{t; not_found}
+
+* subterms{t} is the list of immediate subterms of t (Itt_hoas_debruijn)
+
+* dest_bterm{'bt; l,r.'var_case['l; 'r]; bdepth,op,subterms. 'op_case['bdepth; 'op; 'subterms] }
+
+* is_var{'t} is btrue when t is a variable and bfalse otherwise (Itt_hoas_destterm)
+
+* dest_bterm{'t; l,r.'var_case['l; 'r]; n,op,ts. 'op_case['n; 'op; 'ts] }
+  reduces to var_case[left; right] when t is var{left;right},
+  and reduces to op_case[bdepth;operator;subterms] when t is mk_bterm{bdepth;operator;subterms}
+  (Itt_hoas_destterm)
+
+* compatible_shapes{'bdepth;'shape;'tl} is btrue when btrem{'bdepth;'op;'tl} is
+  well-formed for operator op of the shape 'shape. (Itt_hoas_bterm)
+
+
+Types:
+------
+
+* BTerm is the type of terms. (Itt_hoas_bterm)
+
+* BTerm{n} is the type of terms with binding depth n. (Itt_hoas_bterm)
+
+
+
+***********
+Experimental
+    itt_hoas_util
+    itt_hoas_lof
+    itt_hoas_lof_vec
+    itt_hoas_sequent
+    itt_hoas_normalize
+    itt_hoas_relax
+    itt_hoas_bterm_wf
+    itt_hoas_proof
+    itt_hoas_sequent_bterm
+    itt_hoas_sequent_term
+    itt_hoas_sequent_term_wf
+    itt_hoas_sequent_normalize
+    itt_hoas_meta_types
+    itt_hoas_sequent_proof_step
+    itt_hoas_sequent_proof
+    itt_hoas_proof_ind
+    itt_hoas_sequent_elim
+    itt_hoas_theory
+
