@@ -1,6 +1,6 @@
 
 ******************************
-*     Reflection  CORE       *
+*     Reflection  Core       *
 ******************************
 
 Operators:
@@ -103,21 +103,139 @@ Types:
 * BTerm{n} is the type of terms with binding depth n. (Itt_hoas_bterm)
 
 
+*********************************
 
-***********
-Experimental
+
+Quotation notation
+==================
+
+TODO:
+$' mk_term
+$'[n] mk_bterm{n..}
+$, unquote
+
+
+
+Itt_hoas_normalize
+==================
+
+TODO:
+? normalizeBTermC
+
+? reduceBTermC, denormalize option (Itt_hoas_vector.ml)
+
+
+*****************************
+
+
+Itt_hoas_relax
+==============
+
+TODO:
+? relax_option, relaxT
+
+* Bind{n}  includes any term of the form << bind{'n; x. ...} >>
+   In particular BTerm{'n} subtype Bind{'m} if 'n >= 'm.
+
+   We can then show the eta-rules for << Bind{'n} >> terms, and
+   then a corresponding rule for
+   << dest_bterm{'e; l, r. 'base['l; 'r]; d, o, s. 'step['d; 'o; 's]} >>
+   that uses relaxed terms.
+
+* BindTriangle{'n} defines lists of terms with increasing binding depth.
+
+TODO:
+? probe
+
+Itt_hoas_bterm_wf
+=================
+
+TODO:
+? Forwar Chaining
+
+? bindWFT
+
+? proofRuleAuxWFT
+
+? proofRuleWFT
+
+? forward_substT
+
+
+
+******************************
+*     Sequents               *
+******************************
+
+
+Itt_hoas_sequent
+================
+
+
+* sequent{arg; hyps; concl}
+   bdepth{arg}   = n
+   bdepths{hyps} = [n;n+1;...;n+k-1]
+   bdepth{concl} = n+k
+
+* is_sequent{n; s}
+* sequent{s} <--> sequent{0;s}
+
+* Sequent{n}
+* Sequent <--> Sequent{0}
+
+* CVar{'n}  represents a sequent context
+   { l: list{BTerm} | bdepths{l} = [n;n+1;...;n+k-1] }
+
+
+
+
+Itt_hoas_sequent_bterm
+======================
+
+* CVarRelax{'d} =  BindTriangle{d}
+
+* SequentRelax{'d}
+iform SequentRelax <--> SequentRelax{0}
+
+
+Given a sequent sequent['arg] { x1: 't1; x2: 't2; ...; xn: 'tn >- 'c } >>,
+the ``standard'' BTerm representation is as follows.
+ $' seq_arg{'arg; seq_hyp{'t1; x1. .... seq_hyp{'tn; xn. seq_concl{'c}}}}  (1)
+
+Here seq_arg{'arg; 'seq},  seq_hyp{'hyp; x. 'rest['x]}, seq_concl{'concl} are
+standard opnames for reflected sequents.
+
+* BSequent is a subtype of BTerm consisting of terms of the form (1)
+
+* is_sequent_bterm{'t} : bool  is true when 't in BSequent
+
+* sequent_bterm{s:Sequent}:BSequent  constructs a bterm sequent of a sequent
+
+* sequent_of_bterm{t:BSequent}:Sequent is the inverse of  sequent_bterm
+
+
+
+TODO:
+
+Itt_hoas_sequent_term
+=====================
+
+Itt_hoas_sequent_term_wf
+========================
+
+Itt_hoas_sequent_normalize
+==========================
+
+
+
+
     itt_hoas_util
     itt_hoas_lof
     itt_hoas_lof_vec
-    itt_hoas_sequent
-    itt_hoas_normalize
-    itt_hoas_relax
-    itt_hoas_bterm_wf
+
+Itt_hoas_proof
+==============
     itt_hoas_proof
-    itt_hoas_sequent_bterm
-    itt_hoas_sequent_term
-    itt_hoas_sequent_term_wf
-    itt_hoas_sequent_normalize
     itt_hoas_meta_types
     itt_hoas_sequent_proof_step
     itt_hoas_sequent_proof
