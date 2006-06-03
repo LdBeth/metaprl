@@ -45,12 +45,16 @@ HOAS Terms:
 * bind{n; x.t[x]} List binding (Itt_hoas_vector)
         = bind{v1. ... bind{vn.t[v1:...:vn]}...}
 
-* bind{n; t} = bind{n;t} (iform)
+* bind{n; t} = bind{n; v.t} (iform)
              = bind{x. ... bind{x.t}...}
   This operator just increases the binding depth. (Itt_hoas_vector)
 
 * vbind{| <J> >- C |}  Vector binding (Itt_hoas_vbind)
       (vbind{|x,y,z >- C[x;y;z] = bind{x.bind{y.bind{z.C[x,y,z]}}})
+
+* reduceBTermC uses denormalize option and it's split bindings (Itt_hoas_vector.ml)
+  (opposite to normalizeBTerm which is coalesce binds)
+
 
 
 DeBruijn Terms are defined as HOAS terms:
@@ -61,6 +65,12 @@ DeBruijn Terms are defined as HOAS terms:
 
 * mk_bterm{n;op;subterms} is a bterm of the depth n (Itt_hoas_debruijn)
 
+* normalizeBTermC converts term to deBruijn notation (Itt_hoas_normalize)
+  It performs the following steps:
+     Eliminate all mk_term{'op; 'subterms} >>.
+     Eliminate all bind{x. 'e['x]} >>.
+     Coalesce binds.
+     Push binds down.
 
 Operation with terms:
 ---------------------
@@ -115,14 +125,16 @@ $'[n] mk_bterm{n..}
 $, unquote
 
 
-
-Itt_hoas_normalize
-==================
+Itt_hoas_bterm_wf
+=================
 
 TODO:
-? normalizeBTermC
 
-? reduceBTermC, denormalize option (Itt_hoas_vector.ml)
+? proofRuleWFT
+
+? forward_substT
+
+
 
 
 *****************************
@@ -130,9 +142,6 @@ TODO:
 
 Itt_hoas_relax
 ==============
-
-TODO:
-? relax_option, relaxT
 
 * Bind{n}  includes any term of the form << bind{'n; x. ...} >>
    In particular BTerm{'n} subtype Bind{'m} if 'n >= 'm.
@@ -142,25 +151,15 @@ TODO:
    << dest_bterm{'e; l, r. 'base['l; 'r]; d, o, s. 'step['d; 'o; 's]} >>
    that uses relaxed terms.
 
+* relaxT tac  applies  tac with relax_option.
+   Some tactic when used with relax option produced less restricted
+   well-formedness subgoals. For example to use eta reduction bind{x. subst{t; x}} <--> t
+   with the relax option, you don't need to prove that t in BTerm, but only that t in Bind{1}.
+
 * BindTriangle{'n} defines lists of terms with increasing binding depth.
 
-TODO:
-? probe
-
-Itt_hoas_bterm_wf
-=================
-
-TODO:
-? Forwar Chaining
-
-? bindWFT
-
-? proofRuleAuxWFT
-
-? proofRuleWFT
-
-? forward_substT
-
+* probe{n,t} is true when for t in Bind{'n}.
+   It is equilvent to bdepth{t}>=n, when t is in BTerm.
 
 
 ******************************
@@ -217,6 +216,8 @@ standard opnames for reflected sequents.
 
 TODO:
 
+
+
 Itt_hoas_sequent_term
 =====================
 
@@ -228,15 +229,12 @@ Itt_hoas_sequent_normalize
 
 
 
+itt_hoas_meta_types
 
-    itt_hoas_util
-    itt_hoas_lof
-    itt_hoas_lof_vec
 
 Itt_hoas_proof
 ==============
     itt_hoas_proof
-    itt_hoas_meta_types
     itt_hoas_sequent_proof_step
     itt_hoas_sequent_proof
     itt_hoas_proof_ind
