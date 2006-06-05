@@ -867,6 +867,9 @@ struct
           | Comment_parse.String s1 :: Comment_parse.String "'" :: Comment_parse.String s2 :: items
                when !debug_spell && Filter_spell.check (s1 ^ "'" ^ s2) ->
                   build_inner_term items' spelling space ((Comment_parse.String (s1 ^ "'" ^ s2)) :: items)
+          | Comment_parse.String "'" :: Comment_parse.String s :: items
+               when !debug_spell && Filter_spell.check ("'" ^ s) ->
+                  build_inner_term items' spelling space ((Comment_parse.String ("'" ^ s)) :: items)
           | item :: items ->
                let item = build_comment_term spelling space item in
                   build_inner_term (item :: items') spelling space items

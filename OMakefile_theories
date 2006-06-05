@@ -102,7 +102,7 @@ else
 %.p4: %.ml $(CAMLP4O) :value: $(prlc-deps)
    $(WrapC $(CAMLP4O)) $(CAMLP4FLAGS) $*.ml > $@
 
-if $(mem spell, $(split :, $(MP_DEBUG)))
+if $(SPELLING_ENABLED)
     LIBWORDS = $(file $(LIB)/words)
     %.ppo: $(LIBWORDS)
     %.p4: $(LIBWORDS)

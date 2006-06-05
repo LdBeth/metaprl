@@ -153,6 +153,12 @@ CFLAGS = $(CFLAGS)
 LATEX = $(LATEX)
 
 #
+# Whether to spell check the documentation in literal comments (true/false)
+# Note: this overwrites the MP_DEBUG variable.
+#
+SPELLING_ENABLED = $(SPELLING_ENABLED)
+
+#
 # Whether to compile in various test theories and files (true/false)
 #
 TESTS_ENABLED = $(TESTS_ENABLED)

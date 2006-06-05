@@ -72,6 +72,7 @@ REFINER = VERBOSE
 SEQ_SET = Lm_array
 ENSROOT = undefined
 OCAMLSRC = undefined
+SPELLING_ENABLED = true
 TESTS_ENABLED = false
 COMPILATION_MODE = mixed
 SSL_ENABLED = true

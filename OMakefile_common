@@ -337,10 +337,21 @@ if $(NCURSES_ENABLED)
     export
 
 if $(not $(defined MP_DEBUG))
-    MP_DEBUG = $(getenv MP_DEBUG, $(EMPTY))
+    MP_DEBUG[] = $(split :, $(getenv MP_DEBUG, $(EMPTY)))
     export
 
-setenv(MP_DEBUG, $(MP_DEBUG))
+if $(SPELLING_ENABLED)
+    if $(not $(mem spell, $(MP_DEBUG)))
+        MP_DEBUG[] += spell
+        export
+    export
+else
+    if $(mem spell, $(MP_DEBUG))
+        MP_DEBUG[] = $(filter-out spell, $(MP_DEBUG))
+        export
+    export
+
+setenv(MP_DEBUG, $(concat :, $(MP_DEBUG)))
 
 ########################################################################
 # .PHONY targets that depend on all the subdirectories.

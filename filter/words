@@ -1,3 +1,4 @@
+'th
 abelian
 Aczel
 Aleksey
@@ -43,7 +44,9 @@ extensionality
 fields
 filesystem
 fixpoint
+flattens
 formedness
+forth
 foundness
 HOAS
 html
@@ -70,6 +73,8 @@ monomials
 monomorphism
 Nogin
 nondependent
+normalizer
+normalizers
 Nuprl
 obfuscation
 OCaml
@@ -87,6 +92,7 @@ sequent
 sequents
 signedness
 squiggle
+sublogic
 subring
 subterm
 subterms
@@ -97,15 +103,20 @@ surjection
 tactical
 tacticals
 teleportation
+teleporting
 toplevel
 toploop
 thinning
 typecheck
+typeclass
 typehood
 unorthodox
+unrollings
 untyped
 uppercase
 we've
+wellformedness
+workaround
 Xin
 Yegor
 Yu
