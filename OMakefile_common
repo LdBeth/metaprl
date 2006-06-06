@@ -387,10 +387,11 @@ $(MLDEBUG_PATH):
 
 MLZFILES =
 MLPFILES =
-CLEAN = $`(RM) $`(file *.opt *.run *.o *.obj *.lib *.cm* *.a *~ .*~ .\#* *.ppo *.ppi *.p4i *.p4o .version.* *.omc $`(addsuffix .ml, $(MLZFILES)) $`(addsuffix .mli, $(MLZFILES)) $`(addsuffix .ml, $(MLPFILES)))
+CLEAN = $`(RM) *.opt *.run *.o *.obj *.lib *.cm* *.a *~ .*~ .\#* *.ppo *.ppi *.p4i *.p4o .version.* *.omc $`(addsuffix .ml, $(MLZFILES)) $`(addsuffix .mli, $(MLZFILES)) $`(addsuffix .ml, $(MLPFILES))
 
 clean:
-    $(CLEAN) $(LIB) $(BIN) $(file mk/*.omc) $(THEORIES_PATH) $(MLDEBUG_PATH) $(LIB)/mk $(LIB)/theories
+    $(CLEAN) mk/*.omc $(THEORIES_PATH) $(MLDEBUG_PATH)
+    rm -rf $(LIB) $(BIN) $(EXPORT)
 
 if $(not $(defined FORCE_REALCLEAN))
     FORCE_REALCLEAN = false
@@ -400,7 +401,7 @@ realclean: clean
     # XXX: HACK: What we really want is
     #    $`(RM) $(find -name *.prlb)
     # But this is way too slow because of http://bugzilla.metaprl.org/show_bug.cgi?id=574
-    $`(RM) $(file theories/*/*.prlb theories/*/*/*.prlb theories/*/*/*/*.prlb theories/*/*/*/*/*.prlb)
+    $`(RM) theories/*/*.prlb theories/*/*/*.prlb theories/*/*/*/*.prlb theories/*/*/*/*/*.prlb
     # cvs_realclean $(if $(FORCE_REALCLEAN), -f) -i .omakedb -i .omakedb.lock -i mk/config -i mk/config.local
     println(The realclean target is not yet reimplemented for subversion)
     exit 1
