@@ -398,9 +398,9 @@ if $(not $(defined FORCE_REALCLEAN))
 
 realclean: clean
     # XXX: HACK: What we really want is
-    #    -$`(RM) $(find -name *.prlb)
+    #    $`(RM) $(find -name *.prlb)
     # But this is way too slow because of http://bugzilla.metaprl.org/show_bug.cgi?id=574
-    -$`(RM) $(file theories/*/*.prlb theories/*/*/*.prlb theories/*/*/*/*.prlb theories/*/*/*/*/*.prlb)
+    $`(RM) $(file theories/*/*.prlb theories/*/*/*.prlb theories/*/*/*/*.prlb theories/*/*/*/*/*.prlb)
     # cvs_realclean $(if $(FORCE_REALCLEAN), -f) -i .omakedb -i .omakedb.lock -i mk/config -i mk/config.local
     println(The realclean target is not yet reimplemented for subversion)
     exit 1
