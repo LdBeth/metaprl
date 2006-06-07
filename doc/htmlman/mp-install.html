@@ -19,41 +19,40 @@
       CamlP4 distribution in native code.
   <LI>The OMake build system.
   <LI>OpenSSL libraries and header files are optional, but highly recommended.
-  <LI>Ensemble: you need Ensemble only if you want to use the distributed prover.
+<!--  <LI>Ensemble: you need Ensemble only if you want to use the distributed prover. -->
   <LI>MetaPRL sources.
 </OL>
 
-<P>OCaml and OMake and are currently available as source, Red Hat Linux 7.x, 8.x and 9, and Fedora
-Core 1 and 2 <A HREF="http://www.rpm.org">RPM</A> files for Linux x86. You can get the <a
-href="http://rpmfind.net/linux/rpm2html/">rpm2html</a> listing of available RPMs and download them
-from <A HREF="http://rpm.nogin.org/ocaml.html">http://rpm.nogin.org/ocaml.html</A> and <A
-HREF="http://rpm.nogin.org/omake.html">http://rpm.nogin.org/omake.html</A> respectively or a plain
-listing directly from <A
-HREF="http://rpmbin.nogin.org/MetaPRL/">http://rpmbin.nogin.org/MetaPRL/</a>.  If you are going to
-build OCaml yourself, you can get our patches at <A
+<P>OCaml is currently available as source, Fedora Core 2, 3, 4 and 5, Mandrake
+10.1, and Red Hat Enterprize Linux 3 and 4 RPM files for Linux x86. You can
+get the listing of available RPMs and download them from <A
+HREF="http://rpm.nogin.org/ocaml.html">http://rpm.nogin.org/ocaml.html</A> or
+a plain listing directly from <A
+HREF="http://rpmbin.nogin.org/MetaPRL/">http://rpmbin.nogin.org/MetaPRL/</a>.
+If you are going to build OCaml yourself, get OCaml sources from <a
+  href="http://caml.inria.fr/ocaml/release.en.html">http://caml.inria.fr/ocaml/release.en.html</a>
+and our patches at <A
 HREF="http://svn.metaprl.org/viewcvs/mojave/metaprl/patches/">http://svn.metaprl.org/viewcvs/mojave/metaprl/patches/</A>
-(see the <A HREF="http://svn.metaprl.org/viewcvs/*checkout*/mojave/metaprl/patches/README">README
+(see the <A
+HREF="http://svn.metaprl.org/viewcvs/*checkout*/mojave/metaprl/patches/README">README
 file</A> for the list of patches you need to apply).</P>
+
+<P>OMake source and binaries for a number of Linux distributions OS X and
+Windows can be dowloaded from <a
+  href="http://omake.metaprl.org/download.html">http://omake.metaprl.org/download.html</a>.
 
 <P>OCaml and OMake may also be obtained via the <a
   href="http://godi.ocaml-programming.de/">GODI Distribution Framework</a>.
 
-<P>The Win32 binaries of OCaml and OMake are available at <A
-HREF="http://files.metaprl.org/win32/">http://files.metaprl.org/win32/</A>.  Under Windows you will
-need Microsoft Visual C/C++ installed, as well as the Microsoft Macro Assembler.
-Alternatively, you
-can use <a href="http://www.cygwin.org/">the Cygnus Systems GNU-Win32 distribution</a>, but the
-performance (especially the compilation time) is likely to be noticeably worse.
+<!-- <P>You can download Ensemble from <A
+HREF="ftp://ftp.cs.cornell.edu/pub/ensemble/">ftp://ftp.cs.cornell.edu/pub/ensemble/</A>.</P>
+-->
 
-<P>The OMake sources may also be downloaded via Subversion (see <a
-  href="#svn">Subversion instructions</a> below).
-
-<P>You can download Ensemble from <A HREF="ftp://ftp.cs.cornell.edu/pub/ensemble/">ftp://ftp.cs.cornell.edu/pub/ensemble/</A>.</P>
-
-<P> If you are using a Unix-like operation system, you probably already have a copy of OpenSSL
-around (note that you need the development files as well, which are often distributed in a separate
-<tt>openssl-devel</tt> binary package).  OpenSSL for Windows is available at <a
-href="http://www.slproweb.com/products/Win32OpenSSL.html">http://www.slproweb.com/products/Win32OpenSSL.html</a>.
+<P> If you are using a Unix-like operation system, you probably already have a
+copy of OpenSSL around (note that you need the development files as well,
+which are often distributed in a separate <tt>openssl-devel</tt> or
+<tt>libopenssl-devel</tt> package).  OpenSSL for Windows is available at <a
+  href="http://www.slproweb.com/products/Win32OpenSSL.html">http://www.slproweb.com/products/Win32OpenSSL.html</a>.
 
 <P>You should be able to download MetaPRL sources tarball from <A
 HREF="http://files.metaprl.org/">http://files.metaprl.org/</A>, but if you plan to participate in
@@ -82,7 +81,7 @@ with write access, read the <A HREF="mp-svn-rw.html">read-write Subversion instr
 From the same server you can also checkout the OMake distribution by running:
 
 <BLOCKQUOTE>
-  <PRE>% svn co svn://svn.metaprl.org/omake-branches/0.9.6.x omake</PRE>
+  <PRE>% svn co svn://svn.metaprl.org/omake-branches/0.9.8.x omake</PRE>
 </BLOCKQUOTE>
 
 If for some reason (firewall, <EM>etc</EM>) you are having trouble using the
@@ -90,7 +89,7 @@ If for some reason (firewall, <EM>etc</EM>) you are having trouble using the
 
 <BLOCKQUOTE>
    <PRE>% svn co http://svn.metaprl.org/svnroot/mojave/metaprl
-% svn co http://svn.metaprl.org/svnroot/mojave/omake-branches/0.9.6.x omake</PRE>
+% svn co http://svn.metaprl.org/svnroot/mojave/omake-branches/0.9.8.x omake</PRE>
 </BLOCKQUOTE>
 
 <P>You can find more information on Subversion from
@@ -128,7 +127,7 @@ tree and copy the following files:
 <h3>OMake</h3>
 To build OMake from sources change to the OMake source directory and run <tt>./configure</tt> followed by <tt>make</tt> and <tt>make install</tt>
 
-<h3>Ensemble</h3>
+<!-- <h3>Ensemble</h3>
 
 <P>To install Ensemble, unpack the distribution, and edit the
 <TT>&lt;ensemble&gt;/mk/config.mk</TT> file. You will want to
@@ -138,7 +137,7 @@ run <TT>make</TT>. You can also build the native-code libraries
 by running <TT>make</TT> in the <TT>&lt;ensemble&gt;/opt</TT>
 directory. More information on Ensemble is available at the
 <A HREF="http://www.cs.cornell.edu/Info/Projects/Ensemble/">Ensemble
-Home Page</A>.</P>
+Home Page</A>.</P> -->
 
 <h3>MetaPRL</h3>
 
@@ -155,9 +154,9 @@ Home Page</A>.</P>
 that you will need to customize, before the <TT>omake</TT> process
 can continue. The <tt>mk/config</tt> file is self-documenting.</P>
 
-<P> If you are using Ensemble, set <TT>ENSROOT=&lt;root of the ensemble
+<!-- <P> If you are using Ensemble, set <TT>ENSROOT=&lt;root of the ensemble
 source tree&gt;</TT> in the <TT>mk/config</TT> file.
-</P>
+</P> -->
 
 <P>You may need to set variables <TT>CAMLLIB</TT> and <TT>CAMLP4LIB</TT> to
 point to the directories where you have installed OCaml and Camlp4 files. You
@@ -173,21 +172,19 @@ respectively.</P>
 X. See the corresponding <tt>README</tt> files in the top-level MetaPRL
 directory for more information.</P>
 
-<P>MetaPRL can be run with the <p>&lt;metaprl&gt;<tt>/editor/ml/mpopt</tt><p>
-script (if <tt>NATIVE_ENABLED</tt> is switched on in <tt>mk/config</tt>), or
-<tt>&lt;metaprl&gt;/editor/ml/mptop</tt> (if you have compiled MetaPRL with
-<tt>BYTE_ENABLED</tt>).  By default, this will attempt to start your
-browser or prompt you to connect using your browser. MetaPRL looks better if
-you use Mozilla, but other browsers (including Konqueror and IE) are likely to
-work as well.  Internet Explorer is known to work well when "Arial Unicode MS"
-font is installed (arialuni.ttf is available on Microsoft Office CD inside
+<P>MetaPRL can be run with the <p>&lt;metaprl&gt;<tt>/editor/ml/mp</tt><p>
+script.  By default, this will attempt to start your browser or prompt you to
+connect using your browser. MetaPRL looks better if you use Mozilla or
+Firefox, but other browsers (including Konqueror and IE) are likely to work as
+well.  Internet Explorer is known to work well when "Arial Unicode MS" font is
+installed (arialuni.ttf is available on Microsoft Office CD inside
 office1.cab; note that it is not always installed automatically with MS
 Office) otherwise some symbols might not by displayed; some other "rich" font
 might work as well.
 
 <P>You don't have to use the browser.  You can also use the command-line
 interface by running MetaPRL with the <tt>-cli</tt> option, which will expect
-to be running in a console with Unicode fonts. To run <tt>mpopt -cli</tt> in
+to be running in a console with Unicode fonts. To run <tt>mp -cli</tt> in
 an <tt>xterm</tt> with the correct fonts, use
 <TT>&lt;metaprl&gt;/editor/ml/mpxterm</TT> (normal fonts),
 <TT>&lt;metaprl&gt;/editor/ml/mpxterm-large</TT> (larger font), or
@@ -204,7 +201,7 @@ currently recommend using the
 may work better.</P>
 
 <P>That's it. To navigate the MetaPRL logics and programs, you will need to
-read the <TT>&lt;metaprl&gt;/editor/ml/QUICKSTART</TT> file or the <A
+read the <TT>&lt;metaprl&gt;/QUICKSTART</TT> file or the <A
 TARGET="_top" HREF="user-guide/default.html">User Guide</A>.  To start
 developing new code, read the <A TARGET="_top"
 HREF="developer-guide/default.html">Developer Guide</A>.</P>

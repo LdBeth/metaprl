@@ -89,9 +89,8 @@ BUILDING METAPRL
 7. From the MetaPRl source directory (the directory with this file), run
    "omake" to build MetaPRL.
 
-8. To run the bytecode MetaPRL toploop, run "editor/ml/mptop".  To run
-   the native-code MetaPRL toploop, run "editor/ml/mpopt".  It may be
+8. To run the MetaPRL toploop, run "editor/ml/mp".  It may be
    more convenient to run "editor/ml/mpxterm" as this opens an xterm
    with an appropriate font (you'll need to have an X11 server installed
    and running for this to work).  A quick overview of the toploop can
-   be found in editor/ml/QUICKSTART.
+   be found in QUICKSTART.

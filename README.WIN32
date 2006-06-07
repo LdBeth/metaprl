@@ -79,7 +79,7 @@ Installation:
 
 6. Running MetaPRL
 
-   MetaPRL can be run with the metaprl/editor/ml/mpopt.bat script.
+   MetaPRL can be run with the metaprl/editor/ml/mp.bat script.
    By default, this will prompt you to connect using your browser.
 
    MetaPRL looks better if you use Mozilla, but you can use IE too.
@@ -89,7 +89,7 @@ Installation:
 A. Running in Emacs.
 
    You don't have to use the browser.  You can also use the command-line
-   interface by using the command "mpopt.bat -cli".
+   interface by using the command "mp.bat -cli".
 
    However, running MetaPRL from a console window is not amusing.
 
