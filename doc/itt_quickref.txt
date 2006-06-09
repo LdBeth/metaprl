@@ -364,6 +364,9 @@ does work, it's more efficient than foldC.
 Replaces the current subterm with the argument term.  Creates a
 "rewrite" subgoal.
 
+* rewriteC : term
+rewriteC <<'a ~ 'b>> substitutes 'a for 'b and produces the additional subgoal: a~b.
+
 * failC : string -> conv
 Fails with the given string as an error message.
 
