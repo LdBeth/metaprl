@@ -719,6 +719,18 @@ assumption.
 between the hypotheses of the goal and the hypotheses of the assumption.
 
 ----------------------------------------
+itt_struct2:
+
+* combineT m n
+Combines m hypothesis starting from the n-th one into a product of them.
+   For example when apply combineT 3 2 to sequent << <H>; x:A; y:B; z:C; <J> >- T >> we get
+   << <H>; p: A*B*C; <J> >- T >> and some well-formedness subgoals.
+
+* separateT m n
+Is opposite to the combineT tactic.
+
+
+----------------------------------------
 itt_squash:
 
 new term:
