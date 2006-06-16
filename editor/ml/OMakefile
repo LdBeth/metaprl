@@ -194,12 +194,12 @@ done: .test-metaprl-startup
         rm -f mp.run mp.top
     elseif $(not $(MPRUN_ENABLED))
         rm -f mp.run
-    println($"
+    @echo $"
 ******
 ****** MetaPRL ($(if $(NATIVE_ENABLED), $"native code"$(if $(BYTE_ENABLED), $" and "))$(if $(BYTE_ENABLED), bytecode)) compiled successfully!
 ****** Run .$(DIRSEP)$(in $(ROOT), $(MP_SCRIPT)) to start the interactive prover.
 ******
-")
+"
 
 #
 # Check the startup even during installs

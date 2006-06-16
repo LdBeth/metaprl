@@ -28,6 +28,8 @@ $(LIB):
 ########################################################################
 # For the rest of MetaPRL, use our custom scanner.
 #
+OCAMLDEP_MODULES_ENABLED = false
+
 OCAMLDEP = $(file $(BIN)/ocamldep$(EXE))
 
 OCAMLDEPFLAGS += -omake
