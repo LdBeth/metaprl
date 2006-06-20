@@ -13,7 +13,7 @@ with basically no experimentation; it's possible that some of what I
 wrote is wrong because I didn't understand what the source was doing.
 Parts of this document read like new-user documentation, but I doubt
 that the document as a whole would be useful to users who didn't have
-epxerience with tactic-based theorem provers.  The document won't help
+experience with tactic-based theorem provers.  The document won't help
 much if you don't already understand the ITT logic.  I should probably
 describe the type inference process (and its extensions) in the same
 way I discuss other resources.
@@ -729,6 +729,13 @@ Combines m hypothesis starting from the n-th one into a product of them.
 * separateT m n
 Is opposite to the combineT tactic.
 
+* varElimT n
+Eliminates a variable x using the equality in the n$th$ hypothesis x=t in A or
+t=x in A, if A is a sqsimple type.
+This tactic is opposite to the letT tactic.
+
+* allVarElimT
+Eliminates all possible variables.
 
 ----------------------------------------
 itt_squash:

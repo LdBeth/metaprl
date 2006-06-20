@@ -120,6 +120,7 @@ Quotation notation
 ==================
 
 TODO:
+$ operator
 $' mk_term
 $'[n] mk_bterm{n..}
 $, unquote
