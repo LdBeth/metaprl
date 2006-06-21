@@ -187,7 +187,7 @@ let term_of_proof pf addr =
             mk_xlist_term [mk_subgoals_term (Lm_list_util.firstn 5 subgoals) [];
                            mk_string_arg_term "\n\n   ...   \n\n<<";
                            mk_int_arg_term l;
-                           mk_string_arg_term " subgoals (output suppressed -- turn the \"show_all_subgoals\" debug variable on to see the full list)>>"]
+                           mk_string_arg_term " subgoals (output suppressed -- to see the full list run:  set_debug \"show_all_subgoals\" true )>>"]
    in
    let x = mk_proof_term main goal (term_of_proof_status status) (rule_term_of_text expr) subgoals in
       if !debug_edit then
