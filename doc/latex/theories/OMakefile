@@ -3,7 +3,6 @@
 #
 ALL_THEORIES[] =
     meta
-    fol
     itt
     czf
     fir
