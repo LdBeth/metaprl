@@ -14,7 +14,31 @@
      version 1.0 or later (&gt;= 1.2 is probably a good idea) installed on your computer.
    <LI>If you do not have a Subversion account set up for you on svn.metaprl.org:
    <OL>
-      <LI>Generate an SSH v.2 DSA key pair (see <a href="http://cvs.metaprl.org:12000/doc/source-howto.html#GenerateKey">our server HOWTO document</a> for detailed instructions).
+         <LI>Create a SSH2 DSA public/private key pair, unless you already
+         have one:
+         <OL>
+         <LI>Use the <TT>ssh-keygen -t dsa</TT> command to generate the
+         SSH2 DSA public/private key pair.  Here's a sample
+         session:<BR><BR>
+         <FONT FACE="monospace">
+         $<B>ssh-keygen -t dsa</B><BR>
+         Generating public/private dsa key pair.<BR>
+         Enter file in which to save the key (/home/<B><I>username</I></B>/.ssh/id_dsa):<BR>
+         Enter passphrase (empty for no passphrase):<BR>
+         Enter same passphrase again:<BR>
+         Your identification has been saved in /home/<B><I>username</I></B>/.ssh/id_dsa.<BR>
+         Your public key has been saved in /home/<B><I>username</I></B>/.ssh/id_dsa.pub.<BR>
+         The key fingerprint is:<BR>e2:eb:aa:23:0b:0f:15:6a:f6:39:eb:0f:3a:37:96:20
+        <B><I>username</I></B>@<B><I>hostname</I></B></FONT>
+
+        <LI>This creates a public/private key pair <TT>~/.ssh/id_dsa.pub</TT>
+        (public key) and <TT>~/.ssh/id_dsa</TT> (private key).
+        <P>Note for Cygwin users: &quot;~/&quot; is
+<I><FONT
+COLOR="#000099">&lt;cygwin_installation_path&gt;</FONT></I>/home/<I><FONT
+COLOR="#000099">username</FONT></I>/
+</P>
+      </OL>
       <LI>Send your public key (<tt>~/.ssh/id_dsa.pub</tt>) and your desired
       login to <A HREF="mailto:nogin@cs.caltech.edu">Aleksey Nogin
       (nogin@cs.caltech.edu)</A> or <A HREF="mailto:jyh@cs.caltech.edu">Jason
