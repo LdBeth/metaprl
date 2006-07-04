@@ -103,7 +103,7 @@ else
    $(WrapC $(CAMLP4O)) $(CAMLP4FLAGS) $*.ml > $@
 
 if $(SPELLING_ENABLED)
-    LIBWORDS = $(file $(LIB)/words)
+    LIBWORDS = $(file $(addprefix $(LIB)/, $(SPELLING_DICTS)))
     %.ppo: $(LIBWORDS)
     %.p4: $(LIBWORDS)
     export

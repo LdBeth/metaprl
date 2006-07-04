@@ -32,14 +32,12 @@ open Lm_printf
  *)
 let dat_magic = 0x2557f3ed
 
-let dat_filename = (Setup.lib ()) ^ "/english_dictionary.dat"
-let local_words = (Setup.lib ()) ^ "/words"
+let lib = Setup.lib ()
+let dat_filename = lib ^ "/english_dictionary.dat"
 
 let words_filenames = [
-   "/usr/dict/words";
-   "/usr/dict/webster";
-   "/usr/share/dict/words";
-   local_words
+   lib ^ "/words.metaprl";
+   lib ^ "/words.linux";
 ]
 
 (*

@@ -153,7 +153,7 @@ PROGS = $(LIB_PROGS) $(BIN_PROGS)
 all: $(PROGS)
 opt: $(PROGS)
 
-LibInstall(words)
+LibInstall($(SPELLING_DICTS))
 
 #
 # Clean up

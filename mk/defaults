@@ -65,6 +65,16 @@ open configure/readline
 open configure/ncurses
 
 #
+# Spelling dictionaries
+#
+# XXX: TODO: This duplicates a list in filter/base/filter_spell.ml;
+# instead the two lists should come from the single source
+#
+SPELLING_DICTS[] =
+   words.linux
+   words.metaprl
+
+#
 # Defaults for the mk/config variables
 #
 TERMS = ds
