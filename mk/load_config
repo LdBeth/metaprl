@@ -90,4 +90,6 @@ if $(equal $(COMPILATION_MODE), bytecode)
 # Local config
 #
 .INCLUDE: mk/config.local
-    $(CP) $(file mk/config.local.empty) $(file mk/config.local)
+    if $(not $(file-exists mk/config.local))
+        eprintln(Creating the mk/config.local file.)
+        $(CP) $(file mk/config.local.empty) $(file mk/config.local)
