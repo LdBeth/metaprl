@@ -3,7 +3,7 @@
  *
  * ----------------------------------------------------------------
  *
- * Copyright (C) 2000 Jason Hickey, Caltech
+ * Copyright (C) 2000-2006 MetaPRL Group, Caltech
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -19,8 +19,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.caltech.edu
+ * Author: Jason Hickey <jyh@cs.caltech.edu>
+ * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 open Lm_printf
 
@@ -30,7 +30,7 @@ open Lm_printf
  * that are correctly spelled.  The dictionary is saved
  * as a hashtable in /tmp/metaprl-spell.dat.
  *)
-let dat_magic = 0x2557f3ed
+let dat_magic = 0x2557f3ef
 
 let lib = Setup.lib ()
 let dat_filename = lib ^ "/english_dictionary.dat"
@@ -87,15 +87,7 @@ let add_file table filename =
       let inx = open_in filename in
          try
             while true do
-               let word = input_line inx in
-               let key = String.lowercase word in
-               let key =
-                  if key = word then
-                     word
-                  else
-                     key
-               in
-                  Hashtbl.add table key word
+               Hashtbl.add table (input_line inx) ()
             done
          with
             _ ->
@@ -178,22 +170,21 @@ let init () =
  * Words are "correctly" spelled if the module is
  * not initialized.
  *)
+let is_num = function
+   '0'..'9' -> true
+ | _ -> false
+
 let check s =
    match !dict with
       Some dict ->
          if String.length s >= 2 then
             match s.[0] with
-               'A'..'Z'
-             | 'a'..'z' ->
-                  let key = String.lowercase s in
-                     (try
-                         let words = Hashtbl.find_all dict key in
-                            List.mem s words || List.mem key words
-                      with
-                         Not_found ->
-                            false)
+               'A'..'Z' ->
+                  Hashtbl.mem dict s || (Hashtbl.mem dict (String.lowercase s))
+             | '0'..'9' when Lm_string_util.for_all is_num s ->
+                  true 
              | _ ->
-                  true
+                  Hashtbl.mem dict s
          else
             true
     | None ->
@@ -205,21 +196,13 @@ let check s =
 let add word =
    match !dict with
       Some table ->
-         let key = String.lowercase word in
-         let key =
-            if key = word then
-               word
-            else
-               key
-         in
-            Hashtbl.add table key word
+         Hashtbl.add table word ()
     | None ->
          ()
 
 (*
  * -*-
  * Local Variables:
- * Caml-master: "compile"
  * End:
  * -*-
  *)

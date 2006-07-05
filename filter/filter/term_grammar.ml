@@ -108,7 +108,7 @@ let raise_spelling_error () =
             if word = h then
                eprintf "; "
             else
-               eprintf "\n\t%s: " h;
+               eprintf "\n\t%s: " (Lm_ctype.quote h);
             if bp.pos_lnum >= 0 then
                eprintf "line %i, char %i" bp.pos_lnum bp.pos_bol
             else
