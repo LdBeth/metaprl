@@ -33,11 +33,11 @@ open Lm_printf
 let dat_magic = 0x2557f3ef
 
 let lib = Setup.lib ()
-let dat_filename = lib ^ "/english_dictionary.dat"
+let dat_filename = Filename.concat lib "english_dictionary.dat"
 
 let words_filenames = [
-   lib ^ "/words.metaprl";
-   lib ^ "/words.linux";
+   Filename.concat lib "words.metaprl";
+   Filename.concat lib "words.linux";
 ]
 
 (*
