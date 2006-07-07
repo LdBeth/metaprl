@@ -118,7 +118,6 @@ let open_temp_file mode prefix suffix =
   in try_name 0
 
 let make_dict () =
-   eprintf "Building spelling dictionary %s...%t" dat_filename flush;
    let table = Hashtbl.create 1037 in
       List.iter (add_file table) words_filenames;
       dict := Some table;
@@ -128,8 +127,13 @@ let make_dict () =
          Pervasives.output_binary_int out dat_magic;
          Marshal.to_channel out table [];
          Pervasives.close_out out;
-         Unix.rename tmp dat_filename;
-         eprintf "[done]%t" eflush
+         try 
+            Unix.rename tmp dat_filename
+         with exn ->
+            if Sys.file_exists dat_filename then
+               Unix.unlink tmp
+            else
+               raise exn
 
 (*
  * Load the dict.
