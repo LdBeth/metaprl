@@ -137,10 +137,10 @@ CheckVar(DEFAULT_UI, $(DEFAULT_UI), browser cli)
 
 if $(equal $(OSTYPE), Win32)
     if $(SSL_ENABLED)
-        if $(not $(and $(file-exists $(SSL_LIB_WIN32)/ssleay32.lib), $(file-exists $(SSL_LIB_WIN32)/libeay32.lib), $(file-exists $(SSL_INC_WIN32)/openssl/ssl.h)))
+        if $(not $(and $(file-exists $(SSL_LIB_WIN32)/ssleay32MT.lib), $(file-exists $(SSL_LIB_WIN32)/libeay32MT.lib), $(file-exists $(SSL_INC_WIN32)/openssl/ssl.h)))
             eprintln(!!! One of the files)
-            eprintln(!!!    $(SSL_LIB_WIN32)/ssleay32.lib)
-            eprintln(!!!    $(SSL_LIB_WIN32)/libeay32.lib)
+            eprintln(!!!    $(SSL_LIB_WIN32)/ssleay32MT.lib)
+            eprintln(!!!    $(SSL_LIB_WIN32)/libeay32MT.lib)
             eprintln(!!!    $(SSL_INC_WIN32)/openssl/ssl.h)
             eprintln(!!! does not exist \(or is not readable\))
             eprintln(!!!)
@@ -311,7 +311,7 @@ LMINSTALL = $(MPINSTALL)
 
 if $(SSL_ENABLED)
     if $(equal $(OSTYPE), Win32)
-        OCAML_LINK_FLAGS += -cclib $(SSL_LIB_WIN32)/ssleay32.lib -cclib $(SSL_LIB_WIN32)/libeay32.lib
+        OCAML_LINK_FLAGS += -cclib $(SSL_LIB_WIN32)/ssleay32MT.lib -cclib $(SSL_LIB_WIN32)/libeay32MT.lib
         CFLAGS += /DSSL_ENABLED
         INCLUDES += $(SSL_INC_WIN32)
         export
