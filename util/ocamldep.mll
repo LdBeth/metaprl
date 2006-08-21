@@ -7,7 +7,7 @@
  * ----------------------------------------------------------------
  *
  * @begin[license]
- * Copyright (C) 2006 Mojave Group, Caltech
+ * Copyright (C) 1998-2006 Mojave Group, Caltech
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,8 +23,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * @email{jyh@cs.caltech.edu}
+ * Author: Jason Hickey @email{jyh@cs.caltech.edu}
+ * Modified by: Aleksey Nogin @email{nogin@cs.caltech.edu}
  * @end[license]
  *)
 {
@@ -348,7 +348,7 @@ let rec find_file_by_path stale_found name stale_ext ext = function
          if Sys.file_exists fullname then begin
             match stale_found, stale_ext with
                Some dir', Some ext' ->
-                  Format.eprintf "@[<hv3>Ocamldep Error:@ source file@ %s/%s%s@ is shadowed by the (stale?) binary file@ %s/%s%s@]@." dir name ext dir' name ext';
+                  Format.eprintf "@[<hv3>@[<hv3>Ocamldep Error@ while running in@ %s:@]@ source file@ %s@ is shadowed by the (stale?) binary file@ %s@]@." (Unix.getcwd ()) fullname (Filename.concat dir' name ^ ext');
                   exit 3
              | Some dir', None ->
                   raise (Invalid_argument "internal error")
