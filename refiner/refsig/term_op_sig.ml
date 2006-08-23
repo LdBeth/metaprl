@@ -10,7 +10,7 @@
  * See the file doc/htmlman/default.html or visit http://metaprl.org/
  * for more information.
  *
- * Copyright (C) 1998 Jason Hickey, Cornell University
+ * Copyright (C) 1998-2006 MetaPRL Group, Cornell University and Caltech
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -26,8 +26,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified by: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 open Lm_symbol
 
@@ -205,6 +205,8 @@ sig
    val mk_string_dep0_dep0_term : opname -> string -> term -> term -> term
    val dest_string_dep0_dep0_term : opname -> term -> string * term * term
    val dest_string_dep0_dep0_any_term : term -> string * term * term
+
+   val mk_string_dep0_dep0_dep0_term : opname -> string -> term -> term -> term -> term
 
    val is_string_string_dep0_dep0_term : opname -> term -> bool
    val mk_string_string_dep0_dep0_term : opname -> string -> string -> term -> term -> term

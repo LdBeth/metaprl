@@ -596,6 +596,12 @@ struct
          { term_op = { op_name = opname; op_params = [String s] };
            term_terms = [mk_simple_bterm t1; mk_simple_bterm t2]}}
 
+   let mk_string_dep0_dep0_dep0_term opname s t1 t2 t3 =
+      { free_vars = VarsDelayed;
+        core = Term
+         { term_op = { op_name = opname; op_params = [String s] };
+           term_terms = [mk_simple_bterm t1; mk_simple_bterm t2; mk_simple_bterm t3]}}
+
    (*
     * Two string parameters, two subterms.
     *)

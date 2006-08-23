@@ -636,6 +636,12 @@ struct
            term_terms = [{ bvars = []; bterm = t1 }; { bvars = []; bterm = t2 }]
          }
 
+   let mk_string_dep0_dep0_dep0_term opname = fun
+      s t1 t2 t3 ->
+         { term_op = { op_name = opname; op_params = [String s] };
+           term_terms = [{ bvars = []; bterm = t1 }; { bvars = []; bterm = t2 }; { bvars = []; bterm = t3 }]
+         }
+
    (*
     * Two string parameters, two subterms.
     *)
