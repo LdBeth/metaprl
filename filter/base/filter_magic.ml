@@ -39,7 +39,7 @@ open File_type_base
  ************************************************************************
  *
  * Current MD5 hash of the summary-related types (as computed by OMake):
- * FILTER_MD5: ae2eb5956c3fd6591e39e0c56f4d022e
+ * FILTER_MD5: ab4213cabae7e7a099c40025b2eb467a
  *
  * The arguments for pack_version are:
  *    major version number, minor sub-version number, revision number
@@ -83,12 +83,13 @@ open File_type_base
  * Rev 28: added "private" resource annotations
  * Rev 29: added "RawOption" raw attribute
  * Rev 30: changed the options_table type; changed the string encoding of option_info
- * Rev 31: updated the variable name handling in the rewriter.
- * Rev 32: moved the type of rule parameters into Filter_base_type.
+ * Rev 31: updated the variable name handling in the rewriter
+ * Rev 32: moved the type of rule parameters into Filter_base_type
+ * Rev 33: added "opaque" qualifier to the "define" statements
  *)
-let raw_versions = List.map (pack_version 1 0) [32;31]
+let raw_versions = List.map (pack_version 1 0) [33]
 
-let term_versions = List.map (pack_version 1 0) [32;31;30;29;28;27;25;24]
+let term_versions = List.map (pack_version 1 0) [33;32;31;30;29;28;27;25;24]
 
 (*
  * ASCII IO format revision history:
@@ -121,6 +122,7 @@ let term_versions = List.map (pack_version 1 0) [32;31;30;29;28;27;25;24]
  * Rev 25: added "private" resource annotations
  * Rev 26: added options to the tactic_arg
  * Rev 27: changed the stging encoding of option_info
+ * Rev 28: added "opaque" qualifier to the "define" statements
  *
  * Ascii_io has a HACK needed to read some rev 0-5 files
  * Ascii_io has another set of HACKs to read sequents in rev 0-6 files
@@ -139,8 +141,9 @@ let term_versions = List.map (pack_version 1 0) [32;31;30;29;28;27;25;24]
  * Filter_summary has another HACK needed to read some rev 21-23 files.
  * Filter_summary has another HACK needed to read some rev 0-24 files.
  * Options_boot has a HACK needed to read some rev 25-26 files.
+ * Filter_summary has another HACK needed to read some rev ??-27 files.
  *)
-let ascii_versions = List.map (pack_version 1 0) [27;26;25;24;23;22;21;20;19;18;17;16;15;14;13;12;11;10;9;8;7;6;5;4;3;2;1;0]
+let ascii_versions = List.map (pack_version 1 0) [28;27;26;25;24;23;22;21;20;19;18;17;16;15;14;13;12;11;10;9;8;7;6;5;4;3;2;1;0]
 
 (************************************************************************
  * Magic numbers for interactive files                                  *

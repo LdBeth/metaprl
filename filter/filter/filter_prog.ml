@@ -766,9 +766,9 @@ let expr_of_bnd_expr proc _loc expr =
  * TOP LOOP                                                             *
  ************************************************************************)
 
-let impr_toploop proc _loc name (expr,texpr) =
+let impr_toploop proc _loc name pvt_flag (expr,texpr) =
    let expr = <:expr< ($str:proc.imp_name$, $str: name$, $expr$, $texpr$) >> in
-      <:str_item< ($impr_resource proc _loc Public "toploop" expr$) >>
+      <:str_item< ($impr_resource proc _loc pvt_flag "toploop" expr$) >>
 
 (*
  * This is a little bogus, but we add rewrites automatically to the
@@ -792,13 +792,13 @@ let rec loop_params _loc i body base_expr = function
  | [] ->
       base_expr body
 
-let toploop_rewrite proc _loc name params =
+let toploop_rewrite proc _loc name pvt_flag params =
    let base body = <:expr< Shell_sig.ConvExpr $body$ >>, <:expr< Shell_sig.ConvType >> in
-      impr_toploop proc _loc name (loop_params _loc 0 <:expr< $lid: name$ >> base params)
+      impr_toploop proc _loc name pvt_flag (loop_params _loc 0 <:expr< $lid: name$ >> base params)
 
 let toploop_rule proc _loc name params =
    let base body = <:expr< Shell_sig.TacticExpr $body$ >>, <:expr< Shell_sig.TacticType >> in
-      impr_toploop proc _loc name (loop_params _loc 0 <:expr< $lid: name$ >> base params)
+      impr_toploop proc _loc name Public (loop_params _loc 0 <:expr< $lid: name$ >> base params)
 
 (*
  * Build the wrap code.
@@ -944,11 +944,12 @@ let extract_expr _loc modname name =
  * The Tactic_type.pre_rewrite is passed as an argument,
  * along with the params, so that we can figure out its type.
  *)
-let define_rewrite_resources proc _loc name redex contractum assums addrs params resources name_id_expr =
+let define_rewrite_resources proc _loc name force_private redex contractum assums addrs params resources name_id_expr =
    if resources.item_item = [] then
       <:expr< () >>
    else
    let define_resource {res_loc = _loc; res_name = name'; res_flag = flag; res_args = args} =
+   let flag = if force_private then Private else flag in
       let processor = apply_annotation_processor _loc <:expr< $lid:"process_" ^ name' ^ "_resource_rw_annotation"$ >> args in
          impr_resource_list proc _loc flag name' <:expr<
             $processor$ $str:name$ $redex$ $contractum$ $assums$ $addrs$ $params$ $expr_of_loc _loc$ $name_id_expr$
@@ -959,7 +960,7 @@ let define_rewrite_resources proc _loc name redex contractum assums addrs params
 (*
  * A primitive rewrite is assumed true by fiat.
  *)
-let define_rewrite want_checkpoint code proc _loc rw expr =
+let define_rewrite want_checkpoint force_private code proc _loc rw expr =
    let name = rw.rw_name in
    let rw_id  = "_$" ^ name ^ "_rewrite" in
    let rw_id_expr = <:expr< $lid:rw_id$ >> in
@@ -980,14 +981,14 @@ let define_rewrite want_checkpoint code proc _loc rw expr =
          $refiner_expr _loc$.create_rewrite $lid:local_refiner_id$ $str:name$ $redex$ $contractum$
       in do {
          $prim_expr$;
-         $define_rewrite_resources proc _loc name redex contractum nil (empty_args_spec _loc) nil rw.rw_resources rw_id_expr$;
+         $define_rewrite_resources proc _loc name force_private redex contractum nil (empty_args_spec _loc) nil rw.rw_resources rw_id_expr$;
          $rewrite_of_pre_rewrite_expr _loc$ $rw_id_expr$ $empty_rw_args _loc$ $nil$
       }
     >> in
        checkpoint_resources want_checkpoint _loc name [
           <:str_item< value $lid:name$ = $wrap_exn proc _loc name create_rw$ >>;
           refiner_let _loc;
-          toploop_rewrite proc _loc name []
+          toploop_rewrite proc _loc name (if force_private then Private else Public) []
        ]
 
 let add_crw_selector _loc res =
@@ -1040,7 +1041,7 @@ let define_cond_rewrite want_checkpoint code proc _loc crw expr =
             $args_expr$ $params_expr$ $subgoals_expr$ $redex$ $contractum$
       in do {
          $prim_expr$;
-         $define_rewrite_resources proc _loc name redex contractum subgoals_expr args_expr params_expr resources rw_id_expr$;
+         $define_rewrite_resources proc _loc name false redex contractum subgoals_expr args_expr params_expr resources rw_id_expr$;
          $rw_id_expr$
       }
     >> in
@@ -1052,11 +1053,11 @@ let define_cond_rewrite want_checkpoint code proc _loc crw expr =
           <:str_item< value $rw_id_patt$ = $wrap_exn proc _loc name create_expr $ >>;
           <:str_item< value $lid:name$ = $rw_fun_expr$ >>;
           refiner_let _loc;
-          toploop_rewrite proc _loc name crw.crw_params
+          toploop_rewrite proc _loc name Public crw.crw_params
        ]
 
 let prim_rewrite proc _loc rw =
-   define_rewrite false (prim_rewrite_expr _loc) proc _loc rw None
+   define_rewrite false false (prim_rewrite_expr _loc) proc _loc rw None
 
 let define_term proc _loc class_term def =
    let rw =
@@ -1067,7 +1068,7 @@ let define_term proc _loc class_term def =
         rw_resources = def.term_def_resources
       }
    in
-      define_rewrite false (def_rewrite_expr _loc) proc _loc rw None
+      define_rewrite false def.term_def_opaque (def_rewrite_expr _loc) proc _loc rw None
 
 let prim_cond_rewrite proc _loc crw =
    define_cond_rewrite false (prim_cond_rewrite_expr _loc) proc _loc crw None
@@ -1076,7 +1077,7 @@ let prim_cond_rewrite proc _loc crw =
  * Justify a rewrite with a tactic.
  *)
 let derived_rewrite proc _loc rw expr =
-   define_rewrite true (derived_rewrite_expr _loc) proc _loc rw (Some expr)
+   define_rewrite true false (derived_rewrite_expr _loc) proc _loc rw (Some expr)
 
 let derived_cond_rewrite proc _loc crw expr =
    define_cond_rewrite true (derived_cond_rewrite_expr _loc) proc _loc crw (Some expr)
@@ -1085,7 +1086,7 @@ let derived_cond_rewrite proc _loc crw expr =
  * Interactive forms.
  *)
 let interactive_rewrite proc _loc rw =
-   define_rewrite true (delayed_rewrite_expr _loc) proc _loc rw (Some (extract_expr _loc proc.imp_name rw.rw_name))
+   define_rewrite true false (delayed_rewrite_expr _loc) proc _loc rw (Some (extract_expr _loc proc.imp_name rw.rw_name))
 
 let interactive_cond_rewrite proc _loc crw =
    define_cond_rewrite true (delayed_cond_rewrite_expr _loc) proc _loc crw (Some (extract_expr _loc proc.imp_name crw.crw_name))
@@ -1152,7 +1153,7 @@ let define_ml_rewrite proc _loc mlrw rewrite_expr =
       let $lid:rewrite_id$ = $bindings_let proc _loc rewrite_expr (fun_expr _loc args_ids rewrite_body)$ in
       let $lid:rewrite_id$ = $create_ml_rewrite_expr$ $lid:local_refiner_id$ $str:name$ $rewrite_id_expr$ in
       do {
-         $define_rewrite_resources proc _loc name redex_id_expr nil_term (<:expr< [] >>) addrs_spec params_expr mlrw.mlterm_resources rewrite_id_expr$;
+         $define_rewrite_resources proc _loc name false redex_id_expr nil_term (<:expr< [] >>) addrs_spec params_expr mlrw.mlterm_resources rewrite_id_expr$;
          $rewrite_id_expr$
       }
    >> in
@@ -1495,7 +1496,7 @@ let define_summary_item proc _loc = function
  *)
 let add_toploop_item proc _loc name ctyp =
    let expr = toploop_item_expr _loc name ctyp in
-      impr_toploop proc _loc name expr
+      impr_toploop proc _loc name Public expr
 
 let get_top_ctyp proc name =
    let ctyp = List.assoc name proc.imp_toploop in

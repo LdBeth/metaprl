@@ -175,7 +175,9 @@ declare "resource"{'inp : Dform; 'outp : Dform; 'expr : Dform} : Dform
 declare "improve"[name:s]{'flag : Dform; 'expr : Dform} : Dform
 declare "private" : Dform
 declare "public" : Dform
+declare "opaque" : Dform
 doc docoff
+declare flag{'flag: Dform} : Dform
 declare "resource_defs"[start:n, finish:n, name:s]{'flag: Dform; 'res : Dform} : Dform
 
 doc <:doc<
@@ -403,10 +405,10 @@ dform res_def_list_df2 : res_def_list{xcons{'a; 'b}} =
    'a keyword[";"] hspace res_def_list{'b}
 
 dform resource_defs_df1 : resource_defs[name:s]{'flag; 'args} =
-   'flag " " slot[name:s] " " 'args
+   flag{'flag} slot[name:s] " " 'args
 
 dform resource_defs_df1 : resource_defs[name:s]{'flag; xnil} =
-   'flag " " slot[name:s]
+   flag{'flag} slot[name:s]
 
 dform resource_defs_dfs : resource_defs[start:n, finish:n, name:s]{'flag; 'args} =
    resource_defs[name:s]{'flag; 'args}
@@ -656,13 +658,14 @@ dform resource_df : "resource"[name]{"resource"{'inp; 'outp; 'expr}} =
    info["let"] " " info["resource"] `" (" 'inp `", " 'outp `") " resource_name[name:s] " " keyword ["="] hspace
    szone{'expr} ezone popm
 
+dform public_df : flag{"public"} = `""
+dform private_df : flag{"private"} = info["private"] " "
+dform opaque_df : flag{"opaque"} = info["opaque"] " "
+
 dform improve_df : "improve"[name]{'flag; 'expr} =
    pushm[3] szone
-   'flag " " info["let"] " " info["resource"] " " resource_name[name:s] " " keyword ["+="] hspace
+   flag{'flag} info["let"] " " info["resource"] " " resource_name[name:s] " " keyword ["+="] hspace
    szone{'expr} ezone popm
-
-dform public_df : "public" = info["public"]
-dform private_df : "private" = info["private"]
 
 dform infix_df : "infix"[name:s] =
    info["infix"] " " slot[name:s]

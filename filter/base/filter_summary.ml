@@ -12,7 +12,7 @@
  * See the file doc/htmlman/default.html or visit http://metaprl.org/
  * for more information.
  *
- * Copyright (C) 1998 Jason Hickey, Cornell University
+ * Copyright (C) 1998-2006 MetaPRL Group, Cornell University and Caltech
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -620,15 +620,10 @@ let summary_map (convert : ('term1, 'meta_term1, 'proof1, 'resource1, 'ctyp1, 'e
          }
    in
    let convert_term_def term_def =
-      let { term_def_name = name;
-            term_def_value = t;
-            term_def_resources = res
-          } = term_def
-      in
-         { term_def_name = name;
-           term_def_value = convert.term_f t;
-           term_def_resources = res_map res
-         }
+      { term_def with
+        term_def_value = convert.term_f term_def.term_def_value;
+        term_def_resources = res_map term_def.term_def_resources
+      }
    in
 
    (* Map a summary item *)
@@ -822,6 +817,7 @@ let shape_iform_op             = mk_opname "shape_iform"
 let shape_class_op             = mk_opname "shape_class"
 let private_op                 = mk_opname "private"
 let public_op                  = mk_opname "public"
+let opaque_op                  = mk_opname "opaque"
 
 (* XXX HACK: ASCII_IO format <= 1.0.17 had "opname" and "definition" *)
 let opname_op                  = mk_opname "opname"
@@ -859,6 +855,7 @@ struct
 
    let public_term = mk_simple_term public_op []
    let private_term = mk_simple_term private_op []
+   let opaque_term = mk_simple_term opaque_op []
    let none_term = mk_simple_term none_op []
 
    (*************
@@ -1057,6 +1054,12 @@ struct
          else if Opname.eq opname public_op then Public
          else raise (RefineError ("Filter_summary.dest_pvt_flag", StringTermError ("malformed term", t)))
 
+   let dest_opaque_flag t =
+      let opname = opname_of_term t in
+         if Opname.eq opname public_op then false
+         else if Opname.eq opname opaque_op then true
+         else raise (RefineError ("Filter_summary.dest_opaque_flag", StringTermError ("malformed term", t)))
+
    let dest_resource_term expr_f t =
       let t1, t2, loc, name =
          (*
@@ -1209,10 +1212,19 @@ struct
 
    let dest_term_def convert t =
       let name = dest_string_param t in
-      let t, res = two_subterms t in
+      let t, res, opaque =
+         match subterms_of_term t with
+            [ t; res ] -> (* XXX: HACK: ASCII IO <= 1.0.27 compatibility *)
+               t, res, false
+          | [ t; res; opaque ] ->
+               t, res, (dest_opaque_flag opaque)
+          | _ ->
+               raise (RefineError ("dest_term_def", StringTermError ("malformed term", t)))
+      in
          { term_def_name = name;
            term_def_value = convert.term_f t;
-           term_def_resources = dest_res convert res
+           term_def_resources = dest_res convert res;
+           term_def_opaque = opaque;
          }
 
    let dest_typeclass_parent t =
@@ -1800,14 +1812,10 @@ struct
          mk_simple_term ty_term_op [term; opname; params; bterms; ty]
 
    let mk_term_def_term convert term_def =
-      let { term_def_name = name;
-            term_def_value = term;
-            term_def_resources = res
-          } = term_def
-      in
-      let term = convert.term_f term in
-      let res = term_of_resources convert res in
-         mk_string_dep0_dep0_term term_def_op name term res
+      let term = convert.term_f term_def.term_def_value in
+      let res = term_of_resources convert term_def.term_def_resources in
+      let opaque =  if term_def.term_def_opaque then opaque_term else public_term in
+         mk_string_dep0_dep0_dep0_term term_def_op term_def.term_def_name term res opaque
 
    let term_of_declare_type convert shapeclass ty_term ty_opname =
       let shapeclass = mk_shapeclass_term shapeclass in
@@ -1949,7 +1957,7 @@ struct
             implem_error loc (sprintf "Rewrite %s: not implemented" name)
        | Rewrite { rw_name = name'; rw_redex = redex'; rw_contractum = con' } :: _ when name = name' ->
             redex', con'
-       | DefineTerm (shapeclass, ty_term, { term_def_name = name'; term_def_value = con' }) :: _
+       | DefineTerm (shapeclass, ty_term, { term_def_name = name'; term_def_value = con'; term_def_opaque = false }) :: _
          when name = name' && is_shape_normal shapeclass ->
             (term_of_ty ty_term), con'
        | _ :: t ->
@@ -2161,7 +2169,7 @@ struct
       let rec search = function
          [] ->
             implem_error loc (sprintf "Definition %s: not implemented" (string_of_shape shape))
-       | DefineTerm (shapeclass', ty_term', term_def') :: t ->
+       | DefineTerm (shapeclass', ty_term', ({ term_def_opaque = false } as term_def')) :: t ->
             let term' = term_of_ty ty_term' in
             let shape' = shape_of_term term' in
                if ToTerm.TermShape.eq shape' shape then begin

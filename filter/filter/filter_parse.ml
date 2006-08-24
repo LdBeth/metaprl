@@ -927,12 +927,13 @@ struct
    let compile_parser proc loc =
       FilterCache.compile_parser proc.cache
 
-   let define_term proc loc shapeclass name ty_term contractum res =
+   let define_term proc loc shapeclass name ty_term contractum res opaque =
       let redex = term_of_ty ty_term in
       let term_def =
          { term_def_name = name;
            term_def_value = contractum;
-           term_def_resources = res
+           term_def_resources = res;
+           term_def_opaque = opaque;
          }
       in
          if is_shape_iform shapeclass then
@@ -1493,7 +1494,7 @@ EXTEND
              let quote = parse_define_quote _loc quote in
              let () = SigFilter.declare_define_term proc sc (parse_define_redex _loc quote) in
              let quote, def = parse_define_term _loc name sc quote def in
-                SigFilter.define_term proc _loc sc name quote def res
+                SigFilter.define_term proc _loc sc name quote def res false
            in
               handle_exn f ("define " ^ name) _loc;
               empty_sig_item _loc
@@ -1713,13 +1714,13 @@ EXTEND
           in
              handle_exn f "declare" _loc;
              empty_str_item _loc
-        | "define"; sc = shapeclasses; name = LIDENT; res = optresources; ":"; quote = quote_term; "<-->"; def = term ->
+        | "define"; opaque = opaque_flag; sc = shapeclasses; name = LIDENT; res = optresources; ":"; quote = quote_term; "<-->"; def = term ->
           let f () =
              let proc = StrFilter.get_proc _loc in
              let quote = parse_define_quote _loc quote in
              let () = StrFilter.declare_define_term proc sc (parse_define_redex _loc quote) in
              let quote, def = parse_define_term _loc name sc quote def in
-                StrFilter.define_term proc _loc sc name quote def res
+                StrFilter.define_term proc _loc sc name quote def res opaque
            in
               handle_exn f ("define " ^ name) _loc;
               empty_str_item _loc
@@ -2135,6 +2136,11 @@ EXTEND
    shapeclass:
       [[ "iform" -> shape_iform
        | "const" -> shape_const
+      ]];
+
+   opaque_flag:
+      [[ opaque = OPT "opaque" ->
+            match opaque with Some _ -> true | None -> false 
       ]];
 
    (*

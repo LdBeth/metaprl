@@ -223,7 +223,8 @@ type 'ctyp parent_info =
 type ('term, 'expr) term_def =
    { term_def_name      : string;
      term_def_value     : 'term;
-     term_def_resources : ('expr, 'term) resource_def
+     term_def_resources : ('expr, 'term) resource_def;
+     term_def_opaque    : bool;
    }
 
 type dform_option =

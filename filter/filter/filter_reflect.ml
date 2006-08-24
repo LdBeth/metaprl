@@ -431,7 +431,8 @@ let define_term info loc shapeclass name ty_term contractum res =
    let term_def =
       { term_def_name = name;
         term_def_value = contractum;
-        term_def_resources = res
+        term_def_resources = res;
+        term_def_opaque = false;
       }
    in
       StrFilterCache.add_command info.info_cache (DefineTerm (shapeclass, ty_term, term_def), loc)
