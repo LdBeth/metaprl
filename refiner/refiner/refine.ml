@@ -1326,16 +1326,6 @@ struct
             (* Only the above can be user-provable and can be returned by find_sentinel *)
             raise (Invalid_argument "find_sentinal")
 
-   let extract_term refiner opname args =
-      match find_refiner refiner opname with
-         RuleRefiner { rule_refiner = refiner; rule_proof = PDerived dp } ->
-            term_of_extract refiner (get_derivation dp) args
-       | RewriteRefiner { rw_refiner = refiner; rw_proof = PDerived dp }
-       | CondRewriteRefiner { crw_refiner = refiner; crw_proof = PDerived dp } ->
-            term_of_extract refiner (get_derivation dp) args
-       | _ ->
-            raise (Invalid_argument("Refine.extract_term - " ^ (string_of_opname opname) ^ "is not a derived rule/rewrite"))
-
    (* compute_deps_pf is polymorphic, so have to define it outside of let rec *)
    let compute_deps_pf compute_deps refiner pf =
       match pf.pf_dependencies with
@@ -1640,6 +1630,31 @@ struct
       let subgoals, goal = unzip_mimplies mterm in
          List.iter2 check_subgoal_arg subgoals args;
          let _ = compute_rule_ext name addrs params goal args result in ()
+
+   let extract_term refiner opname args =
+      let assums, refiner, derivation =
+         match find_refiner refiner opname with
+            RuleRefiner { rule_refiner = refiner; rule_proof = PDerived dp; rule_info = { mseq_assums = assums } } ->
+               assums, refiner, get_derivation dp
+          | RewriteRefiner { rw_refiner = refiner; rw_proof = PDerived dp } ->
+               [], refiner, get_derivation dp
+          | CondRewriteRefiner { crw_refiner = refiner; crw_proof = PDerived dp; crw_info = { pre_crw_assums = assums } } ->
+               assums, refiner, get_derivation dp
+          | _ ->
+               raise (Invalid_argument("Refine.extract_term - " ^ (string_of_opname opname) ^ "is not a derived rule/rewrite"))
+      in
+         if List.length assums = List.length args then begin
+            begin try
+               List.iter2 check_subgoal_arg assums args
+            with RefineError(name,err) ->
+               raise (RefineError("Refine.extract_term", StringErrorError("supplied assumption extracts mismatch", err)))
+            end;
+            term_of_extract refiner derivation args
+         end else
+            raise (RefineError("Refine.extract_term", OpnameErrorError (opname,
+               StringErrorError("supplied assumption extracts list length mismatch",
+                  PairError("assumptions in rule/rewrite", IntError (List.length assums),
+                            "received assumption extracts", IntError (List.length args))))))
 
    (************************************************************************
     * REWRITE                                                              *
