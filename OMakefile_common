@@ -3,6 +3,17 @@
 #
 OMakeVersion(0.9.6.9)
 
+#
+# XXX: 0.9.8 defines Shell.ln-or-cp, but we want to allow 0.9.6.9 too
+#
+if $(not $(Shell.object-mem ln-or-cp))
+    Shell. +=
+        ln-or-cp(argv) =
+            src = $(file $(nth 0, $(argv)))
+            dst = $(file $(nth 1, $(argv)))
+            $(symlink $(src), $(dst))
+    export
+
 ########################################################################
 # OS-specific config.
 #
@@ -220,7 +231,7 @@ LOC = -loc _loc
 BinInstall(files) =
     foreach(src, $(files))
         $(BIN)/$(src): $(src) $(BIN)
-            $(symlink $<, $@)
+            ln-or-cp $< $@
 
     $(MPINSTALL): $(addprefix $(BIN)/, $(files))
 
@@ -233,7 +244,7 @@ LibInstallDir(subdir) =
 
 LibSubInstallNamed(subdir, dst, src) =
     $(LIB)/$(subdir)/$(dst): $(src) $(LIB)/$(subdir) :scanner: $(NOSCANNER)
-        $(symlink $<, $@)
+        ln-or-cp $< $@
 
     $(MPINSTALL): $(LIB)/$(subdir)/$(dst)
 
@@ -253,7 +264,7 @@ ExportInstallDir(subdir) =
 
 ExportSubInstallNamed(subdir, dst, src) =
     $(EXPORT)/$(subdir)/$(dst): $(src) $(EXPORT)/$(subdir) :scanner: $(NOSCANNER)
-        $(symlink $<, $@)
+        ln-or-cp $< $@
 
     $(MPINSTALL): $(EXPORT)/$(subdir)/$(dst)
 

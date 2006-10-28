@@ -175,7 +175,7 @@ if $(BYTE_ENABLED)
         .test-metaprl-startup: $(MP).run
 
 $(MP_SCRIPT): $(LIB)/$(MP)$(if $(NATIVE_ENABLED), opt, top)$(if $(equal $(OSTYPE), Win32), .bat)
-    $(symlink $<, $@)
+    ln-or-cp $< $@
 
 run: $(MP_PREREQS)
     ./$(MP_SCRIPT)
@@ -267,7 +267,7 @@ mpconfig:
     fprint(mpconfig, $(mpconfig))
 
 $(MP_DIRECT_SCRIPTS): %: $(LIB)/%
-    $(symlink $<, $@)
+    ln-or-cp $< $@
 
 .DEFAULT: mpconfig
 
