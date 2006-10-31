@@ -760,10 +760,6 @@ struct
     * Print the session state.
     *)
    let print_session server state session buf =
-      let { http_host = host;
-            http_port = port
-          } = http_info server
-      in
       let { session_id              = id;
             session_cwd             = cwd;
             session_menu_version    = menu_version;
@@ -783,7 +779,7 @@ struct
       let js_edit = Lm_string_util.js_escaped edit in
          Printf.bprintf buf "\tvar session = new Array();\n";
          Printf.bprintf buf "\tsession['cwd']          = '%s';\n" js_cwd;
-         Printf.bprintf buf "\tsession['location']     = '%s://%s:%d/session/%d/content%s/';\n" Shell_state.protocol_name host port id js_cwd;
+         Printf.bprintf buf "\tsession['location']     = '/session/%d/content%s/';\n" id js_cwd;
          Printf.bprintf buf "\tsession['menu']         = %d;\n" menu_version;
          Printf.bprintf buf "\tsession['content']      = %d;\n" content_version;
          Printf.bprintf buf "\tsession['message']      = %d;\n" message_version;
@@ -912,16 +908,12 @@ struct
     * Something failed.  Ask the browser to start over.
     *)
    let print_redisplay_page which_uri server state session outx =
-      let { http_host     = host;
-            http_port     = port
-          } = http_info server
-      in
       let { session_id = id;
             session_cwd = cwd
           } = session
       in
       let uri =
-         sprintf "%s://%s:%d/session/%d/%s" Shell_state.protocol_name host port (dest_pid id) (which_uri cwd)
+         sprintf "/session/%d/%s" (dest_pid id) (which_uri cwd)
       in
          if !debug_http then
             eprintf "Redirecting to %s@." uri;

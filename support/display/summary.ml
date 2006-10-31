@@ -133,9 +133,12 @@ declare declare_type_rewrite{'ty1 : Dform; 'ty2 : Dform} : Dform
 declare declare_term{'shape : ShapeClass; 'term : Dform} : Dform
 declare define_term{'shape : ShapeClass; 'term : Dform; 'def : Dform} : Dform
 declare "ty_term"{'term : Dform; 'opname : Dform; 'params : Dform; 'bterms : Dform; 'ty : Dform} : Dform
-declare "term_def"[name:s]{'def : Dform; 'res : Dform} : Dform
+declare "term_def"[name:s]{'def : Dform; 'res : Dform; 'flag : Dform} : Dform
 declare parent_kind[name:s] : Dform
 declare parent_kind[name:s]{'parent : Dform} : Dform
+declare "private" : Dform
+declare "public" : Dform
+declare "opaque" : Dform
 
 doc docoff
 declare "parent"[name:s] : Dform
@@ -173,9 +176,6 @@ declare "resource"[name:s]{'expr : Dform} : Dform
 declare "resource_defs"[name:s]{'flag : Dform; 'res : Dform} : Dform
 declare "resource"{'inp : Dform; 'outp : Dform; 'expr : Dform} : Dform
 declare "improve"[name:s]{'flag : Dform; 'expr : Dform} : Dform
-declare "private" : Dform
-declare "public" : Dform
-declare "opaque" : Dform
 doc docoff
 declare flag{'flag: Dform} : Dform
 declare "resource_defs"[start:n, finish:n, name:s]{'flag: Dform; 'res : Dform} : Dform
@@ -531,9 +531,9 @@ dform shape_class_const_df : shape_class[2] =
 dform shape_class_const_iform_df : shape_class[3] =
    keyword["const iform "]
 
-dform define_term_df : "define_term"{'shape; 'info; term_def[name:s]{'contractum; 'res}} =
+dform define_term_df : "define_term"{'shape; 'info; term_def[name:s]{'contractum; 'res; 'flag}} =
    pushm[4] szone
-      info["define"] " " 'shape szone rewrite_name[name:s] resources{'res} keyword[":"] ezone hspace
+      info["define"] " " flag{'flag} 'shape szone rewrite_name[name:s] resources{'res} keyword[":"] ezone hspace
       szone pushm[4]
          'info `" " ensuremath{longleftrightarrow}
          hspace ensuremath{slot{'contractum}}

@@ -138,6 +138,8 @@ declare Omega : Dform
 declare times : Dform
 declare "div" : Dform
 declare box : Dform
+declare diamond : Dform
+declare lozenge : Dform
 declare circ : Dform
 declare bigcirc : Dform
 declare supplus : Dform
