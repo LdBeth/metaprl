@@ -791,7 +791,7 @@ let relative_pwd shell =
  * Window width.
  *)
 let set_window_width shell i =
-   shell.shell_df_method <- {shell.shell_df_method with df_width = max !Mp_term.min_screen_width i}
+   shell.shell_df_method <- {shell.shell_df_method with df_width = max !Lm_termsize.min_screen_width i}
 
 (*
  * Interface to the HTTP shell.

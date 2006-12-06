@@ -31,7 +31,6 @@ FILES[] =
     http_server
     http_simple
     comment_parse
-    mp_term
     line_buffer
 
 # MACROPPOPTS = -D DEBUG_WEAK_MEMO
