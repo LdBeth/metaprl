@@ -1,4 +1,15 @@
 #
+# Install .cmiz files
+#
+InstallCmizFiles(files) =
+    LibInstall($(addsuffix .cmiz, $(files)))
+
+#
+# Subdirectories
+#
+.SUBDIRS: display shell tactics doc editor
+
+#
 # Include files from subdirectories
 #
 include display/Files
@@ -13,17 +24,6 @@ FILES[] =
     $(file $(addprefix doc/,      $(DOC_FILES)))
 
 OCamlLibraryInstall($(MPINSTALL), $(LIB), support, $(FILES))
-
-#
-# Install .cmiz files
-#
-InstallCmizFiles(files) =
-    LibInstall($(addsuffix .cmiz, $(files)))
-
-#
-# Subdirectories
-#
-.SUBDIRS: display shell tactics doc editor
 
 #
 # Clean up

@@ -15,12 +15,12 @@ FindBrowser() =
    return $(EMPTY)
 
 static.=
-   println($"--- Looking for a browser command to use...")
+   println($"--> Looking for a browser command to use...")
    DEFAULT_BROWSER_COMMAND = $(FindBrowser)
    if $(DEFAULT_BROWSER_COMMAND)
-      println($"--> Default browser command: $(DEFAULT_BROWSER_COMMAND)")
+      println($"<-- Default browser command: $(DEFAULT_BROWSER_COMMAND)")
    else
-      println($"--> No browser found")
+      println($"<-- No browser found")
 
 BROWSER_COMMAND = $(DEFAULT_BROWSER_COMMAND)
 
