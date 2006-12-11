@@ -1,18 +1,7 @@
 #
 # Make sure omake is up-to-date
 #
-OMakeVersion(0.9.6.9)
-
-#
-# XXX: 0.9.8 defines Shell.ln-or-cp, but we want to allow 0.9.6.9 too
-#
-if $(not $(Shell.object-mem ln-or-cp))
-    Shell. +=
-        ln-or-cp(argv) =
-            src = $(file $(nth 0, $(argv)))
-            dst = $(file $(nth 1, $(argv)))
-            $(symlink $(src), $(dst))
-    export
+OMakeVersion(0.9.8)
 
 ########################################################################
 # OS-specific config.
@@ -408,11 +397,11 @@ if $(not $(defined FORCE_REALCLEAN))
     FORCE_REALCLEAN = false
     export
 
+open build/svn_realclean
+
 realclean: clean
     # XXX: HACK: What we really want is
     #    $`(RM) $(find -name *.prlb)
     # But this is way too slow because of http://bugzilla.metaprl.org/show_bug.cgi?id=574
     $`(RM) theories/*/*.prlb theories/*/*/*.prlb theories/*/*/*/*.prlb theories/*/*/*/*/*.prlb
-    # cvs_realclean $(if $(FORCE_REALCLEAN), -f) -i .omakedb -i .omakedb.lock -i mk/config -i mk/config.local
-    println(The realclean target is not yet reimplemented for subversion)
-    exit 1
+    svn_realclean $(if $(FORCE_REALCLEAN), -f) -i .omakedb -i .omakedb.lock -i mk/config -i mk/config.local

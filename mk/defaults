@@ -139,18 +139,6 @@ if $(mem $(ARCH), x86 i386 i486 i586 i686)
     export
 
 #
-# Default compile options are to be quiet
-# and print a progress bar.
-#
-if $(not $(defined VERBOSE))
-    VERBOSE = false
-    export
-
-if $(not $(VERBOSE))
-    OMakeFlags(-S --progress)
-    export
-
-#
 # omake options
 #
 ABORT_ON_DEPENDENCY_ERRORS = true
