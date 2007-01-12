@@ -400,8 +400,5 @@ if $(not $(defined FORCE_REALCLEAN))
 open build/svn_realclean
 
 realclean: clean
-    # XXX: HACK: What we really want is
-    #    $`(RM) $(find -name *.prlb)
-    # But this is way too slow because of http://bugzilla.metaprl.org/show_bug.cgi?id=574
-    $`(RM) theories/*/*.prlb theories/*/*/*.prlb theories/*/*/*/*.prlb theories/*/*/*/*/*.prlb
+    $`(RM) $(find -name *.prlb)
     svn_realclean $(if $(FORCE_REALCLEAN), -f) -i .omakedb -i .omakedb.lock -i mk/config -i mk/config.local
