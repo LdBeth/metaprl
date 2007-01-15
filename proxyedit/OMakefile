@@ -8,7 +8,7 @@ if $(SSL_ENABLED)
        proxyedit_lex
        proxyedit_main
 
-   LIBS[] +=
+   OCAML_CLIBS[] +=
        $(LIB)/liblmcutil
        $(LIB)/clib
 

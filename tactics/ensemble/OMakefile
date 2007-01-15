@@ -26,7 +26,7 @@ LMFILES[] =
     remote_monitor
     thread_refiner
 
-LIBS[] =
+OCAML_CLIBS[] =
     $(LIB)/trefiner
 
 #
