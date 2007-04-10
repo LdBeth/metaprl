@@ -266,8 +266,9 @@ export INCLUDES DEBUGINCLUDES
 mpconfig:
     fprint(mpconfig, $(mpconfig))
 
-$(MP_DIRECT_SCRIPTS): %: $(LIB)/%
-    ln-or-cp $< $@
+foreach (script, $(MP_DIRECT_SCRIPTS))
+    $(script): $(LIB)/$(script)
+        ln-or-cp $< $@
 
 .DEFAULT: mpconfig
 
