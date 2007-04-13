@@ -14,9 +14,10 @@ CAML_VERSIONS = 3.08.2 3.08.3 3.08.4 3.09.0 3.09.1 3.09.2 3.09.3
 
 if $(SHARED_MODE)
    if $(not $(file-exists $(MP_ROOT)/mk/OCaml_version))
-      eprintln($"!!! Your MetaPRL installation is incomplete:")
-      eprintln($"!!! $(MP_ROOT)/mk/OCaml_version) is missing")
-      exit(0)
+      err[] =
+         $"Your MetaPRL installation is incomplete:"
+         $"$(MP_ROOT)/mk/OCaml_version) is missing"
+      ConfMsgError($(err))
    include $(MP_ROOT)/mk/OCaml_version
    export CAML_VERSIONS
 
@@ -145,3 +146,4 @@ ABORT_ON_DEPENDENCY_ERRORS = true
 OCAMLDEPFLAGS =
 USE_OCAMLFIND = false
 SCANNER_MODE = error
+OCAMLDEP_MODULES_ENABLED = $(OCAMLDEP_MODULES_AVAILABLE)

@@ -1,7 +1,7 @@
 #
 # Make sure omake is up-to-date
 #
-OMakeVersion(0.9.8)
+OMakeVersion(0.9.8.1)
 
 ########################################################################
 # OS-specific config.
@@ -84,51 +84,46 @@ CheckVar(name, val, valid) =
     if $(not $(mem $(val), $(valid)))
         valid = $(array $(valid))
         valid = $(concat $', ', $(valid.map $(quote)))
-        eprintln($"""!!! ERROR: The $(name) variable is currently set to an invalid value "$(val)".""")
-        eprintln($"""!!!        Valid values for $(name) are: $(valid).""")
-        eprintln($"""!!!        Please fix it in the mk/config file.""")
-        exit(1)
+        err[] =
+            $"""The $(name) variable is currently set to an invalid value "$(val)"."""
+            $"""Valid values for $(name) are: $(valid)."""
+            $"""Please fix it in the mk/config file."""
+        ConfMsgError($(err))
 
 CheckVar(COMPILATION_MODE, $(COMPILATION_MODE), native byte mixed both)
 
 NATIVE_ENABLED = $(mem $(COMPILATION_MODE), native mixed both)
 BYTE_ENABLED = $(mem $(COMPILATION_MODE), byte mixed both)
 
+CheckFile(f, err-extra) =
+    f = $(file $f)
+    if $(not $(file-exists $f))
+        err[] =
+            $"The file $f does not exist (or is not readable)"
+            $(EMPTY)
+            $(err-extra)
+        ConfMsgError($(err))
+
+InstVarErr(var) =
+    err[] =
+        $"Please consult doc/htmlman/mp-install.html (http://metaprl.org/install.html)"
+        $"for instructions on compiling OCaml and setting the $(var) variable."
+    return $(err)
+
 if $(file-exists $(CAMLLIB)/../compiler-lib/parsetree.cmi)
    OCAMLINCLUDES += $(dir $(CAMLLIB)/../compiler-lib)
    export
 else
-   if $(and $(BYTE_ENABLED) $(not $(file-exists $(CAMLLIB)/parsetree.cmi)))
-      eprintln(!!! The file $(CAMLLIB)/parsetree.cmi does not exist \(or is not readable\))
-      eprintln(!!!)
-      eprintln(!!! Please consult doc/htmlman/mp-install.html \(http://metaprl.org/install.html\))
-      eprintln(!!! for instructions on compiling OCaml and setting the CAMLLIB variable)
-      eprintln(!!!)
-      exit(1)
+   if $(BYTE_ENABLED)
+        CheckFile($(CAMLLIB)/parsetree.cmi, $(InstVarErr CAMLLIB))
 
 if $(BYTE_ENABLED)
-   if $(not $(and $(file-exists $(CAMLP4LIB)/camlp4.cma), $(file-exists $(CAMLP4LIB)/pa_op.cmo)))
-      eprintln(!!! One of the files)
-      eprintln(!!!    $(CAMLP4LIB)/camlp4.cma)
-      eprintln(!!!    $(CAMLP4LIB)/pa_op.cmo)
-      eprintln(!!! does not exist \(or is not readable\))
-      eprintln(!!!)
-      eprintln(!!! Please consult doc/htmlman/mp-install.html \(http://metaprl.org/install.html\))
-      eprintln(!!! for instructions on compiling OCaml and setting the CAMLP4LIB variable)
-      eprintln(!!!)
-      exit(1)
+    CheckFile($(CAMLP4LIB)/camlp4.cma, $(InstVarErr CAMLP4LIB))
+    CheckFile($(CAMLP4LIB)/pa_op.cmo, $(InstVarErr CAMLP4LIB))
 
 if $(NATIVE_ENABLED)
-   if $(not $(and $(file-exists $(CAMLP4LIB)/camlp4.cmxa), $(file-exists $(CAMLP4LIB)/pa_op.cmx)))
-      eprintln(!!! One of the files)
-      eprintln(!!!    $(CAMLP4LIB)/camlp4.cmxa)
-      eprintln(!!!    $(CAMLP4LIB)/pa_op.cmx)
-      eprintln(!!! does not exist \(or is not readable\))
-      eprintln(!!!)
-      eprintln(!!! Please consult doc/htmlman/mp-install.html \(http://metaprl.org/install.html\))
-      eprintln(!!! for instructions on compiling OCaml and setting the CAMLP4LIB variable)
-      eprintln(!!!)
-      exit(1)
+    CheckFile($(CAMLP4LIB)/camlp4.cmxa, $(InstVarErr CAMLP4LIB))
+    CheckFile($(CAMLP4LIB)/pa_op.cmx, $(InstVarErr CAMLP4LIB))
 
 CheckVar(TERMS, $(TERMS), std ds both)
 CheckVar(REFINER, $(REFINER), SIMPLE VERBOSE)
@@ -137,19 +132,16 @@ CheckVar(DEFAULT_UI, $(DEFAULT_UI), browser cli)
 
 if $(equal $(OSTYPE), Win32)
     if $(SSL_ENABLED)
-        if $(not $(and $(file-exists $(SSL_LIB_WIN32)/ssleay32MT.lib), $(file-exists $(SSL_LIB_WIN32)/libeay32MT.lib), $(file-exists $(SSL_INC_WIN32)/openssl/ssl.h)))
-            eprintln(!!! One of the files)
-            eprintln(!!!    $(SSL_LIB_WIN32)/ssleay32MT.lib)
-            eprintln(!!!    $(SSL_LIB_WIN32)/libeay32MT.lib)
-            eprintln(!!!    $(SSL_INC_WIN32)/openssl/ssl.h)
-            eprintln(!!! does not exist \(or is not readable\))
-            eprintln(!!!)
-            eprintln(!!! Please either:)
-            eprintln(!!!  - Make sure your OpenSSL installation is complete and)
-            eprintln(!!!    the SSL_LIB_WIN32 and SSL_INC_WIN32 variables in mk/config.local)
-            eprintln(!!!    point to the correct locations)
-            eprintln(!!!  - Set SSL_ENABLED to false in mk/config)
-            eprintln(!!!    Note that SSL is currently required for the browser interface to work)
+        err[] =
+            $"Please either"
+            $" - Make sure your OpenSSL installation is complete and"
+            $"   the SSL_LIB_WIN32 and SSL_INC_WIN32 variables in mk/config.local"
+            $"   point to the correct location"
+            $" - Set SSL_ENABLED to false in mk/config"
+            $"   Note that SSL is currently required for the browser interface to work"
+        CheckFile($(SSL_LIB_WIN32)/ssleay32MT.lib, $(err))
+        CheckFile($(SSL_LIB_WIN32)/libeay32MT.lib, $(err))
+        CheckFile($(SSL_INC_WIN32)/openssl/ssl.h, $(err))
 
 #
 # Different version files
@@ -175,24 +167,25 @@ VersionCheck(versionfile, command) =
                 fprintln($(fd), $(version))
                 close($(fd))
             else
-                eprintln(!!!)
                 if $(SHARED_MODE)
-                    eprintln(!!! Wrong CAML version: $(version))
-                    eprintln(!!!)
-                    eprintln(!!! Your MetaPRL installation in $(MP_ROOT))
-                    eprintln(!!! was compiled using OCaml version $(CAML_VERSIONS))
-                    eprintln(!!! You have to use the same version of OCaml for your own theories.)
+                    err[] =
+                        $"Wrong CAML version: $(version)"
+                        $(EMPTY)
+                        Your MetaPRL installation in $(MP_ROOT)
+                        was compiled using OCaml version $(CAML_VERSIONS)
+                        You have to use the same version of OCaml for your own theories.
+                    ConfMsgError($(err))
                 else
-                    eprintln(!!! Unsupported CAML version: $(version))
-                    eprintln(!!!)
-                    eprintln(!!! $(command) -version produced the version string $(version))
-                    eprintln(!!! You need this version to be compatible with MetaPRL\,)
-                    eprintln(!!! which is only known to work with versions $(CAML_VERSIONS))
-                    eprintln(!!! If you believe that this list of versions is incorrect\, edit)
-                    eprintln(!!!)
-                    eprintln(!!! the CAML_VERSIONS variable in the mk/defaults file.)
-                eprintln(!!!)
-                exit(1)
+                    err[] =
+                        $"Unsupported CAML version: $(version)"
+                        $(EMPTY)
+                        $"""$(EMPTY)"$(command) -version" produced the version string $(version)"""
+                        $"You need this version to be compatible with MetaPRL,"
+                        $"which is only known to work with versions $(CAML_VERSIONS)"
+                        $(EMPTY)
+                        $"If you believe that this list of versions is incorrect, edit"
+                        $"the CAML_VERSIONS variable in the mk/defaults file."
+                    ConfMsgError($(err))
 
 VersionCheck($(OCAMLC_VERSION),     $(OCAMLC))
 VersionCheck($(OCAMLOPT_VERSION),   $(OCAMLOPT))

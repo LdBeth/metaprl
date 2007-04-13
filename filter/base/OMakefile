@@ -75,13 +75,14 @@ if $(not $(defined CHECK_MAGIC))
       ExtractMagic(filter_magic.ml, $@)
       OLD_MAGIC = $(cat $@)
       if $(and $(CHECK_MAGIC), $(not $(equal $(NEW_MAGIC), $(OLD_MAGIC))))
-         eprintln(!!! )
-         eprintln(!!! The FILTER_MD5 digest recorder in the filter/base/filter_magic.ml file)
-         eprintln(!!! does not match the computed one!)
-         eprintln(!!! The filter/base/filter_magic.ml file needs to be updated.)
-         eprintln(!!! )
-         eprintln(!!! Recorded hash - $(OLD_MAGIC); computed hash - $(NEW_MAGIC))
-         exit(1)
+         err[] =
+            The FILTER_MD5 digest recorder in the filter/base/filter_magic.ml file
+            does not match the computed one!
+            The filter/base/filter_magic.ml file needs to be updated.
+            $(EMPTY)
+            Recorded hash - $(OLD_MAGIC); computed hash - $(NEW_MAGIC)
+            $(EMPTY)
+         ConfMsgError($(err))
 
 #
 # Clean up

@@ -1,7 +1,7 @@
 #
 # Make sure omake is up-to-date
 #
-OMakeVersion(0.9.4.21)
+OMakeVersion(0.9.8.1)
 
 #
 # Include the standard installed configuration files.
@@ -9,6 +9,8 @@ OMakeVersion(0.9.4.21)
 open build/C
 open build/OCaml
 open build/LaTeX
+
+open configure/Configure
 
 #
 # Define the command line variables.

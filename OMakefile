@@ -150,12 +150,14 @@ if $(NATIVE_ENABLED)
       util/check-status nomake core
 
 else
+    err[] =
+        The check-status and core-incompletes targets expect MetaPRL to be compiled
+        to native code.
+        $(EMPTY)
+        Set COMPILATION_MODE to native or both in mk/config, if you need check-status
+        $(EMPTY)
     check-status core-incompletes:
-        eprintln($"""!!! check-status and core-incompletes targets expect MetaPRL to be compiled
-!!! to native code.
-!!!
-!!! Set COMPILATION_MODE to native or both in mk/config, if you need check-status.""")
-        exit 1
+        ConfMsgError($(err)) 
 
 ########################################################################
 # Installation
