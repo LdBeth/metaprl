@@ -99,30 +99,24 @@ let add_file table filename =
 (*
  * Borrowing from the Filename library, using the "lib" directory instead of the tmp one
  *)
-let prng = Random.State.make_self_init ()
-
-let temp_file_name prefix suffix =
-  let rnd = (Random.State.bits prng) land 0xFFFFFF in
-  Filename.concat (Setup.lib ()) (Printf.sprintf "%s%06x%s" prefix rnd suffix)
-
-let open_temp_file mode prefix suffix =
-  let rec try_name counter =
-    if counter >= 1000 then
-      invalid_arg "Filter_spell.open_temp_file: temp dir nonexistent or full";
-    let name = temp_file_name prefix suffix in
-    try
-      (name,
-       open_out_gen (Open_wronly::Open_creat::Open_excl::mode) 0o600 name)
-    with Sys_error _ ->
-      try_name (counter + 1)
-  in try_name 0
-
 let make_dict () =
+   let prng = Random.State.make_self_init () in
+   let lib = Setup.lib () in
+   let rec try_name counter =
+      if counter >= 1000 then
+         invalid_arg "Filter_spell.open_temp_file: lib directory nonexistent or full";
+      let rnd = (Random.State.bits prng) land 0xFFFFFF in
+      let name = Filename.concat lib (Printf.sprintf "english_dictionary%06x.dat" rnd) in
+      try
+         (name,
+          open_out_gen [Open_wronly; Open_creat; Open_excl; Open_binary] 0o600 name)
+      with Sys_error _ ->
+         try_name (counter + 1)
+   in
    let table = Hashtbl.create 1037 in
       List.iter (add_file table) words_filenames;
       dict := Some table;
-      let tmp, out = open_temp_file [Open_binary] "english_dictionary" ".dat" in
-
+      let tmp, out = try_name 0 in
       let out = Pervasives.open_out_bin tmp in
          Pervasives.output_binary_int out dat_magic;
          Marshal.to_channel out table [];
