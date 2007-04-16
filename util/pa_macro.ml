@@ -101,7 +101,7 @@ value rec no_nothingp =
     | [hd :: tl] -> [hd :: no_nothingp tl] ]
 ;
 
-value subst env =
+value subst mloc env =
   let rec loop =
     fun
     [ <:expr< let $opt:rf$ $list:pel$ in $e$ >> ->
@@ -178,6 +178,7 @@ value substp mloc env =
         try List.assoc x env with
         [ Not_found -> <:patt< $uid:x$ >> ]
     | <:expr< $int:x$ >> -> <:patt< $int:x$ >>
+    | <:expr< $str:s$ >> -> <:patt< $str:s$ >>
     | <:expr< ($list:x$) >> -> <:patt< ($list:List.map loop x$) >>
     | <:expr< { $list:pel$ } >> ->
         let ppl = List.map (fun (p, e) -> (p, loop e)) pel in
@@ -230,7 +231,7 @@ value define eo x =
                   in
                   if List.length el = List.length sl then
                     let env = List.combine sl el in
-                    let e = subst env e in
+                    let e = subst _loc env e in
                     Pcaml.expr_reloc (fun _ -> _loc) (fst _loc) e
                   else
                     incorrect_number _loc el sl ] ]
@@ -318,14 +319,14 @@ value parse_include_file =
         bol_ref.val := old_bol;
         lnum_ref.val := old_lnum;
         name_ref.val := old_name;
-        Pcaml.input_file.val := old_input; 
+        Pcaml.input_file.val := old_input;
       }
     in
     do {
       bol_ref.val := 0;
       lnum_ref.val := 1;
       name_ref.val := file;
-      Pcaml.input_file.val := file;  
+      Pcaml.input_file.val := file;
       try
         let items = Grammar.Entry.parse smlist st in
         do { restore (); items }
@@ -397,7 +398,7 @@ EXTEND
       | "IFNDEF"; i = uident; "THEN"; e1 = expr; e2 = else_expr ->
           if is_defined i then e2 else e1
       | "DEFINE"; i = LIDENT; "="; def = expr; "IN"; body = expr ->
-          subst [(i, def)] body
+          subst _loc [(i, def)] body
       ]]
   ;
   expr: LEVEL "simple"
