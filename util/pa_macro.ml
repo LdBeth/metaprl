@@ -9,30 +9,30 @@ Added statements:
      DEFINE <uident>
      DEFINE <uident> = <expression>
      DEFINE <uident> (<parameters>) = <expression>
-     IFDEF <uident> THEN <structure_items> ENDIF
-     IFDEF <uident> THEN <structure_items> ELSE <structure_items> ENDIF
-     IFNDEF <uident> THEN <structure_items> ENDIF
-     IFNDEF <uident> THEN <structure_items> ELSE <structure_items> ENDIF
+     IFDEF <uident> THEN <structure_items> (END | ENDIF)
+     IFDEF <uident> THEN <structure_items> ELSE <structure_items> (END | ENDIF)
+     IFNDEF <uident> THEN <structure_items> (END | ENDIF)
+     IFNDEF <uident> THEN <structure_items> ELSE <structure_items> (END | ENDIF)
      INCLUDE <string>
 
   In expressions:
 
-     IFDEF <uident> THEN <expression> [ ELSE <expression> ] ENDIF
-     IFNDEF <uident> THEN <expression> [ ELSE <expression> ] ENDIF
-     DEFINE <lident> = <expression> in <expression>
+     IFDEF <uident> THEN <expression> [ ELSE <expression> ] (END | ENDIF)
+     IFNDEF <uident> THEN <expression> [ ELSE <expression> ] (END | ENDIF)
+     DEFINE <lident> = <expression> IN <expression>
      __FILE__
      __LOCATION__
 
   In patterns:
 
-     IFDEF <uident> THEN <pattern> ELSE <pattern> ENDIF
-     IFNDEF <uident> THEN <pattern> ELSE <pattern> ENDIF
+     IFDEF <uident> THEN <pattern> ELSE <pattern> (END | ENDIF)
+     IFNDEF <uident> THEN <pattern> ELSE <pattern> (END | ENDIF)
 
   As Camlp4 options:
 
-     -D<uident>
-     -U<uident>
-     -I<dir>
+     -D<uident>                      define <uident>
+     -U<uident>                      undefine it
+     -I<dir>                         add <dir> to the search path for INCLUDE'd files
 
   After having used a DEFINE <uident> followed by "= <expression>", you
   can use it in expressions *and* in patterns. If the expression defining
@@ -42,10 +42,11 @@ Added statements:
   You can also define a local macro in an expression usigng the DEFINE ... IN form.
   Note that local macros have lowercase names and can not take parameters.
 
-  INCLUDE can be used to include a file with a number of macro definitions;
-  however it can not have any non-macro toplevel items. The INCLUDE files
-  are looked up in directories passed in via the -I option, falling back to
-  current directory.
+  The toplevel statement INCLUDE <string> can be used to include a
+  file containing macro definitions; note that files included in such
+  a way can not have any non-macro toplevel items.  The included files
+  are looked up in directories passed in via the -I option, falling
+  back to the current directory.
 
   The expression __FILE__ returns the current compiled file name.
   The expression __LOCATION__ returns the current location of itself.
@@ -82,10 +83,9 @@ value defined = ref [];
 value is_defined i = List.mem_assoc i defined.val;
 
 value _loc =
-   let nowhere =
-      { (Lexing.dummy_pos) with Lexing.pos_lnum = 1; Lexing.pos_cnum = 0 }
-   in
-      (nowhere, nowhere);
+    let nowhere =
+      { (Lexing.dummy_pos) with Lexing.pos_lnum = 1; Lexing.pos_cnum = 0 } in
+    (nowhere, nowhere);
 
 value rec no_nothing =
   fun
@@ -359,20 +359,24 @@ EXTEND
   macro_def:
     [ [ "DEFINE"; i = uident; def = opt_macro_value -> SdDef i def
       | "UNDEF"; i = uident -> SdUnd i
-      | "IFDEF"; i = uident; "THEN"; dl = smlist; "ENDIF" ->
+      | "IFDEF"; i = uident; "THEN"; dl = smlist; _ = endif ->
           SdITE i dl []
       | "IFDEF"; i = uident; "THEN"; dl1 = smlist; "ELSE";
-        dl2 = smlist; "ENDIF" ->
+        dl2 = smlist; _ = endif ->
           SdITE i dl1 dl2
-      | "IFNDEF"; i = uident; "THEN"; dl = smlist; "ENDIF" ->
+      | "IFNDEF"; i = uident; "THEN"; dl = smlist; _ = endif ->
           SdITE i [] dl
       | "IFNDEF"; i = uident; "THEN"; dl1 = smlist; "ELSE";
-        dl2 = smlist; "ENDIF" ->
+        dl2 = smlist; _ = endif ->
           SdITE i dl2 dl1
-      | "INCLUDE"; file = STRING -> SdInc file ] ]
+      | "INCLUDE"; fname = STRING -> SdInc fname ] ]
   ;
   smlist:
     [ [ sml = LIST1 str_item_or_macro -> sml ] ]
+  ;
+  endif:
+    [ [ "END" -> ()
+      | "ENDIF" -> () ] ]
   ;
   str_item_or_macro:
     [ [ d = macro_def -> d
@@ -384,8 +388,8 @@ EXTEND
       | -> None ] ]
   ;
   else_expr:
-    [ [ "ELSE"; e = expr; "ENDIF" -> e
-      | "ENDIF" -> <:expr< () >> ]]
+    [ [ "ELSE"; e = expr; _ = endif -> e
+      | _ = endif -> <:expr< () >> ]]
   ;
   expr: LEVEL "top"
     [ [ "IFDEF"; i = uident; "THEN"; e1 = expr; e2 = else_expr ->
@@ -404,9 +408,9 @@ EXTEND
           <:expr< ($int:bp$, $int:ep$) >> ] ]
   ;
   patt:
-    [ [ "IFDEF"; i = uident; "THEN"; p1 = patt; "ELSE"; p2 = patt; "ENDIF" ->
+    [ [ "IFDEF"; i = uident; "THEN"; p1 = patt; "ELSE"; p2 = patt; _ = endif ->
           if is_defined i then p1 else p2
-      | "IFNDEF"; i = uident; "THEN"; p1 = patt; "ELSE"; p2 = patt; "ENDIF" ->
+      | "IFNDEF"; i = uident; "THEN"; p1 = patt; "ELSE"; p2 = patt; _ = endif ->
           if is_defined i then p2 else p1 ] ]
   ;
   uident:
