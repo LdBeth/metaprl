@@ -485,13 +485,11 @@ let scan_level_expression scanner =
     if (scan_whitespace s; scan_at_char_p s '\'') then
       (scan_next s;
        le := incr_level_exp !le;
-       scan_numbers s;
-       s)
+       scan_numbers s)
     else if (scan_whitespace s; scan_at_digit_p s) then
       (le := incr_level_exp_n (Lm_num.int_of_num (scan_num s)) !le;
-       scan_numbers s;
-       s)
-    else s in
+       scan_numbers s)
+  in
   let rec scan_atom s =
      let scan_expression_q () = scan_expression s in
      if (scan_whitespace s; scan_at_byte_p s ilsquare) then
@@ -503,8 +501,8 @@ let scan_level_expression scanner =
     scan_whitespace s;
     le := max_level_exp (mk_var_level_exp v) !le 0); s
    and scan_expression s2 =
-    let _ = scan_numbers (scan_atom s2)
-    in s2
+    scan_numbers (scan_atom s2);
+    s2
   in
     let _ = scan_expression scanner
     in !le
