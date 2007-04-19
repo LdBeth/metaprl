@@ -102,5 +102,5 @@ if $(not $(defined CAMLLIB))
     export
 
 if $(not $(defined CAMLP4LIB))
-    CAMLP4LIB = $(dir $(getenv CAMLP4LIB, $(CAMLLIB)/camlp4))
+    CAMLP4LIB = $(dir $(getenv CAMLP4LIB, $"$(CAMLLIB)/camlp4"))
     export
