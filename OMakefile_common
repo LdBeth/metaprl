@@ -4,36 +4,6 @@
 OMakeVersion(0.9.8.1)
 
 ########################################################################
-# OS-specific config.
-#
-if $(equal $(OSTYPE), Win32)
-   #
-   # Compile C files with threads
-   #
-   CFLAGS += /MT
-
-   #
-   # CAMLLIB should be set in the environment
-   #
-   CAMLLIB = $(dir $(string $(getenv OCAMLLIB, $(CAMLLIB_DEFAULT))))
-   CAMLP4LIB = $(dir $(CAMLLIB)/camlp4)
-   export
-
-else
-   #
-   # Location of OCaml root
-   #
-   if $(not $(defined CAMLLIB))
-      CAMLLIB = $(dir $(getenv CAMLLIB, $(getenv OCAMLLIB, $(CAMLLIB_DEFAULT))))
-      export
-
-   if $(not $(defined CAMLP4LIB))
-      CAMLP4LIB = $(dir $(getenv CAMLP4LIB, $(CAMLLIB)/camlp4))
-      export
-
-   export
-
-########################################################################
 # Config cleaning
 #
 if $(not $(defined CAMLP4R))
@@ -161,7 +131,7 @@ VersionCheck(versionfile, command) =
 
     $(versionfile): $(fullcommand)
         section eval
-            version = $(concat _, $(shell $(command) -version))
+            version = $"$(shell $(command) -version)"
             if $(mem $(version), $(CAML_VERSIONS))
                 fd = $(fopen $(versionfile), w)
                 fprintln($(fd), $(version))
@@ -179,7 +149,7 @@ VersionCheck(versionfile, command) =
                     err[] =
                         $"Unsupported CAML version: $(version)"
                         $(EMPTY)
-                        $"""$(EMPTY)"$(command) -version" produced the version string $(version)"""
+                        $"""$(EMPTY)"$(command) -version" produced the version string "$(version)"$(EMPTY)"""
                         $"You need this version to be compatible with MetaPRL,"
                         $"which is only known to work with versions $(CAML_VERSIONS)"
                         $(EMPTY)

@@ -46,16 +46,29 @@ DEFAULT_BROWSER_COMMANDS[] =
    mozilla
 
 #
-# Location of OCAML libraries
+# Location of OCAML libraries and default compilation flags
 #
 if $(equal $(OSTYPE), Win32)
-   CAMLLIB_DEFAULT = $(shell ocamlc -where)
+   # Compile C files with threads
+   CAMLLIB_DEFAULT = $"C:/Program Files/Objective Caml/lib"
+   CFLAGS += /MT
    export
 
 else
    CAMLLIB_DEFAULT = /usr/lib/ocaml
    CFLAGS += -O2 -Wall -Wno-unused-variable
    export
+
+static. =
+   ConfMsgChecking(for a default location of the OCaml library)
+   CAMLLIB_DEFAULT =
+      try
+         value $(shell ocamlc -where)
+      default
+         value $(getenv OCAMLLIB, $(CAMLLIB_DEFAULT))
+
+   CAMLLIB_DEFAULT = $(dir $"$(CAMLLIB_DEFAULT)")
+   ConfMsgResult($(CAMLLIB_DEFAULT))
 
 OCAMLFLAGS = -warn-error Aez -w Aez
 
