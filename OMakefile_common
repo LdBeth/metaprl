@@ -1,7 +1,7 @@
 #
 # Make sure omake is up-to-date
 #
-OMakeVersion(0.9.8.1)
+OMakeVersion(0.9.8.5)
 
 ########################################################################
 # Config cleaning
@@ -286,11 +286,7 @@ if $(SSL_ENABLED)
     export
 
 if $(READLINE_ENABLED)
-    CFLAGS += \
-        -DREADLINE\
-        -DRL_COMPLETION_MATCHES=rl_completion_matches\
-        -DRL_CP_TYPE=rl_compentry_func_t\
-        -DRL_CPP_TYPE=rl_completion_func_t
+    CFLAGS += $(READLINE_CFLAGS)
     OCAML_LINK_FLAGS += -cclib -lreadline
     export
 

@@ -243,7 +243,7 @@ struct
     *)
    let create _upcalls =
       { queue_chan = Lm_thread_event.new_channel ();
-        queue_lock = Mutex.create ();
+        queue_lock = Mutex.create "Remote_queue_null";
         queue_cond = Condition.create ();
         queue_unlocked = [];
         queue_locked = [];
@@ -264,7 +264,6 @@ end
 (*
  * -*-
  * Local Variables:
- * Caml-master: "refiner"
  * End:
  * -*-
  *)
