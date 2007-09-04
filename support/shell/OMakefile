@@ -62,7 +62,7 @@ shell_state.mlh: :value: $(DEFAULT_UI) $(BROWSER_COMMAND)
 # Some of these files should use the normal OCaml compiler
 #
 section
-    value $(STANDARD_BUILD_ENV)
+    export($(STANDARD_BUILD_ENV))
     files = $(filter-out $(MPFILES), $(FILES))
     files = $(addsuffixes .cmi .cmo .cmx $(EXT_OBJ), $(files))
     $(files):

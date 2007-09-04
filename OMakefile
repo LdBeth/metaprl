@@ -1,4 +1,4 @@
-OMakeVersion(0.9.8.1)
+OMakeVersion(0.9.8.5)
 
 #
 # Locations of the source tree.
@@ -106,8 +106,7 @@ OCAMLINCLUDES += $(dir filter/base filter/filter)
 # Capture the current environment so that some files can use it
 # in some places.
 #
-STANDARD_BUILD_ENV =
-    export .RULE
+STANDARD_BUILD_ENV = $(export .RULE)
 
 #
 # Include the support directories
