@@ -44,7 +44,7 @@ TOPFILES[] =
 make_mp_version$(EXE): make_mp_version.ml
     $(OCAMLC) $(OCAMLCFLAGS) -o $@ unix.cma $<
 
-static. =
+.STATIC:
     SVNVERSION_AVAILABLE = $(CheckProg svnversion)
 
 if $(file-exists $(ROOT)/.svn/entries)
@@ -52,14 +52,13 @@ if $(file-exists $(ROOT)/.svn/entries)
     # Subversion revision potentially depends on all the directories
     # in the project.
     #
-    get-entries() =
-        return $(addsuffix /.svn/entries, $(project-directories))
-
-    digest-deps() =
-        return $(digest-optional $(get-entries))
+    .SCANNER: scan-svnversion.txt: :value: $(project-directories)
+        section
+            entries = $(filter-exists $(file $(addsuffix /.svn/entries, $(project-directories))))
+            println($"svnversion.txt: $(entries)")
 
     if $(SVNVERSION_AVAILABLE)
-        svnversion.txt: $(MLDEBUG_PATH) :value: $(digest-deps)
+        svnversion.txt: $(MLDEBUG_PATH) :scanner: scan-svnversion.txt
             svnversion $(ROOT) > $@
 
     else
@@ -93,7 +92,7 @@ if $(file-exists $(ROOT)/.svn/entries)
         write_svnversion(file) =
             fprintln($(file), $(svnrevision $(get-entries)))
 
-        svnversion.txt: $(MLDEBUG_PATH) :value: $(digest-deps)
+        svnversion.txt: $(MLDEBUG_PATH) :scanner: scan-svnversion.txt
             write_svnversion($@)
 
 else
