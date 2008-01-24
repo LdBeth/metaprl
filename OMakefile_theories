@@ -41,7 +41,12 @@ OCAMLDEPFLAGS += -prl
 #   http://bugzilla.metaprl.org/show_bug.cgi?id=90
 #   http://bugzilla.metaprl.org/show_bug.cgi?id=420
 #
-%.cmx %.o: %.ml
+
+#
+# XXX: JYH: disable this for now.  It is getting applied in too
+# many places.
+#
+%.cmx %.o: %.ml disable-this-rule
    @echo $(quote *** Error: MetaPRL file $(in $(ROOT), $(file $<)) $'does not have
 ***        a corresponding' $(in $(ROOT), $(file $*.mli)))
    exit 1

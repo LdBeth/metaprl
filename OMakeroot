@@ -22,7 +22,7 @@ DefineCommandVars()
 # If the version variable is set,
 # build the version in that directory.
 #
-if $(defined Options.VERSION)
+if $(defined VERSION)
     #
     # Allow subdirectories to be created at will.
     #
