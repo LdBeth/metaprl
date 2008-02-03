@@ -228,13 +228,12 @@ let extract_nth_hyp_data =
    let self_term = mk_nthhyp_pair_term a a in
    let err = RefineError ("extract_nth_hyp_data", StringError "nthHypT tactic doesn't have an entry for this hypothesis/conclusion combination") in
    let err_assum = RefineError ("Auto_tactic.matchAssumsT", StringError "lengths do not match") in
-   let failT' _ = failT in
    (fun tbl ->
       let nth_hypT =
          match Term_match_table.lookup tbl select_immediate self_term with
             Some (NthImmediate tac) -> tac
           | Some _ -> raise (Invalid_argument "nthHypT: internal error")
-          | None -> failT'
+          | None -> (fun _ -> failWithT "nthHypT: no match")
       in
       let rec iterate hyp i (c : nth_hyp_entry lazy_lookup) _ =
          match c () with
@@ -483,11 +482,11 @@ let completeP tac = (tac.auto_type == AutoComplete)
 let make_progressT goals tac tacelse =
    funT (fun p ->
       let goal = Sequent.goal p in
-      let shape = shape_of_term goal in 
+      let shape = shape_of_term goal in
       let shape =
          if shape == sequent_shape then
             shape_of_term (explode_sequent goal).sequent_concl
-         else 
+         else
             shape
       in
          if List.exists (alpha_equal goal) (ShapeMTable.find_all goals shape) then

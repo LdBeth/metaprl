@@ -44,10 +44,10 @@ TEXT_FILE = $(file mbs-mpl.txt)
 $(MPINSTALL): $(LIB)/mbs-mpl.txt $(LIB)/registry.txt
 
 $(LIB)/mbs-mpl.txt: $(TEXT_FILE)
-   $(symlink $<, $@)
+    ln-or-cp $< $@
 
 $(LIB)/registry.txt: $(REGISTRY_FILE)
-   $(symlink $<, $@)
+    ln-or-cp $< $@
 
 #
 # Clean up

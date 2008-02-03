@@ -1,0 +1,70 @@
+########################################################################
+# This is extracted from load_config, to work with standalone.
+# !!THIS IS VERY BAD!!
+#
+# The problem is that file-creation is being mixed with
+# configuration.
+#
+
+########################################################################
+# Configuration section
+#
+FindBrowser() =
+   foreach(browser, $(DEFAULT_BROWSER_COMMANDS))
+      if $(CheckProg $(browser))
+         return $(which $(browser))
+   return $(EMPTY)
+
+static. =
+   println($"--> Looking for a browser command to use...")
+   DEFAULT_BROWSER_COMMAND = $(FindBrowser)
+   if $(DEFAULT_BROWSER_COMMAND)
+      println($"<-- Default browser command: $(DEFAULT_BROWSER_COMMAND)")
+   else
+      println($"<-- No browser found")
+
+BROWSER_COMMAND = $(DEFAULT_BROWSER_COMMAND)
+
+INSTALL_DIR = $(dir $(INSTALL_DIR))
+THEORYPATH[] = $(dir $(THEORYPATH))
+
+#
+# Things that can not be enabled on Win32.
+#
+if $(equal $(OSTYPE), Win32)
+    READLINE_ENABLED = false
+    NCURSES_ENABLED = false
+    NATIVE_PROFILING_ENABLED = false
+    export
+
+#
+# Canonize boolean flags
+# This helps in keeping mk/config nice, but can be omitted.
+#
+Bool(arg) =
+    return $(not $(not $(arg)))
+
+SSL_ENABLED = $(Bool $(SSL_ENABLED))
+THREADS_ENABLED = $(Bool $(THREADS_ENABLED))
+READLINE_ENABLED = $(and $(READLINE_ENABLED), $(NCURSES_ENABLED))
+NCURSES_ENABLED = $(Bool $(NCURSES_ENABLED))
+NATIVE_PROFILING_ENABLED = $(Bool $(NATIVE_PROFILING_ENABLED))
+SPELLING_ENABLED = $(Bool $(SPELLING_ENABLED))
+TESTS_ENABLED = $(Bool $(TESTS_ENABLED))
+SLOPPY_DEPENDENCIES = $(Bool $(SLOPPY_DEPENDENCIES))
+MPRUN_ENABLED = $(Bool $(MPRUN_ENABLED))
+
+if $(equal $(COMPILATION_MODE), bytecode)
+    COMPILATION_MODE = byte
+    export
+
+########################################################################
+# Update the OCaml lib location.
+#
+if $(not $(defined CAMLLIB))
+    CAMLLIB = $(dir $(getenv CAMLLIB, $(getenv OCAMLLIB, $(CAMLLIB_DEFAULT))))
+    export
+
+if $(not $(defined CAMLP4LIB))
+    CAMLP4LIB = $(dir $(getenv CAMLP4LIB, $"$(CAMLLIB)/camlp4"))
+    export

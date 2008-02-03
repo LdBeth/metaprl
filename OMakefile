@@ -167,7 +167,7 @@ else
 #
 ExportInstallDir(mk)
 ExportSubInstallNamed(mk, OMakefile_editor, editor/ml/OMakefile)
-ExportSubInstall(mk, OMakefile_common OMakefile_theories mk/prlcomp mk/config mk/defaults)
+ExportSubInstall(mk, OMakefile_common OMakefile_theories mk/prlcomp mk/config mk/ro_config mk/defaults)
 
 #
 # Generate the OMakeroot file for read-only clients
@@ -189,7 +189,6 @@ $(MPINSTALL): $(EXPORT)/mk/OMakeroot $(EXPORT)/mk/OCaml_version
 # Install everything
 #
 install: $(MPINSTALL)
-    rm -rf $(INSTALL_DIR)
     mkdir -p $(INSTALL_DIR)
     /bin/cp -L -r --remove-destination $(LIB) $(INSTALL_DIR)
     /bin/cp -L -r --remove-destination $(BIN) $(INSTALL_DIR)

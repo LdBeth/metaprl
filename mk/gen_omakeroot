@@ -38,6 +38,7 @@ setenv(MPLIB,   $$(MP_LIB))
 
 include $$(MK)/defaults
 include $$(MK)/config
+include $$(MK)/ro_config
 include $$(MK)/OMakefile_common
 
 #
@@ -49,6 +50,14 @@ add-project-directories(.)
 THEORIES[] =
 include OMakefile
 
+#
+# MetaPRL can't use the modules yet.
+#
+OCAMLDEP_MODULES_ENABLED = false
+
+#
+# Include only installed
+#
 OCAMLINCLUDES[] +=
     $$(CAMLLIB)
     $$(CAMLP4LIB)

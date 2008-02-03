@@ -91,7 +91,7 @@ val edit_set_goal : string -> string -> term -> unit
 val edit_set_redex : string -> string -> term -> unit
 val edit_set_contractum : string -> string -> term -> unit
 val edit_set_assumptions : string -> string -> term list -> unit
-val edit_set_params : string -> string -> term Filter_type.param list -> unit
+(* val edit_set_params : string -> string -> term Filter_type.param list -> unit *)
 val edit_refine : int list -> string -> msequent * msequent list * msequent list
 val edit_node : int list -> string option * msequent * msequent list * msequent list
 val edit_save : string -> unit
