@@ -84,14 +84,14 @@ OCAMLINCLUDES += $(dir mllib)
 
 .SUBDIRS: proxyedit
 
-OCAMLINCLUDES += $(dir refiner/refsig refiner/refbase refiner/refiner refiner/reflib $(CAMLP4LIB))
+OCAMLINCLUDES += $(dir refiner/refsig refiner/refbase refiner/refiner refiner/reflib $(CAMLP5LIB))
 
 ########################################################################
 # Generic directories with no special options
 #
 .SUBDIRS: library debug $(ENSEMBLE_DIR) tactics/proof
 
-# Add camlp4 library to include path
+# Add camlp5 library to include path
 OCAMLINCLUDES += $(dir library tactics/proof)
 
 .SUBDIRS: filter
@@ -156,7 +156,7 @@ else
         Set COMPILATION_MODE to native or both in mk/config, if you need check-status
         $(EMPTY)
     check-status core-incompletes:
-        ConfMsgError($(err)) 
+        ConfMsgError($(err))
 
 ########################################################################
 # Installation

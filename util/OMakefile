@@ -24,19 +24,19 @@ clean:
 #
 # Macros
 #
-OCAML_LIBS += $(CAMLP4LIB)/odyl $(CAMLP4LIB)/camlp4
-OCAMLINCLUDES += $(CAMLP4LIB)
+OCAML_LIBS += $(CAMLP5LIB)/odyl $(CAMLP5LIB)/camlp5
+OCAMLINCLUDES += $(CAMLP5LIB)
 OCAML_LINK_FLAGS += -linkall
-OCAMLFLAGS += -pp $(quote-argv $(CAMLP4R) -I $(CAMLP4LIB) -nolib $(LOC))
+OCAMLFLAGS += -pp $(quote-argv $(CAMLP5R) -I $(CAMLP5LIB) -nolib $(LOC))
 
-%.cmx %$(EXT_OBJ): $(CAMLP4R_VERSION)
-%.cmo: $(CAMLP4R_VERSION)
-%.cmi: $(CAMLP4R_VERSION)
+%.cmx %$(EXT_OBJ): $(CAMLP5R_VERSION)
+%.cmo: $(CAMLP5R_VERSION)
+%.cmi: $(CAMLP5R_VERSION)
 
 MACRO_FILES[] =
-    $(CAMLP4LIB)/pa_o
+    $(CAMLP5LIB)/pa_o
     pa_macro
     macro_main
 
-OCamlProgramInstall($(MPINSTALL), $(LIB), macropp, $(CAMLP4LIB)/pr_dump $(MACRO_FILES))
-OCamlProgramInstall($(MPINSTALL), $(LIB), macroprint, $(CAMLP4LIB)/pr_o $(MACRO_FILES))
+OCamlProgramInstall($(MPINSTALL), $(LIB), macropp, $(CAMLP5LIB)/pr_dump $(MACRO_FILES))
+OCamlProgramInstall($(MPINSTALL), $(LIB), macroprint, $(CAMLP5LIB)/pr_o $(MACRO_FILES))

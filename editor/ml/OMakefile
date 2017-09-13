@@ -76,11 +76,11 @@ CMXADEPS[] =
     $(CAMLLIB)/unix.cmxa
     $(CAMLLIB)/str.cmxa
     $(OPTTHREADSLIB)
-    $(CAMLP4LIB)/odyl$(PROF_EXT).cmxa
-    $(CAMLP4LIB)/camlp4$(PROF_EXT).cmxa
+    $(CAMLP5LIB)/odyl$(PROF_EXT).cmxa
+    $(CAMLP5LIB)/camlp5$(PROF_EXT).cmxa
     $(BASE_CMXAS)
-    $(CAMLP4LIB)/pa_o$(PROF_EXT).cmx
-    $(CAMLP4LIB)/pa_op$(PROF_EXT).cmx
+    $(CAMLP5LIB)/pa_o$(PROF_EXT).cmx
+    $(CAMLP5LIB)/pa_op$(PROF_EXT).cmx
     $(PRLC_CMXAS)
     $(addsuffix /theory.cmxa, $(MP_DIRS))
 
@@ -90,27 +90,27 @@ ARDEPS[] =
     $(addsuffix /theory$(EXT_LIB), $(MP_DIRS))
 
 CMADEPS[] =
-    $(CAMLP4LIB)/odyl.cma
+    $(CAMLP5LIB)/odyl.cma
     $(CAMLLIB)/unix.cma
     $(CAMLLIB)/str.cma
     $(THREADSLIB)
-    $(CAMLP4LIB)/camlp4.cma
-    $(CAMLP4LIB)/camlp4_top.cma
+    $(CAMLP5LIB)/camlp5.cma
+    $(CAMLP5LIB)/camlp5_top.cma
     $(BASE_CMAS)
-    $(CAMLP4LIB)/pa_o.cmo
-    $(CAMLP4LIB)/pa_op.cmo
+    $(CAMLP5LIB)/pa_o.cmo
+    $(CAMLP5LIB)/pa_op.cmo
     $(PRLC_CMAS)
     $(addsuffix /theory.cma, $(MP_DIRS))
 
 TCMADEPS[] =
-    $(CAMLP4LIB)/odyl.cma
+    $(CAMLP5LIB)/odyl.cma
     $(CAMLLIB)/unix.cma
     $(CAMLLIB)/str.cma
     $(THREADSLIB)
-    $(CAMLP4LIB)/camlp4.cma
+    $(CAMLP5LIB)/camlp5.cma
     $(BASE_CMAS)
-    $(CAMLP4LIB)/pa_o.cmo
-    $(CAMLP4LIB)/pa_op.cmo
+    $(CAMLP5LIB)/pa_o.cmo
+    $(CAMLP5LIB)/pa_op.cmo
     $(PRLC_CMAS)
     $(addsuffix /theory.cma, $(MP_DIRS))
 
@@ -251,10 +251,10 @@ LC_ALL=en_US.UTF-8
 export LC_ALL
 
 #
-# Camlp4 directory
+# Camlp5 directory
 #
-if [ -z "$$CAMLP4LIB" ]; then
-   CAMLP4LIB=`ocamlc -where`/camlp4
+if [ -z "$$CAMLP5LIB" ]; then
+   CAMLP5LIB=`ocamlc -where`/camlp5
 fi
 
 . ./mldebug.dir

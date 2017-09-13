@@ -355,7 +355,7 @@ let rec find_file_by_path stale_found name stale_ext ext = function
              | None, _ ->
                   Some dir
          end else
-            let stale_found = 
+            let stale_found =
                match stale_found, stale_ext with
                   Some _, _ -> stale_found
                 | None, Some ext when Sys.file_exists (Filename.concat dir name ^ ext) -> Some dir
@@ -514,7 +514,8 @@ let scan_dependencies source_file =
 let summ_reflect summ =
    let { summ_basename       = basename;
          summ_is_impl        = is_impl;
-         summ_prl_structures = prl_structures
+         summ_prl_structures = prl_structures;
+         _
        } = summ
    in
 
@@ -555,7 +556,8 @@ let summ_postproc summ =
          summ_free_structures = free_structures;
          summ_prl_structures  = prl_structures;
          summ_contains_topval = contains_topval;
-         summ_contains_rules  = contains_rules
+         summ_contains_rules  = contains_rules;
+         _
        } = summ
    in
 
@@ -609,7 +611,8 @@ let add_intf_dependencies table summ =
    let { summ_basename        = basename;
          summ_free_structures = free_structures;
          summ_prl_structures  = prl_structures;
-         summ_includes        = includes
+         summ_includes        = includes;
+         _
        } = summ
    in
    let name_cmi  = basename ^ ".cmi" in
@@ -632,7 +635,8 @@ let add_impl_dependencies table summ =
    let { summ_basename        = basename;
          summ_free_structures = free_structures;
          summ_prl_structures  = prl_structures;
-         summ_includes        = includes
+         summ_includes        = includes;
+         _
        } = summ
    in
    let name_cmi  = basename ^ ".cmi" in

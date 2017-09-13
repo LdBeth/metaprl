@@ -6,12 +6,12 @@ OMakeVersion(0.9.8.5)
 ########################################################################
 # Config cleaning
 #
-if $(not $(defined CAMLP4R))
-   CAMLP4R = camlp4r$(EXE)
+if $(not $(defined CAMLP5R))
+   CAMLP5R = camlp5r$(EXE)
    export
 
-if $(not $(defined CAMLP4O))
-   CAMLP4O = camlp4o$(EXE)
+if $(not $(defined CAMLP5O))
+   CAMLP5O = camlp5o$(EXE)
    export
 
 #
@@ -80,20 +80,24 @@ InstVarErr(var) =
         $"for instructions on compiling OCaml and setting the $(var) variable."
     return $(err)
 
+print($(CAMLLIB))
 if $(file-exists $(CAMLLIB)/../compiler-lib/parsetree.cmi)
    OCAMLINCLUDES += $(dir $(CAMLLIB)/../compiler-lib)
+   export
+elseif  $(file-exists $(CAMLLIB)/compiler-libs/parsetree.cmi)
+   OCAMLINCLUDES += $(dir $(CAMLLIB)/compiler-libs)
    export
 else
    if $(BYTE_ENABLED)
         CheckFile($(CAMLLIB)/parsetree.cmi, $(InstVarErr CAMLLIB))
 
 if $(BYTE_ENABLED)
-    CheckFile($(CAMLP4LIB)/camlp4.cma, $(InstVarErr CAMLP4LIB))
-    CheckFile($(CAMLP4LIB)/pa_op.cmo, $(InstVarErr CAMLP4LIB))
+    CheckFile($(CAMLP5LIB)/camlp5.cma, $(InstVarErr CAMLP5LIB))
+    CheckFile($(CAMLP5LIB)/pa_op.cmo, $(InstVarErr CAMLP5LIB))
 
 if $(NATIVE_ENABLED)
-    CheckFile($(CAMLP4LIB)/camlp4.cmxa, $(InstVarErr CAMLP4LIB))
-    CheckFile($(CAMLP4LIB)/pa_op.cmx, $(InstVarErr CAMLP4LIB))
+    CheckFile($(CAMLP5LIB)/camlp5.cmxa, $(InstVarErr CAMLP5LIB))
+    CheckFile($(CAMLP5LIB)/pa_op.cmx, $(InstVarErr CAMLP5LIB))
 
 CheckVar(TERMS, $(TERMS), std ds both)
 CheckVar(REFINER, $(REFINER), SIMPLE VERBOSE)
@@ -118,20 +122,26 @@ if $(equal $(OSTYPE), Win32)
 #
 OCAMLC_VERSION     = $(file .version.ocamlc)
 OCAMLOPT_VERSION   = $(file .version.ocamlopt)
-CAMLP4_VERSION     = $(file .version.camlp4)
-CAMLP4R_VERSION    = $(file .version.camlp4r)
-CAMLP4O_VERSION    = $(file .version.camlp4o)
+CAMLP5_VERSION     = $(file .version.camlp5)
+CAMLP5R_VERSION    = $(file .version.camlp5r)
+CAMLP5O_VERSION    = $(file .version.camlp5o)
 OCAMLMKTOP_VERSION = $(file .version.ocamlmktop)
 
 #
 # Generate the rule for version checking.
 #
-VersionCheck(versionfile, command) =
+VersionCheck(versionfile, command, ?opt = -version) =
     fullcommand = $(which $(command))
 
     $(versionfile): $(fullcommand)
         section eval
-            version = $"$(shell $(command) -version)"
+            tmpname = $(tmpfile version)
+            $(command) $(opt) >& $(tmpname)
+            version = $(cat $(tmpname))
+            match $(version)
+            case $".*version.\([.0-9]+\).*"
+                 version = $1
+                 export
             if $(mem $(version), $(CAML_VERSIONS))
                 fd = $(fopen $(versionfile), w)
                 fprintln($(fd), $(version))
@@ -149,7 +159,7 @@ VersionCheck(versionfile, command) =
                     err[] =
                         $"Unsupported CAML version: $(version)"
                         $(EMPTY)
-                        $"""$(EMPTY)"$(command) -version" produced the version string "$(version)"$(EMPTY)"""
+                        $"""$(EMPTY)"$(command) $(opt)" produced the version string "$(version)"$(EMPTY)"""
                         $"You need this version to be compatible with MetaPRL,"
                         $"which is only known to work with versions $(CAML_VERSIONS)"
                         $(EMPTY)
@@ -160,12 +170,14 @@ VersionCheck(versionfile, command) =
 VersionCheck($(OCAMLC_VERSION),     $(OCAMLC))
 VersionCheck($(OCAMLOPT_VERSION),   $(OCAMLOPT))
 VersionCheck($(OCAMLMKTOP_VERSION), $(OCAMLMKTOP))
-VersionCheck($(CAMLP4_VERSION),     $(CAMLP4))
-VersionCheck($(CAMLP4R_VERSION),    $(CAMLP4R))
-VersionCheck($(CAMLP4O_VERSION),    $(CAMLP4O))
+section
+    CAML_VERSIONS = 6.17
+    VersionCheck($(CAMLP5_VERSION),     $(CAMLP5), ?opt = $"-v")
+    VersionCheck($(CAMLP5R_VERSION),    $(CAMLP5R), ?opt = $"-v")
+    VersionCheck($(CAMLP5O_VERSION),    $(CAMLP5O), ?opt = $"-v")
 
 #
-# XXX: This is here to make sure that Camlp4 3.08 acts the same way as 3.09
+# XXX: This is here to make sure that Camlp5 3.08 acts the same way as 3.09
 # (in 3.08 the default value is loc, but in 3.09 it's _loc).
 #
 LOC = -loc _loc
@@ -333,7 +345,7 @@ $(THEORIES_PATH):
 
 $(MLDEBUG_PATH):
     section
-        deps = $(project-directories) $(CAMLLIB) $(CAMLP4LIB)
+        deps = $(project-directories) $(CAMLLIB) $(CAMLP5LIB)
         deps = $(mapprefix -I, $(in $(EDITOR), $(deps)))
         if $(equal $(OSTYPE), Win32)
             fprintln($@, $(string $(deps)))

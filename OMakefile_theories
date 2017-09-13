@@ -17,13 +17,13 @@ if $(NATIVE_PROFILING_ENABLED)
 #
 # Commands to compile theory files
 #
-CAMLP4N = $(file $(LIB)/camlp4n$(EXE))
-CAMLP4O = $(file $(LIB)/camlp4o$(EXE))
+CAMLP5N = $(file $(LIB)/camlp5n$(EXE))
+CAMLP5O = $(file $(LIB)/camlp5o$(EXE))
 CONVERT = $(file $(BIN)/convert$(EXE))
 PRLCN   = $(file $(BIN)/prlcn$(EXE))
 PRLCO   = $(file $(BIN)/prlco$(EXE))
 MPTIME =
-CAMLP4FLAGS[] =
+CAMLP5FLAGS[] =
 
 #
 # Other helper files
@@ -61,10 +61,10 @@ reflect_%.ppi reflect_%.cmiz: %.cmoz $(PRLCN) :scanner: scan-ocaml-%.mli
    $(WrapC $(PRLCN)) --reflect-intf -o $*.ppi $<
 
 reflect_%.p4: %.cmoz reflect_%.cmiz $(PRLCO) :value: $(prlc-deps)
-   $(WrapC $(PRLCO)) --reflect-impl -o $@ $(CAMLP4FLAGS) $<
+   $(WrapC $(PRLCO)) --reflect-impl -o $@ $(CAMLP5FLAGS) $<
 
 reflect_%.p4i: %.cmoz $(PRLCO) :value: $(prlc-deps)
-   $(WrapC $(PRLCO)) --reflect-intf -o $@ $(CAMLP4FLAGS) $<
+   $(WrapC $(PRLCO)) --reflect-intf -o $@ $(CAMLP5FLAGS) $<
 
 reflect_%.cmi: reflect_%.ppi :scanner: scan-ocaml-%.ml
    $(OCAMLC) $(OCAMLFLAGS) $(OCAMLCFLAGS) $(PREFIXED_OCAMLINCLUDES) -c -intf $<
@@ -79,33 +79,33 @@ reflect_%.cmx reflect_%$(EXT_OBJ): reflect_%.ppo reflect_%.cmi :scanner: scan-oc
 # For theory files, generate intermediate .ppo files
 #
 %.ppo %.cmoz: %.ml %.cmiz :optional: %.prla :effects: %.prlb :scanner: scan-ocaml-%.ml :value: $(prlc-deps)
-   $(WrapC $(CAMLP4N)) $(CAMLP4FLAGS) -o $*.ppo $*.ml
+   $(WrapC $(CAMLP5N)) $(CAMLP5FLAGS) -o $*.ppo $*.ml
 
 %.cmi %.cmiz: %.mli :scanner: scan-ocaml-%.mli
    $(PrlC $(OCAMLC)) $(OCAMLFLAGS) $(OCAMLCFLAGS) $(OCAMLPPFLAGS) $(PREFIXED_OCAMLINCLUDES) -c $<
 
 %.cmo: %.ppo :squash: %.ml :scanner: scan-ocaml-%.ml
    $(OCAMLC) $(OCAMLFLAGS) $(OCAMLCFLAGS) $(PREFIXED_OCAMLINCLUDES) -c -impl $<
-   
+
 %.cmx %$(EXT_OBJ): %.ppo :squash: %.ml :scanner: scan-ocaml-%.ml
    $(OCAMLOPT) $(OCAMLFLAGS) $(OCAMLOPTFLAGS) $(PREFIXED_OCAMLINCLUDES) -c -impl $<
-   
+
 #
 # Dependency management
 #
 if $(SLOPPY_DEPENDENCIES)
-   %.cmi %.cmiz:  :squash: $(CAMLP4N)
-   %.ppo %.cmoz:  :squash: $(CAMLP4N)
+   %.cmi %.cmiz:  :squash: $(CAMLP5N)
+   %.ppo %.cmoz:  :squash: $(CAMLP5N)
 
 else
-   %.cmi %.cmiz: $(CAMLP4N)
-   %.ppo %.cmoz: $(CAMLP4N)
+   %.cmi %.cmiz: $(CAMLP5N)
+   %.ppo %.cmoz: $(CAMLP5N)
 
-%.p4i: %.mli $(CAMLP4O) :value: $(prlc-deps)
-   $(WrapC $(CAMLP4O)) $(CAMLP4FLAGS) $*.mli > $@
+%.p4i: %.mli $(CAMLP5O) :value: $(prlc-deps)
+   $(WrapC $(CAMLP5O)) $(CAMLP5FLAGS) $*.mli > $@
 
-%.p4: %.ml $(CAMLP4O) :value: $(prlc-deps)
-   $(WrapC $(CAMLP4O)) $(CAMLP4FLAGS) $*.ml > $@
+%.p4: %.ml $(CAMLP5O) :value: $(prlc-deps)
+   $(WrapC $(CAMLP5O)) $(CAMLP5FLAGS) $*.ml > $@
 
 if $(SPELLING_ENABLED)
     LIBWORDS = $(file $(addprefix $(LIB)/, $(SPELLING_DICTS)))
@@ -120,7 +120,7 @@ if $(SPELLING_ENABLED)
 #
 if $(SLOPPY_DEPENDENCIES)
    MPFILTER = $(file .sloppy)
-   $(MPFILTER): $(CAMLP4N)
+   $(MPFILTER): $(CAMLP5N)
       echo "Sloppy filter dependencies" > $@
 
    %.cmi %.cmiz: $(MPFILTER)
@@ -128,8 +128,8 @@ if $(SLOPPY_DEPENDENCIES)
 
    export
 else
-   %.cmi %.cmiz: $(CAMLP4N)
-   %.ppo %.cmoz: $(CAMLP4N)
+   %.cmi %.cmiz: $(CAMLP5N)
+   %.ppo %.cmoz: $(CAMLP5N)
    export
 
 ########################################################################
@@ -160,8 +160,8 @@ MP_BIN = $(file $(EDITOR)/mp.$(if $(NATIVE_ENABLED), opt, top))
 
 MP_DIRECT_SCRIPTS[] =
 
-if $(NATIVE_ENABLED) 
-    MP_DIRECT_SCRIPTS[] += 
+if $(NATIVE_ENABLED)
+    MP_DIRECT_SCRIPTS[] +=
         mpopt
     export
 

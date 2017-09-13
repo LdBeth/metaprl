@@ -62,13 +62,20 @@ Added statements:
 #load "q_MLast.cmo";
 
 open Pcaml;
+open Printf;
+
+type macro_value =
+  [ MvExpr of list string and MLast.expr
+  | MvType of list string and MLast.ctyp
+  | MvNone ]
+;
 
 type item_or_def 'a =
   [ SdStr of 'a
-  | SdDef of string and option (list string * MLast.expr)
+  | SdDef of string and macro_value
   | SdUnd of string
-  | SdITE of string and list (item_or_def 'a) and list (item_or_def 'a)
-  | SdInc of string ]
+  | SdInc of string
+  | SdNop ]
 ;
 
 value rec list_remove x =
@@ -78,14 +85,47 @@ value rec list_remove x =
   | [] -> [] ]
 ;
 
-value defined = ref [];
+value defined =
+  ref
+    [("CAMLP5", MvNone); ("CAMLP5_4_02", MvNone); ("CAMLP5_5_00", MvNone);
+     ("CAMLP5_6_00", MvNone); ("CAMLP5_6_02_1", MvNone);
+     ("CAMLP5_6_09", MvNone)]
+;
+
+(*
+ XXX[jyh]: fix this.
+
+value oversion = do {
+  let v = Bytes.of_string Pconfig.ocaml_version in
+  for i = 0 to Bytes.length v - 1 do {
+    match Bytes.get v i with
+    [ '0'..'9' | 'a'..'z' | 'A'..'Z' -> ()
+    | _ -> Bytes.set v i '_' ];
+  };
+  Bytes.to_string v
+};
+
+value oname =
+  if Pconfig.ocaml_name = "ocaml" then []
+  else [(string_uppercase Pconfig.ocaml_name, MvNone)]
+;
+
+value defined_version loc =
+  let s = "OCAML_" in
+  loop (List.rev defined.val) where rec loop =
+    fun
+    [ [(d, _) :: l] ->
+        if String.length d > String.length s &&
+           String.sub d 0 (String.length s) = s
+        then d
+        else loop l
+    | [] -> Ploc.raise loc (Failure "no defined version") ]
+;
+*)
 
 value is_defined i = List.mem_assoc i defined.val;
 
-value _loc =
-    let nowhere =
-      { (Lexing.dummy_pos) with Lexing.pos_lnum = 1; Lexing.pos_cnum = 0 } in
-    (nowhere, nowhere);
+value _loc = Ploc.dummy;
 
 value rec no_nothing =
   fun
@@ -100,6 +140,24 @@ value rec no_nothingp =
     | [<:patt< NOTHING >> :: tl] -> no_nothingp tl
     | [hd :: tl] -> [hd :: no_nothingp tl] ]
 ;
+
+value print_defined () = do {
+  let deflist =
+    if Pcaml.strict_mode.val then [("STRICT", MvNone) :: defined.val]
+    else defined.val
+  in
+  List.iter
+    (fun (d, v) -> do {
+       print_string d;
+       match v with
+       [ MvExpr _ _ -> print_string " = <expr>"
+       | MvType _ _ -> print_string " = <type>"
+       | MvNone -> () ];
+       print_newline ()
+     })
+    deflist;
+  if Sys.interactive.val then () else exit 0
+};
 
 value subst mloc env =
   let rec loop =
@@ -132,8 +190,8 @@ value subst mloc env =
     | e -> e ]
   and loop_peoel =
     fun
-      [ (p, Some e1, e2) -> (loopp p, Some (loop e1), loop e2)
-      | (p, None, e2) -> (loopp p, None, loop e2) ]
+      [ (p, Ploc.VaVal (Some e1), e2) -> (loopp p, Ploc.VaVal (Some (loop e1)), loop e2)
+      | (p, e, e2) -> (loopp p, e, loop e2) ]
   and loopp =
     fun
     [ <:patt< $p1$ $p2$ >> ->
@@ -189,6 +247,69 @@ value substp mloc env =
              "this macro cannot be used in a pattern (see its definition)") ]
 ;
 
+value substt mloc env =
+  loop where rec loop =
+    fun
+    [ <:ctyp< $t1$ -> $t2$ >> -> <:ctyp< $loop t1$ -> $loop t2$ >>
+    | <:ctyp< $t1$ $t2$ >> -> <:ctyp< $loop t1$ $loop t2$ >>
+    | <:ctyp< ($list:tl$) >> -> <:ctyp< ($list:List.map loop tl$) >>
+    | <:ctyp< $lid:x$ >> | <:ctyp< $uid:x$ >> as t ->
+        try List.assoc x env with [ Not_found -> t ]
+    | t -> t ]
+;
+
+value cannot_eval e =
+  let loc = MLast.loc_of_expr e in
+  Ploc.raise loc (Stream.Error "can't eval")
+;
+
+value rec eval =
+  fun
+  [ <:expr< Char.chr $e$ >> ->
+      match eval e with
+      [ <:expr< $int:i$ >> ->
+          let c = Char.escaped (Char.chr (int_of_string i)) in
+         <:expr< $chr:c$ >>
+      | e -> cannot_eval e ]
+  | <:expr< Char.code $e$ >> ->
+      match eval e with
+      [ <:expr< $chr:c$ >> ->
+          let i = string_of_int (Char.code (Plexing.eval_char c)) in
+          <:expr< $int:i$ >>
+      | e ->
+          cannot_eval e ]
+  | <:expr< $op$ $x$ $y$ >> ->
+      let f = eval op in
+      let x = eval x in
+      let y = eval y in
+      match (x, y) with
+      [ (<:expr< $int:x$ >>, <:expr< $int:y$ >>) ->
+          let x = int_of_string x in
+          let y = int_of_string y in
+          match f with
+          [ <:expr< $lid:"+"$ >> -> <:expr< $int:string_of_int (x + y)$ >>
+          | <:expr< $lid:"-"$ >> -> <:expr< $int:string_of_int (x - y)$ >>
+          | <:expr< $lid:"lor"$ >> ->
+              let s = sprintf "0o%o" (x lor y) in
+              <:expr< $int:s$ >>
+          | _ -> cannot_eval op ]
+      | _ -> cannot_eval op ]
+  | <:expr< $uid:x$ >> as e ->
+      try
+        match List.assoc x defined.val with
+        [ _ -> e ]
+      with
+      [ Not_found -> e ]
+  | <:expr< $chr:_$ >> | <:expr< $int:_$ >> | <:expr< $lid:_$ >> as e -> e
+  | e -> cannot_eval e ]
+;
+
+value may_eval =
+  fun
+  [ <:expr< EVAL $e$ >> -> eval e
+  | e -> e ]
+;
+
 value incorrect_number loc l1 l2 =
   Stdpp.raise_with_loc loc
     (Failure
@@ -196,90 +317,95 @@ value incorrect_number loc l1 l2 =
           (List.length l2) (List.length l1)))
 ;
 
-value define eo x =
-  do {
-    match eo with
-    [ Some ([], <:expr< NOTHING >>) ->
-        EXTEND
-          expr: LEVEL "apply"
-            [ [ e = SELF; UIDENT $x$ -> e ] ]
-          ;
-          patt: LEVEL "simple"
-            [ [ p = SELF; UIDENT $x$ -> p
-              | UIDENT $x$; p = SELF -> p ] ]
-          ;
-        END
-    | Some ([], e) ->
-        EXTEND
-          expr: LEVEL "simple"
-            [ [ UIDENT $x$ -> Pcaml.expr_reloc (fun _ -> _loc) (fst _loc) e ] ]
-          ;
-          patt: LEVEL "simple"
-            [ [ UIDENT $x$ ->
-                  let p = substp _loc [] e in
-                  Pcaml.patt_reloc (fun _ -> _loc) (fst _loc) p ] ]
-          ;
-        END
-    | Some (sl, e) ->
-        EXTEND
-          expr: LEVEL "apply"
-            [ [ UIDENT $x$; param = SELF ->
-                  let el =
-                    match param with
-                    [ <:expr< ($list:el$) >> -> el
-                    | e -> [e] ]
-                  in
-                  if List.length el = List.length sl then
-                    let env = List.combine sl el in
-                    let e = subst _loc env e in
-                    Pcaml.expr_reloc (fun _ -> _loc) (fst _loc) e
-                  else
-                    incorrect_number _loc el sl ] ]
-          ;
-          patt: LEVEL "simple"
-            [ [ UIDENT $x$; param = SELF ->
-                  let pl =
-                    match param with
-                    [ <:patt< ($list:pl$) >> -> pl
-                    | p -> [p] ]
-                  in
-                  if List.length pl = List.length sl then
-                    let env = List.combine sl pl in
-                    let p = substp _loc env e in
-                    Pcaml.patt_reloc (fun _ -> _loc) (fst _loc) p
-                  else
-                    incorrect_number _loc pl sl ] ]
-          ;
-        END
-    | None -> () ];
-    defined.val := [(x, eo) :: defined.val];
-  }
-;
+value define eo x = do {
+  match eo with
+  [ MvExpr [] e ->
+      EXTEND
+        expr: LEVEL "simple"
+          [ [ UIDENT $x$ -> may_eval (Reloc.expr (fun _ -> _loc) 0 e) ] ]
+        ;
+        patt: LEVEL "simple"
+          [ [ UIDENT $x$ ->
+                let p = substp _loc [] e in
+                Reloc.patt (fun _ -> _loc) 0 p ] ]
+        ;
+      END
+  | MvExpr sl e ->
+      EXTEND
+        expr: LEVEL "apply"
+          [ [ UIDENT $x$; param = SELF ->
+                let el =
+                  match param with
+                  [ <:expr< ($list:el$) >> -> el
+                  | e -> [e] ]
+                in
+                if List.length el = List.length sl then
+                  let env = List.combine sl el in
+                  let e = subst _loc env e in
+                  may_eval (Reloc.expr (fun _ -> _loc) 0 e)
+                else
+                  incorrect_number _loc el sl ] ]
+        ;
+        patt: LEVEL "simple"
+          [ [ UIDENT $x$; param = SELF ->
+                let pl =
+                  match param with
+                  [ <:patt< ($list:pl$) >> -> pl
+                  | p -> [p] ]
+                in
+                if List.length pl = List.length sl then
+                  let e = may_eval (Reloc.expr (fun _ -> _loc) 0 e) in
+                  let env = List.combine sl pl in
+                  let p = substp _loc env e in
+                  Reloc.patt (fun _ -> _loc) 0 p
+                else
+                  incorrect_number _loc pl sl ] ]
+        ;
+      END
+  | MvType [] t ->
+      EXTEND
+        ctyp: LEVEL "simple"
+          [ [ UIDENT $x$ -> t ] ]
+        ;
+      END
+  | MvType sl t ->
+      EXTEND
+        ctyp: LEVEL "apply"
+          [ [ UIDENT $x$; param = SELF ->
+                let tl = [param] in
+                if List.length tl = List.length sl then
+                  let env = List.combine sl tl in
+                  let t = substt _loc env t in
+                  t
+                else
+                  incorrect_number _loc tl sl ] ]
+        ;
+      END
+  | MvNone -> () ];
+  defined.val := [(x, eo) :: defined.val]
+};
 
 value undef x =
-  try
-    do {
-      let eo = List.assoc x defined.val in
-      match eo with
-      [ Some ([], <:expr< NOTHING >>) ->
-          do {
-            DELETE_RULE expr: SELF; UIDENT $x$ END;
-            DELETE_RULE patt: SELF; UIDENT $x$ END;
-            DELETE_RULE patt: UIDENT $x$; SELF END;
-          }
-      | Some ([], _) ->
-          do {
-            DELETE_RULE expr: UIDENT $x$ END;
-            DELETE_RULE patt: UIDENT $x$ END;
-          }
-      | Some (_, _) ->
-          do {
-            DELETE_RULE expr: UIDENT $x$; SELF END;
-            DELETE_RULE patt: UIDENT $x$; SELF END;
-          }
-      | None -> () ];
-      defined.val := list_remove x defined.val;
-    }
+  try do {
+    let eo = List.assoc x defined.val in
+    match eo with
+    [ MvExpr [] _ -> do {
+        DELETE_RULE expr: UIDENT $x$ END;
+        DELETE_RULE patt: UIDENT $x$ END;
+      }
+    | MvExpr _ _ -> do {
+        DELETE_RULE expr: UIDENT $x$; SELF END;
+        DELETE_RULE patt: UIDENT $x$; SELF END;
+      }
+    | MvType [] _ -> do {
+        DELETE_RULE ctyp: UIDENT $x$ END;
+      }
+    | MvType _ _ -> do {
+        DELETE_RULE ctyp: UIDENT $x$; SELF END;
+      }
+    | MvNone -> () ];
+    defined.val := list_remove x defined.val
+  }
   with
   [ Not_found -> () ]
 ;
@@ -311,20 +437,20 @@ value parse_include_file =
     let ch = open_in file in
     let st = Stream.of_channel ch in
     let old_input = Pcaml.input_file.val in
-    let (bol_ref, lnum_ref, name_ref) = Pcaml.position.val in
-    let (old_bol, old_lnum, old_name) = (bol_ref.val, lnum_ref.val, name_ref.val) in
+    let (bol_ref, lnum_ref, name_ref) = (Plexing.bol_pos, Plexing.line_nb, Plexing.input_file) in
+    let (old_bol, old_lnum, old_name) = (bol_ref.val.val, lnum_ref.val.val, name_ref.val) in
     let restore () =
       do {
         close_in ch;
-        bol_ref.val := old_bol;
-        lnum_ref.val := old_lnum;
+        bol_ref.val.val := old_bol;
+        lnum_ref.val.val := old_lnum;
         name_ref.val := old_name;
         Pcaml.input_file.val := old_input;
       }
     in
     do {
-      bol_ref.val := 0;
-      lnum_ref.val := 1;
+      bol_ref.val.val := 0;
+      lnum_ref.val.val := 1;
       name_ref.val := file;
       Pcaml.input_file.val := file;
       try
@@ -333,98 +459,244 @@ value parse_include_file =
       with [ exn -> do { restore (); raise exn } ] }
 ;
 
-value rec execute_macro = fun
-[ SdStr i -> [i]
+value apply_directive loc n dp =
+  let n = Pcaml.unvala n in
+  match
+    try Some (Pcaml.find_directive n) with
+    [ Not_found -> None ]
+  with
+  [ Some f -> f (Pcaml.unvala dp)
+  | None ->
+      let msg = sprintf "unknown directive #%s" n in
+      Ploc.raise loc (Stream.Error msg) ]
+;
+
+value rec str_execute_macro = fun
+[ SdStr sil -> do {
+    let sil = Pcaml.unvala sil in
+    List.iter
+      (fun
+       [ MLast.StDir loc n dp -> apply_directive loc n dp
+       | _ -> () ])
+      sil;
+    sil
+  }
 | SdDef x eo -> do { define eo x; [] }
 | SdUnd x -> do { undef x; [] }
-| SdITE i l1 l2 ->
-   execute_macro_list (if is_defined i then l1 else l2)
-| SdInc f -> execute_macro_list (parse_include_file f) ]
+| SdNop -> []
+| SdInc f -> str_execute_macro_list (parse_include_file f) ]
 
-and execute_macro_list = fun
+and str_execute_macro_list = fun
 [ [] -> []
 | [hd::tl] -> (* The eveluation order is important here *)
-  let il1 = execute_macro hd in
-  let il2 = execute_macro_list tl in
+  let il1 = str_execute_macro hd in
+  let il2 = str_execute_macro_list tl in
     il1 @ il2 ]
 ;
 
+value rec sig_execute_macro = fun
+[ SdStr sil -> do {
+    let sil = Pcaml.unvala sil in
+    List.iter
+      (fun
+       [ MLast.SgDir loc n dp -> apply_directive loc n dp
+       | _ -> () ])
+      sil;
+    sil
+  }
+| SdDef x eo -> do { define eo x; [] }
+| SdUnd x -> do { undef x; [] }
+| SdNop -> []
+| SdInc f -> raise (Invalid_argument "include is not supported in .mli files") ]
+
+and sig_execute_macro_list = fun
+[ [] -> []
+| [hd::tl] -> (* The eveluation order is important here *)
+  let il1 = sig_execute_macro hd in
+  let il2 = sig_execute_macro_list tl in
+    il1 @ il2 ]
+;
+
+
 EXTEND
-  GLOBAL: expr patt str_item sig_item smlist;
+  GLOBAL: expr patt str_item sig_item constructor_declaration match_case
+    label_declaration;
   str_item: FIRST
-    [ [ x = macro_def ->
-         match execute_macro x with
+    [ [ x = str_macro_def ->
+         match str_execute_macro x with
          [ [si] -> si
          | sil -> <:str_item< declare $list:sil$ end >> ] ] ]
   ;
-  macro_def:
-    [ [ "DEFINE"; i = uident; def = opt_macro_value -> SdDef i def
+  sig_item: FIRST
+    [ [ x = sig_macro_def ->
+          match sig_execute_macro x with
+            [ [si] -> si
+            | sil -> <:sig_item< declare $list:sil$ end >> ] ] ]
+  ;
+  str_macro_def:
+    [ [ "DEFINE"; i = uident; ome = opt_macro_expr -> SdDef i ome
+      | "DEFINE_TYPE"; i = uident; ome = opt_macro_type -> SdDef i ome
       | "UNDEF"; i = uident -> SdUnd i
-      | "IFDEF"; i = uident; "THEN"; dl = smlist; _ = endif ->
-          SdITE i dl []
-      | "IFDEF"; i = uident; "THEN"; dl1 = smlist; "ELSE";
-        dl2 = smlist; _ = endif ->
-          SdITE i dl1 dl2
-      | "IFNDEF"; i = uident; "THEN"; dl = smlist; _ = endif ->
-          SdITE i [] dl
-      | "IFNDEF"; i = uident; "THEN"; dl1 = smlist; "ELSE";
-        dl2 = smlist; _ = endif ->
-          SdITE i dl2 dl1
-      | "INCLUDE"; fname = STRING -> SdInc fname ] ]
+      | "IFDEF"; e = dexpr; "THEN"; d1 = structure_or_macro;
+        d2 = else_str; "END" ->
+          if e then d1 else d2
+      | "IFNDEF"; e = dexpr; "THEN"; d1 = structure_or_macro;
+        d2 = else_str; "END" ->
+          if not e then d1 else d2 ] ]
   ;
-  smlist:
-    [ [ sml = LIST1 str_item_or_macro -> sml ] ]
+  else_str:
+    [ [ "ELSIFDEF"; e = dexpr; "THEN"; d1 = structure_or_macro;
+        d2 = else_str -> if e then d1 else d2
+      | "ELSIFNDEF"; e = dexpr; "THEN"; d1 = structure_or_macro;
+        d2 = else_str -> if not e then d1 else d2
+      | "ELSE"; d1 = structure_or_macro -> d1
+      | -> SdNop ] ]
   ;
-  endif:
-    [ [ "END" -> ()
-      | "ENDIF" -> () ] ]
+  sig_macro_def:
+    [ [ "DEFINE"; i = uident; omt = opt_macro_type -> SdDef i omt
+      | "DEFINE_TYPE"; i = uident; omt = opt_macro_type -> SdDef i omt
+      | "UNDEF"; i = uident -> SdUnd i
+      | "IFDEF"; e = dexpr; "THEN"; d1 = signature_or_macro;
+        d2 = else_sig; "END" ->
+          if e then d1 else d2
+      | "IFNDEF"; e = dexpr; "THEN"; d1 = signature_or_macro;
+        d2 = else_sig; "END" ->
+          if not e then d1 else d2 ] ]
   ;
-  str_item_or_macro:
-    [ [ d = macro_def -> d
-      | si = str_item -> SdStr si ] ]
+  else_sig:
+    [ [ "ELSIFDEF"; e = dexpr; "THEN"; d1 = signature_or_macro;
+        d2 = else_sig -> if e then d1 else d2
+      | "ELSIFNDEF"; e = dexpr; "THEN"; d1 = signature_or_macro;
+        d2 = else_sig -> if not e then d1 else d2
+      | "ELSE"; d1 = signature_or_macro -> d1
+      | -> SdNop ] ]
   ;
-  opt_macro_value:
-    [ [ "("; pl = LIST1 LIDENT SEP ","; ")"; "="; e = expr -> Some (pl, e)
-      | "="; e = expr -> Some ([], e)
-      | -> None ] ]
+  structure_or_macro:
+    [ [ d = str_macro_def -> d
+      | sil = structure -> SdStr sil ] ]
   ;
-  else_expr:
-    [ [ "ELSE"; e = expr; _ = endif -> e
-      | _ = endif -> <:expr< () >> ]]
+  signature_or_macro:
+    [ [ d = sig_macro_def -> d
+      | sil = signature -> SdStr sil ] ]
+  ;
+  opt_macro_expr:
+    [ [ pl = macro_param; "="; e = expr -> MvExpr pl e
+      | "="; e = expr -> MvExpr [] e
+      | -> MvNone ] ]
+  ;
+  opt_macro_type:
+    [ [ pl = LIST1 LIDENT; "="; t = ctyp -> MvType pl t
+      | "="; t = ctyp -> MvType [] t
+      | -> MvNone ] ]
+  ;
+  macro_param:
+    [ [ sl = LIST1 LIDENT -> sl
+      | "("; sl = LIST1 LIDENT SEP ","; ")" -> sl ] ]
   ;
   expr: LEVEL "top"
-    [ [ "IFDEF"; i = uident; "THEN"; e1 = expr; e2 = else_expr ->
-          if is_defined i then e1 else e2
-      | "IFNDEF"; i = uident; "THEN"; e1 = expr; e2 = else_expr ->
-          if is_defined i then e2 else e1
-      | "DEFINE"; i = LIDENT; "="; def = expr; "IN"; body = expr ->
-          subst _loc [(i, def)] body
-      ]]
+    [ [ "IFDEF"; e = dexpr; "THEN"; e1 = SELF; e2 = else_expr; "END" ->
+          if e then e1 else e2
+      | "IFNDEF"; e = dexpr; "THEN"; e1 = SELF; e2 = else_expr; "END" ->
+          if not e then e1 else e2 ] ]
+  ;
+  else_expr:
+    [ [ "ELSIFDEF"; e = dexpr; "THEN"; e1 = expr; e2 = else_expr ->
+          if e then e1 else e2
+      | "ELSIFNDEF"; e = dexpr; "THEN"; e1 = expr; e2 = else_expr ->
+          if not e then e1 else e2
+      | "ELSE"; e = expr -> e ] ]
   ;
   expr: LEVEL "simple"
-    [ [ LIDENT "__FILE__" -> <:expr< $str:Pcaml.input_file.val$ >>
+    [ [ LIDENT "__FILE__" -> <:expr< $str:Ploc.file_name _loc$ >>
       | LIDENT "__LOCATION__" ->
-          let bp = string_of_int ((fst _loc).Lexing.pos_cnum) in
-          let ep = string_of_int ((snd _loc).Lexing.pos_cnum) in
+          let bp = string_of_int (Ploc.first_pos _loc) in
+          let ep = string_of_int (Ploc.last_pos _loc) in
           <:expr< ($int:bp$, $int:ep$) >> ] ]
   ;
   patt:
-    [ [ "IFDEF"; i = uident; "THEN"; p1 = patt; "ELSE"; p2 = patt; _ = endif ->
-          if is_defined i then p1 else p2
-      | "IFNDEF"; i = uident; "THEN"; p1 = patt; "ELSE"; p2 = patt; _ = endif ->
-          if is_defined i then p2 else p1 ] ]
+    [ [ "IFDEF"; e = dexpr; "THEN"; p1 = SELF; p2 = else_patt; "END" ->
+          if e then p1 else p2
+      | "IFNDEF"; e = dexpr; "THEN"; p1 = SELF; p2 = else_patt; "END" ->
+          if e then p2 else p1 ] ]
   ;
+  else_patt:
+    [ [ "ELSIFDEF"; e = dexpr; "THEN"; p1 = patt; p2 = else_patt ->
+          if e then p1 else p2
+      | "ELSIFNDEF"; e = dexpr; "THEN"; p1 = patt; p2 = else_patt ->
+          if not e then p1 else p2
+      | "ELSE"; p = patt -> p ] ]
+  ;
+  constructor_declaration: FIRST
+    [ [ "IFDEF"; e = dexpr; "THEN"; x = SELF; "END" ->
+          if e then x else Grammar.skip_item x
+      | "IFDEF"; e = dexpr; "THEN"; x = SELF; "ELSE"; y = SELF; "END" ->
+          if e then x else y
+      | "IFNDEF"; e = dexpr; "THEN"; x = SELF; "END" ->
+          if e then Grammar.skip_item x else x
+      | "IFNDEF"; e = dexpr; "THEN"; x = SELF; "ELSE"; y = SELF; "END" ->
+          if e then y else x ] ]
+  ;
+  label_declaration: FIRST
+    [ [ "IFDEF"; e = dexpr; "THEN"; x = SELF; "END" ->
+          if e then x else Grammar.skip_item x
+      | "IFDEF"; e = dexpr; "THEN"; x = SELF; "ELSE"; y = SELF; "END" ->
+          if e then x else y
+      | "IFNDEF"; e = dexpr; "THEN"; x = SELF; "END" ->
+          if e then Grammar.skip_item x else x
+      | "IFNDEF"; e = dexpr; "THEN"; x = SELF; "ELSE"; y = SELF; "END" ->
+          if e then y else x ] ]
+  ;
+  match_case: FIRST
+    [ [ "IFDEF"; e = dexpr; "THEN"; x = SELF; y = else_match_case; "END" ->
+          if e then x else y
+      | "IFDEF"; e = dexpr; "THEN"; x = SELF; "END" ->
+          if e then x else Grammar.skip_item x
+      | "IFNDEF"; e = dexpr; "THEN"; x = SELF; y = else_match_case; "END" ->
+          if not e then x else y
+      | "IFNDEF"; e = dexpr; "THEN"; x = SELF; "END" ->
+          if not e then x else Grammar.skip_item x ] ]
+  ;
+  else_match_case:
+    [ RIGHTA
+      [ "ELSIFDEF"; e = dexpr; "THEN"; x = match_case; y = else_match_case ->
+          if e then x else y
+      | "ELSIFDEF"; e = dexpr; "THEN"; x = match_case ->
+          if e then x else Grammar.skip_item x
+      | "ELSIFNDEF"; e = dexpr; "THEN"; x = match_case; y = else_match_case ->
+          if not e then x else y
+      | "ELSIFNDEF"; e = dexpr; "THEN"; x = match_case ->
+          if not e then x else Grammar.skip_item x
+      | "ELSE"; x = match_case -> x ] ]
+  ;
+  dexpr:
+    [ [ x = SELF; "OR"; y = SELF -> x || y ]
+    | [ x = SELF; "AND"; y = SELF -> x && y ]
+    (* | [ "OCAML_VERSION"; f = op; y = uident -> f (defined_version _loc) y ] *)
+    | [ "NOT"; x = SELF -> not x ]
+    | [ i = uident -> is_defined i
+      | "("; x = SELF; ")" -> x ] ]
+  ;
+(*
+  op:
+    [ [ "<=" -> \<=
+      | "<" -> \<
+      | "=" -> \=
+      | "<>" -> \<>
+      | ">" -> \>
+      | ">=" -> \>= ] ]
+  ;
+*)
   uident:
     [ [ i = UIDENT -> i ] ]
   ;
 END;
 
-Pcaml.add_option "-D" (Arg.String (define None))
-  "<string> Define for IFDEF instruction."
-;
+
+Pcaml.add_option "-D" (Arg.String (define MvNone))
+  "<string> Define for IFDEF instruction.";
+
 Pcaml.add_option "-U" (Arg.String undef)
-  "<string> Undefine for IFDEF instruction."
-;
-Pcaml.add_option "-I" (Arg.String add_include_dir)
-  "<string> Add a directory to INCLUDE search path."
-;
+  "<string> Undefine for IFDEF instruction.";
+
+Pcaml.add_option "-defined" (Arg.Unit print_defined)
+  " Print the defined macros and exit.";

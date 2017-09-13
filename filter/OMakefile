@@ -1,10 +1,10 @@
 #
-# Generic camlp4 preprocessing
+# Generic camlp5 preprocessing
 #
-OCAMLPPFLAGS = -pp $(quote-argv $(CAMLP4O) -I $(CAMLP4LIB) q_MLast.cmo pa_extend.cmo $(LOC))
+OCAMLPPFLAGS = -pp $(quote-argv $(CAMLP5O) -I $(CAMLP5LIB) q_MLast.cmo pa_extend.cmo $(LOC))
 
-%.cmx %.o: $(CAMLP4O_VERSION)
-%.cmo: $(CAMLP4O_VERSION)
+%.cmx %.o: $(CAMLP5O_VERSION)
+%.cmo: $(CAMLP5O_VERSION)
 
 #
 # Name of main program
@@ -54,10 +54,10 @@ OCAML_LIBS[] =
    $(file $(ROOT)/mllib/util)
 
 #
-# Libraries for camlp4n
+# Libraries for camlp5n
 #
 STANDARD_LIBS[] =
-    $(CAMLP4LIB)/camlp4
+    $(CAMLP5LIB)/camlp5
     $(ROOT)/refiner/refiner
     $(ROOT)/library/library
     $(ROOT)/$(ENSEMBLE_DIR)/trefiner
@@ -65,17 +65,17 @@ STANDARD_LIBS[] =
     $(MAINLIB)
 
 #
-# Compile a special camlp4 to run MetaPRL filter
+# Compile a special camlp5 to run MetaPRL filter
 #
 section
     OCAML_LIBS[] +=
-        $(CAMLP4LIB)/odyl
+        $(CAMLP5LIB)/odyl
         $(STANDARD_LIBS)
 
-    CAMLP4_FILES[] =
-        $(CAMLP4LIB)/pa_o
-        $(CAMLP4LIB)/pa_extend
-        $(CAMLP4LIB)/q_MLast
+    CAMLP5_FILES[] =
+        $(CAMLP5LIB)/pa_o
+        $(CAMLP5LIB)/pa_extend
+        $(CAMLP5LIB)/q_MLast
         filter/filter_patt
         filter/filter_prog
         filter/filter_parse
@@ -83,27 +83,27 @@ section
         filter/filter_main
 
     # XXX: http://caml.inria.fr/bin/caml-bugs?selectid=3439 workaround
-    if $(and $(file-exists $(CAMLP4LIB)/argl.cmx), $(file-exists $(CAMLP4LIB)/argl.o), $(file-exists $(CAMLP4LIB)/argl.cmo))
-        CAMLP4_FILES[] =
-            $(CAMLP4LIB)/argl
-            $(CAMLP4_FILES)
+    if $(and $(file-exists $(CAMLP5LIB)/argl.cmx), $(file-exists $(CAMLP5LIB)/argl.o), $(file-exists $(CAMLP5LIB)/argl.cmo))
+        CAMLP5_FILES[] =
+            $(CAMLP5LIB)/argl
+            $(CAMLP5_FILES)
         export
     else
         OCAML_LINK_FLAGS += -linkall
         export
 
-    CAMLP4N_FILES[] =
-        $(CAMLP4LIB)/pr_dump
-        $(CAMLP4_FILES)
+    CAMLP5N_FILES[] =
+        $(CAMLP5LIB)/pr_dump
+        $(CAMLP5_FILES)
 
-    CAMLP4O_FILES[] =
-        $(CAMLP4LIB)/pr_o
-        $(CAMLP4_FILES)
+    CAMLP5O_FILES[] =
+        $(CAMLP5LIB)/pr_o
+        $(CAMLP5_FILES)
 
-    OCamlProgramInstall($(MPINSTALL), $(LIB), camlp4n, $(CAMLP4N_FILES))
-    OCamlProgramInstall($(MPINSTALL), $(LIB), camlp4o, $(CAMLP4O_FILES))
+    OCamlProgramInstall($(MPINSTALL), $(LIB), camlp5n, $(CAMLP5N_FILES))
+    OCamlProgramInstall($(MPINSTALL), $(LIB), camlp5o, $(CAMLP5O_FILES))
 
-    LIB_PROGS = camlp4n camlp4o
+    LIB_PROGS = camlp5n camlp5o
 
     export LIB_PROGS
 
@@ -120,11 +120,11 @@ section
         filter/filter_bin
 
     PRLCN_FILES[] =
-        $(CAMLP4LIB)/pr_dump
+        $(CAMLP5LIB)/pr_dump
         $(PRLC_FILES)
 
     PRLCO_FILES[] =
-        $(CAMLP4LIB)/pr_o
+        $(CAMLP5LIB)/pr_o
         $(PRLC_FILES)
 
     OCamlProgramInstall($(MPINSTALL), $(BIN), prlcn, $(PRLCN_FILES))
