@@ -24,24 +24,14 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
-open Lm_printf
 open Lm_symbol
-open Lm_debug
 
-open Opname
 open Term_sig
 open Term_ty_sig
 
 open Refiner.Refiner.TermType
 open Refiner.Refiner.Term
-open Refiner.Refiner.TermOp
 open Refiner.Refiner.TermMan
-open Refiner.Refiner.TermMeta
-open Refiner.Refiner.TermSubst
-open Refiner.Refiner.TermShape
-open Refiner.Refiner.TermTy
-open Refiner.Refiner.Rewrite
-open Refiner.Refiner.RefineError
 
 (*
  * Include a hash.
@@ -89,8 +79,10 @@ let hash_var venv code v =
       Not_found ->
          hash_item code v
 
+(* unused
 let hash_var_list venv code vl =
    List.fold_left (hash_var venv) code vl
+*)
 
 (*
  * Hash a term.  We try to be careful here--the

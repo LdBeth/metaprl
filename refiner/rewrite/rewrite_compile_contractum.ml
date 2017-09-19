@@ -45,7 +45,6 @@ open Term_base_sig
 open Term_man_sig
 open Term_addr_sig
 open Term_subst_sig
-open Term_shape_sig
 open Refine_error_sig
 
 open Rewrite_sig
@@ -92,7 +91,7 @@ struct
       else
          OldName n
 
-   let rec compile_bnames strict stack = List.map (compile_bname strict stack)
+   let compile_bnames strict stack = List.map (compile_bname strict stack)
 
    let check_cont c bconts v =
       if not (List.mem v bconts) then
@@ -185,7 +184,7 @@ struct
                                      rw_bterms = bterms'
                                    }
 
-   and compile_so_contractum_terms strict stack bconts bvars = 
+   and compile_so_contractum_terms strict stack bconts bvars =
       List.map (compile_so_contractum_term strict stack bconts bvars)
 
    (*
@@ -314,7 +313,7 @@ struct
       let vars' = compile_bnames strict stack vars in
          { rw_bvars = List.length vars; rw_bnames = vars'; rw_bterm = term' }
 
-   and compile_so_contractum_bterms strict stack bconts bvars = 
+   and compile_so_contractum_bterms strict stack bconts bvars =
       List.map (compile_so_contractum_bterm strict stack bconts bvars)
 
    (*

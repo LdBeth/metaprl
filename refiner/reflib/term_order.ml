@@ -29,7 +29,6 @@
  * Author: Yegor Bryukhov
  *)
 
-open Opname
 open Term_sig
 
 module type TermOrderSig =

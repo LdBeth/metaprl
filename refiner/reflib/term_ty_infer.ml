@@ -125,7 +125,9 @@ type unify_info =
  | UnifyContextVarType2 of var * ty * ty
  | UnifyCompose of unify_info * unify_info
 
+(* unused
 type venv = ty SymbolTable.t
+*)
 
 (*
  * Constraints that should be solved once the main inference
@@ -163,16 +165,18 @@ let mk_typeclass name =
    let t = mk_term (mk_op opname []) [] in
       opname, t
 
+(* unused
 let _, top_term = mk_typeclass "Top"
+*)
 
 let term_opname,         term_type           = mk_typeclass "Term"
 let type_opname,         type_type           = mk_typeclass "Ty"
 let token_opname,        token_type          = mk_typeclass "Token"
-let judgment_opname,     judgment_type       = mk_typeclass "Judgment"
-let quote_opname,        quote_type          = mk_typeclass "Quote"
-let dform_opname,        dform_type          = mk_typeclass "Dform"
-let nonterminal_opname,  nonterminal_type    = mk_typeclass "Nonterminal"
-let ignore_opname,       ignore_type         = mk_typeclass "Ignore"
+let _judgment_opname,    judgment_type       = mk_typeclass "Judgment"
+let _quote_opname,       quote_type          = mk_typeclass "Quote"
+let _dform_opname,       dform_type          = mk_typeclass "Dform"
+let _nonterminal_opname, nonterminal_type    = mk_typeclass "Nonterminal"
+let _ignore_opname,      ignore_type         = mk_typeclass "Ignore"
 
 let ty_type        = TypeTerm type_type
 let ty_term        = TypeTerm term_type
@@ -240,7 +244,7 @@ let is_ty_hyp_cases_term t =
    else
       false
 
-let rec mk_ty_exists_term =
+let mk_ty_exists_term =
    mk_dep0_dep1_term exists_opname
 
 let dest_ty_exists_term =
@@ -386,8 +390,10 @@ let quote_type ty =
 (*
  * See if a typeclass name is bound.
  *)
+(* unused
 let tenv_typeclasses_mem tenv opname =
    OpnameTable.mem tenv.tenv_typeclasses opname
+*)
 
 (*
  * Type environment.
@@ -414,6 +420,7 @@ let tenv_find_type tenv t =
    else
       tenv_find_type_aux tenv t
 
+(* unused
 let tenv_find_class tenv t =
    let shape = shape_of_term t in
       eprintf "tenv_find_class: shape = %s@." (string_of_shape shape);
@@ -424,6 +431,7 @@ let tenv_find_class tenv t =
       with
          Not_found ->
             raise (RefineError ("Term_ty_infer.tenv_find_class: unbound class", TermError t))
+*)
 
 (*
  * Look for a possible reduction pair.
@@ -617,8 +625,10 @@ and subst_type_cases subst vars cases =
          subst_type subst vars ty_var, subst_type subst vars ty_hyp) cases
 
 (* Toplevel versions *)
+(* unused
 let subst_var_term subst v =
    subst_var_term subst SymbolSet.empty v
+*)
 
 let subst_term subst term =
    subst_term subst SymbolSet.empty term
@@ -696,6 +706,7 @@ let raise_term2_error debug subst info t1 t2 =
    in
       raise_err subst info err
 
+(* unused
 let raise_term_type_error subst info t ty =
    let err =
       StringErrorError ("has term type",
@@ -704,6 +715,7 @@ let raise_term_type_error subst info t ty =
       TermError (subst_type_term subst ty))))
    in
       raise_err subst info err
+*)
 
 let raise_param2_error subst info p1 p2 =
    raise_err subst info (StringErrorError ("parameter mismatch", Param2Error (p1, p2)))
@@ -941,7 +953,8 @@ let standardize_reduction redex contractum =
 let standardize_ty_term ty_term =
    let { ty_params = params;
          ty_bterms = bterms;
-         ty_type   = ty
+         ty_type   = ty;
+         _
        } = ty_term
    in
 
@@ -1663,7 +1676,8 @@ and infer_normal_term tenv venv info subst e =
    let ty_term = standardize_ty_term (tenv_find_type tenv e) in
    let { ty_params = ty_params;
          ty_bterms = ty_bterms;
-         ty_type   = ty_type
+         ty_type   = ty_type;
+         _
        } = ty_term
    in
 

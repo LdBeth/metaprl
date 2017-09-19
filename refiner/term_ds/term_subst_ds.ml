@@ -59,7 +59,7 @@ let debug_alpha_equal =
         debug_value = false
       }
 
-ENDIF
+END
 
 module TermSubst
 (Term : TermDsSig with module TermTypes = TermType)
@@ -83,7 +83,7 @@ struct
 
    let rec combine_fst_flt_nodups fvs vl tl =
       match vl, tl with
-       | v::vl, { core = FOVar v' } :: tl when Lm_symbol.eq v v' ->
+       | v::vl, { core = FOVar v'; _ } :: tl when Lm_symbol.eq v v' ->
             if vl = [] then [] else combine_fst_flt_nodups (SymbolSet.remove fvs v) vl tl
        | [v],[t] ->
             if SymbolSet.mem fvs v then [v,t] else []
@@ -104,7 +104,7 @@ struct
           | sub -> core_term (Subst (t,sub))
 
    let rec fst_flt_nodups fvs = function
-      (v, { core = FOVar v' }) :: tl when Lm_symbol.eq v v' ->
+      (v, { core = FOVar v'; _ }) :: tl when Lm_symbol.eq v v' ->
          if tl = [] then [] else fst_flt_nodups (SymbolSet.remove fvs v) tl
     | [v,t] as l ->
          if SymbolSet.mem fvs v then l else []
@@ -327,7 +327,7 @@ struct
                result
          ELSE
             body
-         ENDIF
+         END
       with
          Failure _ -> false
 
@@ -348,7 +348,7 @@ struct
             body
       ELSE
          body
-      ENDIF
+      END
 
    (*
     * The meaning of
@@ -412,11 +412,13 @@ struct
    let var_subst t t' v =
       var_subst t' (SymbolSet.add (free_vars_set t') v) v t
 
+(* unused
    let print_string_pair out (v1, v2) =
       fprintf out "%s:%a" v1 debug_print v2
 
    let print_string_pair_list =
       print_any_list print_string_pair
+*)
 
    let rec equal_fun f bvars sub t t' =
       match get_core t, get_core t' with
@@ -477,7 +479,7 @@ struct
             eprintf "\tt': %a\n" debug_print t';
             eprintf "\titems: ...%t" eflush
          end
-      ENDIF;
+      END;
       try equal_fun f [] (Lm_list_util.zip vs items) t t'  with
          Failure _ -> false
        | Not_found -> false
@@ -565,7 +567,7 @@ struct
                raise (RefineError ("Term_subst_ds.match_terms", TermPairError (t1, t2)))
       ELSE
          body
-      ENDIF
+      END
 
    (************************************************************************
     * Term standardizing.

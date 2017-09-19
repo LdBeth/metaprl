@@ -57,7 +57,7 @@ let debug_alpha_equal =
         debug_value = false
       }
 
-ENDIF
+END
 
 module TermSubst (**)
    (Term : TermStdSig with module TermTypes = TermType)
@@ -81,7 +81,7 @@ struct
    let rec is_closed_term bvars = function
       { term_op = { op_name = opname; op_params = [Var v] }; term_terms = [] } when Opname.eq opname var_opname ->
          List.mem v bvars
-    | { term_terms = bterms } ->
+    | { term_terms = bterms; _ } ->
          is_closed_bterms bvars bterms
 
    and is_closed_bterms bvars = function
@@ -106,7 +106,7 @@ struct
             gvars
          else
             v::gvars
-    | { term_terms = bterms } ->
+    | { term_terms = bterms; _ } ->
          free_vars_bterms gvars bvars bterms
 
    and free_vars_bterms gvars bvars = function
@@ -130,8 +130,10 @@ struct
       in
          aux SymbolSet.empty
 
+(* unused
    let free_vars_equal t1 t2 =
       (Sort.list (<) (free_vars_list t1)) = (Sort.list (<) (free_vars_list t2))
+*)
 
    (*
     * See if a variable is free.
@@ -140,7 +142,7 @@ struct
       { term_op = { op_name = opname; op_params = [Var v']}; term_terms = []
       } when Opname.eq opname var_opname && Lm_symbol.eq v' v ->
          true
-    | { term_terms = bterms } ->
+    | { term_terms = bterms; _ } ->
          List.exists (is_var_free_bterm v) bterms
 
    and is_var_free_bterm v bt =
@@ -154,7 +156,7 @@ struct
          { term_op = { op_name = opname; op_params = [Var v'] }; term_terms = []
          } when Opname.eq opname var_opname && List.mem v' vars ->
             true
-       | { term_terms = bterms } ->
+       | { term_terms = bterms; _ } ->
             free_vars_bterms vars bvars bterms
 
       and free_vars_bterms vars bvars = function
@@ -244,7 +246,7 @@ struct
          else body
       ELSE
          body
-      ENDIF
+      END
 
    let alpha_equal_vars t v t' v' =
       DEFINE body = try equal_term (Lm_list_util.zip v v') t t' with Failure _ -> false
@@ -261,7 +263,7 @@ struct
          else body
       ELSE
          body
-      ENDIF
+      END
 
    let rev_mem a b = List.mem b a
 
@@ -362,14 +364,14 @@ struct
       when Opname.eq opname var_opname && List.mem v vars ->
          (* Var case *)
          List.nth terms (Lm_list_util.find_index v vars)
-    | { term_terms = [] } as t -> t (* Optimization *)
+    | { term_terms = []; _ } as t -> t (* Optimization *)
     | { term_op = op; term_terms = bterms } ->
          (* Other term *)
          { term_op = op; term_terms = subst_bterms terms fv vars bterms }
 
    and subst_bterms terms fv vars bterms =
       (* When subst through bterms, catch binding occurrences *)
-      let rec subst_bterm = function
+      let subst_bterm = function
          { bvars = []; bterm = term } ->
             (* Optimize the common case *)
             { bvars = []; bterm = subst_term terms fv vars term }
@@ -456,7 +458,7 @@ struct
     * Inverse substitution.
     *)
    let var_subst t t' v =
-      let { term_op = { op_name = opname } } = t' in
+      let { term_op = { op_name = opname; _ }; _ } = t' in
       let fv = SymbolSet.add (free_vars_set t') v in
       let vt = mk_var_term v in
       let rec subst_term = function
@@ -550,7 +552,7 @@ struct
                raise (RefineError ("Term_subst_std.match_terms", TermPairError (t1, t2)))
       ELSE
          body
-      ENDIF
+      END
 
    (************************************************************************
     * Term standardizing.

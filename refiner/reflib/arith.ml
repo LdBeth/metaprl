@@ -52,6 +52,7 @@ module type HypsSig = sig
     val print_var : out_channel -> var -> unit
 end
 
+(* unused
 module SimpleHyps = struct
     type var = string
     type 'a cmp = var * var * num
@@ -69,6 +70,7 @@ module SimpleHyps = struct
     let print_addr _ _ = ()
     let print_var _ _ = ()
 end
+*)
 
 let num0=num_of_int 0
 
@@ -77,10 +79,14 @@ struct
    open Hyps
 
    let d2_1 (n,x,y) = n*x+y
+(* unused
    let d1_2 n i =let x=i/n in (n,x,i-n*x)
+*)
    let get a coord = Array.get a (d2_1 coord)
    let set a coord e = Array.set a (d2_1 coord) e
+(* unused
    let init n m f = Array.init (n*m) (fun x -> (f (d1_2 n x)))
+*)
 
 (*    exception NotFound of (SimpleHyps.var * (SimpleHyps.var array))
 *)
@@ -118,7 +124,9 @@ functor (Hyps : HypsSig) -> struct
    open Hyps
    open ArrayTool
 
+(* unused
    type result = Example of (var*num) list | Cycle of addr list
+*)
    type dist = Disconnected | Int of num * (addr list)
 
    let maxd d1 d2 = match (d1,d2) with

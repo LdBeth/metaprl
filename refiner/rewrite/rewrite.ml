@@ -39,8 +39,6 @@ open Lm_debug
 open Lm_symbol
 open Lm_printf
 
-open Opname
-
 open Term_sig
 open Term_base_sig
 open Term_op_sig
@@ -87,7 +85,6 @@ struct
 
    open Term
    open TermMan
-   open TermAddr
    open TermSubst
    open RefineError
 
@@ -166,7 +163,7 @@ struct
       let _ =
          (* Check the opnames to short-circuit applications that quickly fail *)
          match rw.rr_redex with
-            RWComposite { rw_op = { rw_name = opname1 } } :: _ ->
+            RWComposite { rw_op = { rw_name = opname1; _ }; _ } :: _ ->
                let opname2 = opname_of_term goal in
                   if not (Opname.eq opname1 opname2) then
                      REF_RAISE(opname_exn);
@@ -187,7 +184,7 @@ struct
          IFDEF VERBOSE_EXN THEN
             if !debug_rewrite then
                eprintf "Rewrite.apply_rewrite: match_redex on %a%t" debug_print goal eflush
-         ENDIF;
+         END;
          match_redex addrs gstack bnames goal params rw.rr_redex;
          let result =
             match rw.rr_contractum with
@@ -195,7 +192,7 @@ struct
                   IFDEF VERBOSE_EXN THEN
                      if !debug_rewrite then
                         eprintf "Rewrite.apply_rewrite: build_contractum%t" eflush
-                  ENDIF;
+                  END;
                   let bnames = if (rw.rr_strict==Strict) then
                      collect_bnames gstack bnames rw.rr_gstacksize 0
                      else SymbolSet.empty
@@ -209,7 +206,7 @@ struct
             IFDEF VERBOSE_EXN THEN
                if !debug_rewrite then
                   eprintf "Rewrite.apply_rewrite: done, result: [%a]%t" (print_any_list debug_print) result eflush
-            ENDIF;
+            END;
             result
 
    (*
@@ -233,7 +230,7 @@ struct
     | CVar (s, _, _)
     | PVar (s, ShapeQuote) -> RewriteUnsupportedType, s
 
-   let extract_redex_types { redex_stack = stack } =
+   let extract_redex_types { redex_stack = stack; _ } =
       let l = Array.length stack in
       let rec aux j =
          if j < l then

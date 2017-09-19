@@ -56,7 +56,8 @@ let default_session =
 let fork_session session =
    let { session_history = history;
          session_messages = messages;
-         session_content_buffer = content_buffer
+         session_content_buffer = content_buffer;
+         _
        } = session
    in
       { session with session_history = LineBuffer.clone history (fun s -> s);

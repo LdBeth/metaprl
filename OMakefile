@@ -1,6 +1,11 @@
 OMakeVersion(0.9.8.5)
 
 #
+# OCaml
+#
+OCAMLFLAGS += -safe-string
+
+#
 # Locations of the source tree.
 #
 LIB      = $(dir lib)

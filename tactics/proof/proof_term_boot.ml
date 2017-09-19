@@ -30,8 +30,6 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified By: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
-open Lm_debug
-
 open Opname
 open Weak_memo
 open Mp_resource
@@ -51,7 +49,6 @@ open Tactic_boot.TacticInternal
 
 module ProofTerm (ToTerm : RefinerSig) =
 struct
-   open ToTerm.TermType
    open ToTerm.Term
    open ToTerm.TermOp
    open ToTerm.TermMan
@@ -115,6 +112,7 @@ struct
       let bterms = List.map (fun t -> mk_bterm [] t) terms in
          mk_term op bterms
 
+(* unused
    let mk_string_string_term opname s1 s2 =
       let param1 = make_param (String s1) in
       let param2 = make_param (String s2) in
@@ -133,6 +131,7 @@ struct
                s1, s2
           | _ ->
                raise (Failure "dest_string_string_term")
+*)
 
    let dest_int_term t =
       match dest_params (dest_op (dest_term t).term_op).op_params with
@@ -474,7 +473,8 @@ struct
          HeadWrapped (ext_add_arglist info (Tactic.expand_arglist label), ext_add_extract info ext)
     | Compose { comp_goal = goal;
                 comp_subgoals = subgoals;
-                comp_extras = extras
+                comp_extras = extras;
+                _
       } ->
          HeadCompose (ext_add_extract info goal,
                       List.map (ext_add_extract info) subgoals,
@@ -483,7 +483,8 @@ struct
                 rule_string = text;
                 rule_extract = goal;
                 rule_subgoals = subgoals;
-                rule_extras = extras
+                rule_extras = extras;
+                _
       } ->
          HeadRule (status,
                    text,

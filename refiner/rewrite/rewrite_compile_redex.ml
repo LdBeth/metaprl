@@ -47,7 +47,6 @@ open Term_op_sig
 open Term_man_sig
 open Term_addr_sig
 open Term_subst_sig
-open Term_shape_sig
 open Refine_error_sig
 
 open Rewrite_sig
@@ -156,7 +155,7 @@ struct
          collect_bvars (succ i) (stack @ [FOVar v]) (bnames @ [bname i v]) ((new_bvar_item i v) :: bvars) vs
 
    let rec wrap_context_instances all_contexts_before st stack_prog = function
-      [] -> 
+      [] ->
          stack_prog
     | inst :: insts ->
          let stack_prog =

@@ -96,11 +96,11 @@ struct
             let i1 = Backward.p_add info.source_hash t in
                (i1, i2))
 
-   let p_retrieve_src entry (i1, _) =
+   let p_retrieve_src entry ((i1, _) : term_index) =
       State.write entry (fun info ->
             SourceNorm.p_retrieve info.source_hash i1)
 
-   let p_retrieve_dst entry (_, i2) =
+   let p_retrieve_dst entry ((_, i2) : term_index) =
       State.write entry (fun info ->
             TargetNorm.p_retrieve info.target_hash i2)
 
@@ -129,11 +129,11 @@ struct
             let i1 = Backward.p_add_meta info.source_hash t in
                (i1, i2))
 
-   let p_retrieve_meta_src entry (i1, _) =
+   let p_retrieve_meta_src entry ((i1, _) : meta_term_index) =
       State.write entry (fun info ->
             SourceNorm.p_retrieve_meta info.source_hash i1)
 
-   let p_retrieve_meta_dst entry (_, i2) =
+   let p_retrieve_meta_dst entry ((_, i2) : meta_term_index) =
       State.write entry (fun info ->
             TargetNorm.p_retrieve_meta info.target_hash i2)
 
@@ -162,11 +162,11 @@ struct
             let i1 = Backward.p_add_msequent info.source_hash t in
                (i1, i2))
 
-   let p_retrieve_msequent_src entry (i1, _) =
+   let p_retrieve_msequent_src entry ((i1, _) : msequent_index) =
       State.write entry (fun info ->
             SourceNorm.p_retrieve_msequent info.source_hash i1)
 
-   let p_retrieve_msequent_dst entry (_, i2) =
+   let p_retrieve_msequent_dst entry ((_, i2) : msequent_index) =
       State.write entry (fun info ->
             TargetNorm.p_retrieve_msequent info.target_hash i2)
 

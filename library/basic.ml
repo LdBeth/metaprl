@@ -318,7 +318,9 @@ let dest_stamp stamp = stamp
 let istamp_parameter = make_param (token "!stamp" )
 let istamp_op parms = mk_nuprl5_op (istamp_parameter :: parms)
 
+(* unused
 exception InvalidStampTerm of term
+*)
 
 let term_to_stamp t =
   match Lib_term.dest_term t with
@@ -338,13 +340,13 @@ let term_to_stamp t =
             transaction_seq = Lm_num.int_of_num tseq;
             seq = Lm_num.int_of_num seq;
             time = (try (destruct_time_parameter ptime)
-		    with Invalid_argument "destruct_time_parameter_b"
+		    with Invalid_argument s when s = "destruct_time_parameter_b"
 				-> error ["stamp"; "term"; "invalid"; "timeb"] [] [t]
-			| Invalid_argument "destruct_time_parameter_c"
+			| Invalid_argument s when s = "destruct_time_parameter_c"
 				-> error ["stamp"; "term"; "invalid"; "timec"] [] [t]
-			| Invalid_argument "destruct_time_parameter_d"
+			| Invalid_argument s when s = "destruct_time_parameter_d"
 				-> error ["stamp"; "term"; "invalid"; "timed"] [] [t]
-			| Invalid_argument "destruct_time_parameter_e"
+			| Invalid_argument s when s = "destruct_time_parameter_e"
 				-> error ["stamp"; "term"; "invalid"; "timee"] [] [t]
 			|_ -> error ["stamp"; "term"; "invalid"; "time"] [] [t]
 			)
@@ -360,13 +362,13 @@ let stamp_to_term stamp = stamp.term
 let stamp_to_object_id stamp = make_object_id (List.tl (parameters_of_term stamp.term))
 
 let in_transaction_p = fun
-  { process_id = pid1; transaction_seq = tseq1 }
-  { process_id = pid2; transaction_seq = tseq2 } ->
+  { process_id = pid1; transaction_seq = tseq1; _ }
+  { process_id = pid2; transaction_seq = tseq2; _ } ->
     pid1 = pid2 & tseq1 = tseq2
 
 let transaction_less = fun
-  { term = term1; process_id = pid1; seq = seq1; time = time1 }
-  { term = term2; process_id = pid2; seq = seq2; time = time2 } ->
+  { term = term1; process_id = pid1; seq = seq1; time = time1; _ }
+  { term = term2; process_id = pid2; seq = seq2; time = time2; _ } ->
 
     if not (stringeq pid1 pid2) then error ["stamp"; "less"; "incomparable"] [] [term1; term2]
     else if (eq_num time1 time2) then seq1 < seq2
@@ -441,6 +443,7 @@ let tideq s t =
 (* expect Fatal error: uncaught exception Incomparable_Stamps
    should try other tests and make outcome more apparent ie print test ok
  *)
+(* unused
 let test () =
  let s1 = (make_stamp "goo" 2 1 (num_of_int 2))
  and s2 = (make_stamp "moo" 1 2 (num_of_int 2))
@@ -449,6 +452,7 @@ let test () =
       (transaction_less s1 s3) &
       (transaction_less s3 s2)
 ;;
+*)
 
 let icons_op = (mk_nuprl5_op [make_param (token "!cons")])
 let icons_term op h t = mk_term op [mk_bterm [] h; mk_bterm [] t]

@@ -3,6 +3,14 @@
 #
 include Files
 
+OCAMLFLAGS += -rectypes
+
+########################################################################
+# infix.ml
+#
+infix.ml: infix.mlp
+	$(CAMLP5O) -I $(CAMLP5LIB) q_MLast.cmo pa_extend.cmo pr_o.cmo $(LOC) -impl $^ | sed -e 's,"XXXXXXXX",keyword,g' > $@
+
 ########################################################################
 # Magic numbers
 #

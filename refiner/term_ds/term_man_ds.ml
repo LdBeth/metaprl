@@ -47,12 +47,14 @@ open Term_subst_sig
 let _ =
    show_loading "Loading Term_man_ds%t"
 
+(* unused
 let debug_address =
    create_debug (**)
       { debug_name = "address";
         debug_description = "show term addressing operations";
         debug_value = false
       }
+*)
 
 (*
  * Module builds on term implementation.
@@ -231,7 +233,7 @@ struct
    let is_xstring_dep0_term t =
       match get_core t with
          Term { term_op = { op_name = opname; op_params = [String _] };
-                term_terms = [{ bvars = [] }]
+                term_terms = [{ bvars = []; _ }]
          } when Opname.eq opname string_opname ->
             true
        | _ ->
@@ -637,7 +639,7 @@ struct
        | SOContext(v, t, _, ts) ->
             let ints, addrs = vars in
                List.fold_left context_vars (ints, SymbolSet.add addrs v) (t::ts)
-       | Term { term_terms = bts } ->
+       | Term { term_terms = bts; _ } ->
             List.fold_left bterm_context_vars vars bts
        | SOVar(_, _, ts) -> List.fold_left context_vars vars ts
        | FOVar _ -> vars
@@ -679,7 +681,7 @@ struct
        | SOContext(v, t, conts, ts) ->
             let vars = SymbolTable.add vars v (false, List.length conts, List.length ts) in
                context_vars_term (context_vars_term_list vars ts) t
-       | Term { term_terms = bts } ->
+       | Term { term_terms = bts; _ } ->
             context_vars_bterm_list vars bts
        | FOVar _ ->
             vars
@@ -721,7 +723,7 @@ struct
                         hyp_so_vars (so_vars_term_list vars ts) (succ i)
             in
                so_vars_term (hyp_so_vars (so_vars_term vars seq.sequent_args) 0) seq.sequent_concl
-       | Term { term_terms = bts } ->
+       | Term { term_terms = bts; _ } ->
             so_vars_bterm_list vars bts
        | SOContext (_, t, _, ts) ->
             so_vars_term_list vars (t :: ts)
@@ -761,7 +763,7 @@ struct
                            param_vars_term_list vars ts) vars seq.sequent_hyps
             in
                param_vars_term (param_vars_term vars seq.sequent_args) seq.sequent_concl
-       | Term { term_op = { op_params = params }; term_terms = bts } ->
+       | Term { term_op = { op_params = params; _ }; term_terms = bts } ->
             param_vars_bterm_list (param_vars_param_list vars params) bts
        | FOVar _ ->
             vars
@@ -826,7 +828,7 @@ struct
                               all_vars_term_list vars ts) vars seq.sequent_hyps
             in
                all_vars_term (all_vars_term vars seq.sequent_args) seq.sequent_concl
-       | Term { term_op = { op_params = params }; term_terms = bts } ->
+       | Term { term_op = { op_params = params; _ }; term_terms = bts } ->
             all_vars_term_bterm_list (param_vars_param_list vars params) bts
        | FOVar v ->
             SymbolSet.add vars v
@@ -867,7 +869,7 @@ struct
                               all_vars_info_list vars ts) vars seq.sequent_hyps
             in
                all_vars_info (all_vars_info vars seq.sequent_args) seq.sequent_concl
-       | Term { term_op = { op_params = params }; term_terms = bts } ->
+       | Term { term_op = { op_params = params; _ }; term_terms = bts } ->
             all_vars_info_bterm_list (all_vars_info_param_list vars params) bts
        | FOVar v ->
             SymbolTable.add vars v FirstOrderVar
@@ -921,7 +923,7 @@ struct
       let rec aux vars t = match get_core t with
          FOVar _ -> vars
        | SOVar(v, conts, ts) -> sovar_case
-       | Term{term_terms = bts} -> List.fold_left aux_bterm vars bts
+       | Term{term_terms = bts; _ } -> List.fold_left aux_bterm vars bts
        | SOContext(v, t, conts, ts) ->
             List.fold_left aux (SymbolSet.add_list (SymbolSet.add vars v) conts) (t::ts)
        | Sequent eseq ->

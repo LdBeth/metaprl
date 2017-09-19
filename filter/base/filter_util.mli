@@ -29,8 +29,6 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
-open Lm_symbol
-
 open Opname
 open Refiner.Refiner.TermType
 open Filter_type
@@ -66,8 +64,9 @@ val elim_resources : MLast.loc -> (MLast.expr, term) resource_def
 
 val dummy_loc : MLast.loc
 val mk_proper_loc : Lm_num.num -> Lm_num.num -> MLast.loc (* XXX: temporary OCaml 3.06 -> 3.08 conversion HACK *)
-val shift_pos : Lexing.position -> int -> Lexing.position
-val adjust_pos : Lexing.position -> Lexing.position -> Lexing.position
+val shift_pos : Ploc.t -> int -> Ploc.t
+val adjust_pos : Ploc.t -> Ploc.t -> Ploc.t
+val ploc_of_lexing : Lexing.position * Lexing.position -> Ploc.t
 
 (* PR#2954 workaround: Calls Grammar.Entry.parse, restoring all the pos components *)
 val grammar_parse : 'a Grammar.Entry.e -> char Stream.t -> 'a

@@ -29,14 +29,10 @@
  * Author: Aleksey Nogin <nogin@cs.cornell.edu>
  * Modified By: Jason Hickey <jyh@cs.cornell.edu>
  *)
-open Lm_printf
-open Lm_symbol
-
 open Opname
 open Term_sig
 open Term_base_sig
 open Term_man_sig
-open Term_shape_sig
 open Term_subst_sig
 open Term_ty_sig
 
@@ -46,9 +42,7 @@ module TermTy (**)
    (TermMan : TermManSig with module ManTypes = TermType)
    (TermSubst : TermSubstSig with module SubstTypes = TermType) =
 struct
-   open TermType
    open Term
-   open TermMan
    open TermSubst
 
    type term = TermType.term
@@ -117,13 +111,15 @@ struct
       let { ty_opname = opname1;
             ty_params = params1;
             ty_bterms = bterms1;
-            ty_type   = ty1
+            ty_type   = ty1;
+            _
           } = ty_term1
       in
       let { ty_opname = opname2;
             ty_params = params2;
             ty_bterms = bterms2;
-            ty_type   = ty2
+            ty_type   = ty2;
+            _
           } = ty_term2
       in
          (Opname.eq opname1 opname2)
@@ -132,7 +128,7 @@ struct
          && (alpha_equal ty1 ty2)
 
    let eq ty_term1 ty_term2 =
-      let { ty_term = term1 } = ty_term1 in
-      let { ty_term = term2 } = ty_term2 in
+      let { ty_term = term1; _ } = ty_term1 in
+      let { ty_term = term2; _ } = ty_term2 in
          alpha_equal term1 term2 && eq_ty ty_term1 ty_term2
 end

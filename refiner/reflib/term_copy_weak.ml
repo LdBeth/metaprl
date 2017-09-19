@@ -46,11 +46,13 @@ struct
    let p_add_msequent info t = TermHash.p_lookup_msequent info (THC.make_msequent_header info t)
    let p_convert_msequent info t = TermHash.p_retrieve_msequent info (p_add_msequent info t)
 
+(* unused
    let p_retrieve = TermHash.p_retrieve
    let p_retrieve_meta = TermHash.p_retrieve_meta
    let p_retrieve_msequent = TermHash.p_retrieve_msequent
 
    let global_hash = TermHash.global_hash
+*)
 
    let add = p_add TermHash.global_hash
    let convert = p_convert TermHash.global_hash
@@ -61,9 +63,11 @@ struct
    let add_msequent = p_add_msequent TermHash.global_hash
    let convert_msequent = p_convert_msequent TermHash.global_hash
 
+(* unused
    let retrieve = TermHash.retrieve
    let retrieve_meta = TermHash.retrieve_meta
    let retrieve_msequent = TermHash.retrieve_msequent
+*)
 end
 
 (*

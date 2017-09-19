@@ -24,19 +24,11 @@
  * Modified by: Aleksey Nogin @email{nogin@cs.caltech.edu}
  * @end[license]
  *)
-open Lm_debug
 open Lm_symbol
-open Lm_printf
-open Lm_lexer
-open Lm_parser
-open Lm_string_set
-open Lm_location
 
 open Opname
 open Term_sig
 open Term_ty_sig
-open Term_meta_sig
-open Simple_print
 open Refiner.Refiner
 open Refiner.Refiner.TermType
 open Refiner.Refiner.Term
@@ -45,12 +37,8 @@ open Refiner.Refiner.TermMan
 open Refiner.Refiner.TermMeta
 open Refiner.Refiner.TermShape
 open Refiner.Refiner.TermSubst
-open Refiner.Refiner.Rewrite
 open Refiner.Refiner.RefineError
 
-open Tactic_type
-
-open Filter_shape
 open Filter_base_type
 open Filter_summary_util
 
@@ -119,7 +107,9 @@ sig
    val create                   : parse_state -> t
    val mk_lambda_term           : t -> var -> term -> term
    val mk_bind_term             : t -> var -> term -> term
+(* unused
    val mk_bind_vec_term         : t -> term -> var -> term -> term
+*)
    val mk_rev_bind_terms        : t -> hypothesis list -> term -> term
    val mk_mk_bterm_term         : t -> term -> term -> term -> term
    val mk_mk_term_term          : t -> term -> term -> term
@@ -128,21 +118,31 @@ sig
    val mk_cons_term             : t -> term -> term -> term
    val mk_list_term             : t -> term list -> term
    val mk_all_list_term         : t -> var -> term -> term -> term
+(* unused
    val mk_pair_term             : t -> term -> term -> term
+*)
    val mk_length_term           : t -> term -> term
+(* unused
    val mk_append_term           : t -> term -> term -> term
    val mk_append_list_term      : t -> term list -> term
+*)
    val mk_sequent_term          : t -> term -> term -> term -> term
    val mk_ty_list_term          : t -> term -> term
    val mk_implies_term          : t -> term -> term -> term
+(* unused
    val mk_exists_term           : t -> var -> term -> term -> term
+*)
    val mk_all_term              : t -> var -> term -> term -> term
    val mk_equal_term            : t -> term -> term -> term -> term
    val mk_number_term           : t -> int -> term
+(* unused
    val mk_ty_nat                : t -> term
    val mk_subst_term            : t -> term -> term -> term
+*)
    val mk_soapply_term          : t -> term -> term list -> term
+(* unused
    val mk_substl_term           : t -> term -> term -> term
+*)
    val mk_capply_term           : t -> term -> var list -> term
    val mk_map_term              : t -> var -> term -> term -> term
    val mk_add_term              : t -> term -> term -> term
@@ -160,13 +160,17 @@ sig
    val mk_IsJudgment_term       : t -> term -> term -> term
    val mk_ProofStepWitness_term : t -> term
    val mk_SimpleStep_term       : t -> term -> term -> term -> term -> term
+(* unused
    val mk_Sequent_term          : t -> term
+*)
    val mk_meta_type_term        : t -> term
    val is_meta_type_term        : t -> term -> bool
    val mk_meta_member_term      : t -> term -> term -> term
    val mk_Logic_term            : t -> term
+(* unused
    val mk_type_term             : t -> term -> term
    val mk_assert_term           : t -> term -> term
+*)
    val mk_let_cvar_term         : t -> var -> term -> term -> int -> term -> term
    val mk_let_sovar_term        : t -> var -> term -> term -> int -> term -> term
    val mk_spread_term           : t -> term -> var -> var -> term -> term
@@ -179,7 +183,9 @@ sig
    val mk_SubLogic_term         : t -> term -> term -> term
    val mk_MemLogic_term         : t -> term -> term -> term
    val mk_it_term               : t -> term
+(* unused
    val mk_xconcl_term           : t -> term
+*)
    val mk_hyplist_term          : t -> seq_hyps -> term
    val mk_vlist_term            : t -> seq_hyps -> term
    val mk_hyp_context_term      : t -> seq_hyps -> term -> term
@@ -198,7 +204,9 @@ struct
          incr hash_index;
          index, info
 
+(* unused
    let info_BTerm             = hash ("BTerm",            [],   [])
+*)
    let info_BTerm2            = hash ("BTerm",            [],   [0])
    let info_CVar              = hash ("CVar",             [],   [0])
    let info_Logic             = hash ("Logic",            [],   [])
@@ -209,19 +217,25 @@ struct
    let info_ProvableSequent   = hash ("ProvableSequent",  [],   [0; 0])
    let info_ProvableJudgment  = hash ("ProvableJudgment", [],   [0; 0])
    let info_IsJudgment        = hash ("IsJudgment",       [],   [0; 0])
+(* unused
    let info_Sequent           = hash ("Sequent",          [],   [])
+*)
    let info_SimpleStep        = hash ("SimpleStep",       [],   [0; 0; 0; 0])
    let info_add               = hash ("add",              [],   [0; 0])
-   let info_append            = hash ("append",           [],   [0; 0])
    let info_all_list          = hash ("all_list",         [],   [0; 1])
+(* unused
+   let info_append            = hash ("append",           [],   [0; 0])
    let info_assert            = hash ("assert",           [],   [0])
+*)
    let info_beq_proof_step    = hash ("beq_proof_step",   [],   [0; 0])
    let info_bind_vec          = hash ("bind",             [],   [0; 1])
    let info_bind              = hash ("bind",             [],   [1])
    let info_cons              = hash ("cons",             [],   [0; 0])
    let info_equal             = hash ("equal",            [],   [0; 0; 0])
    let info_implies           = hash ("implies",          [],   [0; 0])
+(* unused
    let info_exists            = hash ("exists",           [],   [0; 1])
+*)
    let info_all               = hash ("all",              [],   [0; 1])
    let info_lambda            = hash ("lambda",           [],   [1])
    let info_length            = hash ("length",           [],   [0])
@@ -233,18 +247,24 @@ struct
    let info_meta_type         = hash ("meta_type",        [],   [])
    let info_mk_bterm          = hash ("mk_bterm",         [],   [0; 0; 0])
    let info_mk_term           = hash ("mk_term",          [],   [0; 0])
+(* unused
    let info_nat               = hash ("nat",              [],   [])
+*)
    let info_nil               = hash ("nil",              [],   [])
    let info_number            = hash ("number",           [ShapeNumber],   [])
    let info_operator          = hash ("operator",         [ShapeOperator],   [])
+(* unused
    let info_pair              = hash ("pair",             [],   [0; 0])
+*)
    let info_proof_step        = hash ("proof_step",       [],   [0; 0])
    let info_sequent           = hash ("sequent",          [],   [0; 0; 0])
    let info_sequent_arg       = hash ("sequent_arg",      [],   [])
    let info_spread            = hash ("spread",           [],   [0; 2])
    let info_subst             = hash ("subst",            [],   [0; 0])
    let info_substl            = hash ("substl",           [],   [0; 0])
+(* unused
    let info_type              = hash ("type",             [],   [0])
+*)
    let info_sequent_bterm     = hash ("sequent_bterm",    [],   [0; 0])
    let info_vsequent          = hash ("vsequent",         [],   [0])
    let info_bsequent          = hash ("bsequent",         [],   [0])
@@ -334,15 +354,18 @@ struct
        | v :: l ->
             mk_cons_term info v (mk_list_term info l)
 
+(* unused
    let mk_pair_term info t1 t2 =
       mk_simple_term (find_opname info info_pair) [t1; t2]
 
    let mk_append_term info t1 t2 =
       mk_simple_term (find_opname info info_append) [t1; t2]
+*)
 
    let mk_all_list_term info v t1 t2 =
       mk_dep0_dep1_term (find_opname info info_all_list) v t1 t2
 
+(* unused
    let rec mk_append_list_term info l =
       match l with
          [] ->
@@ -351,6 +374,7 @@ struct
             t
        | t :: l ->
             mk_append_term info t (mk_append_list_term info l)
+*)
 
    let mk_sequent_term info arg hyps concl =
       mk_simple_term (find_opname info info_sequent) [arg; hyps; concl]
@@ -361,8 +385,10 @@ struct
    let mk_implies_term info t1 t2 =
       mk_dep0_dep0_term (find_opname info info_implies) t1 t2
 
+(* unused
    let mk_exists_term info v t1 t2 =
       mk_dep0_dep1_term (find_opname info info_exists) v t1 t2
+*)
 
    let mk_all_term info v t1 t2 =
       mk_dep0_dep1_term (find_opname info info_all) v t1 t2
@@ -370,8 +396,10 @@ struct
    let mk_equal_term info t1 t2 t3 =
       mk_simple_term (find_opname info info_equal) [t3; t1; t2]
 
+(* unused
    let mk_ty_nat info =
       mk_simple_term (find_opname info info_nat) []
+*)
 
    let mk_number_term info i =
       mk_term (mk_op (find_opname info info_number) [make_param (Number (Lm_num.num_of_int i))]) []
@@ -432,8 +460,10 @@ struct
    let mk_sequent_arg_term info =
       mk_simple_term (find_opname info info_sequent_arg) []
 
+(* unused
    let mk_Sequent_term info =
       mk_simple_term (find_opname info info_Sequent) []
+*)
 
    let mk_Logic_term info =
       mk_simple_term (find_opname info info_Logic) []
@@ -459,6 +489,7 @@ struct
    let is_meta_type_term info t =
       is_no_subterms_term (find_opname info info_meta_type) t
 
+(* unused
    let mk_type_term info t =
       mk_dep0_term (find_opname info info_type) t
 
@@ -474,6 +505,7 @@ struct
       in
       let op = mk_op opname [] in
          mk_term op bterms
+*)
 
    let mk_let_cvar_term info v t1 t2 t3 t4 =
       let t3 = mk_number_term info t3 in
@@ -528,8 +560,10 @@ struct
    let mk_it_term info =
       mk_simple_term (find_opname info info_it) []
 
+(* unused
    let mk_xconcl_term info =
       mk_simple_term (find_opname info info_xconcl) []
+*)
 
    let mk_hyplist_term info hyps =
       let arg = mk_simple_term (find_opname info info_hyplist) [] in
@@ -911,6 +945,7 @@ let quantify_socvars_hyps info socvars hyps =
 (*
  * Turn the socvars into wf subgoals.
  *)
+(* unused
 let mk_socvar_wf_assum info h_v (v, _, b, cargs, arity) =
    let len = Reflect.mk_number_term info arity in
    let len =
@@ -939,6 +974,7 @@ let mk_socvar_wf_assum info h_v (v, _, b, cargs, arity) =
 
 let mk_socvar_wf_assums info h_v socvars =
    List.map (mk_socvar_wf_assum info h_v) socvars
+*)
 
 (*
  * Quote all the terms in the rule except for any variables.
@@ -1108,7 +1144,8 @@ let mk_type_check_premises info quote =
    let { ty_term   = t;
          ty_opname = opname;
          ty_params = params;
-         ty_bterms = bterms
+         ty_bterms = bterms;
+         _
        } = quote
    in
    let () =
@@ -1163,7 +1200,8 @@ let mk_type_check_premises info quote =
 let mk_type_check_thm info quote =
    (* Get the parts of the quoted term *)
    let { ty_opname = opname;
-         ty_type   = ty
+         ty_type   = ty;
+         _
        } = quote
    in
 
@@ -1628,7 +1666,8 @@ let mk_elim_wf_assum info einfo t_logic =
          elim_u_ty    = u_ty;
          elim_x_v     = x_v;
          elim_hyp_v   = hyp_v;
-         elim_concl_v = concl_v
+         elim_concl_v = concl_v;
+         _
        } = einfo
    in
    let v_v, all_vars = maybe_new_var var_v einfo.elim_all_vars in
@@ -1659,7 +1698,8 @@ let mk_elim_goal info einfo t_logic =
          elim_u_ty    = u_ty;
          elim_x_v     = x_v;
          elim_hyp_v   = hyp_v;
-         elim_concl_v = concl_v
+         elim_concl_v = concl_v;
+         _
        } = einfo
    in
    let hyps =
@@ -1852,7 +1892,8 @@ let mk_proof_check_case info cinfo t_rule =
          celim_c_v_t    = c_v_t;
          celim_premises = t_premises;
          celim_goal     = t_goal;
-         celim_witness  = t_witness
+         celim_witness  = t_witness;
+         _
        } = cinfo
    in
    let it = Reflect.mk_it_term info in
@@ -1876,7 +1917,8 @@ let mk_simple_step_goal info cinfo t_logic squash =
          celim_c_v_t    = c_v_t;
          celim_premises = t_premises;
          celim_goal     = t_goal;
-         celim_witness  = t_witness
+         celim_witness  = t_witness;
+         _
        } = cinfo
    in
    let witness = if squash then Reflect.mk_it_term info else mk_var_term x_v in
@@ -1975,7 +2017,8 @@ let mk_proof_check_goal info cinfo =
          celim_rule     = t_rule;
          celim_premises = t_premises;
          celim_goal     = t_goal;
-         celim_witness  = t_witness
+         celim_witness  = t_witness;
+         _
        } = cinfo
    in
    let premises =

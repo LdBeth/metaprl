@@ -350,7 +350,7 @@ struct
             false
        | [main_term; conts] ->
             begin match dest_bterm main_term with
-               { bvars = [_] } -> is_simple_bterm conts && is_xlist_term (dest_simple_bterm conts)
+               { bvars = [_]; _ } -> is_simple_bterm conts && is_xlist_term (dest_simple_bterm conts)
               | _ -> false
             end
        | bt :: tl ->
@@ -420,12 +420,16 @@ struct
    (* Hypotheses *)
    let is_hyp_term = is_dep0_dep1_term hyp_opname
    let mk_hyp_term = mk_dep0_dep1_term hyp_opname
+(* unused
    let dest_hyp = dest_dep0_dep1_term hyp_opname
+*)
 
    (* Conclusions *)
    let is_concl_term = is_dep0_term concl_opname
    let mk_concl_term = mk_dep0_term concl_opname
+(* unused
    let dest_concl = dest_dep0_term concl_opname
+*)
 
    let mk_sequent_outer_term body args =
       mk_simple_term sequent_opname [args; body]
@@ -470,7 +474,7 @@ struct
       [bterm1; bterm2] ->
          begin
             match dest_bterm bterm1, dest_bterm bterm2 with
-               ({ bvars = [] }, { bvars = [_]; bterm = term }) ->
+               ({ bvars = []; _ }, { bvars = [_]; bterm = term }) ->
                   term
              | _ ->
                   REF_RAISE(RefineError (name, TermMatchError (t, "malformed hypothesis")))
@@ -766,7 +770,6 @@ struct
          else
             REF_RAISE(RefineError (replace_concl_name, TermMatchError (seq, "malformed sequent")))
 
-   let replace_concl_name = "replace_concl"
    let replace_concl seq concl =
       let seq, args = dest_sequent_outer_term seq in
          mk_sequent_outer_term (replace_concl seq (mk_concl_term concl)) args
@@ -859,7 +862,7 @@ struct
             param_vars_term pvars concl
       else
          let { term_op = op; term_terms = bterms } = dest_term t in
-         let { op_params = params } = dest_op op in
+         let { op_params = params; _ } = dest_op op in
          let pvars = param_vars_param_list pvars params in
             param_vars_bterm_list pvars bterms
 
@@ -932,7 +935,7 @@ struct
          in
             context_vars_term (hyp_context_vars (context_vars_term cvars args) 0) concl
       else
-         let { term_terms = bterms } = dest_term t in
+         let { term_terms = bterms; _ } = dest_term t in
             context_vars_bterm_list cvars bterms
 
    and context_vars_term_list cvars l =
@@ -980,7 +983,7 @@ struct
          in
             so_vars_term (hyp_so_vars (so_vars_term sovars args) 0) concl
       else
-         let { term_terms = bterms } = dest_term t in
+         let { term_terms = bterms; _ } = dest_term t in
             so_vars_bterm_list sovars bterms
 
    and so_vars_term_list sovars l =
@@ -1073,7 +1076,9 @@ struct
       List.fold_left all_vars_param pvars params
 
    let all_vars_info = all_vars_term
+(* unused
    let all_vars_info_list = all_vars_term_list
+*)
    let all_vars t = SymbolTable.fold (fun t v _ -> SymbolSet.add t v) SymbolSet.empty (all_vars_info SymbolTable.empty t)
    let all_vars_terms tl =
       let info = all_vars_term_list SymbolTable.empty tl in

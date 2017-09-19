@@ -40,7 +40,6 @@ open Lm_rformat_text
 open Opname
 open Term_sig
 open Refiner_sig
-open Lexing
 
 (*
  * Show the file loading.
@@ -68,29 +67,25 @@ let format_quoted_var buf v =
 let format_var buf v =
    format_string buf (dstring_of_var v)
 
-let format_loc buf (bp, ep) =
-   if (bp.pos_fname <> "") && (bp.pos_fname <> "-") && (List.mem ep.pos_fname [bp.pos_fname; ""; "-"]) then begin
+let format_loc buf (loc : MLast.loc) =
+   let fname = Ploc.file_name loc in
+   if (fname <> "") && (fname <> "-") then begin
       format_string buf "File \"";
-      format_string buf bp.pos_fname;
+      format_string buf fname;
       format_string buf "\", line ";
    end
    else
       format_string buf "Line ";
-   format_int buf bp.pos_lnum;
+   let line = Ploc.line_nb loc in
+   let lpos = Ploc.bol_pos loc in
+   let bpos = Ploc.first_pos loc in
+   let epos = Ploc.last_pos loc in
+   format_int buf line;
    format_string buf ", ";
-   if bp.pos_lnum = ep.pos_lnum then begin
-      format_string buf "characters ";
-      format_int buf (bp.pos_cnum - bp.pos_bol + 1);
-      format_string buf "-";
-   end
-   else begin
-      format_string buf "char ";
-      format_int buf (bp.pos_cnum - bp.pos_bol + 1);
-      format_string buf " -- line ";
-      format_int buf ep.pos_lnum;
-      format_string buf ", char ";
-   end;
-   format_int buf (ep.pos_cnum - ep.pos_bol)
+   format_string buf "characters ";
+   format_int buf (bpos - lpos + 1);
+   format_string buf "-";
+   format_int buf (epos - lpos)
 
 let string_of_loc loc =
    let buf = new_buffer () in

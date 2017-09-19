@@ -29,7 +29,6 @@
  * Author: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 open Lm_debug
-open Lm_symbol
 open Lm_printf
 
 open Lm_string_set
@@ -326,8 +325,8 @@ let make_resource name proc =
       Hashtbl.add state.processed_data name proc_data
 
 let get_result = function
-   { res_result = Some res } -> res
- | { res_proc = proc } as res_pr ->
+   { res_result = Some res; _ } -> res
+ | { res_proc = proc; _ } as res_pr ->
       let res = proc.proc_retrieve () in
          res_pr.res_result <- Some res;
          res

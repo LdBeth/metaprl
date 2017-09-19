@@ -32,7 +32,6 @@
 open Lm_symbol
 
 open Term_sig
-open Term_shape_sig
 open Term_ty_sig
 open Refiner.Refiner.TermType
 open Refiner.Refiner.TermMeta

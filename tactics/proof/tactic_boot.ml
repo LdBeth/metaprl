@@ -58,7 +58,6 @@ open Refiner.Refiner.RefineError
 open Refiner.Refiner.Refine
 
 open Tactic_boot_sig
-open Rewrite_sig
 open Options_boot
 open Theory
 
@@ -80,7 +79,9 @@ let debug_refine = load_debug "refine"
 let eq = (==)
 let equal = (=)
 
+(* unused
 let option_name = "option"
+*)
 
 (*
  * This module implements:
@@ -103,9 +104,11 @@ struct
    (*
     * Functions needed for the table.
     *)
+(* unused
    let union () () = ()
 
    let append l1 l2 = l1 @ l2
+*)
 
    (*
     * The attribute calculations are delayed to minimize communication
@@ -246,6 +249,7 @@ struct
     * Split the annotation processor types into named versions
     * so that we can force choice of optional arguments.
     *)
+(* unused
    type 'input named_annotation_processor =
       rewrite_args_spec -> (* Names of the context vars parameters *)
       term list ->         (* Term parameters *)
@@ -271,6 +275,7 @@ struct
    type 'input rw_annotation_processor =
       string ->            (* Name of the new rewrite *)
       'input named_rw_annotation_processor
+*)
 
    (************************************************************************
     * IMPLEMENTATION                                                       *
@@ -561,8 +566,10 @@ struct
                                        attr_ints = ints;
                                        attr_bools = bools;
                                        attr_strings = strings;
-                                       attr_options = options
-                                     } } =
+                                       attr_options = options;
+                                       _
+                                     }; _
+       } =
       (List.map (fun (name, t) -> name, TermArg t) terms)
       @ (List.map (fun (name, t) -> name, TermListArg t) term_lists)
       @ (List.map (fun (name, t) -> name, TypeArg t) types)
@@ -578,8 +585,10 @@ struct
                                            attr_bools = bools;
                                            attr_strings = strings;
                                            attr_keys = keys;
-                                           attr_options = options
-                                     } } =
+                                           attr_options = options;
+                                           _
+                                         }; _
+       } =
       (List.map (fun (name, t) -> name, RawTerm t) terms)
       @ (List.map (fun (name, t) -> name, RawTermList t) term_lists)
       @ (List.map (fun (name, t) -> name, RawType t) types)
@@ -718,20 +727,21 @@ struct
          format_pushm buf 2;
          format_string buf "Compose:";
          format_hspace buf;
-         format_goal_subgoals db buf goal subgoals extras;
+         let _ = format_goal_subgoals db buf goal subgoals extras in
          format_popm buf
 
     | RuleBox { rule_status = status;
                 rule_string = text;
                 rule_extract = goal;
                 rule_subgoals = subgoals;
-                rule_extras = extras
+                rule_extras = extras;
+                _
       } ->
          format_pushm buf 2;
          format_string buf "Rule: ";
          format_string buf text;
          format_hspace buf;
-         format_goal_subgoals db buf goal subgoals extras;
+         let _ = format_goal_subgoals db buf goal subgoals extras in
          format_popm buf
 
     | Pending _ ->
@@ -790,7 +800,7 @@ struct
     | [] ->
          index
 
-   and format_arg db buf { ref_goal = goal; ref_attributes = attrs } =
+   and format_arg db buf { ref_goal = goal; ref_attributes = attrs; _ } =
       let goal, _ = Refine.dest_msequent goal in
          format_pushm buf 2;
          format_term db buf goal;
@@ -883,8 +893,10 @@ struct
    let assoc_equal (l1 : (string * 'a) list) (l2 : (string * 'a) list) (f : 'a -> 'a -> bool) =
       Lm_list_util.for_all2 (fun (s1, t1) (s2, t2) -> s1 = s2 && f t1 t2) l1 l2
 
+(* unused
    let opname_assoc_equal (l1 : (opname * 'a) list) (l2 : (opname * 'a) list) (f : 'a -> 'a -> bool) =
       Lm_list_util.for_all2 (fun (s1, t1) (s2, t2) -> Opname.eq s1 s2 && f t1 t2) l1 l2
+*)
 
    let attributes_alpha_equal arg1 arg2 =
       arg1 == arg2 ||
@@ -894,7 +906,8 @@ struct
             attr_ints       = ints1;
             attr_bools      = bools1;
             attr_strings    = strings1;
-            attr_options    = options1
+            attr_options    = options1;
+            _
           } = arg1
       in
       let { attr_terms      = terms2;
@@ -903,7 +916,8 @@ struct
             attr_ints       = ints2;
             attr_bools      = bools2;
             attr_strings    = strings2;
-            attr_options    = options2
+            attr_options    = options2;
+            _
           } = arg2
       in
          assoc_equal terms1 terms2 alpha_equal
@@ -1038,7 +1052,7 @@ struct
          if !debug_tactic then
             eprintf "Starting refinement%t" eflush
       in
-      let { ref_goal = goal; ref_sentinal = sentinal } = arg in
+      let { ref_goal = goal; ref_sentinal = sentinal; _ } = arg in
       let subgoals, ext = Refine.refine (get_sentinal sentinal) rl goal in
       let subgoals = make_labeled_subgoals labels arg subgoals in
          if !debug_tactic then
@@ -1097,7 +1111,7 @@ struct
       let i = pred i in
          if !debug_refine then
             begin
-               let { ref_goal = seq } = p in
+               let { ref_goal = seq; _ } = p in
                let goal, hyps = dest_msequent seq in
                   eprintf "Tactic_type.nthAssumT:\nHyp: %d%t" i eflush;
                   List.iter (fun hyp ->
@@ -1179,12 +1193,14 @@ struct
       else
          ThreadRefinerTacticals.compose2 tac1 tacl
 
+(* unused
    let firstT =
       let non_id tac = (tac != idT) in
          fun tacl ->
             match Lm_list_util.filter non_id tacl with
                [tac] -> tac
              | tacl -> ThreadRefinerTacticals.first tacl
+*)
 
    let wrapT = ThreadRefinerTacticals.wrap
 

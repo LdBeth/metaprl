@@ -28,8 +28,6 @@
  *
  * Author: Jason Hickey <jyh@cs.caltech.edu>
  *)
-open Lm_printf
-
 open Opname
 
 (*

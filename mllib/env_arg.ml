@@ -80,7 +80,7 @@ let int name default info set =
    let env_set name v s =
       let i =
          try int_of_string s with
-            Failure "int_of_string" ->
+            Failure s when s = "int_of_string" ->
                eprintf "Env_arg: bad value for %s: '%s' not integer, exiting\n" name s ;
                exit 1
       in

@@ -484,10 +484,10 @@ let mk_opname mode opname =
  *)
 let parse_token buf =
    match buf with
-      { tokens = token :: t } ->
+      { tokens = token :: t; _ } ->
          buf.tokens <- t;
          token
-    | { lexbuf = lexbuf } ->
+    | { lexbuf = lexbuf; _ } ->
          main lexbuf
 
 let push_back token buf =

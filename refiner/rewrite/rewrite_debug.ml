@@ -59,7 +59,6 @@ module MakeRewriteDebug
    =
 struct
    module RewriteTypes = Rewrite_types.MakeRewriteTypes(TermType)(TermAddr)
-   open TermType
    open Term
    open TermAddr
    open TermShape
@@ -229,7 +228,7 @@ struct
          raise (Invalid_argument "Rewrite_debug.print_sparam")
 
    and print_sparam_list out pl =
-      let rec collect = function
+      let collect = function
          [h] ->
             print_sparam out h
        | h::t ->
@@ -352,6 +351,7 @@ struct
       in
          fprintf out "%s" s
 
+(* unused
    let print_any_array print out l =
       match l with
          [||] ->
@@ -365,6 +365,7 @@ struct
                   fprintf out ",@ %a" print l.(i)
                done;
                fprintf out "@]"
+*)
 
    let print_contractum out con =
       match con with

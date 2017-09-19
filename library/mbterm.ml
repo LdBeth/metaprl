@@ -36,7 +36,6 @@ open MathBus
 open Opname
 open Term_sig
 open Refiner.Refiner.Term
-open Refiner.Refiner.TermType
 open Registry
 
 let _ =
@@ -44,7 +43,9 @@ let _ =
 
 let use_table = ref true
 
+(* unused
 exception InvalidMathBusLabel of (int32 * int32)
+*)
 
 let mbs_Term = ref (create  0X0000);;
 let mbs_Variable = ref (create  0X0000);;
@@ -253,11 +254,13 @@ let bvars_of_mbbindings mbterm =
     | Mbint b -> failwith "bvars_of_mbindings"
   in List.map Lm_symbol.add (loop (mbnode_nSubtermsq mbterm) [])
 
+(* unused
 let bvar_of_binding binding = binding
 
 let bterms_of_sb subterms bindings =
   let f bindings = List.map bvar_of_binding bindings in
   List.map2  mk_bterm (List.map f bindings) subterms
+*)
 
 let rec term_of_mbterm mbterm =
   let b = mbnode_label mbterm in

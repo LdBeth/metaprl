@@ -35,7 +35,9 @@ OCAMLFLAGS += -pp $(quote-argv $(CAMLP5R) -I $(CAMLP5LIB) -nolib $(LOC))
 
 MACRO_FILES[] =
     $(CAMLP5LIB)/pa_o
+    $(CAMLP5LIB)/q_MLast
     pa_macro
+    $(CAMLP5LIB)/pa_extend
     macro_main
 
 OCamlProgramInstall($(MPINSTALL), $(LIB), macropp, $(CAMLP5LIB)/pr_dump $(MACRO_FILES))

@@ -111,8 +111,8 @@ struct
     * Save an info in the hashtable.
     *)
    let add_info base info =
-      let { io_table = table } = base in
-      let { info_file = name } = info in
+      let { io_table = table; _ } = base in
+      let { info_file = name; _ } = info in
          try
             let bucket = Hashtbl.find table name in
                bucket := info :: !bucket
@@ -142,7 +142,7 @@ struct
     * Filename for a spec.
     *)
    let spec_filename spec dir name =
-      let { info_suffix = suffix } = spec in
+      let { info_suffix = suffix; _ } = spec in
          sprintf "%s/%s.%s" dir name suffix
 
    (*
@@ -249,7 +249,7 @@ struct
    let find_specs select suffix =
       let rec search infos = function
          io::tl ->
-            let { info_select = select'; info_suffix = suffix'; info_disabled = disabled } = io in
+            let { info_select = select'; info_suffix = suffix'; info_disabled = disabled; _ } = io in
                if select' = select & not !disabled then
                   let infos =
                      match suffix with
@@ -284,7 +284,7 @@ struct
       try
          let rec search = function
             info::tl ->
-               let { info_type = select'; info_file = file; info_dir = dir } = info in
+               let { info_type = select'; info_file = file; info_dir = dir; _ } = info in
                   if !debug_file_base then
                      eprintf "File_base.find: checking %s/%s%t" dir file eflush;
                   if select' = select then
@@ -312,10 +312,10 @@ struct
     * This means the root with the same name, but different suffix.
     *)
    let find_match base arg info select suffix =
-      let { info_dir = dir; info_file = file } = info in
+      let { info_dir = dir; info_file = file; _ } = info in
       let rec search = function
          info'::tl ->
-            let { info_dir = dir'; info_file = file'; info_type = select' } = info' in
+            let { info_dir = dir'; info_file = file'; info_type = select'; _ } = info' in
                if dir' = dir & file' = file & select' = select then
                   info'
                else
@@ -330,12 +330,12 @@ struct
    (*
     * Set the magic number.
     *)
-   let magic _ { info_magic = magic } =
+   let magic _ { info_magic = magic; _ } =
       magic
 
    let set_magic _ info magic =
-      let { info_type = select } = info in
-      let { info_magics = magics } = find_spec select AnySuffix in
+      let { info_type = select; _ } = info in
+      let { info_magics = magics; _ } = find_spec select AnySuffix in
          if magic < List.length magics then
             info.info_magic <- magic
          else
@@ -387,9 +387,9 @@ struct
          if !debug_file_base then
             eprintf "File_base.create_info: %s/%s%t" dir file eflush
       in
-      let { io_table = table } = base in
+      let { io_table = table; _ } = base in
       let rec search = function
-         { info_dir = dir'; info_file = file'; info_type = select' }::tl ->
+         { info_dir = dir'; info_file = file'; info_type = select'; _ }::tl ->
             if dir' = dir & file' = file & select' = select then
                raise (Invalid_argument "File_base.save_as")
             else
@@ -429,18 +429,18 @@ struct
    (*
     * Projections.
     *)
-   let info _ { info_info = data } = data
+   let info _ { info_info = data; _ } = data
 
    let set_info _ info data =
       info.info_info <- data
 
-   let file_name _ { info_file = file } = file
+   let file_name _ { info_file = file; _ } = file
 
-   let full_name _ { info_dir = dir; info_file = file; info_type = select } =
-      let { info_suffix = suffix } = find_spec select AnySuffix in
+   let full_name _ { info_dir = dir; info_file = file; info_type = select; _ } =
+      let { info_suffix = suffix; _ } = find_spec select AnySuffix in
          sprintf "%s/%s.%s" dir file suffix
 
-   let type_of _ { info_type = select } = select
+   let type_of _ { info_type = select; _ } = select
 end
 
 (*

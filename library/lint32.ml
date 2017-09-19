@@ -70,7 +70,7 @@ let mk_bint i =
   if i >= 0 then (b, c) else (if b = 0 then (b, -c) else (-b, c))
 
 let make_lint32 (i, k) =
-  if ((i > 0xFFFF) or (k > 0xFFFF)) then raise (IntSize ("make_lint32", i))
+  if ((i > 0xFFFF) || (k > 0xFFFF)) then raise (IntSize ("make_lint32", i))
   else (i, k)
 let dest_bint (a, b) =
   let c = abs a in
@@ -84,10 +84,12 @@ let lint32_of_int = mk_bint
 let lband (x, w) (y, z) = ((x land y),(w land z))
 let lbor (x, w) (y, z) = ((x lor y), (w lor z))
 
+(* unused
 let lbsl (x, w) n =
   let a = abs (w lsl n) and b = abs ((x lsl n) land 0xFFFF) in
   if a <= 0xFFFF then (b, a)
   else ((b lor (a lsr 16)), (a land 0xFFFF)) ;;
+*)
 
 let lbsl (x, w) n =
   let rec aux i y z=
@@ -105,13 +107,15 @@ let basr (x, w) n = (x, w)
 	   (*LAL*)
 let bplus (x, w) n = (x, w+ n)
 let bminus (x, w) n = (x, w - n)
+(* unused
 let bneg (x, w) = if x = 0 then (x, -w) else (-x, w)
+*)
 
 let bequal (x, w) (y, z) = (x = y) && (w = z)
-let blt (x, w) (y, z) = (x < y) or ((x = y) && (w < z))
-let bgt (x, w) (y, z) = (x > y) or ((x = y) && (w > z))
-let blte (x, w) (y, z) = (x < y) or ((x = y) && (w <= z))
-let bgte (x, w) (y, z) = (x > y) or ((x = y) && (w >= z))
+let blt (x, w) (y, z) = (x < y) || ((x = y) && (w < z))
+let bgt (x, w) (y, z) = (x > y) || ((x = y) && (w > z))
+let blte (x, w) (y, z) = (x < y) || ((x = y) && (w <= z))
+let bgte (x, w) (y, z) = (x > y) || ((x = y) && (w >= z))
 
 let bdecr b = let (x, y) = !b
 in if y > 0 then b:=  (x, y-1) else b:= (x-1, 0xffff)

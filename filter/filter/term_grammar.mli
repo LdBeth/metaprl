@@ -30,8 +30,6 @@
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 open Opname
-open Refiner.Refiner
-open TermShape
 open Filter_type
 
 val comment_string_op : opname

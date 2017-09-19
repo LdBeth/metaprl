@@ -1,8 +1,6 @@
 open Lm_debug
 open Lm_printf
 open Refiner.Refiner.TermType
-open Refiner.Refiner.Term
-open Refiner.Refiner.TermSubst
 
 let debug_supinf_trace =
    create_debug (**)
@@ -54,15 +52,18 @@ struct
       else raise (Invalid_argument "Variable index should be non-negative")
 end
 
+(* unused
 module Var =
 struct
    type t = term
    let equal = alpha_equal
    let hash = Hashtbl.hash
 end
+*)
 
 module Var2Index(BField : BoundFieldSig) =
 struct
+(* unused
    module Table=Hashtbl.Make(Var)
 
    type t=int ref * int Table.t
@@ -92,6 +93,7 @@ struct
       let aux key data = (ar.(data-1)<-key) in
       Table.iter aux table;
       ar
+*)
 
    let restore inverted index =
       if index=0 then
@@ -495,7 +497,7 @@ struct
     | [(v,k)] -> term_of_monom info k v
     | (v,k)::tl -> BField.add_term (term_of_monom info k v) (term_of_aux info tl)
 
-   let rec term_of info (s,f) =
+   let term_of info (s,f) =
       let l=Table.list_of f in
       let aux = function
          (k,[d]) -> (k,d)
@@ -513,15 +515,19 @@ struct
 
 	let extract2rightSource v f = setSource (Sextract2right(v,getSource f)) f
 
+(* unused
 	let trivialConstSource c = setSource (StrivialConst c) (mk_number c)
 
 	let trivialVarSource v = setSource (StrivialVar v) (mk_var v)
+*)
 
 	let contrSource src f = setSource (Scontradiction (getSource src)) f
 
 	let hypSource h f = setSource (Shypothesis h) f
 
+(* unused
 	let scaleSource coef f = setSource (Sscale(coef, getSource f)) f
+*)
 
 	let addVarSource coef v f = setSource (SaddVar(coef, v, getSource f)) f
 

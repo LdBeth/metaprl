@@ -36,7 +36,6 @@ struct
    module WM = Weak_memo.TheWeakMemo
    module TTerm = ToTerm.Term
    module TType = ToTerm.TermType
-   module TSubst = ToTerm.TermSubst
    module Refinex = ToTerm.Refine
 
    type hashed_param = TType.param
@@ -145,7 +144,9 @@ struct
    let weaken_meta_term = WM.weaken
    let weaken_msequent = WM.weaken
 
+(* unused
    let dest_hparam p = p
+*)
 
    let weak_bterm_header () { bvars=bvs; bterm=term_index } =
       { bvars_weak=bvs; bterm_weak= WM.weaken term_index }
@@ -405,7 +406,9 @@ struct
    module HashHyp = Hashtbl.Make (HashedHyp)
 end
 
+(* unused
 module TermHashInternal = TermHash
+*)
 
 (*
  * -*-

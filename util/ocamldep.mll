@@ -129,7 +129,7 @@ let chop_reflect_prefix name =
    String.sub name reflect_length (String.length name - reflect_length)
 
 let reflect_module_name name =
-   String.capitalize (reflect_prefix ^ String.uncapitalize name)
+   String.capitalize_ascii (reflect_prefix ^ String.uncapitalize_ascii name)
 
 (*
  * Actual dependency table.
@@ -390,7 +390,7 @@ let rec find_file_by_name names stale_ext exts =
 let find_file name exts stale_ext =
    (* Look for lowercase and uppercase forms *)
    let uc_name = name in
-   let lc_name = String.uncapitalize name in
+   let lc_name = String.uncapitalize_ascii name in
    let names = [lc_name, lc_name; uc_name, uc_name] in
 
    (* In --reflect mode, also search based on the original name without the reflect_ prefix *)

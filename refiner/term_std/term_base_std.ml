@@ -66,20 +66,26 @@ struct
    (*
     * Simple substitution.
     *)
+(* unused
    type term_subst = (string * term) list
+*)
 
    module SeqHypType =
    struct
       type t = hypothesis
    end
 
+(* unused
    module SeqGoalType =
    struct
       type t = term
    end
+*)
 
    module SeqHyp = Seq_set.Make (SeqHypType)
+(* unused
    module SeqGoal = Seq_set.Make (SeqGoalType)
+*)
 
    (************************************************************************
     * DEBUGGING                                                            *
@@ -163,7 +169,7 @@ struct
     * Operator names.
     *)
    let opname_of_term = function
-      { term_op = { op_name = name } } ->
+      { term_op = { op_name = name; _ }; _ } ->
          name
 
    (*
@@ -171,10 +177,10 @@ struct
     * None of the subterms should be bound.
     *)
    let subterms_of_term t =
-      List.map (fun { bterm = t } -> t) t.term_terms
+      List.map (fun { bterm = t; _ } -> t) t.term_terms
 
-   let subterm_arities { term_terms = terms } =
-      List.map (fun { bvars = vars } -> List.length vars) terms
+   let subterm_arities { term_terms = terms; _ } =
+      List.map (fun { bvars = vars; _ } -> List.length vars) terms
 
    (************************************************************************
     * Variables                                                            *

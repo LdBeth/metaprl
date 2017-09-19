@@ -55,7 +55,9 @@ open Refiner.Refiner.Rewrite
 let _ =
    show_loading "Loading Term_dtable%t"
 
+(* unused
 let debug_rewrite = load_debug "rewrite"
+*)
 
 (************************************************************************
  * TYPES                                                                *
@@ -255,7 +257,7 @@ let find_entry
     (entries : 'a info_entry list)
     (t : term)
     (tl : term list) =
-   let match_entry { info_rw = rw; info_value = v } =
+   let match_entry { info_rw = rw; info_value = v; _ } =
       let t2 = apply_rewrite rw empty_args t tl in
       let t2', arg = f' (t2, t::tl) in
          v (map_pair f t2') arg
@@ -279,7 +281,7 @@ let find_entry
  * the left-to-right rules,
  * then right-to-left rules.
  *)
-let rec lookup { ext_lrtable = lrbase;
+let lookup { ext_lrtable = lrbase;
              ext_rltable = rlbase;
              ext_dtable = dbase
     } t1 t2 =

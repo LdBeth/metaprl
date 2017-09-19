@@ -1,3 +1,5 @@
+OCAMLFLAGS += -rectypes
+
 # Libraries
 OCAML_OTHER_LIBS = unix
 

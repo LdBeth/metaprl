@@ -30,18 +30,14 @@ open Lm_printf
 open Lm_lexer
 open Lm_parser
 open Lm_string_set
-open Lm_location
 
 open Opname
 open Term_sig
-open Simple_print
 open Refiner.Refiner.TermType
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermOp
 open Refiner.Refiner.TermMan
-open Refiner.Refiner.TermMeta
 open Refiner.Refiner.TermShape
-open Refiner.Refiner.TermSubst
 open Refiner.Refiner.Rewrite
 open Refiner.Refiner.RefineError
 open Filter_shape
@@ -112,6 +108,7 @@ module Lexer = MakeLexer (Lm_channel.LexerInput) (Action);;
 (*
  * Boolean lexer is for parsing comments and quotations.
  *)
+(* unused
 module BoolCompare =
 struct
    type t = bool
@@ -129,6 +126,7 @@ struct
 end
 
 module BoolSet = Lm_set.LmMake (BoolCompare);;
+*)
 
 module BoolAction =
 struct
@@ -305,7 +303,8 @@ let empty =
 let is_empty gram =
    let { gram_lexer_actions  = lexer_actions;
          gram_parser_actions = parser_actions;
-         gram_iforms         = iforms
+         gram_iforms         = iforms;
+         _
        } = gram
    in
       ActionTable.is_empty lexer_actions
@@ -324,12 +323,14 @@ let unnamed_of_gram gram =
    in
       unnamed name
 
+(* unused
 let clear_name gram =
    match gram.gram_name with
       Name name ->
          { gram with gram_name = unnamed name }
     | Unnamed _ ->
          gram
+*)
 
 (*
  * Hash code for the grammar.
@@ -345,7 +346,8 @@ let hash_item code item =
 let hash_grammar gram =
    let { gram_lexer_clauses  = lexer_clauses;
          gram_parser_clauses = parser_clauses;
-         gram_iforms         = iforms
+         gram_iforms         = iforms;
+         _
        } = gram
    in
    let code = 0x3192c372 in
@@ -416,7 +418,8 @@ let union gram1 gram2 =
          gram_parser         = parser1;
          gram_parser_actions = parser_actions1;
          gram_parser_clauses = parser_clauses1;
-         gram_iforms         = iforms1
+         gram_iforms         = iforms1;
+         _
        } = gram1
    in
    let { gram_subnames       = subnames2;
@@ -428,7 +431,8 @@ let union gram1 gram2 =
          gram_parser         = parser2;
          gram_parser_actions = parser_actions2;
          gram_parser_clauses = parser_clauses2;
-         gram_iforms         = iforms2
+         gram_iforms         = iforms2;
+         _
        } = gram2
    in
    let lexers =
@@ -544,7 +548,8 @@ let mk_lexer_term lexeme args =
 let add_token gram lexer_id id s contractum_opt =
    let { gram_lexers = lexers;
          gram_lexer_actions = actions;
-         gram_lexer_clauses = clauses
+         gram_lexer_clauses = clauses;
+         _
        } = gram
    in
    let lexer =
@@ -588,7 +593,8 @@ let add_token_pair gram lexer_id id s1 s2 contractum_opt =
    (* Now add the initial production to the normal lexer *)
    let { gram_lexers = lexers;
          gram_lexer_actions = actions;
-         gram_lexer_clauses = clauses
+         gram_lexer_clauses = clauses;
+         _
        } = gram
    in
    let lexer =
@@ -626,7 +632,8 @@ let add_token_pair gram lexer_id id s1 s2 contractum_opt =
 let add_production gram id args opt_prec contractum =
    let { gram_parser = parse;
          gram_parser_actions = actions;
-         gram_parser_clauses = clauses
+         gram_parser_clauses = clauses;
+         _
        } = gram
    in
    let ops = List.map shape_of_term args in
@@ -715,8 +722,10 @@ let xvar_opname          = mk_opname "xvar" perv_opname
 let xterm_opname         = mk_opname "xterm" perv_opname
 let xbterm_opname        = mk_opname "xbterm" perv_opname
 let xopname_opname       = mk_opname "xopname" perv_opname
+(* unused
 let xparam_opname        = mk_opname "xparam" perv_opname
 let xparam_term_opname   = mk_opname "xparam_term" perv_opname
+*)
 
 let is_xvar_term = is_string_term xvar_opname
 
@@ -776,7 +785,9 @@ let unfold_xvar_term state t =
             else
                raise Not_found
       with
+(* TODO[jyh]: fixme
          Stdpp.Exc_located _
+*)
        | RefineError _
        | Failure _
        | Not_found ->
@@ -1072,7 +1083,8 @@ let apply_iforms_mterm state gram mt args =
  *)
 let compile gram =
    let { gram_lexers = lexers;
-         gram_parser = parse
+         gram_parser = parse;
+         _
        } = gram
    in
       OpnameTable.iter (fun _ lexer -> Lexer.compile lexer) lexers;
@@ -1083,7 +1095,8 @@ let prepare_to_marshal gram name =
    let { gram_name     = gram_name;
          gram_subnames = subnames;
          gram_lexers   = lexers;
-         gram_parser   = parse
+         gram_parser   = parse;
+         _
        } = gram
    in
       match gram_name with
@@ -1123,7 +1136,8 @@ let is_modified gram =
 
 let pp_print_grammar buf gram =
    let { gram_lexers = lexers;
-         gram_parser = parse
+         gram_parser = parse;
+         _
        } = gram
    in
       debug_grammar := true;
@@ -1144,14 +1158,16 @@ let parse state gram start loc s =
          gram_lexer_actions  = lexer_actions;
          gram_lexer_start    = starts;
          gram_parser         = parse;
-         gram_parser_actions = parser_actions
+         gram_parser_actions = parser_actions;
+         _
        } = gram
    in
 
    (* Input channel *)
    let { Lexing.pos_fname = filename;
          Lexing.pos_lnum  = line;
-         Lexing.pos_bol   = char
+         Lexing.pos_bol   = char;
+         _
        } = loc
    in
 (*

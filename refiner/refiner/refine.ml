@@ -499,11 +499,13 @@ struct
    (*
     * Check that all the assums in the list are equal.
     *)
+(* unused
    let equal_assums assums t =
       let check assums' =
          List.for_all2 alpha_equal assums' assums
       in
          List.for_all check t
+*)
 
    (*
     * Compare two sequents for alpha eqivalence.
@@ -520,12 +522,14 @@ struct
    (*
     * Split the goals from the assums.
     *)
+(* unused
    let rec split_msequent_list = function
       { mseq_goal = goal; mseq_assums = assums }::t ->
          let goals, assumsl = split_msequent_list t in
             goal :: goals, assums :: assumsl
     | [] ->
          [], []
+*)
 
    (************************************************************************
     * TACTICS                                                              *
@@ -550,7 +554,7 @@ struct
        | _ -> REF_RAISE(RefineError ("nth_hyp", IntError i))
 
    let nth_hyp i _ seq =
-      let { mseq_goal = goal; mseq_assums = assums } = seq in
+      let { mseq_goal = goal; mseq_assums = assums; _ } = seq in
          if i < 0 then
             REF_RAISE(RefineError ("nth_hyp", IntError i))
          else if alpha_equal (get_nth assums i) goal then
@@ -651,7 +655,7 @@ struct
          try rw1 sent t with
             _ ->
                rw2 sent t
-      ENDIF
+      END
 
    (************************************************************************
     * CONDITIONAL REWRITES                                                 *
@@ -681,14 +685,14 @@ struct
                   raise (RefineError ("apply_crwaddr", RewriteAddressError (addr, name, x)))
          ELSE
             body
-         ENDIF
+         END
 
    let replace_subgoal seq cond t =
       { seq with mseq_goal = replace_concl cond t }
 
    (*
     * XXX HACK!!! This should go away once we implement the crw mechanism properly.
-    * Or at least when we add another SymbolSet.t argument to apply_var_fun_arg_at_addr 
+    * Or at least when we add another SymbolSet.t argument to apply_var_fun_arg_at_addr
     * (which is needed for the rewriter anyway). Basically, we need to be able to track
     * "avoid" variables separate from the "local bindings" variables.
     *)
@@ -699,7 +703,7 @@ struct
     * Apply a conditional rewrite.
     *)
    let crwtactic i ((addr, crw) : cond_rewrite) (sent : sentinal) (seq : msequent) =
-      let { mseq_goal = goal; mseq_assums = assums } = seq in
+      let { mseq_goal = goal; mseq_assums = assums; _ } = seq in
       let t =
          if i = 0 then
             goal
@@ -717,7 +721,7 @@ struct
       IFDEF VERBOSE_EXN THEN
          if !debug_rewrites then
             eprintf "crwtactic applied to %a%t" print_term t eflush;
-      ENDIF;
+      END;
       let t', subgoals, just = apply_crwaddr addr2 crw ttvars sent vars tt in
       if t' == tt then
          [seq], Identity
@@ -774,7 +778,7 @@ struct
          try crw1 vars sent bvars t with
             RefineError _ ->
                crw2 vars sent bvars t
-      ENDIF
+      END
 
    let corelserw (addr1, crw1) (addr2, crw2) =
       null_address, corelserw_aux (apply_crwaddr addr1 crw1) (apply_crwaddr addr2 crw2)
@@ -821,16 +825,16 @@ struct
       let rec search refiners = function
          NullRefiner ->
             refiners, None
-       | RuleRefiner { rule_name = n; rule_refiner = next }
-       | RewriteRefiner { rw_name = n; rw_refiner = next }
-       | CondRewriteRefiner { crw_name = n; crw_refiner = next } as r ->
+       | RuleRefiner { rule_name = n; rule_refiner = next; _ }
+       | RewriteRefiner { rw_name = n; rw_refiner = next; _ }
+       | CondRewriteRefiner { crw_name = n; crw_refiner = next; _ } as r ->
             if n = name then
                refiners, Some r
             else
                search refiners next
-       | MLRuleRefiner { ml_rule_name = n; ml_rule_refiner = next }
-       | MLRewriteRefiner { ml_rw_name = n; ml_rw_refiner = next }
-       | MLCondRewriteRefiner { ml_crw_name = n; ml_crw_refiner = next } ->
+       | MLRuleRefiner { ml_rule_name = n; ml_rule_refiner = next; _ }
+       | MLRewriteRefiner { ml_rw_name = n; ml_rw_refiner = next; _ }
+       | MLCondRewriteRefiner { ml_crw_name = n; ml_crw_refiner = next; _ } ->
             if n = name then
                REF_RAISE(RefineError (string_of_opname n, StringError "ML rules/rewrites can't be justified"))
             else
@@ -889,7 +893,7 @@ struct
          describe_rw (compose_address addr addr') rw
     | _ ->
          EDRewrite None
-   
+
    let rec describe_crw addr = function
       CondRewriteHere crh
     | CondRewriteML (crh, _, _) ->
@@ -931,9 +935,9 @@ struct
       in
       let rec insert refiners refiner =
          match refiner with
-            MLRewriteRefiner { ml_rw_refiner = next }
-          | MLCondRewriteRefiner { ml_crw_refiner = next }
-          | MLRuleRefiner { ml_rule_refiner = next } ->
+            MLRewriteRefiner { ml_rw_refiner = next; _ }
+          | MLCondRewriteRefiner { ml_crw_refiner = next; _ }
+          | MLRuleRefiner { ml_rule_refiner = next; _ } ->
                insert refiners next
           | RuleRefiner rule ->
                maybe_add rules rule.rule_name rule;
@@ -1042,7 +1046,7 @@ struct
          IFDEF VERBOSE_EXN THEN
             if !debug_refine then
                eprintf "Updating extract %a based on subgoal %a@." print_term ext print_term subgoal
-         ENDIF;
+         END;
          let ext' =
             if is_sequent_term subgoal && is_sequent_term ext then
                let ext' = upd_term (concl subgoal) (concl ext) in
@@ -1082,7 +1086,7 @@ struct
                      eprintf "Extract was unchanged@."
                   else
                      eprintf "Updated extract: %a@." print_term ext'
-            ENDIF;
+            END;
             ext'
       in
       let all_args subgoals args rest =
@@ -1180,7 +1184,7 @@ struct
                IFDEF VERBOSE_EXN THEN
                   if !debug_sentinal then
                      eprintf "sentinal_of_refiner: add rule %s%t" (string_of_opname r.rule_name) eflush
-               ENDIF;
+               END;
                if r.rule_proof = PDefined then defined_rule_err ();
                Hashtbl.add rules r.rule_name r.rule_info;
                insert refiners r.rule_refiner
@@ -1188,7 +1192,7 @@ struct
                IFDEF VERBOSE_EXN THEN
                   if !debug_sentinal then
                      eprintf "sentinal_of_refiner: add rewrite %s%t" (string_of_opname rw.rw_name) eflush
-               ENDIF;
+               END;
                if rw.rw_proof = PDefined then begin
                   let redex = rw.rw_info.pre_rw_redex in
                   let shape = shape_of_term redex in
@@ -1202,28 +1206,28 @@ struct
                IFDEF VERBOSE_EXN THEN
                   if !debug_sentinal then
                      eprintf "sentinal_of_refiner: add ML rewrite %s%t" (string_of_opname mlrw.ml_rw_name) eflush;
-               ENDIF;
+               END;
                Hashtbl.add ml_rewrites mlrw.ml_rw_name mlrw.ml_rw_info;
                insert refiners mlrw.ml_rw_refiner
        | CondRewriteRefiner crw ->
                IFDEF VERBOSE_EXN THEN
                   if !debug_sentinal then
                      eprintf "sentinal_of_refiner: add cond_rewrite %s%t" (string_of_opname crw.crw_name) eflush
-               ENDIF;
+               END;
                Hashtbl.add cond_rewrites crw.crw_name crw.crw_info;
                insert refiners crw.crw_refiner
        | MLCondRewriteRefiner mlrw ->
                IFDEF VERBOSE_EXN THEN
                   if !debug_sentinal then
                      eprintf "sentinal_of_refiner: add ML rewrite %s%t" (string_of_opname mlrw.ml_crw_name) eflush;
-               ENDIF;
+               END;
                Hashtbl.add ml_cond_rewrites mlrw.ml_crw_name mlrw.ml_crw_info;
                insert refiners mlrw.ml_crw_refiner
        | MLRuleRefiner mlrule ->
                IFDEF VERBOSE_EXN THEN
                   if !debug_sentinal then
                      eprintf "sentinal_of_refiner: add ML rule %s%t" (string_of_opname mlrule.ml_rule_name) eflush
-               ENDIF;
+               END;
                Hashtbl.add ml_rules mlrule.ml_rule_name mlrule.ml_rule_info;
                insert refiners mlrule.ml_rule_refiner
        | LabelRefiner (_, next) as r ->
@@ -1244,7 +1248,7 @@ struct
             IFDEF VERBOSE_EXN THEN
                if !debug_sentinal then
                   eprintf "check_sentinal: found %s%t" (string_of_opname name) eflush
-            ENDIF
+            END
          else
             begin
                eprintf "check_sentinal: failed %s%t" (string_of_opname name) eflush;
@@ -1280,7 +1284,7 @@ struct
       IFDEF VERBOSE_EXN THEN
          if !debug_refine then
             eprintf "Refiner.create_rule: %s%t" name eflush
-      ENDIF;
+      END;
       let subgoals, goal = unzip_mimplies mterm in
       let seq = mk_msequent goal subgoals in
       let rw = Rewrite.term_rewrite Strict addrs (goal :: params) subgoals in
@@ -1289,12 +1293,12 @@ struct
          IFDEF VERBOSE_EXN THEN
             if !debug_rules then
                eprintf "Applying rule %s to %a%t" (string_of_opname opname) print_term mseq.mseq_goal eflush;
-         ENDIF;
+         END;
          let subgoals = apply_rewrite rw (addrs, mseq_so_vars mseq) mseq.mseq_goal params in
          IFDEF VERBOSE_EXN THEN
             if !debug_rules then
                eprintf "Applied rule %s, got %a%t" (string_of_opname opname) (print_any_list print_term) subgoals eflush;
-         ENDIF;
+         END;
          let make_subgoal subgoal =
             { mseq with mseq_goal = subgoal }
          in
@@ -1318,9 +1322,9 @@ struct
     *)
    let find_sentinal refiner opname =
       match find_refiner refiner opname with
-         RuleRefiner { rule_refiner = r }
-       | RewriteRefiner { rw_refiner = r }
-       | CondRewriteRefiner { crw_refiner = r } ->
+         RuleRefiner { rule_refiner = r; _ }
+       | RewriteRefiner { rw_refiner = r; _ }
+       | CondRewriteRefiner { crw_refiner = r; _ } ->
             sentinal_of_refiner r
        | _ ->
             (* Only the above can be user-provable and can be returned by find_sentinel *)
@@ -1351,19 +1355,19 @@ struct
          DepSet.empty
 
    and compute_deps_rule = function
-      { rule_name = name; rule_proof = PPrim _ } ->
+      { rule_name = name; rule_proof = PPrim _; _ } ->
          DepSet.singleton (DepRule, name)
-    | { rule_refiner = refiner; rule_proof = PDerived dp } ->
+    | { rule_refiner = refiner; rule_proof = PDerived dp; _ } ->
          compute_deps_pf compute_deps_ext refiner dp
-    | { rule_proof = PDefined } ->
+    | { rule_proof = PDefined; _ } ->
          defined_rule_err ()
 
    and compute_deps_rw = function
-      { rw_name = name; rw_proof = PPrim _ } ->
+      { rw_name = name; rw_proof = PPrim _; _ } ->
          DepSet.singleton (DepRewrite, name)
-    | { rw_name = name; rw_proof = PDefined } ->
+    | { rw_name = name; rw_proof = PDefined; _ } ->
          DepSet.singleton (DepDefinition, name)
-    | { rw_refiner = refiner; rw_proof = PDerived dp } ->
+    | { rw_refiner = refiner; rw_proof = PDerived dp; _ } ->
          compute_deps_pf compute_deps_ext refiner dp
 
    and compute_deps_rwjust find = function
@@ -1379,11 +1383,11 @@ struct
          List.fold_left (fun ds j -> DepSet.union ds (compute_deps_rwjust find j)) DepSet.empty justs
 
    and compute_deps_crw = function
-      { crw_name = name; crw_proof = PPrim _ } ->
+      { crw_name = name; crw_proof = PPrim _; _ } ->
          DepSet.singleton (DepCondRewrite, name)
-    | { crw_refiner = refiner; crw_proof = PDerived dp } ->
+    | { crw_refiner = refiner; crw_proof = PDerived dp; _ } ->
          compute_deps_pf compute_deps_ext refiner dp
-    | { crw_proof = PDefined } ->
+    | { crw_proof = PDefined; _ } ->
          raise (Invalid_argument "Refine.compute_deps_crw")
 
    and compute_deps_crwjust find = function
@@ -1429,7 +1433,7 @@ struct
          IFDEF VERBOSE_EXN THEN
             if !debug_refine then
                eprintf "Refiner.compute_rule_ext: %s: %a + [%s] [%a] -> %a%t" name print_term goal (String.concat ";" (List.map string_of_symbol (Array.to_list spec.spec_ints))) (print_any_list print_term) params print_term result eflush
-         ENDIF;
+         END;
          let rw = Rewrite.term_rewrite Strict spec (goal :: params) [result] in
          if !debug_refine then eprintf "\nDone\n%t" eflush;
          fun addrs' params' goal' args' ->
@@ -1442,7 +1446,7 @@ struct
                      eprintf "appplied to %a [%s] [%a] (combined out of %a [%a])%t" print_term arg (String.concat ";" (List.map string_of_int (Array.to_list addrs'.arg_ints))) (print_any_list print_term) params' print_term goal' (print_any_list print_term) args' eflush;
                      raise exn
                else compute
-            ELSE compute ENDIF
+            ELSE compute END
 
    let justify_rule build name _ _ goal subgoals proof =
       let opname = mk_opname name build.build_opname in
@@ -1515,7 +1519,7 @@ struct
       IFDEF VERBOSE_EXN THEN
          if !debug_refine then
             eprintf "Refiner.prim_rule: %s%t" name eflush
-      ENDIF;
+      END;
       let subgoals, goal = unzip_mimplies mterm in
          (*
           * XXX BUG TODO: we need to make sure the result is a sequent
@@ -1562,7 +1566,7 @@ struct
       IFDEF VERBOSE_EXN THEN
          if !debug_refine then
             eprintf "Refiner.delayed_rule: %s%t" name eflush
-      ENDIF;
+      END;
       let subgoals, goal = unzip_mimplies mterm in
       let mseq = mk_msequent goal subgoals in
       let check_ext ext =
@@ -1592,7 +1596,7 @@ struct
       IFDEF VERBOSE_EXN THEN
          if !debug_refine then
             eprintf "Refiner.add_ml_rule: %s%t" name eflush
-      ENDIF;
+      END;
       let opname = mk_opname name build.build_opname in
       let tac addrs params sent mseq =
          let subgoals, ext = mlr addrs mseq params in
@@ -1634,11 +1638,11 @@ struct
    let extract_term refiner opname args =
       let assums, refiner, derivation =
          match find_refiner refiner opname with
-            RuleRefiner { rule_refiner = refiner; rule_proof = PDerived dp; rule_info = { mseq_assums = assums } } ->
+            RuleRefiner { rule_refiner = refiner; rule_proof = PDerived dp; rule_info = { mseq_assums = assums; _ }; _ } ->
                assums, refiner, get_derivation dp
-          | RewriteRefiner { rw_refiner = refiner; rw_proof = PDerived dp } ->
+          | RewriteRefiner { rw_refiner = refiner; rw_proof = PDerived dp; _ } ->
                [], refiner, get_derivation dp
-          | CondRewriteRefiner { crw_refiner = refiner; crw_proof = PDerived dp; crw_info = { pre_crw_assums = assums } } ->
+          | CondRewriteRefiner { crw_refiner = refiner; crw_proof = PDerived dp; crw_info = { pre_crw_assums = assums; _ }; _ } ->
                assums, refiner, get_derivation dp
           | _ ->
                raise (Invalid_argument("Refine.extract_term - " ^ (string_of_opname opname) ^ "is not a derived rule/rewrite"))
@@ -1677,7 +1681,7 @@ struct
       IFDEF VERBOSE_EXN THEN
          if !debug_refine then
             eprintf "Refiner.create_rewrite: %s%t" name eflush
-      ENDIF;
+      END;
       let rw = Rewrite.term_rewrite Strict empty_args_spec [redex] [contractum] in
       let opname = mk_opname name build.build_opname in
       let pre_rewrite = { pre_rw_redex = redex; pre_rw_contractum = contractum } in
@@ -1698,7 +1702,7 @@ struct
                apply_rewrite rw empty_args t []
          ELSE
             apply_rewrite rw empty_args t []
-         ENDIF
+         END
          with
             [t'] ->
                sent.sent_rewrite opname pre_rewrite;
@@ -1721,7 +1725,7 @@ struct
       IFDEF VERBOSE_EXN THEN
          if !debug_refine then
             eprintf "Refiner.create_input_form: %s%t" name eflush
-      ENDIF;
+      END;
       let strictp = if strict then Strict else Relaxed in
       let rw = Rewrite.term_rewrite strictp empty_args_spec [redex] [contractum] in
       let opname = mk_opname name build.build_opname in
@@ -1729,7 +1733,7 @@ struct
          IFDEF VERBOSE_EXN THEN
             if !debug_rewrites then
                eprintf "Refiner: applying input form %s to %a%t" name print_term t eflush;
-         ENDIF;
+         END;
          match apply_rewrite rw empty_args t [] with
             [t'] ->
                sent.sent_input_form opname ();
@@ -1762,7 +1766,7 @@ struct
       IFDEF VERBOSE_EXN THEN
          if !debug_refine then
             eprintf "Refiner.prim_rewrite: %s%t" name eflush
-      ENDIF;
+      END;
       justify_rewrite build name redex contractum (PPrim ())
 
    let rec check_bound_vars bvars = function
@@ -1804,7 +1808,7 @@ struct
       IFDEF VERBOSE_EXN THEN
          if !debug_refine then
             eprintf "Refiner.definitional_rewrite: %s%t" name eflush
-      ENDIF;
+      END;
          check_def_redex name redex;
          check_definition_contractum redex contractum;
          justify_rewrite build name redex contractum PDefined
@@ -1838,9 +1842,9 @@ struct
       IFDEF VERBOSE_EXN THEN
          if !debug_refine then
             eprintf "Refiner.delayed_rewrite: %s%t" name eflush
-      ENDIF;
+      END;
       let check_ext = function
-         { ext_goal = { mseq_goal = goal; mseq_assums = [] }; ext_subgoals = []}
+         { ext_goal = { mseq_goal = goal; mseq_assums = []; _ }; ext_subgoals = []; _ }
          when alpha_equal goal (mk_rewrite_hack (mk_xrewrite_term redex contractum)) -> ()
        | _ ->
             REF_RAISE(RefineError (name, StringError "extract does not match"))
@@ -1864,7 +1868,7 @@ struct
       IFDEF VERBOSE_EXN THEN
          if !debug_refine then
             eprintf "Refiner.create_ml_rewrite: %s%t" name eflush
-      ENDIF;
+      END;
       let opname = mk_opname name build.build_opname in
       let mlrw (sent : sentinal) (t : term) =
          let t' = rw t in
@@ -1890,7 +1894,7 @@ struct
       IFDEF VERBOSE_EXN THEN
          if !debug_refine then
             eprintf "Refiner.create_cond_rewrite: %s%t" name eflush
-      ENDIF;
+      END;
       let rw = Rewrite.term_rewrite Strict addrs (redex::params) (contractum :: subgoals) in
       let opname = mk_opname name build.build_opname in
       let pre_crw = {
@@ -1902,7 +1906,7 @@ struct
          IFDEF VERBOSE_EXN THEN
             if !debug_rewrites then
                eprintf "Refiner: applying conditional rewrite %s to %a with bvars = [%a] %t" name print_term t output_symbol_set bvars eflush;
-         ENDIF;
+         END;
          match apply_rewrite rw (addrs, bvars) t params with
             (t' :: subgoals) ->
                let vars = SymbolSet.inter (SymbolSet.diff (free_vars_terms subgoals) vars) bvars in
@@ -1946,16 +1950,16 @@ struct
       IFDEF VERBOSE_EXN THEN
          if !debug_refine then
             eprintf "Refiner.prim_cond_rewrite: %s%t" name eflush
-      ENDIF;
+      END;
       justify_cond_rewrite build name params subgoals redex contractum (PPrim ())
 
    let delayed_cond_rewrite build name params subgoals redex contractum extf =
       IFDEF VERBOSE_EXN THEN
          if !debug_refine then
             eprintf "Refiner.add_delayed_cond_rewrite: %s%t" name eflush
-      ENDIF;
+      END;
       let check_ext = function
-         { ext_goal = {mseq_goal = goal; mseq_assums = goal_assums} ; ext_subgoals = [] }
+         { ext_goal = {mseq_goal = goal; mseq_assums = goal_assums; _}; ext_subgoals = []; _ }
          when
             alpha_equal goal (mk_rewrite_hack (mk_xrewrite_term redex contractum)) &&
             Lm_list_util.for_all2 alpha_equal goal_assums (List.map mk_rewrite_hack subgoals) -> ()
@@ -1981,7 +1985,7 @@ struct
       IFDEF VERBOSE_EXN THEN
          if !debug_refine then
             eprintf "Refiner.add_ml_cond_rewrite: %s%t" name eflush
-      ENDIF;
+      END;
       let opname = mk_opname name build.build_opname in
       let crw addrs params vars (sent : sentinal) (bvars : SymbolSet.t) t =
          let t', subgoals, ext = rw bvars params t in

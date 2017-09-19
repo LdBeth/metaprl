@@ -28,7 +28,6 @@ open Lm_symbol
 
 open Opname
 open Term_sig
-open Term_shape_sig
 open Refiner.Refiner.TermType
 open Filter_shape
 

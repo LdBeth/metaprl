@@ -99,7 +99,7 @@ struct
                lines.(last)
 
    let remove_last queue =
-      let { length = length } = queue in
+      let { length = length; _ } = queue in
          if length <> 0 then
             queue.length <- pred length
 

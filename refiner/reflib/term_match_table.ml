@@ -71,7 +71,9 @@ let debug_term_table =
         debug_value = false
       }
 
+(* unused
 let debug_rewrite = load_debug "rewrite"
+*)
 
 (************************************************************************
  * TYPES                                                                *
@@ -132,7 +134,9 @@ type ('a, 'b) prog_step =
  | ProgSeq of seq_hyps
 
 (* Invariant: (c) has exactly one ProgAccept step - at the very end *)
+(* unused
 type ('a, 'b) term_prog = ('a, 'b) prog_step list
+*)
 
 type 'a lazy_lookup = unit -> ('a * 'a lazy_lookup) option
 

@@ -110,7 +110,9 @@ let debug_proof_pending =
         debug_value = false
       }
 
+(* unused
 type term_io = Refiner_io.TermType.term
+*)
 
 module Proof =
 struct
@@ -181,7 +183,9 @@ struct
     * Unchanged exception for some operations that want to
     * signal that they did nothing.
     *)
+(* unused
    exception Unchanged
+*)
 
    (************************************************************************
     * BASIC CACHE                                                          *
@@ -273,8 +277,8 @@ struct
        | Compose ci ->
             let ext = ci.comp_goal in
             let res = replace_goal ext goal in
-               if res == ext then 
-                  node 
+               if res == ext then
+                  node
                else
                   Compose { ci with comp_goal = res }
        | Locked ext ->
@@ -317,9 +321,9 @@ struct
        | Compose ci ->
             let exts = ci.comp_subgoals in
             let gs, res = replace_subg_list gs exts in
-               gs, (if res == exts then 
-                       node 
-                    else 
+               gs, (if res == exts then
+                       node
+                    else
                        Compose { ci with comp_subgoals = res; comp_leaves = LazyLeavesDelayed })
        | Locked ext ->
             let gs,res = replace_subg_aux gs ext in
@@ -502,7 +506,7 @@ struct
        | Annotate _
        | Unjustified _ ->
             raise_select_error proof node raddr i
-       | Compose { comp_goal = goal; comp_subgoals = subgoals; comp_extras = extras } ->
+       | Compose { comp_goal = goal; comp_subgoals = subgoals; comp_extras = extras; _ } ->
             if i = 0 then
                select_child proof goal raddr 0
             else
@@ -564,9 +568,9 @@ struct
     | Unjustified (t, _)
     | Extract (t, _, _) ->
          t
-    | Compose { comp_goal = ext }
+    | Compose { comp_goal = ext; _ }
     | Wrapped (_, ext)
-    | RuleBox { rule_extract = ext }
+    | RuleBox { rule_extract = ext; _ }
     | Locked ext ->
          goal_ext ext
     | Pending f ->
@@ -622,8 +626,8 @@ struct
                remove_duplicates [] leaves
           | Wrapped (_, goal) ->
                leaves_ext goal
-          | Compose { comp_leaves = LazyLeaves leaves }
-          | RuleBox { rule_leaves = LazyLeaves leaves } ->
+          | Compose { comp_leaves = LazyLeaves leaves; _ }
+          | RuleBox { rule_leaves = LazyLeaves leaves; _ } ->
                leaves
           | Compose comp ->
                let leaves = collect_leaves comp.comp_subgoals in
@@ -665,8 +669,8 @@ struct
     | goal :: subgoals ->
          let leaves_sg = collect_leaves subgoals in
          let leaves_g = leaves_ext goal in
-            if leaves_sg == [] then 
-               leaves_g 
+            if leaves_sg == [] then
+               leaves_g
             else
                remove_duplicates_onto leaves_sg leaves_g
     | [] ->
@@ -695,7 +699,7 @@ struct
          LazyStatusComplete
     | Unjustified _ ->
          LazyStatusIncomplete
-    | Compose ({ comp_status = status; comp_goal = goal; comp_subgoals = subgoals } as info) ->
+    | Compose ({ comp_status = status; comp_goal = goal; comp_subgoals = subgoals; _ } as info) ->
          if status = LazyStatusDelayed then
             let status = compute_status goal subgoals in
                info.comp_status <- status;
@@ -705,7 +709,7 @@ struct
     | Wrapped (_, ext)
     | Locked ext ->
          status_ext ext
-    | RuleBox ({ rule_status = status; rule_extract = goal; rule_subgoals = subgoals } as info) ->
+    | RuleBox ({ rule_status = status; rule_extract = goal; rule_subgoals = subgoals; _ } as info) ->
          if status = LazyStatusDelayed then
             let status = compute_status goal subgoals in
                info.rule_status <- status;
@@ -926,7 +930,7 @@ struct
                   Unjustified (goal, subgoals)
             in
                false, false, node
-       | Compose { comp_goal = goal; comp_subgoals = subgoals; comp_extras = extras } -> begin
+       | Compose { comp_goal = goal; comp_subgoals = subgoals; comp_extras = extras; _ } -> begin
             match node' with
                RuleBox _ ->
                   raise_replace_error proof node raddr i
@@ -963,7 +967,8 @@ struct
                    rule_extract_normalized = normal;
                    rule_extract = goal;
                    rule_subgoals = subgoals;
-                   rule_extras = extras
+                   rule_extras = extras;
+                   _
          } ->
             let new_goal, subgoals, extras, unchanged = replace_subgoal proof node raddr goal subgoals extras i node' in
             let node =
@@ -1041,7 +1046,7 @@ struct
        | Unjustified (goal, subgoals)
        | Extract (goal, subgoals, _) ->
             Unjustified (f goal, List.map f subgoals)
-       | Compose { comp_goal = goal; comp_subgoals = subgoals; comp_extras = extras } ->
+       | Compose { comp_goal = goal; comp_subgoals = subgoals; comp_extras = extras; _ } ->
             Compose {
                comp_status = LazyStatusDelayed;
                comp_goal = map_tactic_arg_ext f goal;
@@ -1057,7 +1062,8 @@ struct
                    rule_extract_normalized = normal;
                    rule_extract = goal;
                    rule_subgoals = subgoals;
-                   rule_extras = extras
+                   rule_extras = extras;
+                   _
          } ->
             let new_goal = map_tactic_arg_ext f goal in
             RuleBox { rule_status = LazyStatusDelayed;
@@ -1336,7 +1342,7 @@ struct
            step_subgoals = proof_subgoals subgoals;
            step_extras = []
          }
-    | Compose { comp_goal = goal; comp_subgoals = subgoals; comp_extras = extras } ->
+    | Compose { comp_goal = goal; comp_subgoals = subgoals; comp_extras = extras; _ } ->
          let new_subgoals, extras = proof_subgoals_extras false subgoals extras in
          let status = translate_status (status_ext goal) in
          if compose_flag then
@@ -1357,14 +1363,15 @@ struct
     | Wrapped (label, ext) ->
          let info = info_ext false ext in
             { info with step_expr = ExprWrapped label }
-    | RuleBox { rule_extract_normalized = false } as node ->
+    | RuleBox { rule_extract_normalized = false; _ } as node ->
          info_ext compose_flag (normalize node)
     | RuleBox { rule_expr = expr;
                 rule_string = text;
                 rule_extract_normalized = true;
                 rule_extract = goal;
                 rule_subgoals = subgoals;
-                rule_extras = extras
+                rule_extras = extras;
+                _
       } ->
          let subgoals, extras = proof_subgoals_extras true subgoals extras in
             { step_goal = proof_goal true goal;
@@ -1457,8 +1464,8 @@ struct
        | Unjustified _
        | Extract _ ->
             step
-       | Compose { comp_subgoals = subgoals'; comp_extras = extras' }
-       | RuleBox { rule_subgoals = subgoals'; rule_extras = extras' } ->
+       | Compose { comp_subgoals = subgoals'; comp_extras = extras'; _ }
+       | RuleBox { rule_subgoals = subgoals'; rule_extras = extras'; _ } ->
             replace_step_subgoals step subgoals' extras'
        | Wrapped (label, node') ->
             replace_step_rule node' step
@@ -1507,7 +1514,8 @@ struct
        | Compose { comp_status = status;
                    comp_goal = goal;
                    comp_subgoals = subgoals;
-                   comp_leaves = leaves
+                   comp_leaves = leaves;
+                   _
          } ->
             Compose { comp_status = status;
                       comp_goal = clean_extras_ext goal;
@@ -1581,7 +1589,8 @@ struct
          Wrapped (label, squash_ext node)
     | Compose { comp_goal = goal;
                 comp_subgoals = subgoals;
-                comp_extras = extras
+                comp_extras = extras;
+                _
       } as node ->
          Compose { comp_status = LazyStatusDelayed;
                    comp_goal = squash_ext goal;
@@ -1595,7 +1604,8 @@ struct
                 rule_extract = goal;
                 rule_subgoals = subgoals;
                 rule_extras = extras;
-                rule_leaves = leaves
+                rule_leaves = leaves;
+                _
       } ->
          RuleBox { rule_status = LazyStatusDelayed;
                    rule_string = text;
@@ -1629,7 +1639,7 @@ struct
     | Unjustified _
     | Extract _ as node ->
          node
-    | Compose { comp_goal = goal; comp_subgoals = subgoals; comp_extras = extras } ->
+    | Compose { comp_goal = goal; comp_subgoals = subgoals; comp_extras = extras; _ } ->
          let goal = expand_ext exn_wrapper goal in
          let subgoals = List.map (expand_ext exn_wrapper) subgoals in
          let extras = List.map (expand_ext exn_wrapper) extras in
@@ -1648,7 +1658,8 @@ struct
                 rule_extract = goal;
                 rule_tactic = tac;
                 rule_subgoals = subgoals;
-                rule_extras = extras
+                rule_extras = extras;
+                _
       } ->
          let t = goal_ext goal in
          let new_goal =
@@ -1685,9 +1696,9 @@ struct
          raise(RefineError("Proof_boot.refiner_extract_of_proof", StringError "The proof is incomplete or unexpanded"))
     | Wrapped(_,ext) | Locked ext -> refiner_extract_of_proof ext
     | Extract(_,_,re) -> re
-    | Compose{ comp_goal = goal; comp_subgoals = subgoals } ->
+    | Compose{ comp_goal = goal; comp_subgoals = subgoals; _ } ->
          Refine.compose (refiner_extract_of_proof goal) (List.map refiner_extract_of_proof subgoals)
-    | RuleBox{ rule_extract = goal; rule_subgoals = subgoals } ->
+    | RuleBox{ rule_extract = goal; rule_subgoals = subgoals; _ } ->
          (* In a RuleBox, several identical subgoals could be compressed into one, *)
          (* so we need to be careful.                                              *)
          let ext = refiner_extract_of_proof goal in
@@ -1754,14 +1765,15 @@ struct
     *)
    let io_proof_of_proof squash _ _ proof =
       let parents = ref [] in
-      let rec make_tactic_arg arg =
+      let make_tactic_arg arg =
          try
             List.assq arg !parents
          with
             Not_found ->
                let { ref_goal = goal;
                      ref_label = label;
-                     ref_attributes = attrs
+                     ref_attributes = attrs;
+                     _
                    } = arg
                in
                let arg' =
@@ -1790,7 +1802,8 @@ struct
           | Compose { comp_status = status;
                       comp_goal = goal;
                       comp_subgoals = subgoals;
-                      comp_extras = extras
+                      comp_extras = extras;
+                      _
             } ->
                IOCompose { io_comp_status = status;
                            io_comp_goal = convert goal;
@@ -1801,7 +1814,8 @@ struct
                       rule_string = text;
                       rule_extract = goal;
                       rule_subgoals = subgoals;
-                      rule_extras = extras
+                      rule_extras = extras;
+                      _
             } ->
                IORuleBox {
                   io_rule_status = status;
@@ -1846,7 +1860,7 @@ struct
 
    let proof_of_io_proof raw_attributes sentinal bookmark parse eval node =
       let parents = ref [] in
-      let rec make_tactic_arg arg =
+      let make_tactic_arg arg =
          try
             List.assq arg !parents
          with
@@ -1877,7 +1891,8 @@ struct
             Wrapped (args, convert node)
        | IOCompose { io_comp_goal = goal;
                      io_comp_subgoals = subgoals;
-                     io_comp_extras = extras
+                     io_comp_extras = extras;
+                     _
          } ->
             Compose { comp_status = LazyStatusDelayed;
                       comp_goal = convert goal;
@@ -1888,7 +1903,8 @@ struct
        | IORuleBox { io_rule_string = text;
                      io_rule_goal = goal;
                      io_rule_subgoals = subgoals;
-                     io_rule_extras = extras
+                     io_rule_extras = extras;
+                     _
          } ->
             let expr = lazy_apply parse text in
             let tactic = lazy_apply (fun () -> eval (expr ())) () in
@@ -1920,8 +1936,8 @@ struct
          StatusPartial
     | IOWrapped (_, node) ->
          status_of_io_proof node
-    | IOCompose { io_comp_status = status }
-    | IORuleBox { io_rule_status = status } ->
+    | IOCompose { io_comp_status = status; _ }
+    | IORuleBox { io_rule_status = status; _ } ->
          translate_status status
 
    (*
@@ -1936,12 +1952,14 @@ struct
     | IOWrapped (_, node) ->
          node_count_of_io_proof_node rules (succ nodes) node
     | IOCompose { io_comp_goal = goal;
-                  io_comp_subgoals = subgoals
+                  io_comp_subgoals = subgoals;
+                  _
       } ->
          let rules, nodes = node_count_of_io_proof_node rules (succ nodes) goal in
             node_count_of_io_subgoals rules nodes subgoals
     | IORuleBox { io_rule_goal = goal;
-                  io_rule_subgoals = subgoals
+                  io_rule_subgoals = subgoals;
+                  _
       } ->
          let rules, nodes = node_count_of_io_proof_node (succ rules) (succ nodes) goal in
             node_count_of_io_subgoals rules nodes subgoals
@@ -1969,11 +1987,13 @@ struct
       let of_term args sentinal bookmark parse eval t =
          Convert.of_term args sentinal bookmark parse eval t
 
+(* unused
       let convert = Convert.convert
       let revert = Convert.revert
 
       let status_of_term = Convert.status_of_term
       let node_count_of_term = Convert.node_count_of_term
+*)
    end
 
    module ProofTerm_std = ProofTerm (Refiner.Refiner);;
@@ -1982,8 +2002,10 @@ struct
    (*
     * Term conversions.
     *)
+(* unused
    let to_term = ProofTerm_std.to_term
    let of_term = ProofTerm_std.of_term
+*)
 
    (*
     * Convert the IO proof.
@@ -2021,7 +2043,7 @@ struct
          rcount, succ ncount
     | Wrapped (label, ext) ->
          node_count_ext (rcount, succ ncount) ext
-    | Compose { comp_goal = goal; comp_subgoals = subgoals } ->
+    | Compose { comp_goal = goal; comp_subgoals = subgoals; _ } ->
          node_count_subgoals_ext (node_count_ext (rcount, succ ncount) goal) subgoals
     | RuleBox ri as node ->
          if not ri.rule_extract_normalized then ignore (normalize node);
@@ -2043,7 +2065,7 @@ struct
     * Kreitz the tree into a single node.
     * This only work on the outermost rule boxes.
     *)
-   let _loc = Lexing.dummy_pos, Lexing.dummy_pos
+   let _loc = Ploc.dummy
 
    let rec kreitz_ext =
       let rec concat_text = function
@@ -2081,7 +2103,8 @@ struct
        | RuleBox { rule_expr = expr;
                    rule_string = text;
                    rule_tactic = tac;
-                   rule_subgoals = subgoals
+                   rule_subgoals = subgoals;
+                   _
          } ->
             let subnodes = List.map kreitz_ext subgoals in
             let text = sprintf "%s thenLT [%s]" text (concat_text subnodes) in

@@ -32,7 +32,6 @@
  *)
 
 open Lm_debug
-open Lm_printf
 
 open Term_sig
 open Refiner.Refiner
@@ -51,12 +50,14 @@ open Tactic_boot_sig
 let _ =
    show_loading "Loading Tacticals_boot%t"
 
+(* unused
 let debug_subgoals =
    create_debug (**)
       { debug_name = "subgoals";
         debug_description = "Report subgoals observed with may be some additional info";
         debug_value = false
       }
+*)
 
 let debug_profile_tactics =
    create_debug (**)
@@ -68,7 +69,6 @@ let debug_profile_tactics =
 module Tacticals =
 struct
    module TacticalsTypes = TacticInternalType
-   open TacticalsTypes
 
    (************************************************************************
     * TRIVIAL TACTICS                                                      *
@@ -392,6 +392,7 @@ struct
 
    let isAuxLabel l = not (isEmptyOrMainLabel l)
 
+(* unused
    let isWFLabel l =
       l = wfLabel
 
@@ -400,12 +401,15 @@ struct
 
    let isPredicateLabel l =
       List.mem l predicate_labels
+*)
 
    let prefix_thenMT tac1 tac2 =
       prefix_thenLocalLabelT tac1 (ifLabelPredT isEmptyOrMainLabel tac2 idT)
 
+(* unused
    let prefix_thenMElseT tac1 tac2 tac3 =
       prefix_thenLocalLabelT tac1 (ifLabelPredT isEmptyOrMainLabel tac2 tac3)
+*)
 
    let prefix_thenAT tac1 tac2 =
       prefix_thenLocalLabelT tac1 (ifLabelPredT isAuxLabel tac2 idT)
@@ -765,7 +769,9 @@ struct
    let removeTypeT       = TacticInternal.removeTypeT
    let removeBoolT       = TacticInternal.removeBoolT
    let removeStringT     = TacticInternal.removeStringT
+(* unused
    let removeStringValT  = TacticInternal.removeStringValT
+*)
    let removeIntT        = TacticInternal.removeIntT
    let removeOptionT     = TacticInternal.removeOptionT
 
@@ -774,7 +780,9 @@ struct
    let withoutTypeT      = TacticInternal.withoutTypeT
    let withoutBoolT      = TacticInternal.withoutBoolT
    let withoutStringT    = TacticInternal.withoutStringT
+(* unused
    let withoutStringValT = TacticInternal.withoutStringValT
+*)
    let withoutIntT       = TacticInternal.withoutIntT
    let withoutOptionT    = TacticInternal.withoutOptionT
 

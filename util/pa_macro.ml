@@ -74,8 +74,8 @@ type item_or_def 'a =
   [ SdStr of 'a
   | SdDef of string and macro_value
   | SdUnd of string
-  | SdInc of string
-  | SdNop ]
+  | SdList of list (item_or_def 'a)
+  | SdInc of string ]
 ;
 
 value rec list_remove x =
@@ -424,8 +424,8 @@ value add_include_dir str =
   else ()
 ;
 
-value smlist = Grammar.Entry.create Pcaml.gram "smlist"
-;
+value structure_or_macro = Grammar.Entry.create Pcaml.gram "structure_or_macro";
+value signature_or_macro = Grammar.Entry.create Pcaml.gram "signature_or_macro";
 
 value parse_include_file =
   let dir_ok file dir = Sys.file_exists (dir ^ file) in
@@ -438,23 +438,23 @@ value parse_include_file =
     let st = Stream.of_channel ch in
     let old_input = Pcaml.input_file.val in
     let (bol_ref, lnum_ref, name_ref) = (Plexing.bol_pos, Plexing.line_nb, Plexing.input_file) in
-    let (old_bol, old_lnum, old_name) = (bol_ref.val.val, lnum_ref.val.val, name_ref.val) in
+    let (old_bol, old_lnum, old_name) = (bol_ref.val, lnum_ref.val, name_ref.val) in
     let restore () =
       do {
         close_in ch;
-        bol_ref.val.val := old_bol;
-        lnum_ref.val.val := old_lnum;
+        bol_ref.val := old_bol;
+        lnum_ref.val := old_lnum;
         name_ref.val := old_name;
         Pcaml.input_file.val := old_input;
       }
     in
     do {
-      bol_ref.val.val := 0;
-      lnum_ref.val.val := 1;
+      bol_ref.val := ref 0;
+      lnum_ref.val := ref 1;
       name_ref.val := file;
       Pcaml.input_file.val := file;
       try
-        let items = Grammar.Entry.parse smlist st in
+        let items = Grammar.Entry.parse structure_or_macro st in
         do { restore (); items }
       with [ exn -> do { restore (); raise exn } ] }
 ;
@@ -472,7 +472,7 @@ value apply_directive loc n dp =
 ;
 
 value rec str_execute_macro = fun
-[ SdStr sil -> do {
+[ SdStr i -> [i] (* do {
     let sil = Pcaml.unvala sil in
     List.iter
       (fun
@@ -480,22 +480,22 @@ value rec str_execute_macro = fun
        | _ -> () ])
       sil;
     sil
-  }
+  } *)
 | SdDef x eo -> do { define eo x; [] }
 | SdUnd x -> do { undef x; [] }
-| SdNop -> []
+| SdList l -> str_execute_macro_list l
 | SdInc f -> str_execute_macro_list (parse_include_file f) ]
 
 and str_execute_macro_list = fun
 [ [] -> []
-| [hd::tl] -> (* The eveluation order is important here *)
+| [hd::tl] -> (* The evaluation order is important here *)
   let il1 = str_execute_macro hd in
   let il2 = str_execute_macro_list tl in
     il1 @ il2 ]
 ;
 
 value rec sig_execute_macro = fun
-[ SdStr sil -> do {
+[ SdStr i  -> [i] (* do {
     let sil = Pcaml.unvala sil in
     List.iter
       (fun
@@ -503,10 +503,10 @@ value rec sig_execute_macro = fun
        | _ -> () ])
       sil;
     sil
-  }
+  } *)
 | SdDef x eo -> do { define eo x; [] }
 | SdUnd x -> do { undef x; [] }
-| SdNop -> []
+| SdList l -> sig_execute_macro_list l
 | SdInc f -> raise (Invalid_argument "include is not supported in .mli files") ]
 
 and sig_execute_macro_list = fun
@@ -520,7 +520,7 @@ and sig_execute_macro_list = fun
 
 EXTEND
   GLOBAL: expr patt str_item sig_item constructor_declaration match_case
-    label_declaration;
+    label_declaration structure_or_macro signature_or_macro;
   str_item: FIRST
     [ [ x = str_macro_def ->
          match str_execute_macro x with
@@ -539,10 +539,11 @@ EXTEND
       | "UNDEF"; i = uident -> SdUnd i
       | "IFDEF"; e = dexpr; "THEN"; d1 = structure_or_macro;
         d2 = else_str; "END" ->
-          if e then d1 else d2
+          SdList (if e then d1 else d2)
       | "IFNDEF"; e = dexpr; "THEN"; d1 = structure_or_macro;
         d2 = else_str; "END" ->
-          if not e then d1 else d2 ] ]
+          SdList (if not e then d1 else d2)
+      | "INCLUDE"; fname = STRING -> SdInc fname ] ]
   ;
   else_str:
     [ [ "ELSIFDEF"; e = dexpr; "THEN"; d1 = structure_or_macro;
@@ -550,7 +551,7 @@ EXTEND
       | "ELSIFNDEF"; e = dexpr; "THEN"; d1 = structure_or_macro;
         d2 = else_str -> if not e then d1 else d2
       | "ELSE"; d1 = structure_or_macro -> d1
-      | -> SdNop ] ]
+      | -> [] ] ]
   ;
   sig_macro_def:
     [ [ "DEFINE"; i = uident; omt = opt_macro_type -> SdDef i omt
@@ -558,10 +559,10 @@ EXTEND
       | "UNDEF"; i = uident -> SdUnd i
       | "IFDEF"; e = dexpr; "THEN"; d1 = signature_or_macro;
         d2 = else_sig; "END" ->
-          if e then d1 else d2
+          SdList (if e then d1 else d2)
       | "IFNDEF"; e = dexpr; "THEN"; d1 = signature_or_macro;
         d2 = else_sig; "END" ->
-          if not e then d1 else d2 ] ]
+          SdList (if not e then d1 else d2) ] ]
   ;
   else_sig:
     [ [ "ELSIFDEF"; e = dexpr; "THEN"; d1 = signature_or_macro;
@@ -569,15 +570,21 @@ EXTEND
       | "ELSIFNDEF"; e = dexpr; "THEN"; d1 = signature_or_macro;
         d2 = else_sig -> if not e then d1 else d2
       | "ELSE"; d1 = signature_or_macro -> d1
-      | -> SdNop ] ]
+      | -> [] ] ]
   ;
   structure_or_macro:
+    [ [ sml = LIST1 str_item_or_macro -> sml ] ]
+  ;
+  str_item_or_macro:
     [ [ d = str_macro_def -> d
-      | sil = structure -> SdStr sil ] ]
+      | si = str_item -> SdStr si ] ]
   ;
   signature_or_macro:
+    [ [ sml = LIST1 sig_item_or_macro -> sml ] ]
+  ;
+  sig_item_or_macro:
     [ [ d = sig_macro_def -> d
-      | sil = signature -> SdStr sil ] ]
+      | si = sig_item -> SdStr si ] ]
   ;
   opt_macro_expr:
     [ [ pl = macro_param; "="; e = expr -> MvExpr pl e
@@ -597,14 +604,17 @@ EXTEND
     [ [ "IFDEF"; e = dexpr; "THEN"; e1 = SELF; e2 = else_expr; "END" ->
           if e then e1 else e2
       | "IFNDEF"; e = dexpr; "THEN"; e1 = SELF; e2 = else_expr; "END" ->
-          if not e then e1 else e2 ] ]
+          if not e then e1 else e2
+     | "DEFINE"; i = LIDENT; "="; def = expr; "IN"; body = expr ->
+          subst _loc [(i, def)] body ] ]
   ;
   else_expr:
     [ [ "ELSIFDEF"; e = dexpr; "THEN"; e1 = expr; e2 = else_expr ->
           if e then e1 else e2
       | "ELSIFNDEF"; e = dexpr; "THEN"; e1 = expr; e2 = else_expr ->
           if not e then e1 else e2
-      | "ELSE"; e = expr -> e ] ]
+      | "ELSE"; e = expr -> e
+      | -> <:expr< () >> ] ]
   ;
   expr: LEVEL "simple"
     [ [ LIDENT "__FILE__" -> <:expr< $str:Ploc.file_name _loc$ >>
@@ -697,6 +707,9 @@ Pcaml.add_option "-D" (Arg.String (define MvNone))
 
 Pcaml.add_option "-U" (Arg.String undef)
   "<string> Undefine for IFDEF instruction.";
+
+Pcaml.add_option "-I" (Arg.String add_include_dir)
+  "<string> Add a directory to INCLUDE search path.";
 
 Pcaml.add_option "-defined" (Arg.Unit print_defined)
   " Print the defined macros and exit.";

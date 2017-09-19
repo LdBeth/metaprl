@@ -72,11 +72,13 @@ let in_channel_of_file dir name =
        | Unix.Unix_error _ ->
             None
 
+(* unused
 let out_channel_of_file dir name =
    let name = Filename.concat dir name in
       try Some (open_out name) with
          Sys_error _ ->
             None
+*)
 
 (*
  * Get an escaped string from a file.
@@ -388,7 +390,7 @@ let html_escape_char info col c =
          0
     | '\t' ->
          let col' = (col + 8) land (lnot 7) in
-            for i = col to pred col' do
+            for _ = col to pred col' do
                info.info_add_string " "
             done;
             col'

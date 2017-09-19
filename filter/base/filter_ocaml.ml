@@ -92,6 +92,21 @@ struct
     ************************************************************************)
 
    (*
+    * We don't support antiquations.
+    *)
+   let dest_vala name p =
+      match p with
+         Ploc.VaVal v -> v
+       | Ploc.VaAnt _ ->
+            raise (RefineError (name, StringError "antiquotations are not supported"))
+
+   let mk_vala name f p =
+      match p with
+         Ploc.VaVal v -> f v
+       | Ploc.VaAnt _ ->
+            raise (RefineError (name, StringError "antiquotations are not supported"))
+
+   (*
     * Raise an error with the right format term.
     *)
    let raise_format_error str t =
@@ -121,7 +136,7 @@ struct
 
    let dest_dep1_term t =
       match dest_term t with
-         { term_terms = [bterm] } ->
+         { term_terms = [bterm]; _ } ->
             begin
                match dest_bterm bterm with
                   { bvars = [v]; bterm = t } ->
@@ -207,7 +222,7 @@ struct
    let dest_loc_params name t =
       if !debug_ocaml then
          eprintf "Filter_ocaml.%s: %a%t" name SimplePrint.print_simple_term_fp t eflush;
-      let { term_op = op } = dest_term t in
+      let { term_op = op; _ } = dest_term t in
          match dest_params (dest_op op).op_params with
             (Number start) :: (Number finish) :: params
                when (Lm_num.is_integer_num start && Lm_num.is_integer_num finish) ->
@@ -283,8 +298,8 @@ struct
     * XXX: TODO: This converts the modern location data into the old-style one.
     * Ideally, we should be able to embed location data as comments (bug 256).
     *)
-   let num_of_loc (i, j) =
-     Lm_num.num_of_int i.pos_cnum, Lm_num.num_of_int j.pos_cnum
+   let num_of_loc loc =
+     Lm_num.num_of_int (Ploc.first_pos loc), Lm_num.num_of_int (Ploc.last_pos loc)
 
    let loc_of_expr,
        loc_of_patt,
@@ -411,11 +426,11 @@ struct
 
    let dest_smt t =
       let s, mt = two_subterms t in
-         dest_string s, dest_mt mt
+         Ploc.VaVal (dest_string s), dest_mt mt
 
-   let dest_smtme t =
-      let s, mt, me = three_subterms t in
-         dest_string s, dest_mt mt, dest_me me
+   let dest_sme t =
+      let s, me = two_subterms t in
+         Ploc.VaVal (dest_string s), dest_me me
 
    let dest_sl t =
       let sl = one_subterm "dest_sl" t in
@@ -424,7 +439,13 @@ struct
 
    let dest_sbb t =
       let s, b1, b2 = three_subterms t in
-         dest_string s, (dest_bool b1, dest_bool b2)
+      let b1 = dest_bool b1 in
+      let b2 = dest_bool b2 in
+         Ploc.VaVal (Some (dest_string s)), (if b1 then Some b2 else None)
+
+   let dest_string_opt_bool_opt t =
+      let s, b = two_subterms t in
+         dest_opt dest_string s, dest_opt dest_bool b
 
    let dest_tdl =
       let dest_tc t =
@@ -434,7 +455,14 @@ struct
          let s, sl, t, tl = four_subterms t in
          let sl = dest_olist sl in
          let tl = dest_olist tl in
-            dest_loc_string "dest_tdl" s, List.map dest_sbb sl, dest_type t, List.map dest_tc tl
+         let loc, s = dest_loc_string "dest_tdl" s in
+         let prm = List.map dest_sbb sl in
+            { MLast.tdNam = Ploc.VaVal (loc, Ploc.VaVal s);
+              MLast.tdPrm = Ploc.VaVal prm;
+              MLast.tdPrv = Ploc.VaVal false;
+              MLast.tdDef = dest_type t;
+              MLast.tdCon = Ploc.VaVal (List.map dest_tc tl)
+            }
 
    let dest_expr_opt t = dest_opt dest_expr t
 
@@ -492,10 +520,11 @@ struct
    let dest_class_type_infos t =
       let loc = dest_loc "dest_class_type_infos" t in
       let s, sl, b, t = four_subterms t in
+      let prm = List.map dest_string_opt_bool_opt (dest_olist sl) in
           { ciLoc = loc;
-            ciNam = dest_string s;
-            ciPrm = loc, List.map dest_sbb (dest_olist sl);
-            ciVir = dest_bool b;
+            ciNam = Ploc.VaVal (dest_string s);
+            ciPrm = loc, Ploc.VaVal (List.map (fun (s, b) -> Ploc.VaVal s, b) prm);
+            ciVir = Ploc.VaVal (dest_bool b);
             ciExp = dest_ct t
           }
 
@@ -521,6 +550,9 @@ struct
                raise (Failure "Filter_ocaml.dest_fun_aux")
       in
          dest
+
+   let dest_fun_vala_aux pwel =
+      List.map (fun (p, w, e) -> p, Ploc.VaVal w, e) (dest_fun_aux pwel)
 
    let dest_patt_triple t =
       let p1, t = dest_patt (one_subterm "dest_patt_triple" t) in
@@ -691,6 +723,7 @@ struct
             let _loc, i = dest_loc_int "dest_int_expr" t in
                <:expr< $int:i$ >>
          in add_expr "int" dest_int_expr
+(* XXX
       and expr_native_int_op =
          let dest_native_int_expr t =
             let loc, i = dest_loc_int "dest_native_int_expr" t in
@@ -706,6 +739,7 @@ struct
             let loc, i = dest_loc_int "dest_int64_expr" t in
                ExInt64(loc, i)
          in add_expr "int64" dest_int64_expr
+*)
       and expr_asf_op =
          let dest_asf_expr t =
             let _loc = dest_loc "dest_asf_expr" t in
@@ -727,7 +761,7 @@ struct
             let loc = dest_loc "dest_local_module_expr" t in
             let s, me, e = three_subterms t in
                ExLmd (loc,
-                      dest_string s,
+                      Ploc.VaVal (dest_string s),
                       dest_me me,
                       dest_expr e)
          in add_expr "local_module" dest_local_module_expr
@@ -814,7 +848,7 @@ struct
             let loc = dest_loc "dest_obj_expr" t in
             let po, t = dest_patt_opt t in
             let cfl = List.map dest_cf (dest_olist t) in
-               ExObj(loc, po, cfl)
+               ExObj(loc, Ploc.VaVal po, Ploc.VaVal cfl)
          in add_expr "obj" dest_obj_expr
       and expr_stream_op =
          let dest_se t =
@@ -832,7 +866,7 @@ struct
             let pel = dest_olist pel in
             let pel = List.map dest_ident_pe pel in
             let eo = dest_expr_opt eo in
-               MLast.ExRec (loc, pel, eo)
+               MLast.ExRec (loc, Ploc.VaVal pel, eo)
          in add_expr "record" dest_record_expr
       and expr_select_op =
          let dest_select_expr t =
@@ -867,19 +901,26 @@ struct
       and expr_vrn_op =
          let dest_vrn_expr t =
             let loc, s = dest_loc_string "dest_vrn_expr" t in
-               MLast.ExVrn (loc, s)
+               MLast.ExVrn (loc, Ploc.VaVal s)
          in add_expr "vrn" dest_vrn_expr
       and expr_lab_op =
          let dest_lab_expr t =
-            let loc, s = dest_loc_string "dest_lab_expr" t in
-            let eo = one_subterm "dest_lab_expr" t in
-               MLast.ExLab (loc, s, dest_expr_opt eo)
+            let loc = dest_loc "dest_lab_expr" t in
+            let pl = dest_olist (one_subterm "dest_lab_expr" t) in
+            let pl =
+               List.map (fun t ->
+                     let p, t = dest_patt (one_subterm "dest_lab_expr" t) in
+                     let eo = dest_expr_opt t in
+                        p, Ploc.VaVal eo) pl
+            in
+               MLast.ExLab (loc, Ploc.VaVal pl)
          in add_expr "lab" dest_lab_expr
       and expr_olb_op =
          let dest_olb_expr t =
-            let loc, s = dest_loc_string "dest_olb_expr" t in
-            let e = one_subterm "dest_olb_expr" t in
-               MLast.ExOlb (loc, s, dest_expr_opt e)
+            let loc = dest_loc "dest_olb_expr" t in
+            let p, t = dest_patt (one_subterm "dest_olb_expr" t) in
+            let eo = dest_expr_opt t in
+               MLast.ExOlb (loc, p, Ploc.VaVal eo)
          in add_expr "olb" dest_olb_expr
       (*
        * Compute a hash value from the struct.
@@ -921,12 +962,14 @@ struct
                                                  mk_expr vars e3]
              | (<:expr< $int:s$ >>) ->
                   mk_loc_int expr_int_op loc s
+(* XXX
              | ExNativeInt (_, s) ->
                   mk_loc_int expr_native_int_op loc s
              | ExInt32 (_, s) ->
                   mk_loc_int expr_int32_op loc s
              | ExInt64 (_, s) ->
                   mk_loc_int expr_int64_op loc s
+ *)
              | (<:expr< lazy $e$ >>) ->
                   mk_simple_term expr_laz_op loc [mk_expr vars e]
              | (<:expr< let rec $list:pel$ in $e$ >>) ->
@@ -935,7 +978,7 @@ struct
                   mk_let vars loc pel e
              | (<:expr< $lid:s$ >>) ->
                   mk_var expr_lid_op vars loc s
-             | ExLmd (_, s, me, e) ->
+             | ExLmd (_, Ploc.VaVal s, me, e) ->
                   mk_simple_term expr_local_module_op loc [mk_string_term expr_local_module_op s;
                                                            mk_module_expr vars me;
                                                            mk_expr vars e]
@@ -943,11 +986,11 @@ struct
                   mk_match vars loc pwel e
              | (<:expr< new $list: sl$ >>) ->
                   mk_simple_term expr_new_op loc [mk_olist_term (List.map (mk_string expr_new_op) sl)]
-             | ExObj (loc', po, cfl) ->
-                  mk_simple_term expr_obj_op loc [mk_patt_opt loc' [] po (mk_cf_list cfl)]
+             | (<:expr:< object $opt:po$ $list:cfl$ end >>) ->
+                  mk_simple_term expr_obj_op loc [mk_patt_opt _loc [] po (mk_cf_list cfl)]
              | (<:expr< {< $list:sel$ >} >>) ->
                   mk_simple_term expr_stream_op loc (List.map (mk_se vars) sel)
-             | ExRec (_, pel, eo) (* <:expr< { $list:eel$ } >> *) ->
+             | ExRec (_, Ploc.VaVal pel, eo) (* <:expr< { $list:eel$ } >> *) ->
                   mk_simple_term expr_record_op loc [mk_olist_term (List.map (mk_ident_pe vars) pel);
                                                      mk_expr_opt vars eo]
              | (<:expr< do { $list:el$ } >>) ->
@@ -968,25 +1011,63 @@ struct
                   mk_var expr_uid_op vars loc s
              | (<:expr< while $e$ do { $list:el$ } >>) ->
                   mk_simple_term expr_while_op loc [mk_expr vars e; mk_olist_term (List.map (mk_expr vars) el)]
-             | MLast.ExVrn (_, s) ->
+             | MLast.ExVrn (_, Ploc.VaVal s) ->
                   mk_simple_named_term expr_vrn_op loc s []
-             | MLast.ExLab (_, s, e) ->
-                  mk_simple_named_term expr_lab_op loc s [mk_expr_opt vars e]
-             | MLast.ExOlb (_, s, e) ->
-                  mk_simple_named_term expr_olb_op loc s [mk_expr_opt vars e]
+             | MLast.ExLab (loc', Ploc.VaVal pl) ->
+(* XXX
+                  let pl =
+                     List.map (fun (p, eo) ->
+                           let t = mk_opt (mk_expr vars) (dest_vala "mk_expr_exlab" eo) in
+                              mk_patt [] p t) pl
+                  in
+                  mk_simple_term expr_lab_op loc [mk_olist_term pl]
+ *)
+                  raise (Failure "not implemented")
+             | MLast.ExOlb (loc', p, eo) ->
+(* XXX
+                  let eo = dest_vala "dest_expr_exolb" eo in
+                  mk_simple_term expr_olb_op loc [mk_patt [] p (mk_expr_opt vars eo)]
+ *)
+                  raise (Failure "not implemented")
              | MLast.ExCoe (l, e, ot, t) ->
                   mk_simple_term expr_coerce_class_op loc [mk_expr vars e; mk_opt mk_type ot; mk_type t]
+             | MLast.ExArr (_, Ploc.VaAnt _)
+             | MLast.ExChr (_, Ploc.VaAnt _)
+             | MLast.ExFlo (_, Ploc.VaAnt _)
+             | MLast.ExFor (_, _, _, _, _, Ploc.VaAnt _)
+             | MLast.ExFor (_, Ploc.VaAnt _, _, _, _, _)
+             | MLast.ExFun (_, Ploc.VaAnt _)
+             | MLast.ExInt (_, Ploc.VaAnt _, _)
+             | MLast.ExLet (_, _, Ploc.VaAnt _, _)
+             | MLast.ExLet (_, Ploc.VaAnt _, _, _)
+             | MLast.ExLid (_, Ploc.VaAnt _)
+             | MLast.ExLmd (_, Ploc.VaAnt _, _, _)
+             | MLast.ExMat (_, _, Ploc.VaAnt _)
+             | MLast.ExNew (_, Ploc.VaAnt _)
+             | MLast.ExOvr (_, Ploc.VaAnt _)
+             | MLast.ExRec (_, Ploc.VaAnt _, _)
+             | MLast.ExSeq (_, Ploc.VaAnt _)
+             | MLast.ExSnd (_, _, Ploc.VaAnt _)
+             | MLast.ExStr (_, Ploc.VaAnt _)
+             | MLast.ExTry (_, _, Ploc.VaAnt _)
+             | MLast.ExTup (_, Ploc.VaAnt _)
+             | MLast.ExUid (_, Ploc.VaAnt _)
+             | MLast.ExWhi (_, _, Ploc.VaAnt _)
+             | MLast.ExVrn (_, Ploc.VaAnt _)
+             | MLast.ExLab (_, Ploc.VaAnt _) ->
+                  raise (RefineError ("mk_expr", StringError "antiquotations are not supported"))
 
    (*
     * Patterns.
     *)
    and mk_patt =
-      let patt_tuple_arg_op = mk_ocaml_op "patt_tuple_arg"
+      let patt_tuple_arg_op             = mk_ocaml_op "patt_tuple_arg"
       and patt_tuple_end_op 		= mk_ocaml_op "patt_tuple_end"
-      and patt_array_arg_op = mk_ocaml_op "patt_array_arg"
+      and patt_array_arg_op             = mk_ocaml_op "patt_array_arg"
       and patt_array_end_op 		= mk_ocaml_op "patt_array_end"
-      and patt_as_arg_op                   = mk_ocaml_op "patt_as_arg"
-      and patt_as_end_op                   = mk_ocaml_op "patt_as_end"
+      and patt_lab_end_op 		= mk_ocaml_op "patt_lab_end"
+      and patt_as_arg_op                = mk_ocaml_op "patt_as_arg"
+      and patt_as_end_op                = mk_ocaml_op "patt_as_end"
       and patt_choice_arg_op 		= mk_ocaml_op "patt_choice_arg"
       and patt_choice_end_op 		= mk_ocaml_op "patt_choice_end"
       and patt_range_arg_op 		= mk_ocaml_op "patt_range_arg"
@@ -1003,17 +1084,17 @@ struct
       and patt_native_int_op =
          let dest_native_int_patt t =
             let loc, i = dest_loc_int "dest_native_int_patt" t in
-               PaNativeInt(loc, i), one_subterm "dest_native_int_patt" t
+               PaInt (loc, Ploc.VaVal i, "n"), one_subterm "dest_native_int_patt" t
          in add_patt "patt_native_int" dest_native_int_patt
       and patt_int32_op =
          let dest_int32_patt t =
             let loc, i = dest_loc_int "dest_int32_patt" t in
-               PaInt32(loc, i), one_subterm "dest_int32_patt" t
+               PaInt (loc, Ploc.VaVal i, "l"), one_subterm "dest_int32_patt" t
          in add_patt "patt_int32" dest_int32_patt
       and patt_int64_op =
          let dest_int64_patt t =
             let loc, i = dest_loc_int "dest_int64_patt" t in
-               PaInt64(loc, i), one_subterm "dest_int64_patt" t
+               PaInt (loc, Ploc.VaVal i, "L"), one_subterm "dest_int64_patt" t
          in add_patt "patt_int64" dest_int64_patt
       and patt_float_op =
          let dest_float_patt t =
@@ -1127,27 +1208,38 @@ struct
       and patt_vrn_op =
          let dest_vrn_patt t =
             let loc, s = dest_loc_string "dest_vrn_patt" t in
-               MLast.PaVrn (loc, s), t
+               MLast.PaVrn (loc, Ploc.VaVal s), t
          in add_patt "patt_vrn" dest_vrn_patt
       and patt_lab_op =
          let dest_lab_patt t =
-            let loc, s = dest_loc_string "dest_lab_patt" t in
-            let po, t = dest_patt_opt (one_subterm "dest_lab_patt" t) in
-               MLast.PaLab (loc, s, po), t
+            let loc = dest_loc "dest_lab_patt" t in
+            let rec dest_lab t =
+               if Opname.eq (opname_of_term t) patt_lab_end_op then
+                  [], one_subterm "dest_lab_patt" t
+               else
+                  let p, t = dest_patt (one_subterm "dest_lab_patt" t) in
+                  let po, t = dest_patt_opt t in
+                  let ppol, t = dest_lab t in
+                     (p, Ploc.VaVal po) :: ppol, t
+            in
+            let ppol, t = dest_lab (one_subterm "dest_lab_patt" t) in
+               MLast.PaLab (loc, Ploc.VaVal ppol), t
          in add_patt "patt_lab" dest_lab_patt
       and patt_olb_op =
          let dest_olb_patt t =
-            let _loc, s = dest_loc_string "dest_olb_patt" t in
+            let _loc = dest_loc "dest_olb_patt" t in
             let p, oe = two_subterms t in
             let p, t = dest_patt p in
             let oe = dest_expr_opt oe in
-               <:patt< ? $s$ : ($p$ $opt:oe$) >>, t
+               MLast.PaOlb (_loc, p, Ploc.VaVal oe), t
          in add_patt "patt_olb" dest_olb_patt
+(* XXX
       and patt_olb_none_op =
          let dest_olb_none_patt t =
             let _loc, s = dest_loc_string "dest_olb_none_patt" t in
                <:patt< ? $s$ >>, one_subterm "dest_olb_none_patt" t
          in add_patt "patt_olb_none" dest_olb_none_patt
+*)
       and patt_typ_op =
          let dest_typ_patt t =
             let _loc = dest_loc "dest_typ_patt" t in
@@ -1172,11 +1264,11 @@ struct
                   mk_loc_string_term patt_char_op loc c (tailf vars)
              | (<:patt< $int:s$ >>) ->
                   mk_loc_int_term patt_int_op loc s (tailf vars)
-             | PaNativeInt(_, s) ->
+             | (<:patt< $nativeint:s$ >>) ->
                   mk_loc_int_term patt_native_int_op loc s (tailf vars)
-             | PaInt32(_, s) ->
+             | (<:patt< $int32:s$ >>) ->
                   mk_loc_int_term patt_int32_op loc s (tailf vars)
-             | PaInt64(_, s) ->
+             | (<:patt< $int64:s$ >>) ->
                   mk_loc_int_term patt_int64_op loc s (tailf vars)
              | (<:patt< $flo:s$ >>) ->
                   mk_loc_string_term patt_float_op loc s (tailf vars)
@@ -1199,14 +1291,16 @@ struct
                   mk_var_term patt_uid_op vars loc s (tailf vars)
              | (<:patt< $anti: p$ >>) ->
                   Stdpp.raise_with_loc (MLast.loc_of_patt patt) (Failure "Filter_ocaml.mk_patt: encountered PaAnt")
-             | MLast.PaVrn (_, s) ->
+             | (<:patt< `$s$ >>) ->
                   mk_simple_named_term patt_vrn_op loc s [tailf vars]
-             | MLast.PaLab (loc', s, po) ->
-                  mk_simple_named_term patt_lab_op loc s [mk_patt_opt loc' vars po tailf]
-             | <:patt< ? $s$ : ($p$ $opt:oe$) >> ->
-                  mk_simple_named_term patt_olb_op loc s [mk_patt vars p tailf; mk_expr_opt vars oe]
+             | (<:patt< ~{ $p1$ = $p2$ } >>) ->
+                  mk_patt_triple vars loc patt_lab_op patt_as_arg_op patt_lab_end_op p1 p2 tailf
+             | (<:patt< ?{ $p$ $opt:oe$ } >>) ->
+                  mk_simple_term patt_olb_op loc [mk_patt vars p tailf; mk_expr_opt vars oe]
+(* XXX
              | <:patt< ? $s$ >> ->
                   mk_simple_named_term patt_olb_none_op loc s [tailf vars]
+ *)
              | <:patt< # $sl$ >> ->
                   mk_simple_term patt_typ_op loc [mk_string_list sl]
 
@@ -1343,7 +1437,7 @@ struct
             let stl = dest_olist (one_subterm "dest_object_ff_type" t) in
                <:ctyp< < $list: List.map dest_st stl$ > >>
          in add_type "type_object_ff" dest_object_ff_type
-      and type_record_op, type_pvt_record_op =
+      and type_record_op (* XXX , type_pvt_record_op *) =
          let dest_sbt t =
             let l, s = dest_loc_string "dest_sbt" t in
             let b, t = two_subterms t in
@@ -1352,24 +1446,32 @@ struct
             let _loc = dest_loc "dest_record_type" t in
             let sbtl = dest_olist (one_subterm "dest_record_type" t) in
                <:ctyp< { $list: List.map dest_sbt sbtl$ } >>
+(* XXX
          in let dest_pvt_record_type t =
             let _loc = dest_loc "dest_pvt_record_type" t in
             let sbtl = dest_olist (one_subterm "dest_pvt_record_type" t) in
                <:ctyp< private { $list: List.map dest_sbt sbtl$ } >>
-         in add_type "type_record" dest_record_type, add_type "type_pvt_record" dest_pvt_record_type
-      and type_list_op, type_pvt_list_op =
+*)
+         in add_type "type_record" dest_record_type (* XXX , add_type "type_pvt_record" dest_pvt_record_type *)
+      and type_list_op (* XXX , type_pvt_list_op *) =
          let dest_stl t =
             let l, s, t = dest_loc_string_term "dest_stl" t in
                l, s, List.map dest_type (dest_olist t)
          in let dest_list_type t =
             let _loc = dest_loc "dest_list_type" t in
             let stll = dest_olist (one_subterm "dest_list_type" t) in
-               <:ctyp< [ $list: List.map dest_stl stll$ ] >>
+            let stll = List.map (fun t ->
+               let l, s, tl = dest_stl t in
+               l, Ploc.VaVal s, Ploc.VaVal tl, None) stll
+            in
+               <:ctyp< [ $list: stll$ ] >>
+(* XXX
          in let dest_pvt_list_type t =
             let _loc = dest_loc "dest_pvt_list_type" t in
             let stll = dest_olist (one_subterm "dest_pvt_list_type" t) in
                <:ctyp< private [ $list: List.map dest_stl stll$ ] >>
-         in add_type "type_list" dest_list_type, add_type "type_pvt_list" dest_pvt_list_type
+*)
+         in add_type "type_list" dest_list_type (* XXX , add_type "type_pvt_list" dest_pvt_list_type *)
       and type_prod_op =
          let dest_prod_type t =
             let _loc = dest_loc "dest_prod_type" t in
@@ -1378,9 +1480,11 @@ struct
          in add_type "type_prod" dest_prod_type
       and type_pol_op =
          let dest_pol_type t =
-            let loc = dest_loc "type_pol_op" t in
+            let _loc = dest_loc "type_pol_op" t in
             let strs, ct = two_subterms t in
-               TyPol(loc, List.map dest_string (dest_olist strs), dest_type ct)
+            let ls = List.map dest_string (dest_olist strs) in
+            let t = dest_type ct in
+               <:ctyp< ! $list:ls$ . $t$ >>
          in add_type "type_pol" dest_pol_type
       and type_vrn_op =
          let dest_sbtl t =
@@ -1389,34 +1493,34 @@ struct
             let b = dest_bool b in
             let tl = List.map dest_type (dest_olist tl) in
                s, b, tl
-         in let dest_rf t =
+         in let dest_rf loc t =
             let op = opname_of_term t in
                if Opname.eq op row_field_tag_op then
                   let s, b, tl = dest_sbtl t in
-                     RfTag (s, b, tl)
+                     PvTag (loc, Ploc.VaVal s, Ploc.VaVal b, Ploc.VaVal tl)
                else if Opname.eq op row_field_inh_op then
-                  RfInh (dest_type (one_subterm "dest_rf" t))
+                  PvInh (loc, dest_type (one_subterm "dest_rf" t))
                else
                   raise (Invalid_argument "dest_rf")
          in let dest_vrn_type t =
             let loc = dest_loc "dest_vrn_type" t in
             let sbtll, bsloo = two_subterms t in
             let sbtll = dest_olist sbtll in
-            let sbtll = List.map dest_rf sbtll in
-            let bsloo = dest_opt (dest_opt dest_sl) bsloo in
-               MLast.TyVrn (loc, sbtll, bsloo)
+            let sbtll = List.map (dest_rf loc) sbtll in
+            let bsloo = dest_opt (dest_opt (fun t -> Ploc.VaVal (dest_sl t))) bsloo in
+               MLast.TyVrn (loc, Ploc.VaVal sbtll, bsloo)
          in add_type "type_vrn" dest_vrn_type
       and type_olb_op =
          let dest_olb_type t =
             let loc, s = dest_loc_string "dest_olb_type" t in
             let t = one_subterm "dest_olb_type" t in
-               MLast.TyOlb (loc, s, dest_type t)
+               MLast.TyOlb (loc, Ploc.VaVal s, dest_type t)
          in add_type "type_olb" dest_olb_type
       and type_lab_op =
          let dest_lab_type t =
             let loc, s = dest_loc_string "dest_lab_type" t in
             let t = one_subterm "dest_lab_type" t in
-               MLast.TyLab (loc, s, dest_type t)
+               MLast.TyLab (loc, Ploc.VaVal s, dest_type t)
          in add_type "type_lab" dest_lab_type
       in fun t ->
          let loc = loc_of_ctyp t in
@@ -1442,26 +1546,30 @@ struct
              | (<:ctyp< < $list:stl$ $opt:b$ > >>) ->
                   let op = if b then type_object_tt_op else type_object_ff_op in
                      mk_simple_term op loc (List.map mk_st stl)
+(* XXX
              | (<:ctyp< private { $list:sbtl$ } >>) ->
                   mk_simple_term type_pvt_record_op loc [mk_olist_term (List.map mk_sbt sbtl)]
+ *)
              | (<:ctyp< { $list:sbtl$ } >>) ->
                   mk_simple_term type_record_op loc [mk_olist_term (List.map mk_sbt sbtl)]
+(* XXX
              | (<:ctyp< private [ $list:stll$ ] >>) ->
                   mk_simple_term type_pvt_list_op loc [mk_olist_term (List.map mk_stl stll)]
+ *)
              | (<:ctyp< [ $list:stll$ ] >>) ->
                   mk_simple_term type_list_op loc [mk_olist_term (List.map mk_stl stll)]
              | (<:ctyp< ( $list:tl$ ) >>) ->
                   mk_simple_term type_prod_op loc [mk_olist_term (List.map mk_type tl)]
              | (<:ctyp< $uid:s$ >>) ->
                   mk_var type_uid_op [] loc s
-             | MLast.TyVrn (_, sbtll, sloo) ->
+             | MLast.TyVrn (_, Ploc.VaVal sbtll, sloo) ->
                   mk_simple_term type_vrn_op loc [mk_olist_term (List.map mk_rf sbtll);
-                                                  mk_opt (mk_opt mk_string_list) sloo]
-             | MLast.TyOlb (_, s, t) ->
+                                                  mk_opt (mk_opt (mk_vala "TyVrn" mk_string_list)) sloo]
+             | MLast.TyOlb (_, Ploc.VaVal s, t) ->
                   mk_simple_named_term type_olb_op loc s [mk_type t]
-             | MLast.TyLab (_, s, t) ->
+             | MLast.TyLab (_, Ploc.VaVal s, t) ->
                   mk_simple_named_term type_lab_op loc s [mk_type t]
-             | MLast.TyPol (_, strs, t) when true ->
+             | MLast.TyPol (_, Ploc.VaVal strs, t) when true ->
                   mk_simple_term type_pol_op loc [mk_olist_term (List.map (mk_string type_class_id_op) strs); mk_type t]
              | t ->
                   (*
@@ -1472,7 +1580,7 @@ struct
                    *)
                   Stdpp.raise_with_loc (MLast. loc_of_ctyp t) (Invalid_argument "You are using a feature that was added in OCaml 3.09.
 MetaPRL does not support this yet in order to remain compatible with OCaml 3.08")
-            
+
    (*
     * Signatures.
     *)
@@ -1484,7 +1592,7 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
          (*
                <:sig_item< class $list: List.map dest_class_type ctl$ >>
          *)
-               SgCls (loc, List.map dest_class_type_infos ctl)
+               SgCls (loc, Ploc.VaVal (List.map dest_class_type_infos ctl))
          in add_sig "sig_class_sig" dest_class_sig_sig
       and sig_class_type_op =
          let dest_class_sig_type t =
@@ -1493,7 +1601,7 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
          (*
                <:sig_item< class $list: List.map dest_class_type ctl$ >>
          *)
-               SgClt (loc, List.map dest_class_type_infos ctl)
+               SgClt (loc, Ploc.VaVal (List.map dest_class_type_infos ctl))
          in add_sig "sig_class_type" dest_class_sig_type
       and sig_subsig_op =
          let dest_subsig_sig t =
@@ -1557,26 +1665,26 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
             let loc, s = dest_loc_string "dest_dir_sig" t in
             let eo = one_subterm "dest_dir_sig" t in
             let eo = dest_expr_opt eo in
-               MLast.SgDir (loc, s, eo)
+               MLast.SgDir (loc, Ploc.VaVal s, Ploc.VaVal eo)
          in add_sig "sig_dir" dest_dir_sig
       and sig_recmod_op =
          let dest_recmod_sig t =
             let loc = dest_loc "dest_recmod_sig" t in
             let smtl = dest_olist (one_subterm "sig_recmod_op" t) in
-               SgRecMod (loc, List.map dest_smt smtl)
+               SgMod (loc, Ploc.VaVal true, Ploc.VaVal (List.map dest_smt smtl))
          in add_sig "sig_recmod" dest_recmod_sig
       and sig_use_op =
          let dest_use_sig t =
             let loc, s = dest_loc_string "dest_use_sig" t in
             let sigll = dest_olist (one_subterm "dest_use_sig" t) in
-               SgUse (loc, s, List.map dest_sigloc sigll)
+               SgUse (loc, Ploc.VaVal s, Ploc.VaVal (List.map dest_sigloc sigll))
          in add_sig "sig_use" dest_use_sig
    in fun si ->
          let loc = loc_of_sig_item si in
             match si with
-               SgCls (_, ctl) ->
+               SgCls (_, Ploc.VaVal ctl) ->
                   mk_simple_term sig_class_sig_op loc (List.map mk_class_type_infos ctl)
-             | SgClt (_, ctl) ->
+             | SgClt (_, Ploc.VaVal ctl) ->
                   mk_simple_term sig_class_type_op loc (List.map mk_class_type_infos ctl)
              | (<:sig_item< declare $list:sil$ end >>) ->
                   mk_simple_term sig_subsig_op loc (List.map mk_sig_item sil)
@@ -1597,11 +1705,11 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
                   mk_simple_term sig_type_op loc [mk_olist_term (List.map mk_tdl tdl)]
              | (<:sig_item< value $s$ : $t$ >>) ->
                   mk_simple_named_term sig_value_op loc s [mk_type t]
-             | SgDir (_, s, eo) ->
+             | SgDir (_, Ploc.VaVal s, Ploc.VaVal eo) ->
                   mk_simple_named_term sig_dir_op loc s [mk_expr_opt [] eo]
-             | SgRecMod (_, smtl) ->
+             | SgMod (_, Ploc.VaVal true, Ploc.VaVal smtl) ->
                   mk_simple_term sig_recmod_op loc [mk_olist_term (List.map mk_smt smtl)]
-             | SgUse (_, s, sigll) ->
+             | SgUse (_, Ploc.VaVal s, Ploc.VaVal sigll) ->
                   mk_simple_named_term sig_use_op loc s [mk_olist_term (List.map mk_sigloc sigll)]
 
    (*
@@ -1613,9 +1721,9 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
             let loc = dest_loc "dest_class_expr_infos" t in
             let s, sl, b, t = four_subterms t in
                 { ciLoc = loc;
-                  ciNam = dest_string s;
-                  ciPrm = loc, List.map dest_sbb (dest_olist sl);
-                  ciVir = dest_bool b;
+                  ciNam = Ploc.VaVal (dest_string s);
+                  ciPrm = loc, Ploc.VaVal (List.map dest_sbb (dest_olist sl));
+                  ciVir = Ploc.VaVal (dest_bool b);
                   ciExp = dest_ce t
                 }
          in let dest_class_str_str t =
@@ -1624,7 +1732,7 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
          (*
                <:str_item< class $list: List.map dest_class cdl$ >>
          *)
-               StCls (loc, List.map dest_class_expr_infos cdl)
+               StCls (loc, Ploc.VaVal (List.map dest_class_expr_infos cdl))
          in add_str "str_class_str" dest_class_str_str
       and str_class_type_op =
          let dest_class_str_type t =
@@ -1633,7 +1741,7 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
          (*
                <:str_item< class $list: List.map dest_class cdl$ >>
          *)
-               StClt (loc, List.map dest_class_type_infos cdl)
+               StClt (loc, Ploc.VaVal (List.map dest_class_type_infos cdl))
          in add_str "str_class_type" dest_class_str_type
       and str_substruct_op =
          let dest_substruct_str t =
@@ -1697,7 +1805,7 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
             let loc, s = dest_loc_string "dest_dir_str" t in
             let eo = one_subterm "dest_dir_str" t in
             let eo = dest_expr_opt eo in
-               MLast.StDir (loc, s, eo)
+               MLast.StDir (loc, Ploc.VaVal s, Ploc.VaVal eo)
          in add_str "str_dir" dest_dir_str
       and str_exc_op =
          let dest_exc_str t =
@@ -1705,19 +1813,19 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
             let tl, sl = two_subterms t in
             let tl = List.map dest_type (dest_olist tl) in
             let sl = List.map dest_string (dest_olist sl) in
-               MLast.StExc (loc, s, tl, sl)
+               MLast.StExc (loc, Ploc.VaVal s, Ploc.VaVal tl, Ploc.VaVal sl)
          in add_str "str_exc" dest_exc_str
       and str_recmod_op =
          let dest_recmod_str t =
             let loc = dest_loc "dest_recmod_str" t in
-            let smtmel = dest_olist (one_subterm "str_recmod_op" t) in
-               StRecMod (loc, List.map dest_smtme smtmel)
+            let smel = dest_olist (one_subterm "str_recmod_op" t) in
+               StMod (loc, Ploc.VaVal true, Ploc.VaVal (List.map dest_sme smel))
          in add_str "str_recmod" dest_recmod_str
       and str_use_op =
          let dest_use_str t =
             let loc, s = dest_loc_string "dest_use_str" t in
             let strll = dest_olist (one_subterm "dest_use_str" t) in
-               StUse (loc, s, List.map dest_strloc strll)
+               StUse (loc, Ploc.VaVal s, Ploc.VaVal (List.map dest_strloc strll))
          in add_str "str_use" dest_use_str
       in fun vars si ->
          let loc = loc_of_str_item si in
@@ -1746,14 +1854,14 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
              | (<:str_item< value $opt:b$ $list:pel$ >>) -> mk_str_fix loc b pel
              | StInc (_, me) ->
                   mk_simple_term str_inc_op loc [mk_module_expr vars me]
-             | StDir (_, s, eo) ->
+             | StDir (_, Ploc.VaVal s, Ploc.VaVal eo) ->
                   mk_simple_named_term str_dir_op loc s [mk_expr_opt vars eo]
-             | StExc (_, s, tl, sl) ->
+             | StExc (_, Ploc.VaVal s, Ploc.VaVal tl, Ploc.VaVal sl) ->
                   mk_simple_named_term str_exc_op loc s [mk_olist_term (List.map mk_type tl);
                                                          mk_string_list sl]
-             | StRecMod (_, smtmel) ->
-                  mk_simple_term str_recmod_op loc [mk_olist_term (List.map (mk_smtme vars) smtmel)]
-             | StUse (_, s, strll) ->
+             | StMod (_, Ploc.VaVal true, Ploc.VaVal smel) ->
+                  mk_simple_term str_recmod_op loc [mk_olist_term (List.map (mk_sme vars) smel)]
+             | StUse (_, Ploc.VaVal s, Ploc.VaVal strll) ->
                   mk_simple_named_term str_use_op loc s [mk_olist_term (List.map (mk_strloc vars) strll)]
 
    (*
@@ -1832,24 +1940,25 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
       let wc_type_op =
          let dest_type_wc t =
             let loc = dest_loc "dest_type_wc" t in
-            let sl1, sl2, t = three_subterms t in
+            let sl1, sl2, b, t = four_subterms t in
             let sl1' = List.map dest_string (dest_olist sl1) in
             let sl2' = List.map dest_sbb (dest_olist sl2) in
-               WcTyp (loc, sl1', sl2', dest_type t)
+               WcTyp (loc, Ploc.VaVal sl1', Ploc.VaVal sl2', Ploc.VaVal (dest_bool b), dest_type t)
          in add_wc "wc_type" dest_type_wc
       and wc_module_op =
          let dest_module_wc t =
             let loc = dest_loc "dest_module_wc" t in
             let sl1, mt = two_subterms t in
-               WcMod (loc, List.map dest_string (dest_olist sl1), dest_me mt)
+               WcMod (loc, Ploc.VaVal (List.map dest_string (dest_olist sl1)), dest_me mt)
          in add_wc "wc_module" dest_module_wc
       in function
-         WcTyp (loc, sl1, sl2, t) ->
+         WcTyp (loc, Ploc.VaVal sl1, Ploc.VaVal sl2, Ploc.VaVal b, t) ->
             let loc = num_of_loc loc in
             let sl1' = mk_olist_term (List.map mk_simple_string sl1) in
             let sl2' = mk_olist_term (List.map mk_sbb sl2) in
-              mk_simple_term wc_type_op loc [sl1'; sl2'; mk_type t]
-       | WcMod (loc, sl1, mt) ->
+            let b = mk_bool b in
+              mk_simple_term wc_type_op loc [sl1'; sl2'; b; mk_type t]
+       | WcMod (loc, Ploc.VaVal sl1, mt) ->
             let loc = num_of_loc loc in
             let sl1' = mk_olist_term (List.map mk_simple_string sl1) in
               mk_simple_term wc_module_op loc [sl1'; mk_module_expr [] mt]
@@ -1915,9 +2024,9 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
 
    and mk_class_type_infos {
       ciLoc = loc;
-      ciNam = s;
-      ciPrm = _, sl;
-      ciVir = b;
+      ciNam = Ploc.VaVal s;
+      ciPrm = _, Ploc.VaVal sl;
+      ciVir = Ploc.VaVal b;
       ciExp = t
    } =
       mk_simple_named_term class_type_infos_op (num_of_loc loc) s
@@ -1928,9 +2037,9 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
 
    and mk_class_expr_infos vars
      { ciLoc = loc;
-       ciNam = s;
-       ciPrm = _, sl;
-       ciVir = b;
+       ciNam = Ploc.VaVal s;
+       ciPrm = _, Ploc.VaVal sl;
+       ciVir = Ploc.VaVal b;
        ciExp = t
      } =
       mk_simple_named_term class_type_infos_op (num_of_loc loc) s
@@ -1954,8 +2063,8 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
             let loc = dest_loc "dest_con_ce" t in
             let sl, tl = two_subterms t in
                CeCon (loc,
-                      List.map dest_string (dest_olist sl),
-                      List.map dest_type (dest_olist tl))
+                      Ploc.VaVal (List.map dest_string (dest_olist sl)),
+                      Ploc.VaVal (List.map dest_type (dest_olist tl)))
          in add_ce "class_expr_con" dest_con_ce
       and ce_fun_op =
          let dest_fun_ce t =
@@ -1974,13 +2083,13 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
                else
                   dest_let t
             in
-               CeLet (loc, b, pel, dest_ce ce)
+               CeLet (loc, Ploc.VaVal b, Ploc.VaVal pel, dest_ce ce)
          in add_ce "class_expr_let" dest_let_ce
       and ce_str_op =
          let dest_str_ce t =
             let loc = dest_loc "dest_str_ce" t in
             let p, cfl = dest_patt_opt (one_subterm "dest_str_ce" t) in
-               CeStr (loc, p, List.map dest_cf (dest_olist cfl))
+               CeStr (loc, Ploc.VaVal p, Ploc.VaVal (List.map dest_cf (dest_olist cfl)))
          in add_ce "class_expr_str" dest_str_ce
       and ce_tyc_op =
          let dest_tyc_ce t =
@@ -1993,20 +2102,20 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
             mk_simple_term ce_app_op (num_of_loc loc) (**)
                [mk_ce vars ce;
                 mk_expr vars e]
-       | MLast.CeCon (loc, sl, tl) ->
+       | MLast.CeCon (loc, Ploc.VaVal sl, Ploc.VaVal tl) ->
             mk_simple_term ce_con_op (num_of_loc loc) (**)
                [mk_olist_term (List.map (mk_string ce_con_op) sl);
                 mk_olist_term (List.map mk_type tl)]
        | MLast.CeFun (loc, p, ce) ->
             mk_simple_term ce_fun_op (num_of_loc loc) (**)
                [mk_patt vars p (fun vars -> mk_ce vars ce)]
-       | MLast.CeLet (loc, b, pel, ce) ->
+       | MLast.CeLet (loc, Ploc.VaVal b, Ploc.VaVal pel, ce) ->
             mk_simple_term ce_let_op (num_of_loc loc) (**)
                [(if b then
                    mk_fix_tail
                 else
                    mk_let_tail) vars (num_of_loc loc) pel (fun vars -> mk_ce vars ce)]
-       | MLast.CeStr (loc, p, cfl) ->
+       | MLast.CeStr (loc, Ploc.VaVal p, Ploc.VaVal cfl) ->
             mk_simple_term ce_str_op (num_of_loc loc) (**)
                [mk_patt_opt loc vars p (mk_cf_list cfl)]
        | MLast.CeTyc (loc, ce, ct) ->
@@ -2021,10 +2130,10 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
       let ct_con_op =
          let dest_con_ct t =
             let loc = dest_loc "dest_con_ct" t in
-            let sl, tl = two_subterms t in
+            let ct, tl = two_subterms t in
                CtCon (loc,
-                      List.map dest_string (dest_olist sl),
-                      List.map dest_type (dest_olist tl))
+                      dest_ct ct,
+                      Ploc.VaVal (List.map dest_type (dest_olist tl)))
          in add_ct "class_type_con" dest_con_ct
       and ct_fun_op =
          let dest_fun_ct t =
@@ -2036,16 +2145,16 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
          let dest_sig_ct t =
             let loc = dest_loc "dest_sig_ct" t in
             let t, ctfl = two_subterms t in
-               CtSig (loc, dest_opt dest_type t, List.map dest_ctf (dest_olist ctfl))
+               CtSig (loc, Ploc.VaVal (dest_opt dest_type t), Ploc.VaVal (List.map dest_ctf (dest_olist ctfl)))
          in add_ct "class_type_sig" dest_sig_ct
       in function
-         CtCon (loc, sl, tl) ->
+         CtCon (loc, ct, Ploc.VaVal tl) ->
             mk_simple_term ct_con_op (num_of_loc loc) (**)
-               [mk_olist_term (List.map (mk_string ct_con_op) sl);
+               [mk_ct ct;
                 mk_olist_term (List.map mk_type tl)]
        | CtFun (loc, t, ct) ->
             mk_simple_term ct_fun_op (num_of_loc loc) [mk_type t; mk_ct ct]
-       | CtSig (loc, t, ctfl) ->
+       | CtSig (loc, Ploc.VaVal t, Ploc.VaVal ctfl) ->
             mk_simple_term ct_sig_op (num_of_loc loc) (**)
                [mk_type_opt t; mk_olist_term (List.map mk_ctf ctfl)]
 
@@ -2061,7 +2170,7 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
             let loc = dest_loc "dest_dcl_ctf" t in
             let t = one_subterm "dest_dcl_ctf" t in
             let t = List.map dest_ctf (dest_olist t) in
-               CgDcl (loc, t)
+               CgDcl (loc, Ploc.VaVal t)
          in add_ctf "class_type_ctf" dest_dcl_ctf
       and ctf_inh_op =
          let dest_inh_ctf t =
@@ -2073,32 +2182,32 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
          let dest_mth_ctf t =
             let loc = dest_loc "dest_mth_ctf" t in
             let s, b, t = three_subterms t in
-               CgMth (loc, dest_string s, dest_bool b, dest_type t)
+               CgMth (loc, Ploc.VaVal (dest_bool b), Ploc.VaVal (dest_string s), dest_type t)
          in add_ctf "class_type_mth" dest_mth_ctf
       and ctf_val_op =
          let dest_val_ctf t =
             let loc = dest_loc "dest_val_ctf" t in
             let s, b, t = three_subterms t in
-               CgVal (loc, dest_string s, dest_bool b, dest_type t)
+               CgVal (loc, Ploc.VaVal (dest_bool b), Ploc.VaVal (dest_string s), dest_type t)
          in add_ctf "class_type_val" dest_val_ctf
       and ctf_vir_op =
          let dest_vir_ctf t =
             let loc = dest_loc "dest_vir_ctf" t in
             let s, b, t = three_subterms t in
-               CgVir (loc, dest_string s, dest_bool b, dest_type t)
+               CgVir (loc, Ploc.VaVal (dest_bool b), Ploc.VaVal (dest_string s), dest_type t)
          in add_ctf "class_type_vir" dest_vir_ctf
       in function
          CgCtr (loc, s, t) ->
             mk_simple_term ctf_ctr_op (num_of_loc loc) [mk_type s; mk_type t]
-       | CgDcl (loc, t) ->
+       | CgDcl (loc, Ploc.VaVal t) ->
             mk_simple_term ctf_dcl_op (num_of_loc loc) [mk_olist_term (List.map mk_ctf t)]
        | CgInh (loc, ct) ->
             mk_simple_term ctf_inh_op (num_of_loc loc) [mk_ct ct]
-       | CgMth (loc, s, b, t) ->
+       | CgMth (loc, Ploc.VaVal b, Ploc.VaVal s, t) ->
             mk_simple_term ctf_mth_op (num_of_loc loc) [mk_simple_string s; mk_bool b; mk_type t]
-       | CgVal (loc, s, b, t) ->
+       | CgVal (loc, Ploc.VaVal b, Ploc.VaVal s, t) ->
             mk_simple_term ctf_val_op (num_of_loc loc) [mk_simple_string s; mk_bool b; mk_type t]
-       | CgVir (loc, s, b, t) ->
+       | CgVir (loc, Ploc.VaVal b, Ploc.VaVal s, t) ->
             mk_simple_term ctf_vir_op (num_of_loc loc) [mk_simple_string s; mk_bool b; mk_type t]
 
    and mk_cf =
@@ -2113,13 +2222,13 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
             let loc = dest_loc "dest_dcl_cf" t in
             let t = one_subterm "dest_dcl_cf" t in
             let t = List.map dest_cf (dest_olist t) in
-               CrDcl (loc, t)
+               CrDcl (loc, Ploc.VaVal t)
          in add_cf "class_dcl" dest_dcl_cf
       and cf_inh_op =
          let dest_inh_cf t =
             let loc = dest_loc "dest_inh_cf" t in
             let ce, so = two_subterms t in
-               CrInh (loc, dest_ce ce, dest_opt dest_string so)
+               CrInh (loc, dest_ce ce, Ploc.VaVal (dest_opt dest_string so))
          in add_cf "class_inh" dest_inh_cf
       and cf_ini_op =
          let dest_ini_cf t =
@@ -2130,42 +2239,42 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
       and cf_mth_op =
          let dest_mth_cf t =
             let loc = dest_loc "dest_mth_cf" t in
-            let s, b, e, t = four_subterms t in
-               CrMth (loc, dest_string s, dest_bool b, dest_expr e, dest_opt dest_type t)
+            let s, b1, b2, e, t = five_subterms t in
+               CrMth (loc, Ploc.VaVal (dest_bool b1), Ploc.VaVal (dest_bool b2), Ploc.VaVal (dest_string s), Ploc.VaVal (dest_opt dest_type t), dest_expr e)
          in add_cf "class_mth" dest_mth_cf
       and cf_val_op =
          let dest_val_cf t =
             let loc = dest_loc "dest_val_cf" t in
-            let s, b, e = three_subterms t in
-               CrVal (loc, dest_string s, dest_bool b, dest_expr e)
+            let s, b1, b2, e = four_subterms t in
+               CrVal (loc, Ploc.VaVal (dest_bool b1), Ploc.VaVal (dest_bool b2), Ploc.VaVal (dest_string s), dest_expr e)
          in add_cf "class_val" dest_val_cf
       and cf_vir_op =
          let dest_vir_cf t =
             let loc = dest_loc "dest_vir_cf" t in
             let s, b, t = three_subterms t in
-               CrVir (loc, dest_string s, dest_bool b, dest_type t)
+               CrVir (loc, Ploc.VaVal (dest_bool b), Ploc.VaVal (dest_string s), dest_type t)
          in add_cf "class_vir" dest_vir_cf
       in fun vars -> function
          CrCtr (loc, s, t) ->
             let loc = num_of_loc loc in
                mk_simple_term cf_ctr_op loc [mk_type s; mk_type t]
-       | CrDcl (loc, t) ->
+       | CrDcl (loc, Ploc.VaVal t) ->
             let loc = num_of_loc loc in
                mk_simple_term cf_dcl_op loc [mk_cf_list t vars]
-       | CrInh (loc, ce, so) ->
+       | CrInh (loc, ce, Ploc.VaVal so) ->
             let loc = num_of_loc loc in
                mk_simple_term cf_inh_op loc [mk_ce vars ce; mk_string_opt expr_string_op so]
        | CrIni (loc, e) ->
             let loc = num_of_loc loc in
                mk_simple_term cf_ini_op loc [mk_expr vars e]
-       | CrMth (loc, s, b, e, t) ->
+       | CrMth (loc, Ploc.VaVal b1, Ploc.VaVal b2, Ploc.VaVal s, Ploc.VaVal t, e) ->
             let loc = num_of_loc loc in
                mk_simple_term cf_mth_op loc (**)
-                  [mk_simple_string s; mk_bool b; mk_expr vars e; mk_opt mk_type t]
-       | CrVal (loc, s, b, e) ->
+                  [mk_simple_string s; mk_bool b1; mk_bool b2; mk_expr vars e; mk_opt mk_type t]
+       | CrVal (loc, Ploc.VaVal b1, Ploc.VaVal b2, Ploc.VaVal s, e) ->
             let loc = num_of_loc loc in
-               mk_simple_term cf_val_op loc [mk_simple_string s; mk_bool b; mk_expr vars e]
-       | CrVir (loc, s, b, t) ->
+               mk_simple_term cf_val_op loc [mk_simple_string s; mk_bool b1; mk_bool b2; mk_expr vars e]
+       | CrVir (loc, Ploc.VaVal b, Ploc.VaVal s, t) ->
             let loc = num_of_loc loc in
                mk_simple_term cf_vir_op loc [mk_simple_string s; mk_bool b; mk_type t]
 
@@ -2327,37 +2436,42 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
          in
             make pwel
 
+   and mk_fun_vala_aux =
+     fun vars loc pwel ->
+        let pwel = List.map (fun (p, w, e) -> p, dest_vala "mk_fun_vala_aux" w, e) pwel in
+        mk_fun_aux vars loc pwel
+
    and mk_fun =
       let expr_fun_op =
          let dest_fun_expr t =
             let _loc = dest_loc "dest_fun_expr" t in
-            let pwel = dest_fun_aux (one_subterm "dest_fun_expr" t) in
+            let pwel = dest_fun_vala_aux (one_subterm "dest_fun_expr" t) in
                <:expr< fun [ $list: pwel$ ] >>
          in add_expr "fun" dest_fun_expr
       in fun vars loc pwel ->
-         mk_simple_term expr_fun_op loc [mk_fun_aux vars loc pwel]
+         mk_simple_term expr_fun_op loc [mk_fun_vala_aux vars loc pwel]
 
    and mk_match =
       let expr_match_op =
          let dest_match_expr t =
             let _loc = dest_loc "dest_match_expr" t in
             let pwel, e = two_subterms t in
-            let pwel = dest_fun_aux pwel in
+            let pwel = dest_fun_vala_aux pwel in
                <:expr< match $dest_expr e$ with [ $list: pwel$ ] >>
          in add_expr "match" dest_match_expr
       in fun vars loc pwel e ->
-         mk_simple_term expr_match_op loc [mk_fun_aux vars loc pwel; mk_expr vars e]
+         mk_simple_term expr_match_op loc [mk_fun_vala_aux vars loc pwel; mk_expr vars e]
 
    and mk_try =
       let expr_try_op =
          let dest_try_expr t =
             let _loc = dest_loc "dest_try_expr" t in
             let pwel, e = two_subterms t in
-            let pwel = dest_fun_aux pwel in
+            let pwel = dest_fun_vala_aux pwel in
                <:expr< try $dest_expr e$ with [ $list: pwel$ ] >>
          in add_expr "try" dest_try_expr
       in fun vars loc pwel e ->
-         mk_simple_term expr_try_op loc [mk_fun_aux vars loc pwel; mk_expr vars e]
+         mk_simple_term expr_try_op loc [mk_fun_vala_aux vars loc pwel; mk_expr vars e]
 
    (*
     * Combined forms.
@@ -2384,12 +2498,12 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
    and mk_smt =
       let smt_op = mk_ocaml_op "smt"
       in fun (s, mt) ->
-         ToTerm.Term.mk_simple_term smt_op [mk_simple_string s; mk_module_type mt]
+         ToTerm.Term.mk_simple_term smt_op [mk_simple_string (dest_vala "mk_smt" s); mk_module_type mt]
 
-   and mk_smtme =
-      let smtme_op = mk_ocaml_op "smtme"
-      in fun vars (s, mt, me) ->
-         ToTerm.Term.mk_simple_term smtme_op [mk_simple_string s; mk_module_type mt; mk_module_expr vars me]
+   and mk_sme =
+      let sme_op = mk_ocaml_op "sme"
+      in fun vars (s, me) ->
+         ToTerm.Term.mk_simple_term sme_op [mk_simple_string (dest_vala "mk_sme" s); mk_module_expr vars me]
 
    and mk_sbt =
       let sbt_op = mk_ocaml_op "sbt"
@@ -2399,15 +2513,15 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
 
    and mk_rf rf =
       match rf with
-         RfTag (s, b, tl) ->
+         PvTag (_, Ploc.VaVal s, Ploc.VaVal b, Ploc.VaVal tl) ->
             ToTerm.Term.mk_simple_term row_field_tag_op [mk_simple_string s; mk_bool b; mk_olist_term (List.map mk_type tl)]
-       | RfInh t ->
+       | PvInh (_, t) ->
             ToTerm.Term.mk_simple_term row_field_inh_op [mk_type t]
 
    and mk_stl =
       let stl_op =  mk_ocaml_op "stl"
-      in fun (l, s, tl) ->
-         mk_simple_named_term stl_op (num_of_loc l) s [mk_olist_term (List.map mk_type tl)]
+      in fun (l, s, tl, t) ->
+         mk_simple_named_term stl_op (num_of_loc l) (dest_vala "mk_stl" s) [mk_olist_term (List.map mk_type (dest_vala "mk_smt" tl)); mk_opt mk_type t]
 
    and mk_tc =
       let tc_op = mk_ocaml_op "tc"
@@ -2416,7 +2530,12 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
 
    and mk_tdl =
       let tdl_op = mk_ocaml_op "tdl"
-      in fun ((l, s), sl, t, tl) ->
+      in fun { tdNam = Ploc.VaVal (l, Ploc.VaVal s);
+               tdPrm = Ploc.VaVal sl;
+               tdPrv = Ploc.VaVal b;
+               tdDef = t;
+               tdCon = Ploc.VaVal tl
+             } ->
          ToTerm.Term.mk_simple_term tdl_op [mk_loc_string tdl_op (num_of_loc l) s;
                                             mk_olist_term (List.map mk_sbb sl);
                                             mk_type t;
@@ -2424,8 +2543,9 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
 
    and mk_sbb =
       let sbb_op = mk_ocaml_op "sbb"
-      in fun (s, (b1, b2)) ->
-         ToTerm.Term.mk_simple_term sbb_op [mk_simple_string s; mk_bool b1; mk_bool b2]
+      in fun (Ploc.VaVal so, bo) ->
+         let b1, b2 = match bo with Some b -> true, b | None -> false, false in
+         ToTerm.Term.mk_simple_term sbb_op [mk_opt mk_simple_string so; mk_bool b1; mk_bool b2]
 
    and mk_bsl =
       let bsl_op = mk_ocaml_op "bsl"
@@ -2458,7 +2578,7 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
     * Some default terms to return on error.
     *)
    let _loc = dummy_loc
-   let def_str_item = StDcl (_loc, [])
+   let def_str_item = StDcl (_loc, Ploc.VaVal [])
 
    (*
     * Terms to MLAst.

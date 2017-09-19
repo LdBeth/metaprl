@@ -34,7 +34,6 @@
 open Lm_debug
 open Lm_symbol
 open Lm_printf
-open Lm_num
 
 open Opname
 open Term_sig
@@ -42,7 +41,6 @@ open Refiner_sig
 open Precedence
 open Mp_resource
 open Dform
-open Lexing
 open Term_ty_sig
 
 open Filter_util
@@ -134,13 +132,14 @@ let print_ty_param out = function
  | TyQuote ->
       fprintf out "@"
 
-let print_ty_bterm out { ty_bvars = bvars } =
+let print_ty_bterm out { ty_bvars = bvars; _ } =
    fprintf out "<%d>" (List.length bvars)
 
 let print_ty_term out ty_term =
    let { ty_opname = opname;
          ty_params = params;
-         ty_bterms = bterms
+         ty_bterms = bterms;
+         _
        } = ty_term
    in
       fprintf out "%s[%a]{%a}" (**)
@@ -156,13 +155,13 @@ let eprint_entry print_info = function
       eprintf "SummaryItem\n"
  | ToploopItem _ ->
       eprintf "ToploopItem\n"
- | Rewrite { rw_name = name } ->
+ | Rewrite { rw_name = name; _ } ->
       eprintf "Rewrite: %s\n" name
- | InputForm { iform_name = name } ->
+ | InputForm { iform_name = name; _ } ->
       eprintf "IForm: %s\n" name
- | CondRewrite { crw_name = name } ->
+ | CondRewrite { crw_name = name; _ } ->
       eprintf "CondRewrite: %s\n" name
- | Rule { rule_name = name } ->
+ | Rule { rule_name = name; _ } ->
       eprintf "Rule: %s\n" name
  | DeclareTypeClass (_, opname, _, _) ->
       eprintf "DeclareTypeClass: %s\n" (string_of_opname opname)
@@ -174,16 +173,16 @@ let eprint_entry print_info = function
       eprintf "DefineTerm: %a\n" print_ty_term ty_term
  | DeclareTypeRewrite _ ->
       eprintf "DeclareTypeRewrite\n"
- | MLRewrite { mlterm_name = name } ->
+ | MLRewrite { mlterm_name = name; _ } ->
       eprintf "MLRewrite: %s\n" name
- | MLAxiom { mlterm_name = name } ->
+ | MLAxiom { mlterm_name = name; _ } ->
       eprintf "MLAxiom: %s\n" name
- | Parent { parent_name = path } ->
+ | Parent { parent_name = path; _ } ->
       eprintf "Parent: %s\n" (string_of_path path)
  | Module (name, { info_list = info }) ->
       eprintf "Module: %s\n" name;
       print_info info
- | DForm { dform_name = name } ->
+ | DForm { dform_name = name; _ } ->
       eprintf "Dform: %s\n" name
  | Prec name ->
       eprintf "Precedence: %s\n" name
@@ -198,14 +197,14 @@ let eprint_entry print_info = function
          eprintf "Precedence: %s %s %s\n" left rels right
  | Resource (name, _) ->
       eprintf "Resource: %s\n" name
- | Improve { improve_name = name } ->
+ | Improve { improve_name = name; _ } ->
       eprintf "Improve %s with ...\n" name
  | MLGramUpd (Infix name)
  | MLGramUpd (Suffix name) ->
       eprintf "Infix/Suffix: %s\n" name
  | Id id ->
       eprintf "Id: 0x%08x\n" id
- | MagicBlock { magic_name = name } ->
+ | MagicBlock { magic_name = name; _ } ->
       eprintf "Magic: %s\n" name
  | Comment t ->
       eprintf "Comment\n"
@@ -270,12 +269,12 @@ let find_sub_module summary path =
 (*
  * List all the parents.
  *)
-let parents { info_list = summary } =
+let parents { info_list = summary; _ } =
    let rec collect = function
       (item, _) :: t ->
          begin
             match item with
-               Parent { parent_name = name } ->
+               Parent { parent_name = name; _ } ->
                   name :: collect t
              | _ ->
                   collect t
@@ -289,9 +288,9 @@ let parents { info_list = summary } =
  * Test for an axiom.
  *)
 let test_proof name = function
-   (Rule { rule_name = n }, _)
- | (Rewrite { rw_name = n }, _)
- | (CondRewrite { crw_name = n }, _) ->
+   (Rule { rule_name = n; _ }, _)
+ | (Rewrite { rw_name = n; _ }, _)
+ | (CondRewrite { crw_name = n; _ }, _) ->
       n = name
  | _ -> false
 
@@ -305,8 +304,8 @@ let find_proof { info_list = summary } name =
  *)
 let test_rewrite name (item, _) =
    match item with
-      Rewrite { rw_name = n }
-    | CondRewrite { crw_name = n } ->
+      Rewrite { rw_name = n; _ }
+    | CondRewrite { crw_name = n; _ } ->
          n = name
     | _ ->
          false
@@ -321,21 +320,23 @@ let find_rewrite { info_list = summary } name =
  *)
 let test_iform name (item, _) =
    match item with
-      InputForm { iform_name = n } ->
+      InputForm { iform_name = n; _ } ->
          n = name
     | _ ->
          false
 
+(* unused
 let find_iform { info_list = summary } name =
    try Some (Lm_list_util.find (test_iform name) summary) with
       Not_found ->
          None
+*)
 
 (*
  * Find a condition.
  *)
 let test_mlrewrite name = function
-   MLRewrite { mlterm_name = name' }, _ ->
+   MLRewrite { mlterm_name = name'; _ }, _ ->
       name' = name
  | _ ->
       false
@@ -346,7 +347,7 @@ let find_mlrewrite { info_list = summary } name =
          None
 
 let test_mlaxiom name = function
-   MLAxiom { mlterm_name = name' }, _ ->
+   MLAxiom { mlterm_name = name'; _ }, _ ->
       name' = name
  | _ ->
       false
@@ -376,7 +377,7 @@ let find_module { info_list = summary } name =
  *)
 let test_dform name (item, _) =
    match item with
-      DForm { dform_name = name' } ->
+      DForm { dform_name = name'; _ } ->
          name' = name
     | _ ->
          false
@@ -453,9 +454,9 @@ let get_proofs { info_list = summary } =
       (h, _)::t ->
          let proofs =
             match h with
-               Rule { rule_name = name; rule_proof = pf }
-             | Rewrite { rw_name = name; rw_proof = pf }
-             | CondRewrite { crw_name = name; crw_proof = pf } ->
+               Rule { rule_name = name; rule_proof = pf; _ }
+             | Rewrite { rw_name = name; rw_proof = pf; _ }
+             | CondRewrite { crw_name = name; crw_proof = pf; _ } ->
                   (name, pf) :: proofs
              | _ ->
                   proofs
@@ -472,13 +473,13 @@ let get_proofs { info_list = summary } =
 let find { info_list = summary } name =
    let test (item, _) =
       match item with
-         Rule { rule_name = n }
-       | Rewrite { rw_name = n }
-       | CondRewrite { crw_name = n }
-       | MLRewrite { mlterm_name = n }
-       | InputForm { iform_name = n }
-       | MLAxiom { mlterm_name = n }
-       | DForm { dform_name = n }
+         Rule { rule_name = n; _ }
+       | Rewrite { rw_name = n; _ }
+       | CondRewrite { crw_name = n; _ }
+       | MLRewrite { mlterm_name = n; _ }
+       | InputForm { iform_name = n ; _}
+       | MLAxiom { mlterm_name = n; _ }
+       | DForm { dform_name = n; _ }
        | Prec n ->
             n = name
        | _ ->
@@ -492,17 +493,17 @@ let find { info_list = summary } name =
 let set_command info item =
    let test =
       match fst item with
-         Rule { rule_name = name }
-       | Rewrite { rw_name = name }
-       | CondRewrite { crw_name = name } ->
+         Rule { rule_name = name; _ }
+       | Rewrite { rw_name = name; _ }
+       | CondRewrite { crw_name = name; _ } ->
             test_proof name
-       | InputForm { iform_name = name } ->
+       | InputForm { iform_name = name; _ } ->
             test_iform name
-       | MLRewrite { mlterm_name = name } ->
+       | MLRewrite { mlterm_name = name; _ } ->
             test_mlrewrite name
-       | MLAxiom { mlterm_name = name } ->
+       | MLAxiom { mlterm_name = name; _ } ->
             test_mlaxiom name
-       | DForm { dform_name = name } ->
+       | DForm { dform_name = name; _ } ->
             test_dform name
        | Prec s ->
             test_prec s
@@ -754,12 +755,12 @@ let summary_map (convert : ('term1, 'meta_term1, 'proof1, 'resource1, 'ctyp1, 'e
 (*
  * Add a command to the info.
  *)
-let fix_loc ((itm, (bp, ep)) as item) =
+let fix_loc ((itm, loc) as item) =
    let name = !Pcaml.input_file in
-      if name = "" || name = "-" || (bp.pos_fname <> "" && bp.pos_fname <> "-" && bp.pos_fname = ep.pos_fname) then
+      if name = "" || name = "-" || (Ploc.file_name loc <> "" && Ploc.file_name loc <> "-") then
          item
       else
-         (itm, ({bp with pos_fname = name}, {ep with pos_fname = name}))
+         (itm, (Ploc.make_loc name (Ploc.line_nb loc) (Ploc.bol_pos loc) (Ploc.first_pos loc, Ploc.last_pos loc) ""))
 
 let add_command { info_list = info } item =
    { info_list = (fix_loc item)::info }
@@ -829,16 +830,17 @@ let none_op                    = mk_opname "none"
 (*
  * Meta term conversions.
  *)
+(* unused
 let meta_theorem_op     = mk_opname "meta_theorem"
 let meta_implies_op     = mk_opname "meta_implies"
 let meta_function_op    = mk_opname "meta_function"
 let meta_iff_op         = mk_opname "meta_iff"
 let meta_labeled_op     = mk_opname "meta_labeled"
+*)
 
 module FilterSummaryTerm (ToTerm : RefinerSig) =
 struct
    open ToTerm.Term
-   open ToTerm.TermType
    open ToTerm.TermOp
    open ToTerm.TermMan
    open ToTerm.TermSubst
@@ -938,11 +940,11 @@ struct
       let dest_opt t =
          let opname = opname_of_term t in
             if Opname.eq opname dform_inherit_op then
-               push options DFormInheritPrec
+               push options Filter_type.DFormInheritPrec
             else if Opname.eq opname dform_prec_op then
-               push options (DFormPrec (dest_string_param t))
+               push options (Filter_type.DFormPrec (dest_string_param t))
             else if Opname.eq opname dform_parens_op then
-               push options DFormParens
+               push options Filter_type.DFormParens
             else if Opname.eq opname dform_mode_op && (!except)=[] then
                push modes (dest_string_param t)
             else if Opname.eq opname dform_except_mode_op && (!modes)=[] then
@@ -994,6 +996,7 @@ struct
          else
             raise (Failure "not an option")
 
+(* unused
    let dest_opt_pair f t =
       let opname = opname_of_term t in
          if Opname.eq opname some_op then
@@ -1002,6 +1005,7 @@ struct
             None
          else
             raise (Failure "not an option")
+*)
 
    (*
     * All parameters should be strings.
@@ -1022,7 +1026,7 @@ struct
             [Var v] -> v
           | _ -> raise (Failure "Invalid parameters")
       in fun convert t ->
-      let { term_op = op } = dest_term t in
+      let { term_op = op; _ } = dest_term t in
       let { op_name = opname; op_params = params } = dest_op op in
          if Opname.eq opname int_param_op then
             IntParam (var_param params)
@@ -1521,14 +1525,16 @@ struct
     * XXX: TODO: This converts the modern location data into the old-style one.
     * Ideally, we should be able to embed location data as comments (bug 256).
     *)
-   let mk_loc (i, j) t =
-      mk_number_number_dep0_term loc_op (Lm_num.num_of_int i.pos_cnum) (Lm_num.num_of_int j.pos_cnum) t
+   let mk_loc loc t =
+      mk_number_number_dep0_term loc_op (Lm_num.num_of_int (Ploc.first_pos loc)) (Lm_num.num_of_int (Ploc.last_pos loc)) t
 
-   let mk_loc_string_term op (start, finish) name t =
-      mk_number_number_string_dep0_term op (Lm_num.num_of_int start.pos_cnum) (Lm_num.num_of_int finish.pos_cnum) name t
+(* unused
+   let mk_loc_string_term op loc name t =
+      mk_number_number_string_dep0_term op (Lm_num.num_of_int (Ploc.first_pos loc)) (Lm_num.num_of_int (Ploc.last_pos loc)) name t
+*)
 
-   let mk_loc_string_term2 op (start, finish) name t1 t2 =
-      mk_number_number_string_dep0_dep0_term op (Lm_num.num_of_int start.pos_cnum) (Lm_num.num_of_int finish.pos_cnum) name t1 t2
+   let mk_loc_string_term2 op loc name t1 t2 =
+      mk_number_number_string_dep0_dep0_term op (Lm_num.num_of_int (Ploc.first_pos loc)) (Lm_num.num_of_int (Ploc.last_pos loc)) name t1 t2
 
    (*
     * Make a optional arg.
@@ -1539,12 +1545,14 @@ struct
     | None ->
          none_term
 
+(* unused
    let mk_opt_pair f = function
       Some (t1, t2) ->
          let t1, t2 = f (t1, t2) in
             mk_simple_term some_op [t1; t2]
     | None ->
          none_term
+*)
 
    (*
     * Make a term with a string parameter.
@@ -1601,11 +1609,11 @@ struct
       mk_string_term dform_except_mode_op mode
 
    let mk_dform_opt = function
-      DFormInheritPrec ->
+      Filter_type.DFormInheritPrec ->
          mk_simple_term dform_prec_op []
-    | DFormPrec s ->
+    | Filter_type.DFormPrec s ->
          mk_string_term dform_prec_op s
-    | DFormParens ->
+    | Filter_type.DFormParens ->
          mk_simple_term dform_parens_op []
 
    (*
@@ -1758,8 +1766,10 @@ struct
     | ParentNone ->
          mk_string_term parent_kind_op "none"
 
+(* unused
    let shape_normal_term = mk_term (mk_op shape_normal_op []) []
    let shape_iform_term = mk_term (mk_op shape_iform_op []) []
+*)
 
    let mk_shapeclass_term shapeclass =
       mk_number_term shape_class_op (num_of_shape_class shapeclass)
@@ -1951,13 +1961,13 @@ struct
        (info : ('term1, 'proof1, 'expr1) rewrite_info)
        (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list)
        (items : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item_loc list) =
-      let { rw_name = name; rw_redex = redex; rw_contractum = con } = info in
+      let { rw_name = name; rw_redex = redex; rw_contractum = con; _ } = info in
       let rec search = function
          [] ->
             implem_error loc (sprintf "Rewrite %s: not implemented" name)
-       | Rewrite { rw_name = name'; rw_redex = redex'; rw_contractum = con' } :: _ when name = name' ->
+       | Rewrite { rw_name = name'; rw_redex = redex'; rw_contractum = con'; _ } :: _ when name = name' ->
             redex', con'
-       | DefineTerm (shapeclass, ty_term, { term_def_name = name'; term_def_value = con'; term_def_opaque = false }) :: _
+       | DefineTerm (shapeclass, ty_term, { term_def_name = name'; term_def_value = con'; term_def_opaque = false; _ }) :: _
          when name = name' && is_shape_normal shapeclass ->
             (term_of_ty ty_term), con'
        | _ :: t ->
@@ -1980,9 +1990,9 @@ struct
       let rec search = function
          [] ->
             None
-       | InputForm { iform_name = name'; iform_redex = redex'; iform_contractum = con' } :: _ when name = name' ->
+       | InputForm { iform_name = name'; iform_redex = redex'; iform_contractum = con'; _ } :: _ when name = name' ->
             Some (redex', con')
-       | DefineTerm (shapeclass, ty_term, { term_def_name = name'; term_def_value = con' }) :: _
+       | DefineTerm (shapeclass, ty_term, { term_def_name = name'; term_def_value = con'; _ }) :: _
          when name = name' && is_shape_iform shapeclass ->
             Some (term_of_ty ty_term, con')
        | _ :: t ->
@@ -2013,7 +2023,8 @@ struct
             crw_params = params;
             crw_assums = args;
             crw_redex = redex;
-            crw_contractum = contractum
+            crw_contractum = contractum;
+            _
           } = info
       in
       let rec search = function
@@ -2025,7 +2036,8 @@ struct
                              crw_params = params';
                              crw_assums = args';
                              crw_redex = redex';
-                             crw_contractum = contractum'
+                                         crw_contractum = contractum';
+                                                          _
                } ->
                   if name = name' then
                      if not (check_params params' params) then
@@ -2051,11 +2063,11 @@ struct
        (info : ('term1, 'meta_term1, 'proof1, 'expr1) rule_info)
        (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list)
        (items : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item_loc list) =
-      let { rule_name = name; rule_params = params; rule_stmt = stmt } = info in
+      let { rule_name = name; rule_params = params; rule_stmt = stmt; _ } = info in
       let rec search = function
          [] ->
             implem_error loc (sprintf "Rule %s: not implemented" name)
-       | Rule { rule_name = name'; rule_params = params'; rule_stmt = stmt' } :: t ->
+       | Rule { rule_name = name'; rule_params = params'; rule_stmt = stmt'; _ } :: t ->
             let stmt' = strip_mfunction stmt' in
                if name' = name then
                   if not (check_params params' params) then
@@ -2169,7 +2181,7 @@ struct
       let rec search = function
          [] ->
             implem_error loc (sprintf "Definition %s: not implemented" (string_of_shape shape))
-       | DefineTerm (shapeclass', ty_term', ({ term_def_opaque = false } as term_def')) :: t ->
+       | DefineTerm (shapeclass', ty_term', ({ term_def_opaque = false; _ } as term_def')) :: t ->
             let term' = term_of_ty ty_term' in
             let shape' = shape_of_term term' in
                if ToTerm.TermShape.eq shape' shape then begin
@@ -2209,6 +2221,7 @@ struct
    (*
     * Token classes.
     *)
+(* unused
    let rec compare_string_lists l1 l2 =
       match l1, l2 with
          [], [] ->
@@ -2218,18 +2231,19 @@ struct
        | [], _
        | _, [] ->
             false
+*)
 
    (*
     * MLterms must match.
     *)
    let check_mlrewrite loc (**)
-       ({ mlterm_name = name; mlterm_term = term } : ('term1, 'expr1) mlterm_info)
+       ({ mlterm_name = name; mlterm_term = term; _ } : ('term1, 'expr1) mlterm_info)
        (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list)
        (items : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item_loc list) =
       let rec search = function
          [] ->
             implem_error loc (sprintf "MLRewrite %s: not implemented" name)
-       | MLRewrite { mlterm_name = name'; mlterm_term = term' } :: _ when name' = name ->
+       | MLRewrite { mlterm_name = name'; mlterm_term = term'; _ } :: _ when name' = name ->
             if not (alpha_equal term' term) then
                implem_error loc (sprintf "MLRewrite %s: definition does not match" name)
        | _ :: t ->
@@ -2239,13 +2253,13 @@ struct
          items
 
    let check_mlaxiom loc (**)
-       ({ mlterm_name = name; mlterm_term = term } : ('term1, 'expr1) mlterm_info)
+       ({ mlterm_name = name; mlterm_term = term; _ } : ('term1, 'expr1) mlterm_info)
        (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list)
        (items : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item_loc list) =
       let rec search = function
          [] ->
             implem_error loc (sprintf "MLAxiom %s: not implemented" name)
-       | MLAxiom { mlterm_name = name'; mlterm_term = term' } :: _ when name' = name ->
+       | MLAxiom { mlterm_name = name'; mlterm_term = term'; _ } :: _ when name' = name ->
             if not (alpha_equal term' term) then
                implem_error loc (sprintf "MLAxiom %s: definition does not match" name)
        | _ :: t ->
@@ -2264,7 +2278,7 @@ struct
       let rec search = function
          [] ->
             implem_error loc (sprintf "Extends %s: not implemented" (string_of_path path))
-       | Parent { parent_name = path' } :: _ when path = path' ->
+       | Parent { parent_name = path'; _ } :: _ when path = path' ->
             ()
        | _ :: t ->
             search t
@@ -2283,7 +2297,7 @@ struct
       let rec search = function
          [] ->
             implem_error loc (sprintf "DForm %s: not implemented" (string_of_term term))
-       | DForm { dform_options = tags'; dform_redex =  term' } :: _
+       | DForm { dform_options = tags'; dform_redex =  term'; _ } :: _
          when alpha_equal term' term ->
             if tags' = tags then
                ()
@@ -2375,7 +2389,7 @@ struct
             match h with
                Module (name', info') ->
                   if name' = name then
-                     check_implementation info' info
+                     ignore (check_implementation info' info)
                   else
                      search t
              | _ ->
@@ -2414,11 +2428,11 @@ struct
             check_mlrewrite loc info implem items
        | MLAxiom info ->
             check_mlaxiom loc info implem items
-       | Parent { parent_name = path } ->
+       | Parent { parent_name = path; _ } ->
             check_parent loc path implem items
        | Module (name, info) ->
             check_module loc name info implem items
-       | DForm { dform_options = flags; dform_redex = term } ->
+       | DForm { dform_options = flags; dform_redex = term; _ } ->
             check_dform loc flags term implem items
        | Prec name ->
             check_prec loc name implem items
@@ -2492,13 +2506,14 @@ struct
          match find_proof info2 rw.rw_name with
             Some (Rewrite { rw_redex = redex;
                             rw_contractum = contractum;
-                            rw_proof = proof
+                            rw_proof = proof;
+                            _
                   }, _) ->
                if not (alpha_equal rw.rw_redex redex & alpha_equal rw.rw_contractum contractum) then
                   eprintf "Copy_proof: warning: rewrite %s%s%t" rw.rw_name changed_warning eflush;
                { rw with rw_proof = copy_proof rw.rw_proof proof }
-          | Some (Rule { rule_proof = proof }, _)
-          | Some (CondRewrite { crw_proof = proof }, _) ->
+          | Some (Rule { rule_proof = proof; _ }, _)
+          | Some (CondRewrite { crw_proof = proof; _ }, _) ->
                eprintf "Copy_proof: warning: rewrite %s%s%t" rw.rw_name changed_warning eflush;
                { rw with rw_proof = copy_proof rw.rw_proof proof }
           | _ ->
@@ -2514,7 +2529,8 @@ struct
             Some (CondRewrite { crw_redex = redex;
                                 crw_contractum = contractum;
                                 crw_assums = assums;
-                                crw_proof = proof
+                                crw_proof = proof;
+                                _
                   }, _) ->
                if not (alpha_equal crw.crw_redex redex)
                   or not (alpha_equal crw.crw_contractum contractum)
@@ -2522,8 +2538,8 @@ struct
                then
                   eprintf "Copy_proof: warning: cond_rewrite %s%s%t" crw.crw_name changed_warning eflush;
                { crw with crw_proof = copy_proof crw.crw_proof proof }
-          | Some (Rewrite { rw_proof = proof }, _)
-          | Some (Rule { rule_proof = proof }, _) ->
+          | Some (Rewrite { rw_proof = proof; _ }, _)
+          | Some (Rule { rule_proof = proof; _ }, _) ->
                eprintf "Copy_proof: warning: cond_rewrite %s%s%t" crw.crw_name changed_warning eflush;
                { crw with crw_proof = copy_proof crw.crw_proof proof }
           | _ ->
@@ -2537,7 +2553,8 @@ struct
       Rule (
          match find_proof info2 item.rule_name with
             Some (Rule { rule_stmt = stmt;
-                         rule_proof = proof
+                         rule_proof = proof;
+                         _
                   }, _) ->
                if not (meta_alpha_equal item.rule_stmt stmt) then begin
                   eprintf "Copy_proof: warning: rule %s%s%t" item.rule_name changed_warning eflush;
@@ -2551,8 +2568,8 @@ struct
                   end
                end;
                { item with rule_proof = copy_proof item.rule_proof proof }
-          | Some (Rewrite { rw_proof = proof }, _)
-          | Some (CondRewrite { crw_proof = proof }, _) ->
+          | Some (Rewrite { rw_proof = proof; _ }, _)
+          | Some (CondRewrite { crw_proof = proof; _ }, _) ->
                eprintf "Copy_proof: warning: rule %s%s%t" item.rule_name changed_warning eflush;
                { item with rule_proof = copy_proof item.rule_proof proof }
           | _ ->

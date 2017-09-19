@@ -35,13 +35,11 @@
  *)
 open Lm_symbol
 
-open Opname
 open Refiner.Refiner
 open Refiner.Refiner.Rewrite
 open Refiner.Refiner.Refine
 open Refiner.Refiner.RefineError
 
-open Rewrite_sig
 open Refiner_sig
 open Refiner_io
 open Mp_resource

@@ -34,7 +34,7 @@ open Dform
 
 val format_exn  : dform_base -> buffer -> exn -> unit
 val print_exn   : dform_base -> string option -> ('a -> 'b) -> 'a -> 'b
-val handle_exn  : dform_base -> string option -> Token.flocation -> (unit -> 'a) -> 'a
+val handle_exn  : dform_base -> string option -> Token.location -> (unit -> 'a) -> 'a
 val stderr_exn  : string -> exn -> 'a
 
 (*

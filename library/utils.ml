@@ -25,7 +25,6 @@
  * Authors: Lori Lorigo, Richard Eaton
  *)
 open Lm_debug
-open Lm_debug
 
 let _ =
    show_loading "Loading Utils%t"

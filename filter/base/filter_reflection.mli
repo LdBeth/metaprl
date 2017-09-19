@@ -26,14 +26,10 @@
  *)
 open Lm_symbol
 
-open Opname
-open Term_sig
 open Term_ty_sig
-open Term_shape_sig
 open Refiner.Refiner.TermType
 open Refiner.Refiner.TermShape
 
-open Filter_shape
 open Filter_base_type
 
 (*

@@ -40,7 +40,6 @@ module TermHeaderConstr (**)
     with type msequent = ToTerm.Refine .msequent) =
 struct
    module TTerm = ToTerm.Term
-   module TType = ToTerm.TermType
    module FTerm = FromTerm.Term
    module FType = FromTerm.TermType;;
 
@@ -72,8 +71,10 @@ struct
          Term_sig.Hypothesis (v, t) -> TermHash.Hypothesis (v, TermHash.p_lookup info (make_term_header info t))
        | Term_sig.Context (v, conts, trms) -> TermHash.Context (v, conts, List.map (make_context_header info) trms)
 
+(* unused
    and make_goal_header info goal =
       TermHash.p_lookup info (make_term_header info goal)
+*)
 
    and make_true_term_header info tterm =
       let { term_op = term_op; term_terms = term_terms } = FTerm.dest_term tterm in

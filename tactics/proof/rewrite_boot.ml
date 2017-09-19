@@ -41,7 +41,6 @@ open Refiner.Refiner.RefineError
 open Refiner.Refiner.Rewrite
 open Refiner.Refiner.Refine
 
-open Opname
 open Options_boot
 open Tactic_boot
 open Sequent_boot

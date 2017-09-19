@@ -56,7 +56,9 @@ type theory =
  *)
 let base = ref ([] : theory list)
 
+(* unused
 let groups = Hashtbl.create 19
+*)
 
 (*
  * Record a theory by pushing it onto the list.

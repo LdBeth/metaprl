@@ -32,7 +32,6 @@ open List
 open Term_sig
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
-open Refiner.Refiner.TermSubst
 open Basic
 open Nuprl5
 open Orb
@@ -90,6 +89,7 @@ let faux_mbs bterms =
   print_newline();
   term
 
+(* unused
 let faux_ascii bterms =
   let persist = term_of_unbound_term (hd bterms) and
       data = term_of_unbound_term (hd (tl bterms)) in
@@ -99,6 +99,7 @@ let faux_ascii bterms =
   if alpha_equal data data' then print_string "+" else print_string "-" ;
   print_newline();
   data'
+*)
 
 let faux_ascii_quick bterms =
   let persist = term_of_unbound_term (hd bterms) in
@@ -109,6 +110,7 @@ let faux_ascii_quick bterms =
   print_newline();
   data
 
+(* unused
 let faux_ascii_file bterms =
   let persist = term_of_unbound_term (hd bterms) in
   let s, y = Db.stamp_and_type_of_idata_persist_term persist in
@@ -122,6 +124,7 @@ let faux_ascii_file bterms =
   print_string "aw";
   print_newline();
   itoken_term filename
+*)
 
 let faux_refine bterms =
   let seq = term_of_unbound_term (hd bterms) in
@@ -163,7 +166,9 @@ let test_ehook t =
     ->  faux_mbs bterms
   | _ -> error ["eval"; "op"; "unrecognized"] [] [t]
 
+(* unused
 let error_ehook t = (error ["library"; "LocalEvalNotCurrentlySupported"] [] [t])
+*)
 
 let lib_new c s =
   { transactions = [];
@@ -186,7 +191,9 @@ let join_eval c tags ehook =
  *)
 
 let icallback_param =  make_param (token "!callback")
+(* unused
 let icallback_op =  mk_nuprl5_op [icallback_param]
+*)
 
 let cookie_of_icallback_term t =
   match dest_term t with

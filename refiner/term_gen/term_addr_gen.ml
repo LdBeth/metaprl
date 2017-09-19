@@ -54,9 +54,7 @@ module TermAddr (**)
     with module Types = TermType
     with type Params.address = addr_item list) =
 struct
-   open TermType
    open Term
-   open TermSubst
    open TermMan
    open RefineError
 
@@ -72,7 +70,7 @@ struct
    let compose_address = compose_addr
    let string_of_address = string_of_addr
 
-   let rec split_clause_address = function
+   let split_clause_address = function
       ClauseAddr _ as addr :: rest ->
          [addr], rest
     | _ ->
@@ -138,7 +136,7 @@ struct
       DEFINE ATERM = (a, term)
    ELSE
       DEFINE ATERM = NOTHING
-   ENDIF
+   END
 
    (*
     * Traslate a [-length..-1]U[1..length] index into a [0..length-1] one.
@@ -189,7 +187,7 @@ struct
    ELSE
       DEFINE FAIL = NOTHING
       DEFINE DO_FAIL = RAISE_GENERIC_EXN
-   ENDIF
+   END
 
    let fail_addr (addr, term) =
       REF_RAISE(RefineError ("apply_*_fun_*", AddressError (addr, term)))
@@ -211,7 +209,7 @@ struct
       fun FAIL f addr bvars t i ->
          if i = 0 then
             match dest_term t with
-               { term_op = op } when Opname.eq (dest_op op).op_name context_opname ->
+               { term_op = op; _ } when Opname.eq (dest_op op).op_name context_opname ->
                   let v, term, conts, subterms = dest_context t in
                   let slot = mk_var_term v in
                   let t = mk_context_term v slot conts subterms in
@@ -281,7 +279,7 @@ struct
             apply_fun_arg_at_addr_aux (addr, term) f addr term
    ELSE
       let apply_fun_arg_at_addr = apply_fun_arg_at_addr_aux
-   ENDIF
+   END
 
    let add_unit_arg f t =
       f t, ()
@@ -303,7 +301,7 @@ struct
             apply_var_fun_at_addr_aux (addr, term) f addr bvars term
    ELSE
       let apply_var_fun_arg_at_addr = apply_var_fun_at_addr_aux
-   ENDIF
+   END
 
    let add_var_unit_arg f bvars t =
       f bvars t, ()

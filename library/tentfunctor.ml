@@ -43,6 +43,7 @@ module type TENTFUNCTOR =
 
  sig
 
+(* unused
  open Basic
 
  type 'a tent
@@ -50,6 +51,7 @@ module type TENTFUNCTOR =
  val new_tent	: unit -> 'a tent
 
  val tent_lookup 	: 'a tent -> stamp -> 'a
+*)
 
  (*
  val tent_contains_committed_oid_p	: tent -> stamp -> Id.t -> bool
@@ -58,12 +60,14 @@ module type TENTFUNCTOR =
  val tent_contains_visible_p		: tent -> stamp -> bool
  *)
 
+(* unused
  val tent_insert 	: 'a tent -> stamp -> int -> Id.t -> 'a -> unit
  val tent_delete 	: 'a tent -> stamp -> int -> Id.t -> unit
  val tent_undo		: 'a tent -> stamp -> int -> (Id.t * 'a option)
  val tent_commit	: 'a tent -> stamp -> int -> unit
 
  val tent_collect 	: 'a tent -> stamp list -> unit
+*)
 
 end
 

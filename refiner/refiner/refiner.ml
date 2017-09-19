@@ -6,6 +6,6 @@ ELSE
    ELSE
       IFDEF TERMS_both THEN
          module Refiner = Refiner_debug.MakeRefinerDebug(Refiner_std.Refiner)(Refiner_ds.Refiner)
-      ENDIF
-   ENDIF
-ENDIF
+      END
+   END
+END

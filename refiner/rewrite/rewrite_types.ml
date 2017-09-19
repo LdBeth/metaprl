@@ -33,7 +33,6 @@
 open Lm_symbol
 
 open Opname
-open Term_shape_sig
 
 open Term_sig
 open Term_addr_sig

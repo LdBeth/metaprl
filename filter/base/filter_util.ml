@@ -32,11 +32,9 @@
  *)
 open Lm_debug
 open Lm_printf
-open Lm_location
 
 open Opname
 open Term_sig
-open Refiner.Refiner
 open Refiner.Refiner.TermMan
 open Refiner.Refiner.TermMeta
 open Filter_type
@@ -56,45 +54,53 @@ let _ =
 (*
  * Dummy MLast.loc value
  *)
-let dummy_loc =
-   Lexing.dummy_pos, Lexing.dummy_pos
+let dummy_loc = Ploc.dummy
 
 (*
  * Construct a location.
  * XXX: TODO: This converts the old-style location data into modern one.
  * Ideally, we should be able to embed location data as comments (bug 256).
  *)
-let mk_pos i = {
-   pos_cnum = i;
-   pos_lnum = 1;
-   pos_bol = 0;
-   pos_fname = "";
-}
+let mk_pos i j =
+   Ploc.make_unlined (i, j)
 
 let mk_proper_loc i j =
-   (mk_pos (Lm_num.int_of_num i), mk_pos (Lm_num.int_of_num j))
+   mk_pos (Lm_num.int_of_num i) (Lm_num.int_of_num j)
 
 let shift_pos pos offset =
-   {pos with pos_cnum = pos.pos_cnum + offset}
+   Ploc.shift offset pos
 
 let adjust_pos globpos local_pos =
-   {
-      globpos with
-      pos_lnum = if local_pos.pos_lnum > 0 then globpos.pos_lnum + local_pos.pos_lnum - 1 else globpos.pos_lnum;
-      pos_bol = if local_pos.pos_lnum <= 1 then globpos.pos_bol else local_pos.pos_bol + globpos.pos_cnum;
-      pos_cnum = globpos.pos_cnum + local_pos.pos_cnum;
-   }
+   let local_pos_lnum = Ploc.line_nb local_pos in
+   let local_pos_bol = Ploc.bol_pos local_pos in
+   let local_pos_cnum = Ploc.first_pos local_pos in
+   let local_pos_enum = Ploc.last_pos local_pos in
+   let glob_pos_lnum = Ploc.line_nb globpos in
+   let glob_pos_bol = Ploc.bol_pos globpos in
+   let glob_pos_cnum = Ploc.first_pos globpos in
+   let glob_pos_enum = Ploc.last_pos globpos in
+   let glob_comm = Ploc.comment globpos in
+      Ploc.make_loc (Ploc.file_name globpos) (**)
+         (if local_pos_lnum > 0 then glob_pos_lnum + local_pos_lnum - 1 else glob_pos_lnum)
+         (if local_pos_lnum <= 1 then glob_pos_bol else local_pos_bol + glob_pos_cnum)
+         (glob_pos_cnum + local_pos_cnum, glob_pos_enum + local_pos_enum)
+         glob_comm
+
+let ploc_of_lexing (l1, l2) =
+   Ploc.make_loc l1.pos_fname l1.pos_lnum l1.pos_bol (l1.pos_cnum, l2.pos_cnum) ""
 
 let grammar_parse gram st =
-    let bol_ref, lnum_ref, name_ref = !Pcaml.position in
-    let old_bol, old_lnum, old_name = !bol_ref, !lnum_ref, !name_ref in
-    let restore () =
-       bol_ref := old_bol;
-       lnum_ref := old_lnum;
-       name_ref := old_name
+   let old_input = !Pcaml.input_file in
+   let bol_ref, lnum_ref, name_ref = Plexing.bol_pos, Plexing.line_nb, Plexing.input_file in
+   let old_bol, old_lnum, old_name = !bol_ref, !lnum_ref, !name_ref in
+   let restore () =
+      bol_ref := old_bol;
+      lnum_ref := old_lnum;
+      name_ref := old_name;
+      Pcaml.input_file := old_input
     in
-      bol_ref := 0;
-      lnum_ref := 1;
+      bol_ref := ref 0;
+      lnum_ref := ref 1;
       try
          let items = Grammar.Entry.parse gram st in
             restore ();
@@ -153,8 +159,10 @@ let string_of_opname_list =
    in
       print_path ""
 
+(* unused
 let print_opname ofile name =
    output_string ofile (string_of_opname_list name)
+*)
 
 (*
  * Get a string from an opname.

@@ -80,7 +80,6 @@ InstVarErr(var) =
         $"for instructions on compiling OCaml and setting the $(var) variable."
     return $(err)
 
-print($(CAMLLIB))
 if $(file-exists $(CAMLLIB)/../compiler-lib/parsetree.cmi)
    OCAMLINCLUDES += $(dir $(CAMLLIB)/../compiler-lib)
    export
@@ -171,7 +170,7 @@ VersionCheck($(OCAMLC_VERSION),     $(OCAMLC))
 VersionCheck($(OCAMLOPT_VERSION),   $(OCAMLOPT))
 VersionCheck($(OCAMLMKTOP_VERSION), $(OCAMLMKTOP))
 section
-    CAML_VERSIONS = 6.17
+    CAML_VERSIONS = 6.17 7.01 7.02
     VersionCheck($(CAMLP5_VERSION),     $(CAMLP5), ?opt = $"-v")
     VersionCheck($(CAMLP5R_VERSION),    $(CAMLP5R), ?opt = $"-v")
     VersionCheck($(CAMLP5O_VERSION),    $(CAMLP5O), ?opt = $"-v")
@@ -193,7 +192,7 @@ LOC = -loc _loc
 # Copy into the $(BIN) directory
 #
 BinInstall(files) =
-    foreach(src, $(files))
+    foreach(src => ..., $(files))
         $(BIN)/$(src): $(src) $(BIN)
             ln-or-cp $< $@
 
@@ -213,7 +212,7 @@ LibSubInstallNamed(subdir, dst, src) =
     $(MPINSTALL): $(LIB)/$(subdir)/$(dst)
 
 LibSubInstall(subdir, files) =
-    foreach(src, $(files))
+    foreach(src => ..., $(files))
         LibSubInstallNamed($(subdir), $(basename $(src)), $(src))
 
 LibInstall(files) =
@@ -233,7 +232,7 @@ ExportSubInstallNamed(subdir, dst, src) =
     $(MPINSTALL): $(EXPORT)/$(subdir)/$(dst)
 
 ExportSubInstall(subdir, files) =
-    foreach(src, $(files))
+    foreach(src => ..., $(files))
         ExportSubInstallNamed($(subdir), $(basename $(src)), $(src))
 
 ExportInstall(files) =

@@ -3,7 +3,6 @@
  *)
 
 open Lm_debug
-open Lm_printf
 
 open Refiner.Refiner.TermType
 open Basic
@@ -25,7 +24,6 @@ let library_close () =
 	disconnect (oref_val connection))
   else raise (LibraryException "Close: No library open.")
 
-open Lm_printf
 open Lm_printf
 
 let library_open host localport remoteport =

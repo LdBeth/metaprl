@@ -32,18 +32,18 @@
  * Author: Jason Hickey
  * Modified by: Eli Barzilay, Alexey Nogin, Yegor Bryukhov
  *)
-open Lm_debug
-
 open Term_sig
 open Termmod_sig
 open Term_compare_sig
 
+(* unused
 let debug_memo =
    create_debug (**)
       { debug_name = "memo";
         debug_description = "Display memo operations";
         debug_value = false
       }
+*)
 
 module TermCompare : TermCompareSig =
 functor (Term : TermModuleSig) ->

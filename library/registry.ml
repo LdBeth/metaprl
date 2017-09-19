@@ -153,6 +153,7 @@ let registry_store_local id regtype v =
 (*
  * Save a value in the global registry.
  *)
+(* unused
 let registry_store_global id regtype v =
    match Hashtbl.find global_registry regtype with
       Uni h ->
@@ -160,6 +161,7 @@ let registry_store_global id regtype v =
  | Bi (h1, h2) ->
       (Hashtbl.add h1 id v;
        Hashtbl.add h2 v id)
+*)
 
 (*
  * Read the next string from the registry.

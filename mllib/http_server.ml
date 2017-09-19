@@ -99,6 +99,7 @@ let http_path = Env_arg.general "HTTP_PATH" ["."] "HTTP include directories" set
  * HTTP response codes.
  *)
 let ok_code                     = 200, "OK"
+(* unused
 let created_code                = 201, "Created"
 let accepted_code               = 202, "Accepted"
 let no_content_code             = 204, "No Content"
@@ -108,11 +109,14 @@ let not_modified_code           = 303, "Not modified"
 let bad_request_code            = 400, "Bad request"
 let unauthorized_code           = 401, "Unauthorized"
 let forbidden_code              = 402, "Forbidden"
+*)
 let not_found_code              = 404, "Not found"
+(* unused
 let server_error_code           = 500, "Internal server error"
 let not_implemented_code        = 501, "Not implemented"
 let bad_gateway_code            = 502, "Bad gateway"
 let service_unavailable_code    = 503, "Service unavailable"
+*)
 
 (*
  * Message that is printed when the file is not found.
@@ -179,6 +183,7 @@ let decode_hex uri =
 (*
  * Encode a string into hex.
  *)
+(* unused
 let hex code =
    if code < 10 then
       Char.chr (code + (Char.code '0'))
@@ -204,6 +209,7 @@ let encode_hex uri =
                   convert (succ i) (j + 3)
    in
       convert 0 0
+*)
 
 let decode_uri uri =
    let simplified = Lm_filename_util.simplify_path (Lm_filename_util.split_path (decode_hex uri)) in
@@ -228,7 +234,7 @@ let head out uri protocol =
          begin
             try
                let filename = sprintf "%s/%s" root filename in
-               let { Unix.st_size = st_size } = Unix.stat filename in
+               let { Unix.st_size = st_size; _ } = Unix.stat filename in
                   if protocol then
                      let code, msg = ok_code in
                         fprintf out "%s %d %s\r\n" http_protocol code msg;
@@ -283,7 +289,7 @@ let get out uri protocol =
          begin
             try
                let filename = sprintf "%s/%s" root filename in
-               let { Unix.st_size = st_size } = Unix.stat filename in
+               let { Unix.st_size = st_size; _ } = Unix.stat filename in
                let fd = Unix.openfile filename [Unix.O_RDONLY] 0 in
                let _ =
                   if protocol then
@@ -374,7 +380,7 @@ let handle server connect client =
 (*
  * Do the web service.
  *)
-let rec serve connect fd =
+let serve connect fd =
    if !debug_http then
       eprintf "Editor_http: starting web services%t" eflush;
    try
@@ -415,8 +421,10 @@ let start_http connect port =
 (*
  * Stop the server by closing its socket.
  *)
+(* unused
 let stop_http inet =
    Lm_inet.close_server inet
+*)
 
 (*
  * Server without threads.

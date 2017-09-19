@@ -38,21 +38,19 @@ open Opname
 open Term_sig
 open Term_base_sig
 open Term_man_sig
-open Term_shape_sig
 
 module TermShape (**)
    (TermType : TermSig)
    (Term : TermBaseSig with module TermTypes = TermType)
    (TermMan : TermManSig with module ManTypes = TermType) =
 struct
-   open TermType
    open Term
    open TermMan
 
    type term = TermType.term
    type param = TermType.param
 
-   let opname_of_shape { shape_opname = opname } =
+   let opname_of_shape { shape_opname = opname; _ } =
       opname
 
    (*

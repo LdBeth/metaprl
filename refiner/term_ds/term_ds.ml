@@ -33,7 +33,6 @@
 open Lm_debug
 open Lm_symbol
 
-open Opname
 open Term_sig
 
 (*

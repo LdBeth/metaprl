@@ -173,9 +173,11 @@ let init_multeq ={ counter=0;
                   }
 
         (* val init_temp_multeq : temp_multeq *)
+(* unused
 let init_temp_multeq = { s_t = Queue.create ();
                          m_t = [init_multiterm]
                        }
+*)
 
 let init_timestamp_ref = ref 0
 
@@ -737,8 +739,10 @@ let unifiable_eqnl l consts =
    let opL = mk_op (Opname.make_opname ["L"]) [] in
       unifiable (mk_term opL (fofeqnlist l)) (mk_term opL (sofeqnlist l)) consts
 
+(* unused
 let alpha_equal_my term0 term1 =
    unifiable term0 term1 (SymbolSet.union (free_vars_set term0) (free_vars_set term1))
+*)
 
 (*********************************************************)
 (* Conversion from Mm-unif types to Term                 *)
@@ -787,15 +791,15 @@ let pick_name bv consts var_hashtbl =
 
 let rec multiterm_list2term m consts var_hashtbl sub_hashtbl multeq_hashtbl =
    match m with
-      [{ fsymb = Op op_w_b; args = args}] ->
+      [{ fsymb = Op op_w_b; args = args; _ }] ->
          my_mk_term op_w_b.opsymb
             (List.map2
                (fun x y -> (temp_multieq2bterm x y consts var_hashtbl sub_hashtbl multeq_hashtbl ))
                args
                (List.map Array.to_list (Array.to_list op_w_b.opbinding)))
-    | [{ fsymb = Bvar bv }] ->
+    | [{ fsymb = Bvar bv; _ }] ->
          mk_var_term (get_name (pick_name bv consts var_hashtbl))
-    | [{ fsymb = Cnst x }] ->
+    | [{ fsymb = Cnst x; _ }] ->
          mk_var_term (get_name x)
     | _ -> raise impossible
 
@@ -826,7 +830,7 @@ and temp_multieq2bterm t_meq b_v_list consts var_hashtbl sub_hashtbl multeq_hash
 
 let multieq2term meq consts var_hashtbl multeq_hashtbl =
    match meq with
-      { m = []; s = hd::tl } ->
+      { m = []; s = hd::tl; _ } ->
          let trm = mk_var_term
             (match hd.name with
                (V v) -> v
@@ -834,7 +838,7 @@ let multieq2term meq consts var_hashtbl multeq_hashtbl =
          in
             Hashtbl_multeq.add multeq_hashtbl meq trm;
             trm
-    | { m = [t] } ->
+    | { m = [t]; _ } ->
          let sub_hashtbl = Hashtbl.create 23 in
          let trm = multiterm_list2term meq.m consts var_hashtbl sub_hashtbl multeq_hashtbl in
          let sub = Hashtbl.fold (fun a b coll -> (a,b)::coll) sub_hashtbl [] in
@@ -912,6 +916,7 @@ let unify_eqnl l1 consts =
  * EQNLIST MANAGEMENT *
  **********************)
 
+(* unused
 let update_subst varstringl terml sigma =
    match terml, varstringl with
       [], [] | [_], [] -> sigma
@@ -920,6 +925,7 @@ let update_subst varstringl terml sigma =
     | [t], li ->
          (List.map (function x -> x, apply_subst sigma t) li) @ sigma
     | _ -> raise impossible
+*)
 
 let rec multiterm_list2term m consts var_hashtbl =
    match m with
@@ -929,9 +935,9 @@ let rec multiterm_list2term m consts var_hashtbl =
                (fun x y -> (temp_multieq2bterm x y consts var_hashtbl))
                args
                (List.map Array.to_list (Array.to_list op_w_b.opbinding)))
-    | [{ fsymb = Bvar bv }] ->
+    | [{ fsymb = Bvar bv; _ }] ->
          mk_var_term (get_name (pick_name bv consts var_hashtbl))
-    | [{ fsymb = Cnst x }] ->
+    | [{ fsymb = Cnst x; _ }] ->
          mk_var_term (get_name x)
     | _ -> raise impossible
 
@@ -1000,13 +1006,13 @@ let clash_error_aux =
       if i<=0 then [] else slot_bterm :: slot_bterms (i - 1)
    in
    let term_of_op = function
-      { opsymb = FunSequent _ } -> mk_xstring_term "sequent..."
+      { opsymb = FunSequent _; _ } -> mk_xstring_term "sequent..."
     | op -> my_mk_term op.opsymb (slot_bterms op.oparity_n)
    in
    let term_of_multi = function
-      { fsymb = Op op } -> term_of_op op
-    | { fsymb = Bvar bv } -> mk_var_term (var_name bv.name_bv)
-    | { fsymb = Cnst c } -> mk_var_term (var_name c)
+      { fsymb = Op op; _ } -> term_of_op op
+    | { fsymb = Bvar bv; _ } -> mk_var_term (var_name bv.name_bv)
+    | { fsymb = Cnst c; _ } -> mk_var_term (var_name c)
    in
    let rec build exn =
       match exn with
@@ -1061,7 +1067,9 @@ let unify_eqnl_eqnl l consts =
     | RefineError _ -> raise re_bug
     | Mm_unif_error -> raise unif_error
 
+(* unused
 let alpha_equal_my term0 term1 =
    try alpha_equal_my term0 term1 with
       RefineError _ -> raise re_bug
     | Mm_unif_error -> raise unif_error
+*)

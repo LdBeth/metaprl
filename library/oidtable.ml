@@ -32,17 +32,18 @@ let _ =
 
 open Basic
 open Refiner.Refiner.TermType
-open Refiner.Refiner.Term
 
 open Tentfunctor
 open Hashtbl
 
+(* unused
 module type Oid =
  sig
   type t = object_id
   val equal	: object_id -> object_id -> bool
   val hash	: object_id -> int
  end
+*)
 
 module Oid =
  struct
@@ -61,7 +62,9 @@ open OidHashTable
 
 type 'a oidtable = 'a tent t
 
+(* unused
 let print_object_id oid =  List.map Mbterm.print_param (dest_object_id oid)
+*)
 
 let make_oidtable () = ((OidHashTable.create 997): 'a oidtable)
 

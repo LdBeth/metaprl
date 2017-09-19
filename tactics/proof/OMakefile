@@ -3,10 +3,11 @@
 #
 OCAMLINCLUDES += $(dir $(ROOT)/$(ENSEMBLE_DIR))
 
+OCAMLFLAGS += -rectypes
 #
 # Basic camlp4 preprocessing
 #
-OCAMLPPFLAGS = -pp $(quote-argv camlp4o$(EXE) -I $(CAMLP4LIB) q_MLast.cmo $(LOC))
+OCAMLPPFLAGS = -pp $(quote-argv camlp5o$(EXE) -I $(CAMLP5LIB) q_MLast.cmo $(LOC))
 
 #
 # Library files

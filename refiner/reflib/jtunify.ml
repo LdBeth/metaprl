@@ -34,13 +34,13 @@
 open Lm_printf
 open Lm_debug
 
-open Refiner.Refiner.TermType
-
 open Jlogic_sig
 open Jtypes
 open Jordering
 
+(* unused
 let jprover_bug = Invalid_argument "Jprover bug (Jtunify module)"
+*)
 
 let debug_jtunify =
    create_debug (**)
@@ -178,7 +178,7 @@ let rec apply_element_aux v slist acc = function
 		else
 			apply_element_aux v slist (hd::acc) tl
 
-let rec apply_element v slist fs ft =
+let apply_element v slist fs ft =
 	let new_fs = apply_element_aux v slist [] fs in
 	let new_ft = apply_element_aux v slist [] ft in
 	List.rev new_fs, List.rev new_ft
@@ -209,7 +209,9 @@ end
 module JQuantifier (JLogic : JLogicSig) =
 struct
 
+(* unused
    module JTypes = MkJTypes(JLogic)
+*)
    module JOrder = MkJOrdering(JLogic)
    open JOrder
 
@@ -222,7 +224,9 @@ end
 module JPropositionalQuantifier (JLogic : JLogicSig) =
 struct
 
+(* unused
    module JTypes = MkJTypes(JLogic)
+*)
 
 	let build_ordering _ _ _ _ _ = PMap.empty
 
@@ -240,8 +244,9 @@ type tracelist = trace_entry list list
 module JTUnify (JLogic : JLogicSig)(JQuantifier: JQuantifierSig) =
 struct
 
+(* unused
    module JOrder = MkJOrdering(JLogic)
-   open JOrder
+*)
    open JQuantifier
 
 let rec combine ov oslist = function

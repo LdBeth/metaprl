@@ -237,6 +237,7 @@ and scan_numeral_parameter scanner =
                           (make_param (Number value))])
       | _ -> error ["scan_numeral_parameter"; ptype] [] []
 
+(* unused
 and scan_numeral_parameter_old scanner =
  let l = scan_cur_byte scanner.scanner in
  let mp256 = num_of_int 256 in
@@ -268,6 +269,7 @@ and scan_compressed_new code scanner =
                                (index_of_bytes code (scan_cur_byte scanner.scanner)) in
            scan_next scanner.scanner;
            r)
+*)
 
 and scan_compressed code scanner =
  if compression_add_byte_p code
@@ -448,7 +450,7 @@ let with_open_db_file f name ext =
         x
 
 let with_open_file f stamp otype =
-  let {process_id = pid; seq = seq}  = dest_stamp stamp in
+  let {process_id = pid; seq = seq; _}  = dest_stamp stamp in
   let filename = String.concat ""
       [!master_pathname; pid; "/"; "data"; "/"; (string_of_int seq); "."; otype] in
   let in_channel = try open_in filename with
@@ -467,7 +469,9 @@ let db_read_aux =
 let ascii_special_header = "%"
 let ash_length = String.length (ascii_special_header)
 
+(* unused
 let is_first_char char string = chareq (String.get string 0) char
+*)
 
 let level_expression_escape_string = "[ |']"
 
@@ -557,10 +561,12 @@ let extract_binding2 pl =
  |(Token disp)::((String v)::tl) when dst_token disp = "display" -> ["display"; v]
  | t  -> failwith "extract binding 2"
 
+(* unused
 let extract_binding1 pl =
   match pl with
   (String v)::tl -> [v]
  | t  -> failwith "extract binding 1"
+*)
 
 let string_to_bindings value =
 
@@ -640,7 +646,9 @@ let extract_level_string_updates level inparms =
       done
 
 let idata_persist_param = make_param (token "!data_persist")
+(* unused
 let idata_persist_inline_param = make_param (token "!data_persist_inline")
+*)
 
 let idata_persist_term_p t =
  match dest_term t with
@@ -670,6 +678,7 @@ let stamp_and_type_of_idata_persist_term t =
      |_ -> error ["stamp_and_type_of_idata_persist_file"][][t])
    |_ -> error ["stamp_and_type_of_idata_persist_file"][][t]
 
+(* unused
 let with_open_persist_file f t =
  match dest_term t with
    { term_op = op; term_terms = [istamp] }
@@ -683,9 +692,10 @@ let with_open_persist_file f t =
 
      |_ -> error ["open_persist_file"][][t])
    |_ -> error ["open_persist_file"][][t]
+*)
 
 let with_open_pid_file f stamp otype =
-  let {process_id = pid; seq = seq}  = dest_stamp stamp in
+  let {process_id = pid; seq = seq; _}  = dest_stamp stamp in
   let filename = String.concat ""
       [!master_pathname; pid; "/"; (string_of_int seq); "."; otype] in
   let in_channel = try open_in filename with
@@ -881,7 +891,7 @@ let db_read stamp otype =
     else db_read_mathbus stamp otype
 
 let db_write stamp object_type term =
-  let {process_id = pid; seq = seq} = dest_stamp stamp in
+  let {process_id = pid; seq = seq; _} = dest_stamp stamp in
   let filename = String.concat ""
       [!master_pathname; pid; (string_of_int seq); "."; object_type] in
   let descr = openfile filename [O_EXCL; O_WRONLY; O_CREAT] 999 in

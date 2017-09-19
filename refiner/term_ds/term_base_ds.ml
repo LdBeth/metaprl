@@ -80,20 +80,26 @@ struct
    (*
     * Simple substitution.
     *)
+(* unused
    type term_subst = (var * term) list
+*)
 
    module SeqHypType =
    struct
       type t = hypothesis
    end
 
+(* unused
    module SeqGoalType =
    struct
       type t = term
    end
+*)
 
    module SeqHyp = Seq_set.Make (SeqHypType)
+(* unused
    module SeqGoal = Seq_set.Make (SeqGoalType)
+*)
 
    (************************************************************************
     * DEBUGGING                                                            *
@@ -152,7 +158,7 @@ struct
                            end; res
                      ELSE
                         body
-                     ENDIF
+                     END
                 | Sequent seq ->
                      SymbolSet.union
                         (free_vars_set seq.sequent_args)
@@ -184,7 +190,7 @@ struct
                            end; res
                      ELSE
                         body
-                     ENDIF
+                     END
                 | SOVar (v, vs, ts) ->
                      SymbolSet.add_list (terms_free_vars ts) vs
                 | SOContext (v, t, vs, ts) ->
@@ -245,7 +251,7 @@ struct
                eprintf "}%t" eflush;
                debug_subst := true
             end
-      ENDIF;
+      END;
       match SymbolSet.fst_mem_filt (free_vars_set t) sub with
          [] -> t
        | sub' -> core_term (Subst (t,sub'))
@@ -478,7 +484,7 @@ struct
        | _ ->
             false
 
-   let rec exists_xlist_term f t =
+   let exists_xlist_term f t =
       match get_core t with
          Term { term_op = { op_name = opname; op_params = [] };
                 term_terms = [{ bvars = []; bterm = a };

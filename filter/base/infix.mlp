@@ -37,76 +37,67 @@ open Filter_type
 (*
  * The prefix version of the infix expression
  *)
-let prefix_name op = "prefix_" ^ op
+let prefix_name op =
+   "prefix_" ^ op
 
 (*
  * Add an infix keyword.
  *)
 let add_infix (keyword : string) =
-  Grammar.extend
-    (let _ = (expr : 'expr Grammar.Entry.e) in
-     [Grammar.Entry.obj (expr : 'expr Grammar.Entry.e),
-      Some (Gramext.Level "expr1"),
-      [Some "expr1", Some Gramext.LeftA,
-       [[Gramext.Sself; Gramext.Stoken ("", keyword); Gramext.Sself],
-        Gramext.action
-          (fun (e2 : 'expr) (op : string) (e1 : 'expr) (_loc : Ploc.t) ->
-             (MLast.ExApp
-                (_loc,
-                 MLast.ExApp
-                   (_loc, MLast.ExLid (_loc, Ploc.VaVal (prefix_name op)),
-                    e1),
-                 e2) :
-              'expr))]]])
+   EXTEND
+      GLOBAL: expr;
+
+      expr: LEVEL "expr1"
+         ["expr1" LEFTA
+          [ e1 = SELF; op = "XXXXXXXX"; e2 = SELF ->
+               <:expr< $lid:prefix_name op$ $e1$ $e2$ >>
+          ]];
+   END
 
 (*
  * Remove the infix keyword.
  *)
 let remove_infix (keyword : string) =
-  Grammar.delete_rule expr
-    [Gramext.Snterm (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e));
-     Gramext.Stoken ("", keyword);
-     Gramext.Snterm (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e))]
+   DELETE_RULE
+      expr:
+         expr; "XXXXXXXX"; expr
+   END
 
 (*
  * Add an suffix keyword.
  *)
 let add_suffix (keyword : string) =
-  Grammar.extend
-    (let _ = (expr : 'expr Grammar.Entry.e) in
-     [Grammar.Entry.obj (expr : 'expr Grammar.Entry.e),
-      Some (Gramext.Level "expr1"),
-      [Some "expr1", Some Gramext.LeftA,
-       [[Gramext.Sself; Gramext.Stoken ("", keyword)],
-        Gramext.action
-          (fun (op : string) (e : 'expr) (_loc : Ploc.t) ->
-             (MLast.ExApp
-                (_loc, MLast.ExLid (_loc, Ploc.VaVal (prefix_name op)), e) :
-              'expr))]]])
+   EXTEND
+      GLOBAL: expr;
+
+      expr: LEVEL "expr1"
+         ["expr1" LEFTA
+          [ e = expr; op = "XXXXXXXX" ->
+               <:expr< $lid:prefix_name op$ $e$ >>
+          ]];
+   END
 
 (*
  * Remove the suffix keyword.
  *)
 let remove_suffix (keyword : string) =
-  Grammar.delete_rule expr
-    [Gramext.Snterm (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e));
-     Gramext.Stoken ("", keyword)]
+   DELETE_RULE
+      expr:
+         expr; "XXXXXXXX"
+   END
 
-let add =
-  function
-    Infix s -> add_infix s
-  | Suffix s -> add_suffix s
+let add = function
+   Infix s -> add_infix s
+ | Suffix s -> add_suffix s
 
-let remove =
-  function
-    Infix s -> remove_infix s
-  | Suffix s -> remove_suffix s
+let remove = function
+   Infix s -> remove_infix s
+ | Suffix s -> remove_suffix s
 
-module SetBase =
-  struct
-    type t = grammar_update
-    let compare = Pervasives.compare
-  end
+module SetBase = struct
+   type t = grammar_update
+   let compare = Pervasives.compare
+end
 
 module Set = Lm_set.LmMake (SetBase)
 

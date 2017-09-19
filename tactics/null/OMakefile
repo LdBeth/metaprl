@@ -5,6 +5,8 @@ LIBNAME = trefiner
 
 LMFILES = thread_refiner
 
+OCAMLFLAGS += -rectypes
+
 OCamlLibraryInstall($(MPINSTALL), $(LIB), $(LIBNAME), $(LMFILES))
 
 #

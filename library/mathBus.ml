@@ -95,6 +95,7 @@ let subterm_types num =
   ;; needed, filling in the sub_types information, if provided, in the
   ;; registry.
 *)
+(* unused
 let declare_local_stringId symlabel subtypes =
   try (registry_lookup_value symlabel "StringId") with
   Not_found ->
@@ -112,6 +113,7 @@ let declare_local_stringId symlabel subtypes =
 	end;
 
       numlabel ;;
+*)
 
 let mbnode_labelq node = match node.(0) with
   Mbint i -> i
@@ -146,6 +148,7 @@ let mbnode_subterm node index =
     else node)
     index
 
+(* unused
 let mbnode_set_subterm node id v =
   Array.set (let i = mbnode_labelq node in
   if bequal i !mbs_Attributes then
@@ -154,9 +157,10 @@ let mbnode_set_subterm node id v =
     | Mnode n -> n)
   else node)
     id v
+*)
 
 let make_mbnode numlabel length =
-  let node = (Array.create (1 + length) (Mbint (create 0)):mbterm) in
+  let node = (Array.make (1 + length) (Mbint (create 0)):mbterm) in
   Array.set node 0 (Mbint (numlabel));
   node
 
@@ -183,7 +187,7 @@ let mbnode numlabel args=
 let loop_over_subterms node f =
   let b = mbnode_label node in
   let len = mbnode_nSubterms node in
-  let rec alternate first second =
+  let alternate first second =
     for i = 1  to (len+1) do
       f i first;
       if i >= len then
@@ -219,7 +223,9 @@ let loop_over_subterms node f =
        for i = (1 + x) to len
        do f i None done))
 
-let maximum_integern = num_of_int 1073741823 ;;
+(* unused
+ let maximum_integern = num_of_int 1073741823 ;;
+*)
 
 (* call with num
 let mb_number num =
@@ -304,10 +310,12 @@ let mb_integer int =
     node
 
 (* call with bigint*)
+(* unused
 let mb_integerb int =
   let node = make_mbnode !mbs_LongInteger 1 in
     Array.set node 1 (Mbint int);
     node
+*)
 
 let mb_integerq int label =
   let a = (abs int) in
@@ -364,8 +372,10 @@ let integer_value node=
   | Mnode n -> failwith "integer_value"
 
 
+(* unused
 let ttbit_sign_bit = lbsl (create 1) 31
 let ttbit_twos_complement = lbsl (create 1) 32
+*)
 
 (* The following packs ASCII strings into 32_bit words, two characters
 ;; to a word.  So, every other byte is 0.  This is leave room for the
@@ -420,7 +430,7 @@ let string_value_with_unicode node =
     Mbint b -> let (x, y) = dest_lint32 b in
     let str = if y < 0 then failwith "string_value" else Lm_string_util.create "MathBus.string_value" y in
     let rec loop i j =
-      if (i >= y) or (j > (mbnode_nSubterms node)) then str else
+      if (i >= y) || (j > (mbnode_nSubterms node)) then str else
       (match node.(j) with
 	Mbint c -> let (a, b) = dest_lint32 c in
 	(Lm_string_util.set "MathBus.string_value_with_unicode" str i (Char.chr a);
@@ -438,7 +448,7 @@ let string_value node =
     Mbint b -> let (x, y) = dest_lint32 b in
     let str = if y < 0 then failwith "string_value" else Lm_string_util.create "MathBus.string_value" y in
     let rec loop i j =
-      if (i >= y) or (j > (mbnode_nSubterms node)) then str else
+      if (i >= y) || (j > (mbnode_nSubterms node)) then str else
       (match node.(j) with
 	Mbint c -> let (a, b) = dest_lint32 c in let a1 = (a asr 8) land 0xFF and a2 = a land 0xFF and b1 = (b asr 8) land 0xFF and b2 = b land 0xFF in
 	(Lm_string_util.set "MathBus.string_value" str i (Char.chr a1);
@@ -462,7 +472,7 @@ let rec print_node node =
       print_string (string_of_num (number_value node));
       print_char '}'
     end
-  else if (bequal b !mbs_String) or (bequal b !mbs_Token) then
+  else if (bequal b !mbs_String) || (bequal b !mbs_Token) then
     print_string (string_value node)
   else
     begin
@@ -504,10 +514,10 @@ let base64_translation_list =
      48,'w'; 49,'x'; 50,'y'; 51,'z'; 52,'0'; 53,'1'; 54,'2'; 55,'3';
      56,'4'; 57,'5'; 58,'6'; 59,'7'; 60,'8'; 61,'9'; 62,'+'; 63,'/']
 
-let base64_by_num_table = Array.create 64 'a';;
-let base64_by_char_table = Array.create 128 (-2);;
+let base64_by_num_table = Array.make 64 'a';;
+let base64_by_char_table = Array.make 128 (-2);;
 let base64_char_count = ref 0 ;;
-let mask_table = Array.create 30 0 ;; (*LAL*)
+let mask_table = Array.make 30 0 ;; (*LAL*)
 
 let initialize_base64 =
   let f (num, char) = Array.set base64_by_num_table num char;
@@ -561,8 +571,9 @@ let write_base64_num num stream =
 
 let stream_mode = "base64"
 
+(* unused
 let base64_obuffer = ref  0
-let base64_ocount = ref 0
+let base64_ocount = ref 0 *)
 let buffer = ref 0
 let cnt = ref 0
 
@@ -817,8 +828,9 @@ let write_node node stream =
      flush_buffer buffer stream cnt;
    base64_char_count := 0)
 
-
+(* unused
 let stringID_translation = Hashtbl.create 7
+*)
 
 let rec read_node_internal stream =
   let op = read_32bit stream and

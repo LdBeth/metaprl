@@ -203,7 +203,8 @@ let print_gmtime outx time =
          Unix.tm_mday = mday;
          Unix.tm_mon  = mon;
          Unix.tm_year = year;
-         Unix.tm_wday = wday
+         Unix.tm_wday = wday;
+         _
        } = Unix.gmtime time
    in
    let mon_names = [|"Jan"; "Feb"; "Mar"; "Apr"; "May"; "Jun"; "Jul"; "Aug"; "Sep"; "Oct"; "Nov"; "Dec"|] in
@@ -218,7 +219,8 @@ let print_success_channel_err out code inx =
       (try
           let fd = Unix.descr_of_in_channel inx in
           let { Unix.st_size = st_size;
-                Unix.st_mtime = st_mtime
+                Unix.st_mtime = st_mtime;
+                _
               } = Unix.fstat fd
           in
              Lm_ssl.fprintf out "Last-Modified: %a\r\n" print_gmtime st_mtime;
@@ -239,7 +241,8 @@ let print_content_channel_err out code content_type inx =
       (try
           let fd = Unix.descr_of_in_channel inx in
           let { Unix.st_size = st_size;
-                Unix.st_mtime = st_mtime
+                Unix.st_mtime = st_mtime;
+                _
               } = Unix.fstat fd
           in
              Lm_ssl.fprintf out "Last-Modified: %a\r\n" print_gmtime st_mtime;
@@ -791,7 +794,7 @@ let parse_post_part part =
                if !debug_http then
                   eprintf "Http_simple.parse_post_part: %s = %s%t" name (String.escaped body) eflush;
                name, body
-       | { content_disposition_type = dtype } ->
+       | { content_disposition_type = dtype; _ } ->
             raise (Failure ("parse_post_body: bad Content-Disposition: " ^ dtype))
 
 let parse_post_multipart boundary body =
@@ -804,6 +807,7 @@ let parse_post_body content_type body =
    match content_type with
       { content_type_main = "application";
         content_type_sub  = "x-www-form-urlencoded";
+        _
       } ->
          parse_eq_list "&" body
 
@@ -825,7 +829,8 @@ let parse_post_body content_type body =
             parse_post_multipart boundary body
 
     | { content_type_main = main;
-        content_type_sub = sub
+        content_type_sub = sub;
+        _
       } ->
          raise (Failure ("parse_post_body: unknown content type: " ^ main ^ "/" ^ sub))
 
@@ -842,7 +847,7 @@ let rec find_content_length = function
  | [] ->
       raise Not_found
 
-let rec read_body inx header =
+let read_body inx header =
    try
       let length = find_content_length header in
       let body = String.create length in
@@ -950,7 +955,7 @@ let serve connect server info =
                      Failure _
                    | SigPipe as exn ->
                         eprintf "Http_simple: %s: shutdown failed%t" (Printexc.to_string exn) eflush
-               and () = 
+               and () =
                   try Lm_ssl.close client with
                       Failure _
                     | SigPipe as exn ->

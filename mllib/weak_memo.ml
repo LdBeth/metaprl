@@ -50,9 +50,11 @@ ELSE
       { descriptor : 'a weak_descriptor;
         anchor : 'a
       }
-ENDIF
+END
 
+(* unused
    exception Cell_is_full
+*)
 
    type ('param, 'arg, 'header, 'weak_header, 'image) t =
       { make_header : 'param -> 'arg -> 'header;
@@ -144,7 +146,7 @@ ELSE
       { descriptor = i;
         anchor = item
       }
-ENDIF
+END
 
    (*
     * Grow the weak array so we can add more entries.
@@ -176,7 +178,7 @@ ENDIF
                 body
       ELSE
          body
-      ENDIF
+      END
 
    let insert info hash weak_header index item =
       let item = set info index item in
@@ -212,7 +214,7 @@ ENDIF
                         IFDEF DEBUG_WEAK_MEMO THEN
                            if Weak.length info.image_array <> info.count then
                               raise (Inconsistency "weak table length does not match expected value")
-                        ENDIF;
+                        END;
 
                         (* Search for a free location in the hash table *)
                         match Hash.gc_iter (gc_tst info.image_array) info.index_table with
@@ -263,12 +265,12 @@ ENDIF
                else
                   raise (Inconsistency "descriptor does not match item")
           | None ->
-               raise (Inconsistency "item was lost") 
+               raise (Inconsistency "item was lost")
    ELSE
       let retrieve _ _ d =
          d.anchor
-   ENDIF
-   
+   END
+
    let retrieve_hack d =
       d.anchor
 

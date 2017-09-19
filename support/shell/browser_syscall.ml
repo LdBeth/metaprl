@@ -224,11 +224,12 @@ let start io_entry command_string =
 let flush io_entry =
    State.write io_entry (fun io ->
          let { io_process = process;
-               io_buffer = buf
+               io_buffer = buf;
+               _
              } = io
          in
             match process with
-               ProcessRunning { command_input = inx } ->
+               ProcessRunning { command_input = inx; _ } ->
                   let rec copy () =
                      let c = input_char inx in
                         Buffer.add_char buf c;
@@ -284,13 +285,14 @@ let get_char inx =
    in
       State.write io_entry (fun io ->
             let { io_process = process;
-                  io_buffer = buf
+                  io_buffer = buf;
+                  _
                 } = io
             in
             let len = Buffer.length buf in
                if index >= len then
                   match process with
-                     ProcessRunning { command_input = iny } ->
+                     ProcessRunning { command_input = iny; _ } ->
                         (try
                             let c = input_char iny in
                                Buffer.add_char buf c;

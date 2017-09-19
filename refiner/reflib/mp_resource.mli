@@ -34,7 +34,6 @@
  *
  * Author: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
-open Lm_symbol
 open Rewrite_sig
 open Refiner.Refiner.Refine
 

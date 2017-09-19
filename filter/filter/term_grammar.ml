@@ -37,7 +37,6 @@ open Lm_printf
 
 open Opname
 open Term_sig
-open Term_shape_sig
 open Term_ty_sig
 open Term_meta_sig
 open Refiner.Refiner
@@ -50,11 +49,9 @@ open Refiner.Refiner.TermShape
 open Refiner.Refiner.Rewrite
 open Refiner.Refiner.RefineError
 
-open Lexing
 open Filter_type
 open Filter_base_type
 open Filter_util
-open Filter_summary
 open Filter_summary_util
 open Simple_print.SimplePrint
 
@@ -98,21 +95,24 @@ let comment_docon_op = mk_comment_opname "docon"
 let comment_docoff_op = mk_comment_opname "docoff"
 let comment_doc_op = mk_comment_opname "doc"
 
-let misspelled = ref []
+let (misspelled : (string * Ploc.t) list ref) = ref []
 let dict_inited = ref false
 
 let raise_spelling_error () =
    if !misspelled <> [] then begin
       let rec print word = function
-         (h, (bp, ep)) :: t ->
+         (h, (loc : Ploc.t)) :: t ->
             if word = h then
                eprintf "; "
             else
                eprintf "\n\t%s: " (Lm_ctype.quote h);
-            if bp.pos_lnum >= 0 then
-               eprintf "line %i, char %i" bp.pos_lnum bp.pos_bol
+            let pos_lnum = Ploc.line_nb loc in
+            if pos_lnum >= 0 then
+               let pos_bol = Ploc.bol_pos loc in
+                  eprintf "line %i, char %i" pos_lnum pos_bol
             else
-               eprintf "char %i" bp.pos_cnum;
+               let pos_cnum = Ploc.first_pos loc in
+                  eprintf "char %i" pos_cnum;
             print h t
        | [] ->
             ()
@@ -181,7 +181,9 @@ struct
    (*
     * Also meta-terms.
     *)
+(* unused
    type amterm = { mname : string option; mterm : meta_term }
+*)
    type vmterm = { vname : term option; vterm : meta_term }
 
    (*
@@ -329,6 +331,7 @@ struct
        | [SW_String s], _ ->
             ConPStr s, ShapeString
 
+(* unused
    let make_param_class loc l =
       match l with
          [SW_Word s]
@@ -352,6 +355,7 @@ struct
                    TyToken (mk_term (mk_op (mk_opname_token loc [s]) []) []))
        | _ ->
             TyToken (mk_term (mk_op (mk_opname_token loc (List.map string_of_sw l)) []) [])
+*)
 
    (*
     * For new symbols.
@@ -367,8 +371,10 @@ struct
    let mk_bterm' (vars, bterm) =
       mk_bterm vars bterm
 
+(* unused
    let mk_ty_bterm (vars, bterm, ty) =
       mk_bterm vars bterm, ty
+*)
 
    (*
     * Get the class of a param.
@@ -653,7 +659,7 @@ struct
             (* XXX HACK - this is to support ad-hoc I/O form for "fun" and alike *)
             begin try
                wrap_term loc (mk_dep0_dep0_term (mk_dep0_dep0_opname loc name) t t2)
-            with Failure _ | Not_found | Stdpp.Exc_located (_, Not_found) | Stdpp.Exc_located (_, Failure _) ->
+            with Failure _ | Not_found | Ploc.Exc (_, Not_found) | Ploc.Exc (_, Failure _) ->
                wrap_term loc (mk_dep0_dep1_term (mk_dep0_dep1_opname loc name) (Lm_symbol.add "") t t2)
             end
        | { aname = Some name'; aterm = t } ->
@@ -683,8 +689,10 @@ struct
     | ST_String (s, _) ->
          Lm_symbol.add s
 
+(* unused
    let make_ty_bvar (v, ty) =
       make_bvar v, ty
+*)
 
    let make_ty_bvar = function
       TyBVar1 (ST_Term ({ aname = Some v; aterm = ty }, loc)) ->
@@ -744,16 +752,16 @@ struct
    let expr_of_arg _loc s =
       <:expr< argv.( $int: s$ ) >>
 
-   let expr_of_anti (loc, _) name s =
+   let expr_of_anti loc name s =
       try grammar_parse Pcaml.expr_eoi (Stream.of_string s) with
-         Stdpp.Exc_located ((l1, l2), exn) ->
+         Ploc.Exc (l, exn) ->
             let offset = String.length "$" in
             let offset = if name = "" then offset else offset + 1 + (String.length name) in
             let loc = shift_pos loc offset in
-               Stdpp.raise_with_loc (adjust_pos loc l1, adjust_pos loc l2) exn
+               Ploc.raise (adjust_pos loc l) exn
 
    let q_shift_loc loc nm =
-      shift_pos (fst loc) (if nm = "" then String.length "<<" else (String.length "<:") + (String.length nm) + (String.length "<")), (snd loc)
+      shift_pos loc (if nm = "" then String.length "<<" else (String.length "<:") + (String.length nm) + (String.length "<"))
 
    let rec parse_quotation loc curr nm s =
       if nm = curr then
@@ -765,9 +773,9 @@ struct
                 let cs = Stream.of_string s in
                    grammar_parse TermGrammar.term_eoi cs
              with
-                Stdpp.Exc_located ((l1, l2), exn) ->
-                   let pos = fst (q_shift_loc loc nm) in
-                      Stdpp.raise_with_loc (adjust_pos pos l1, adjust_pos pos l2) exn)
+                Ploc.Exc (l, exn) ->
+                   let pos = q_shift_loc loc nm in
+                      Ploc.raise (adjust_pos pos l) exn)
        | "doc" ->
             parse_comment (q_shift_loc loc nm) true SpellOn true s
        | "topdoc" ->
@@ -784,7 +792,7 @@ struct
                      Stdpp.raise_with_loc loc exn
 
    and parse_comment loc math spell space s =
-      let pos = fst loc in
+      let pos = loc in
       let () =
          if !debug_spell && not !dict_inited then
             begin
@@ -814,7 +822,7 @@ struct
             mk_string_term comment_string_op s
        | Comment_parse.Variable s ->
             mk_var_term (Lm_symbol.add s)
-       | Comment_parse.Term ((opname, (l1, l2)), params, args) ->
+       | Comment_parse.Term ((opname, l), params, args) ->
             let spelling =
                if !debug_spell then
                   match opname with
@@ -844,7 +852,7 @@ struct
                      space
             in
             let opname =
-               mk_opname (adjust_pos pos l1, adjust_pos pos l2) opname (string_params params) (fake_arities args)
+               mk_opname (adjust_pos pos (ploc_of_lexing l)) opname (string_params params) (fake_arities args)
             in
             let params = List.map (fun s -> make_param (String s)) params in
             let args = List.map (fun t -> mk_simple_bterm (build_term spelling space t)) args in
@@ -852,8 +860,8 @@ struct
                mk_term op args
        | Comment_parse.Block items ->
             mk_simple_term comment_block_op [build_term spelling space items]
-       | Comment_parse.Quote ((l1, l2), tag, s) ->
-            let t = parse_quotation (adjust_pos pos l1, adjust_pos pos l2) "doc" tag s in
+       | Comment_parse.Quote (l, tag, s) ->
+            let t = parse_quotation (adjust_pos pos (ploc_of_lexing l)) "doc" tag s in
                term_of_parsed_term loc t
 
       (*
@@ -884,8 +892,8 @@ struct
        *)
       let items =
          try Comment_parse.parse math s with
-            Comment_parse.Parse_error (s, (l1, l2)) ->
-               Stdpp.raise_with_loc (adjust_pos pos l1, adjust_pos pos l2) (ParseError s)
+            Comment_parse.Parse_error (s, l) ->
+               Ploc.raise (adjust_pos pos (ploc_of_lexing l)) (ParseError s)
       in
          build_term spell space items
 
@@ -913,6 +921,7 @@ struct
          else
             [t]
 
+(* unused
    let rec is_docoff_lst = function
       t :: _ -> is_docoff t
     | [] -> false
@@ -921,6 +930,7 @@ struct
       is_no_subterms_term comment_docoff_op t ||
          is_no_subterms_term comment_docon_op t ||
          ((is_xlist_term t) && (is_docoff_lst (dest_xlist t)))
+*)
 
    let convert_comment loc t =
       let t =
@@ -1329,7 +1339,7 @@ struct
                   let t =
                      let ty = make_term ty in let t = make_term t in
                      try mk_dep0_dep0_dep0_term (mk_dep0_dep0_dep0_opname _loc "equal") ty t t
-                     with Failure _ | Not_found | Stdpp.Exc_located (_, Not_found) | Stdpp.Exc_located (_, Failure _) ->
+                     with Failure _ | Not_found | Ploc.Exc (_, Not_found) | Ploc.Exc (_, Failure _) ->
                         mk_dep0_dep0_term (mk_dep0_dep0_opname _loc "member") t ty
                   in
                      wrap_term _loc t

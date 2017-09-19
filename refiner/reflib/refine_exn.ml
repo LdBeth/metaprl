@@ -91,6 +91,7 @@ let format_address buf addr =
 (*
  * Just print out a bunch of strings.
  *)
+(* unused
 let rec format_strings buf = function
    [h] ->
       format_string buf h
@@ -100,6 +101,7 @@ let rec format_strings buf = function
       format_strings buf t
  | [] ->
       ()
+*)
 
 (*
  * Format a hypothesis.

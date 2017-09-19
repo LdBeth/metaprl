@@ -479,6 +479,7 @@ let idisconnect_parameter = make_param (token "!disconnect")
 let idisconnect_op b = mk_nuprl5_op [idisconnect_parameter; make_bool_parameter b]
 let idisconnect_term b = mk_term (idisconnect_op b) []
 
+(* unused
 let iconnect_parameter = make_param (token "!connect")
 let iconnect_op localhost sock =
   mk_nuprl5_op
@@ -488,6 +489,7 @@ let iconnect_op localhost sock =
     ]
 
 let iconnect_term localhost sock = mk_term (iconnect_op localhost sock) []
+*)
 
 let ilink_encoding_term encoding =
   mk_term (mk_nuprl5_op
@@ -620,6 +622,7 @@ let library_environment_new c tag =
     (connection_eval_string c ("ienvironment_address_term (new_library `" ^ tag ^ "`)") true)
 
 (* join *)
+(* unused
 let library_environment_join c tags =
   address_of_ienvironment_address_term
     (connection_eval_args c
@@ -628,6 +631,7 @@ let library_environment_join c tags =
 	   (tags_of_ienvironment_address_term (hd l))))")
 	[ienvironment_address_term tags]
 	)
+*)
 
 (* restore *)
 let library_environment_restore c stamp_string =

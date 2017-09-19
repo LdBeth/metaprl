@@ -6,11 +6,11 @@
 DEFINE RAISE_GENERIC_EXN = raise generic_refiner_exn
 
 IFDEF SIMPLE_EXN THEN
-  DEFINE REF_RAISE(exn) = raise generic_refiner_exn
+  DEFINE REF_RAISE exn = raise generic_refiner_exn
   UNDEF VERBOSE_EXN
 ELSE
   IFNDEF VERBOSE_EXN THEN
     DEFINE VERBOSE_EXN
-  ENDIF
-  DEFINE REF_RAISE(exn) = raise exn
-ENDIF
+  END
+  DEFINE REF_RAISE exn = raise exn
+END

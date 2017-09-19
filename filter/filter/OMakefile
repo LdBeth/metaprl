@@ -4,6 +4,8 @@
 OCAMLINCLUDES[] +=
     ../base
 
+OCAMLFLAGS += -rectypes
+
 #
 # Clean up
 #

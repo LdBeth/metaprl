@@ -28,7 +28,6 @@ open Lm_string_set
 
 open Opname
 open Term_sig
-open Term_shape_sig
 open Refiner.Refiner.TermType
 open Refiner.Refiner.TermShape
 

@@ -32,13 +32,10 @@
  *)
 
 open Lm_debug
-open Lm_printf
-open Lm_symbol
 
 open Term_sig
 open Refiner.Refiner
 open Refiner.Refiner.TermType
-open Refiner.Refiner.Refine
 
 open Tactic_boot
 
@@ -51,7 +48,6 @@ let _ =
 module Sequent =
 struct
    module SequentTypes = TacticInternalType
-   open TacticInternalType
 
    (*
     * Two tactic_arguments are equal when they have
@@ -70,7 +66,7 @@ struct
    let label = TacticInternal.label
 
    let args p =
-      let { sequent_args = args } = TermMan.explode_sequent (goal p) in
+      let { sequent_args = args; _ } = TermMan.explode_sequent (goal p) in
          TermMan.dest_xlist args
 
    let num_assums = TacticInternal.num_assums

@@ -114,7 +114,7 @@ let skip_number s off =
  * Add a specific number of space characters.
  *)
 let add_spaces buf spaces =
-   for i = 1 to spaces do
+   for _ = 1 to spaces do
       Buffer.add_char buf ' '
    done
 

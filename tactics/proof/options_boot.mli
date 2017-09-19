@@ -24,7 +24,6 @@
  * Modified by: Aleksey Nogin @email{nogin@cs.caltech.edu}
  * @end[license]
  *)
-open Opname
 open Refiner.Refiner.TermType
 
 (*

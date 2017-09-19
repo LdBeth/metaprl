@@ -3,6 +3,7 @@
 #
 OCAMLINCLUDES += ../display
 OCAMLDEPFLAGS += -notopval
+OCAMLFLAGS += -rectypes
 
 # .mlz files
 MLZFILES[] =

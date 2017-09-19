@@ -36,7 +36,6 @@
  *)
 
 open Lm_debug
-open Lm_printf
 
 open Term_addr_sig
 open Refiner.Refiner
@@ -46,7 +45,6 @@ open Refiner.Refiner.RefineError
 
 open Tactic_boot
 open Rewrite_boot
-open Sequent_boot
 
 open Tacticals_boot
 
@@ -56,6 +54,7 @@ open Tacticals_boot
 let _ =
    show_loading "Loading Conversionals_boot%t"
 
+(* unused
 let debug_conv =
    create_debug (**)
       { debug_name = "conv";
@@ -69,11 +68,11 @@ let debug_reduce =
         debug_description = "display reductions";
         debug_value = false
       }
+*)
 
 module Conversionals =
 struct
    module ConversionalsTypes = TacticInternalType
-   open ConversionalsTypes
    type env = TacticInternalType.env
 
    let env_term = Rewrite.env_term

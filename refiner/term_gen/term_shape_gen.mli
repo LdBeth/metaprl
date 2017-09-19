@@ -31,8 +31,6 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
-open Opname
-
 open Term_sig
 open Term_base_sig
 open Term_man_sig

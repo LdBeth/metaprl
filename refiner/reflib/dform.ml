@@ -30,7 +30,6 @@
  * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 open Lm_debug
-open Lm_symbol
 open Lm_printf
 open Lm_printf_rbuffer
 open Lm_rformat
@@ -250,25 +249,25 @@ let string_of_param = function
  | RewriteMetaParam v -> dstring_of_var v
 
 let tzone = function
-   { dform_items = [RewriteString tag]; dform_buffer = buf } ->
+   { dform_items = [RewriteString tag]; dform_buffer = buf; _ } ->
       format_tzone buf (string_of_param tag)
  | _ ->
       raise (Invalid_argument "Dform.sbreak")
 
 let hbreak = function
-   { dform_items = [RewriteString yes; RewriteString no]; dform_buffer = buf } ->
+   { dform_items = [RewriteString yes; RewriteString no]; dform_buffer = buf; _ } ->
       format_hbreak buf (string_of_param yes) (string_of_param no)
  | _ ->
       raise (Invalid_argument "Dform.hbreak")
 
 let sbreak = function
-   { dform_items = [RewriteString yes; RewriteString no]; dform_buffer = buf } ->
+   { dform_items = [RewriteString yes; RewriteString no]; dform_buffer = buf; _ } ->
       format_sbreak buf (string_of_param yes) (string_of_param no)
  | _ ->
       raise (Invalid_argument "Dform.sbreak")
 
 let cbreak = function
-   { dform_items = [RewriteString yes; RewriteString no]; dform_buffer = buf } ->
+   { dform_items = [RewriteString yes; RewriteString no]; dform_buffer = buf; _ } ->
       format_cbreak buf (string_of_param yes) (string_of_param no)
  | _ ->
       raise (Invalid_argument "Dform.sbreak")
@@ -278,13 +277,13 @@ let hspace df = format_hspace df.dform_buffer
 let newline df = format_newline df.dform_buffer
 
 let pushm = function
-   { dform_items = [RewriteNum (RewriteParam n)]; dform_buffer = buf } ->
+   { dform_items = [RewriteNum (RewriteParam n)]; dform_buffer = buf; _ } ->
       format_pushm buf (Lm_num.int_of_num n)
- | { dform_items = [RewriteNum (RewriteMetaParam v)]; dform_buffer = buf } ->
+ | { dform_items = [RewriteNum (RewriteMetaParam v)]; dform_buffer = buf; _ } ->
       format_pushm_str buf (dstring_of_var v)
- | { dform_items = [RewriteString s]; dform_buffer = buf } ->
+ | { dform_items = [RewriteString s]; dform_buffer = buf; _ } ->
       format_pushm_str buf (string_of_param s)
- | { dform_items = []; dform_buffer = buf } ->
+ | { dform_items = []; dform_buffer = buf; _ } ->
       format_pushm buf 0
  | _ ->
       raise (Invalid_argument "Dform.pushm")
@@ -313,14 +312,14 @@ let changefont buf s =
 let pushfont df =
    let font, buf =
       match df with
-         { dform_items = [RewriteString font]; dform_buffer = buf } ->
+         { dform_items = [RewriteString font]; dform_buffer = buf; _ } ->
             string_of_param font, buf
-       | { dform_buffer = buf } ->
+       | { dform_buffer = buf; _ } ->
             "rm", buf
    in
       changefont buf font
 
-let popfont { dform_buffer = buf } =
+let popfont { dform_buffer = buf; _ } =
    changefont buf "exit"
 
 (************************************************************************
@@ -539,7 +538,7 @@ let format_etag base buf =
  * BUG nogin: We should add a form that only accepts RewriteParam's and invokes
  * some fall-back mechanism on receiving RewriteMetaParam's
  *)
-let slot { dform_state = state; dform_items = items; dform_printer = printer; dform_buffer = buf } =
+let slot { dform_state = state; dform_items = items; dform_printer = printer; dform_buffer = buf; _ } =
    match items with
       [RewriteString parens; RewriteTerm body] ->
          let parens = string_of_param parens in
@@ -684,7 +683,7 @@ let init_list =
 
 let null_list =
    let v_bterms = [mk_bterm [] (mk_so_var_term v_sym [] [])] in
-   let rec aux (name, params, f) =
+   let aux (name, params, f) =
       let term = mk_term (mk_op (mk_opname name xperv) (List.map make_param params)) [] in
          { dform_modes = PrimitiveModes;
            dform_name = name;
@@ -779,10 +778,10 @@ let special_modes = ["src"]
 
 let mode_selector mode df =
    match df with
-      { df_modes = ExceptModes l } -> not (List.mem mode l) && not (List.mem mode special_modes)
-    | { df_modes = Modes l } -> List.mem mode l
-    | { df_modes = AllModes } -> not (List.mem mode special_modes)
-    | { df_modes = PrimitiveModes } -> true
+      { df_modes = ExceptModes l; _ } -> not (List.mem mode l) && not (List.mem mode special_modes)
+    | { df_modes = Modes l; _ } -> List.mem mode l
+    | { df_modes = AllModes; _ } -> not (List.mem mode special_modes)
+    | { df_modes = PrimitiveModes; _ } -> true
 
 (*
  * Print a term to a buffer.
@@ -820,7 +819,7 @@ let format_term base =
       in
 
       (* Get the display form *)
-      let items, df = 
+      let items, df =
          match lookup t with
             Some idf -> idf
           | None -> raise Not_found

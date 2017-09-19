@@ -69,7 +69,7 @@ struct
    external make_address : address -> address = "%identity"
    external dest_address : address -> address = "%identity"
 
-   let rec split_clause_address = function
+   let split_clause_address = function
       ClauseAddr _ as addr :: rest ->
          [addr], rest
     | _ ->
@@ -79,7 +79,7 @@ struct
       DEFINE ATERM = (a, term)
    ELSE
       DEFINE ATERM = NOTHING
-   ENDIF
+   END
 
    let rec subterm_exists t addr =
       (addr = []) ||
@@ -260,7 +260,7 @@ struct
    ELSE
       DEFINE FAIL = NOTHING
       DEFINE DO_FAIL = RAISE_GENERIC_EXN
-   ENDIF
+   END
 
    let fail_addr (addr, term) =
       REF_RAISE(RefineError ("Term_addr_ds.apply_*_fun_*", AddressError (addr, term)))
@@ -357,7 +357,7 @@ struct
    ELSE
       let rec apply_fun_arg_at_addr =
          APPLY_FUN_AUX(apply_fun_arg_at_addr, path_replace_terms, path_replace_bterm, NOTHING, NOTHING, CONCL_CASE, HYP_CASE)
-   ENDIF
+   END
 
    let add_unit_arg f t =
       f t, ()
@@ -464,7 +464,7 @@ struct
       and var_apply_fun_hyps = VARS_APPLY_FUN_HYPS
       and var_run_hyps = VARS_RUN_HYPS
 
-   ENDIF
+   END
 
    let add_var_unit_arg f bvars t =
       f bvars t, ()
@@ -486,7 +486,7 @@ struct
              t, (arg::coll)
       with RefineError _ -> begin
          match get_core term with
-            FOVar _ | Term { term_terms = [] } -> (term,coll)
+            FOVar _ | Term { term_terms = []; _ } -> (term,coll)
           | Term bt ->
                let btrms, args = apply_fun_higher_bterms f coll bt.term_terms in
                   if args == coll then (term,coll) else (mk_term bt.term_op btrms, args)
@@ -558,7 +558,7 @@ struct
             t, arg :: coll
       with RefineError _ -> begin
          match get_core term with
-            FOVar _ | Term { term_terms = [] } -> (term,coll)
+            FOVar _ | Term { term_terms = []; _ } -> (term,coll)
           | Term bt ->
                let btrms, args = apply_var_fun_higher_bterms f bvars coll bt.term_terms in
                   if args == coll then (term,coll) else (mk_term bt.term_op btrms, args)

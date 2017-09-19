@@ -31,7 +31,6 @@
  * Modified By: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 
-open Lm_set_sig
 open Lm_debug
 
 (*
@@ -168,12 +167,12 @@ let eq op1 op2 =
  * Destructor.
  *)
 let dst_opname = function
-   { opname_name = n :: name } ->
+   { opname_name = n :: name; _ } ->
       n, { opname_token = opname_token; opname_name = name }
  | _ ->
       raise (Invalid_argument "dst_opname")
 
-let dest_opname { opname_name = name } =
+let dest_opname { opname_name = name; _ } =
    name
 
 (*
@@ -182,7 +181,7 @@ let dest_opname { opname_name = name } =
  * This function is overly long,
  * but it is efficient.
  *)
-let rec string_of_opname opname =
+let string_of_opname opname =
    match opname.opname_name with
       [] ->
          ""
@@ -228,7 +227,7 @@ let xconcl_opname  = mk_opname "xconcl" xperv
 (************************************************************************
  * Sets and tables.
  *)
-let compare { opname_name = name1 } { opname_name = name2 } =
+let compare { opname_name = name1; _ } { opname_name = name2; _ } =
    Pervasives.compare name1 name2
 
 module OpnameCompare =

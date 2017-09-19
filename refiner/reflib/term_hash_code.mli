@@ -24,7 +24,6 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
-open Refiner.Refiner.Term
 open Refiner.Refiner.TermTy
 
 val hash_term : term -> int

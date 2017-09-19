@@ -22,7 +22,6 @@
  * Author: Jason Hickey <jyh@cs.caltech.edu>
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
-open Lm_printf
 
 (*
  * The dictionary is compiled from /usr/dict/words and
@@ -121,7 +120,7 @@ let make_dict () =
          Pervasives.output_binary_int out dat_magic;
          Marshal.to_channel out table [];
          Pervasives.close_out out;
-         try 
+         try
             Unix.rename tmp dat_filename
          with exn ->
             if Sys.file_exists dat_filename then
@@ -180,7 +179,7 @@ let check s =
                'A'..'Z' ->
                   Hashtbl.mem dict s || (Hashtbl.mem dict (String.lowercase s))
              | '0'..'9' when Lm_string_util.for_all is_num s ->
-                  true 
+                  true
              | _ ->
                   Hashtbl.mem dict s
          else

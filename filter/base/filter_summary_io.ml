@@ -65,7 +65,9 @@ struct
     * Save the proof and tag types.
     *)
    type cooked = FileBase.cooked
+(* unused
    type select = FileBase.select
+*)
    type arg = FileBase.arg
 
    type info =
@@ -115,7 +117,7 @@ struct
     * Find the matching module info.
     *)
    let find_match base arg info select suffix =
-      let { info_root = root; info_path = path } = info in
+      let { info_root = root; info_path = path; _ } = info in
       let root' = FileBase.find_match base arg root select suffix in
       let info = Address.find_sub_module (FileBase.info base root') (List.tl info.info_path) in
          { info_root = root';
@@ -126,7 +128,7 @@ struct
    (*
     * Set the new magic number.
     *)
-   let set_magic base { info_root = root } magic =
+   let set_magic base { info_root = root; _ } magic =
       FileBase.set_magic base root magic
 
    (*
@@ -180,10 +182,10 @@ struct
    (*
     * Projections.
     *)
-   let info base { info_info = data } =
+   let info base { info_info = data; _ } =
       data
 
-   let sub_info base { info_info = info; info_path = path; info_root = root } name =
+   let sub_info base { info_info = info; info_path = path; info_root = root; _ } name =
       let path' = path @ [name] in
       let info' = Address.find_sub_module info path' in
          { info_info = info';
@@ -194,22 +196,22 @@ struct
    let set_info base info data =
       info.info_info <- data
 
-   let name base { info_path = path } =
+   let name base { info_path = path; _ } =
       Lm_list_util.last path
 
-   let pathname base { info_path = path } =
+   let pathname base { info_path = path; _ } =
       path
 
-   let root base { info_root = root; info_path = path } =
+   let root base { info_root = root; info_path = path; _ } =
       { info_root = root;
         info_path = [Lm_list_util.last path];
         info_info = FileBase.info base root
       }
 
-   let file_name base { info_root = root } =
+   let file_name base { info_root = root; _ } =
       FileBase.full_name base root
 
-   let type_of base { info_root = root } =
+   let type_of base { info_root = root; _ } =
       FileBase.type_of base root
 end
 

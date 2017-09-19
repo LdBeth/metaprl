@@ -56,9 +56,6 @@ let eflush  = Lm_printf.eflush
  *)
 module MakeAsciiIO (TM: TermModuleHashSig) =
 struct
-   open TM
-   open TM.TermType
-   open TM.Term
    open TM.TermMan
    open TM.TermHash
    open TM.TermShape
@@ -125,10 +122,10 @@ struct
          let t =
             if Opname.eq op var_opname && btrms <> [] then (* XXX HACK: Version <= 1.0.7 compatiility *)
                let t = retrieve (lookup (Term { op_name = op; op_params = params; term_terms = [] })) in
-               match dest_params (dest_op (dest_term t).term_op).Term_sig.op_params with
+               match TM.Term.dest_params (TM.Term.dest_op (TM.Term.dest_term t).term_op).Term_sig.op_params with
                   [Var v] ->
                      let dest bt =
-                        if bt.bvars = [] then bt.bterm else
+                        if bt.TM.TermHash.bvars = [] then bt.TM.TermHash.bterm else
                         raise(Invalid_argument "Ascii_io: invalid old-style variable term")
                      in
                         lookup (SOVar(v, [v], List.map dest btrms))
@@ -236,7 +233,7 @@ struct
 
    let rec level_exp_vars = function
       var::offset::vars ->
-         make_level_var { le_var = Lm_symbol.add var; le_offset = int_of_string offset } ::
+         TM.Term.make_level_var { le_var = Lm_symbol.add var; le_offset = int_of_string offset } ::
             level_exp_vars vars
     | [] ->
          []
@@ -271,12 +268,12 @@ struct
     | (_, name, [["MVar"; s]]) (* XXX HACK: support file versions 1.0.5 and below *) ->
          hash_add_new r.io_params name (constr_param (Var (Lm_symbol.add s)))
     | (_, name, ["MLevel" :: n :: vars]) ->
-         let l = make_level { le_const = int_of_string n; le_vars = level_exp_vars vars } in
+         let l = TM.Term.make_level { le_const = int_of_string n; le_vars = level_exp_vars vars } in
          hash_add_new r.io_params name (constr_param (MLevel l))
     | _ ->
          fail "add_param"
 
-   let rec add_items_aux r ((long, _, _) as item) =
+   let add_items_aux r ((long, _, _) as item) =
       match long.[0] with
          'T'|'t' -> ignore (add_term r item)
        | 'G'|'g' -> ignore (add_goal r item)  (* XXX: HACK: Version <= 1.0.6 compatibility *)
@@ -434,7 +431,7 @@ struct
           | name' :: _ ->
                name'
       in let smap_rename = Lm_list_util.smap (Lm_list_util.smap rename) in
-      let rec clean_inputs tail ((comment,name,record) as item) =
+      let clean_inputs tail ((comment,name,record) as item) =
          let c = Char.uppercase comment.[0] in
          let record' = match c, record with
             ('T' | 'O' | 'G' | 'S'), _ ->
@@ -578,9 +575,9 @@ struct
             (name, ind)
       else if is_sequent_term t then
          let seq = explode_sequent t in
-         let arg_name, arg_ind = out_term ctrl data seq.sequent_args in
-         let hyps = List.map (out_hyp ctrl data) (SeqHyp.to_list seq.sequent_hyps) in
-         let concl_name, concl_ind = out_term ctrl data seq.sequent_concl in
+         let arg_name, arg_ind = out_term ctrl data seq.TM.TermType.sequent_args in
+         let hyps = List.map (out_hyp ctrl data) (TM.Term.SeqHyp.to_list seq.TM.TermType.sequent_hyps) in
+         let concl_name, concl_ind = out_term ctrl data seq.TM.TermType.sequent_concl in
          let ind = lookup ( Seq { seq_arg = arg_ind;
                                   seq_hyps = List.map snd hyps;
                                   seq_concl = concl_ind } ) in
@@ -613,7 +610,7 @@ struct
             data.out_items <- New ("S" ^ lname, name, [[arg_name]; i_data2; i_data3]) :: data.out_items;
             (name, ind)
       else
-         let t' = dest_term t in
+         let t' = TM.Term.dest_term t in
          let (oper_name, (op, params)) = out_op ctrl data t'.term_op in
          let btrms = List.map (out_bterm ctrl data) t'.Term_sig.term_terms in
          let ind = lookup ( Term { op_name = op;
@@ -635,7 +632,7 @@ struct
    and out_hyp ctrl data = function
       Term_sig.Hypothesis (v,t) as h -> begin
          let (t_name, t_ind) = out_term ctrl data t in
-         let hyp = Hypothesis (v,t_ind) in
+         let hyp = TM.TermHash.Hypothesis (v,t_ind) in
          let i_data = [[string_of_symbol v; t_name]] in
          try
             let name = HashHyp.find data.out_hyps hyp in
@@ -652,7 +649,7 @@ struct
       end
     | Term_sig.Context (v,conts,ts) as h -> begin
          let terms = List.map (out_term ctrl data) ts in
-         let hyp = Context (v, conts, List.map snd terms) in
+         let hyp = TM.TermHash.Context (v, conts, List.map snd terms) in
          let i_data = [[string_of_symbol v]; List.map string_of_symbol conts; List.map fst terms] in
          try
             let name = HashHyp.find data.out_hyps hyp in
@@ -668,7 +665,7 @@ struct
       end
 
    and out_op ctrl data op =
-      let op' = dest_op op in
+      let op' = TM.Term.dest_op op in
       let (name_name, opname) = out_name ctrl data op'.Term_sig.op_name in
       let params = List.map (out_param ctrl data) op'.Term_sig.op_params in
       let op'' = (opname,List.map snd params) in
@@ -686,9 +683,9 @@ struct
          (name, op'')
 
    and out_bterm ctrl data bt =
-      let bt' = dest_bterm bt in
+      let bt' = TM.Term.dest_bterm bt in
       let (term_name, term_ind) = out_term ctrl data bt'.Term_sig.bterm in
-      let bt'' = { bvars = bt'.Term_sig.bvars; bterm = term_ind } in
+      let bt'' = { TM.TermHash.bvars = bt'.Term_sig.bvars; TM.TermHash.bterm = term_ind } in
       let i_data = [term_name :: List.map string_of_symbol bt'.Term_sig.bvars] in
       try
          let name = HashBTerm.find data.out_bterms bt'' in
@@ -722,13 +719,13 @@ struct
    and map_level_vars = function
       [] -> []
     | v :: vs ->
-         let v' = dest_level_var v in
+         let v' = TM.Term.dest_level_var v in
          string_of_symbol v'.le_var :: (string_of_int v'.le_offset) :: map_level_vars vs
 
    and out_param ctrl data param =
-      let param' = constr_param (dest_param param) in
+      let param' = constr_param (TM.Term.dest_param param) in
       let i_data =
-         [match dest_param param with
+         [match TM.Term.dest_param param with
             Number n    -> ["Number"; Lm_num.string_of_num n]
           | String s    -> ["String"; s]
           | Token op    -> ["Token"; fst (out_name ctrl data op)]
@@ -742,7 +739,7 @@ struct
           | MShape s    -> ["MShape"; string_of_symbol s]
           | MOperator s -> ["MOperator"; string_of_symbol s]
           | MLevel le ->
-               let le' = dest_level le in
+               let le' = TM.Term.dest_level le in
                "MLevel" :: (string_of_int le'.le_const) :: (map_level_vars le'.le_vars)
           | ParamList _ | ObId _ -> fail "out_param"]
       in try

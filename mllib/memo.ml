@@ -141,7 +141,7 @@ struct
     * Rehash if necessary.
     *)
    let insert_f info hash x b =
-      let { memo_f_count = count; memo_f_table = table } = info in
+      let { memo_f_count = count; memo_f_table = table; _ } = info in
       let len = Array.length table in
       let index = hash mod len in
          info.memo_f_count <- count + 1;
@@ -154,7 +154,7 @@ struct
     * Rehash if necessary.
     *)
    let insert_g info hash x b =
-      let { memo_g_count = count; memo_g_table = table } = info in
+      let { memo_g_count = count; memo_g_table = table; _ } = info in
       let len = Array.length table in
       let index = hash mod len in
          info.memo_g_count <- count + 1;

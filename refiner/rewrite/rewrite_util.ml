@@ -44,6 +44,7 @@ open Refine_error_sig
 let _ =
    show_loading "Loading Rewrite_util%t"
 
+(* unused
 let debug_rewrite =
    create_debug (**)
       { debug_name = "rewrite";
@@ -57,6 +58,7 @@ let debug_subst =
         debug_description = "Substitution operations";
         debug_value = false
       }
+*)
 
 module MakeRewriteUtil
    (TermType : TermSig)

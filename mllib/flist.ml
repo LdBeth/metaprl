@@ -73,8 +73,8 @@ let create x =
  * See if contains only one element.
  *)
 let singleton = function
-   { flist_head = None }
- | { flist_tail = None } ->
+   { flist_head = None; _ }
+ | { flist_tail = None; _ } ->
       true
  | _ ->
       false
@@ -83,14 +83,14 @@ let singleton = function
  * Only have to shift on empty lists.
  *)
 let first = function
-      { flist_head = Some x }
+      { flist_head = Some x; _ }
     | { flist_head = None; flist_middle = Empty; flist_tail = Some x } ->
          x
     | _ ->
          raise (Failure "Rewrite_type.first")
 
 let last = function
-     { flist_tail = Some x }
+     { flist_tail = Some x; _ }
    | { flist_head = Some x; flist_middle = Empty; flist_tail = None } ->
        x
    | _ ->
@@ -100,7 +100,7 @@ let last = function
  * Shift the last element into the middle.
  *)
 let shift_left = function
-   { flist_head = head; flist_tail = None } ->
+   { flist_head = head; flist_tail = None; _ } ->
       head, Empty
  | { flist_head = None; flist_middle = Empty; flist_tail = Some tail } ->
       Some tail, Empty
@@ -111,7 +111,7 @@ let shift_left = function
  * Shift the first element into the middle.
  *)
 let shift_right = function
-   { flist_head = None; flist_tail = tail } ->
+   { flist_head = None; flist_tail = tail; _ } ->
       Empty, tail
  | { flist_head = Some head; flist_middle = Empty; flist_tail = None } ->
       Empty, Some head
@@ -138,14 +138,14 @@ let append_skip list1 x list2 =
       if singleton list2 then
          create x
       else
-         let { flist_middle = middle; flist_tail = tail } = list2 in
+         let { flist_middle = middle; flist_tail = tail; _ } = list2 in
             { flist_head = Some x; flist_middle = middle; flist_tail = tail }
    else if singleton list2 then
-      let { flist_head = head; flist_middle = middle } = list1 in
+      let { flist_head = head; flist_middle = middle; _ } = list1 in
          { flist_head = head; flist_middle = middle; flist_tail = Some x }
    else
-      let { flist_head = head1; flist_middle = middle1 } = list1 in
-      let { flist_middle = middle2; flist_tail = tail2 } = list2 in
+      let { flist_head = head1; flist_middle = middle1; _ } = list1 in
+      let { flist_middle = middle2; flist_tail = tail2; _ } = list2 in
       let middle = append_tree middle1 (Leaf x) in
       let middle = append_tree middle middle2 in
          { flist_head = head1; flist_middle = middle; flist_tail = tail2 }

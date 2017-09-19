@@ -26,7 +26,6 @@
  *)
 open Opname
 open Refiner.Refiner.TermType
-open Refiner.Refiner.Term
 open Refiner.Refiner.TermOp
 open Refiner.Refiner.RefineError
 
@@ -131,7 +130,7 @@ type rule_labels = opname list
 
 let rule_labels_empty = []
 
-let rec test_rule_label options ((i, _) as decision) op =
+let test_rule_label options ((i, _) as decision) op =
    if OpnameTable.mem options op then
       let (i', _) as decision' = OpnameTable.find options op in
          if i' > i then decision' else decision
@@ -140,7 +139,7 @@ let rec test_rule_label options ((i, _) as decision) op =
 
 let empty_start = 0, true
 
-let rec rule_labels_are_allowed (options, _) labels =
+let rule_labels_are_allowed (options, _) labels =
    snd (List.fold_left (test_rule_label options) empty_start labels)
 
 let rule_labels_of_terms =

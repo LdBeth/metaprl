@@ -41,6 +41,7 @@ let _ =
 
 let token s = Token (mk_opname s nil_opname)
 
+(* unused
 let idescription_parameter = make_param (token "!description")
 let idescription_op sys = mk_nuprl5_op [idescription_parameter; sys]
 let idescription_term sys version purposes =
@@ -48,6 +49,7 @@ let idescription_term sys version purposes =
 	[ mk_bterm [] (list_to_ilist_map inatural_term version)
 	; mk_bterm [] (list_to_ilist_map itoken_term purposes)
 	]
+*)
 
 let purposes_of_idescription_term t =
   match dest_term t with
@@ -73,6 +75,7 @@ let term_of_idata_term t =
       -> term_of_unbound_term subterm
     |_ -> error ["term"; "!data"] [] [t]
 
+(* unused
 open Mbterm
 
 let mydb_read s f =
@@ -80,6 +83,7 @@ let mydb_read s f =
   let t = db_read s "SUBSTANCE" in
     print_term t;
     t
+*)
 
 class data (s : stamp) ft  =
  object (self)
@@ -95,7 +99,9 @@ class data (s : stamp) ft  =
      | Some t -> t
 end
 
+(* unused
 exception InlineDataRead
+*)
 
 class inline_data (s : stamp) (inl : term) =
  object (self)
@@ -295,7 +301,9 @@ end
 
 let idag_child_param = make_param (token "!dag_child")
 let idirectory_param = make_param (token "!directory")
+(* unused
 let idyneval_param = make_param (token "!dyneval")
+*)
 
 let idag_cons_op = mk_nuprl5_op [make_param (token "!dag_cons")]
 
@@ -310,6 +318,7 @@ let idirectory_term_p t =
 	)
   |_ -> false
 
+(* unused
 let idyneval_term_p t =
  match dest_term t with
   { term_op = op; term_terms = bts}  -> (*lal make stronger test*)
@@ -319,6 +328,7 @@ let idyneval_term_p t =
       | _ -> false
      )
   (* | _ -> false *)
+*)
 
 let children_of_idirectory_term t =
  match dest_term t with
@@ -370,7 +380,7 @@ exception NotRootDirectory
 class ['a] directory_definition d dat st =
  let datterm = dat#get_term in
  object
-  inherit ['a] term_definition d dat st as super
+  inherit ['a] term_definition d dat st as _super
 
   (* instantiation of values could be lazy, but seems like inconsequential space savings *)
   (*
@@ -424,6 +434,7 @@ let term_to_dependency t =
 (* would like this to take table as arg and table contains term -> def
    want polymorphism with definitions and tables
  *)
+(* unused
 let import_term_old idef idesc =
   print_string " import_term "; Mbterm.print_term idef;
   match dest_term idef with
@@ -441,6 +452,7 @@ let import_term_old idef idesc =
 	)
 
     |_ -> error ["term"; "!definition"] [] [idef]
+*)
 (*
 let dest_dyneval_term t =
   match dest_term t with
@@ -563,6 +575,7 @@ let roots tt stamp =
 		else None)
     | TermDefinition def -> None)
 
+(* unused
 let root_p tt stamp oid =
  let te = termtable_lookup tt stamp oid in
     match te with
@@ -577,6 +590,7 @@ let root_name tt stamp oid =
 		then def#get_root_name
 		else error ["Term Table"; "root name"; "root"; "not"] [oid] [])
     | TermDefinition def -> error ["Term Table"; "root name"; "directory"; "not"] [oid] []
+*)
 
 let directory_p tt stamp oid =
  try

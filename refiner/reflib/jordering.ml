@@ -34,13 +34,9 @@
 open Lm_debug
 open Lm_symbol
 open Lm_printf
-open Lm_string_set
 
-open Term_sig
 open Refiner.Refiner
 open Term
-open TermType
-open RefineError
 
 open Jlogic_sig
 open Jtypes
@@ -194,7 +190,7 @@ let symbol_to_pos sym =
 				"Modal positions are not supposed to be converted to/from terms")
 *)
 
-let rec pos_to_string (kind,i) =
+let pos_to_string (kind,i) =
    let si = string_of_int i in
    let sk = kind_to_string kind in
    match kind with
@@ -362,7 +358,6 @@ module MkJOrdering (JLogic : JLogicSig) =
 struct
 
    module JTy = MkJTypes(JLogic)
-   open JTy
 
    let rec collect_delta_terms consts accumulator = function
       [] ->	accumulator
@@ -397,10 +392,10 @@ struct
       else
          fset
 
-   let rec transitive_irreflexive_closure addset const ordering =
+   let transitive_irreflexive_closure addset const ordering =
       PMap.mapi (transitive_irreflexive_closure_aux addset const) ordering
 
-   let rec search_set var ordering =
+   let search_set var ordering =
       let fset = PMap.find ordering var in
       Set.add fset var
 
@@ -449,7 +444,7 @@ struct
 
 (* ************* quantifier ordering ********************************************** *)
 
-   let rec add_arrowsQ v clist ordering =
+   let add_arrowsQ v clist ordering =
       Set.fold (fun acc p -> add_sets v p acc) ordering clist
 
    let rec print_sigmaQ sigmaQ =
