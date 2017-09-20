@@ -214,6 +214,8 @@ struct
    let jcl_op            = mk_ocaml_op "joinclause_list"
    let joinclause_op     = mk_ocaml_op "joinclause"
 
+   let expr_rpl_string_op = mk_ocaml_op "rpl_string"
+
    (*
     * Loc has two integer describing character offsets.
     * Ignore remaining params.
@@ -555,6 +557,47 @@ struct
    let dest_fun_vala_aux pwel =
       List.map (fun (p, w, e) -> p, Ploc.VaVal w, e) (dest_fun_aux pwel)
 
+   let dest_lab_aux =
+      let dest_poe t =
+         let p, oe = dest_patt t in
+         let oe = dest_opt dest_expr oe in
+               p, Ploc.VaVal oe
+      in
+      let rec dest t =
+         let op = opname_of_term t in
+            if Opname.eq op patt_fail_op then
+               []
+            else if Opname.eq op patt_if_op then
+               [dest_poe (one_subterm "dest_lab_aux" t)]
+            else if Opname.eq op patt_ifelse_op then
+               let pe, pel = two_subterms t in
+                  dest_poe pe :: dest pel
+            else
+               raise (Failure "Filter_ocaml.dest_lab_aux")
+      in
+         dest
+
+   let dest_joinclause t =
+      let tl = dest_olist t in
+         List.map (fun t ->
+            let loc = dest_loc "dest_joinclause" t in
+            let jcll = one_subterm "dest_joinclause" t in
+            let jcll =
+               List.map (fun t ->
+                  let loc1 = dest_loc "dest_def_str_1" t in
+                  let jcl, e = two_subterms t in
+                  let e = dest_expr e in
+                  let jcl =
+                     List.map (fun t ->
+                        let loc2, s = dest_loc_string "dest_def_str_2" t in
+                        let po = one_subterm "dest_def_str_3" t in
+                        let po, _ = dest_patt_opt po in
+                           loc2, (loc2, Ploc.VaVal s), Ploc.VaVal po) (dest_olist jcll)
+                  in
+                    (loc1, Ploc.VaVal jcl, e)) (dest_olist jcll)
+            in
+               { jcLoc = loc; jcVal = Ploc.VaVal jcll }) tl
+
    let dest_patt_triple t =
       let p1, t = dest_patt (one_subterm "dest_patt_triple" t) in
       let p2, t = dest_patt (one_subterm "dest_patt_triple" t) in
@@ -724,28 +767,21 @@ struct
             let _loc, i = dest_loc_int "dest_int_expr" t in
                <:expr< $int:i$ >>
          in add_expr "int" dest_int_expr
-(* XXX
       and expr_native_int_op =
          let dest_native_int_expr t =
-            let loc, i = dest_loc_int "dest_native_int_expr" t in
-               ExNativeInt(loc, i)
+            let _loc, i = dest_loc_int "dest_native_int_expr" t in
+               <:expr< $nativeint:i$ >>
          in add_expr "native_int" dest_native_int_expr
       and expr_int32_op =
          let dest_int32_expr t =
-            let loc, i = dest_loc_int "dest_int32_expr" t in
-               ExInt32(loc, i)
+            let _loc, i = dest_loc_int "dest_int32_expr" t in
+               <:expr< $int32:i$ >>
          in add_expr "int32" dest_int32_expr
       and expr_int64_op =
          let dest_int64_expr t =
-            let loc, i = dest_loc_int "dest_int64_expr" t in
-               ExInt64(loc, i)
+            let _loc, i = dest_loc_int "dest_int64_expr" t in
+               <:expr< $int64:i$ >>
          in add_expr "int64" dest_int64_expr
-      and expr_asf_op =
-         let dest_asf_expr t =
-            let _loc = dest_loc "dest_asf_expr" t in
-               <:expr< assert False >>
-         in add_expr "assert_false" dest_asf_expr
-*)
       and expr_asr_op =
          let dest_asr_expr t =
             let _loc = dest_loc "dest_asr_expr" t in
@@ -899,24 +935,18 @@ struct
             let e, el = two_subterms t in
                <:expr< while $dest_expr e$ do { $list: List.map dest_expr (dest_olist el)$ } >>
          in add_expr "while" dest_while_expr
+      and expr_bigarray_element_op =
+         let dest_bigarray_element_expr t =
+            let _loc = dest_loc "dest_bigarray_element_expr" t in
+            let e, el = two_subterms t in
+            let el = List.map dest_expr (dest_olist el) in
+               <:expr< $dest_expr e$ .{ $list:el$ } >>
+         in add_expr "bigarray_element" dest_bigarray_element_expr
       and expr_vrn_op =
          let dest_vrn_expr t =
             let loc, s = dest_loc_string "dest_vrn_expr" t in
                MLast.ExVrn (loc, Ploc.VaVal s)
          in add_expr "vrn" dest_vrn_expr
-(* unused
-      and expr_lab_op =
-         let dest_lab_expr t =
-            let loc = dest_loc "dest_lab_expr" t in
-            let pl = dest_olist (one_subterm "dest_lab_expr" t) in
-            let pl =
-               List.map (fun t ->
-                     let p, t = dest_patt (one_subterm "dest_lab_expr" t) in
-                     let eo = dest_expr_opt t in
-                        p, Ploc.VaVal eo) pl
-            in
-               MLast.ExLab (loc, Ploc.VaVal pl)
-         in add_expr "lab" dest_lab_expr
       and expr_olb_op =
          let dest_olb_expr t =
             let loc = dest_loc "dest_olb_expr" t in
@@ -924,7 +954,50 @@ struct
             let eo = dest_expr_opt t in
                MLast.ExOlb (loc, p, Ploc.VaVal eo)
          in add_expr "olb" dest_olb_expr
-*)
+      and expr_jdf_op =
+         let dest_jdf_expr t =
+            let loc = dest_loc "dest_jdf_expr" t in
+            let e, jc = two_subterms t in
+            let jc = dest_joinclause jc in
+               MLast.ExJdf (loc, Ploc.VaVal jc, dest_expr e)
+         in add_expr "jdf" dest_jdf_expr
+      and expr_lop_op =
+         let dest_lop_expr t =
+            let _loc = dest_loc "dest_lop_expr" t in
+            let me, e = two_subterms t in
+               MLast.ExLop (_loc, dest_me me, dest_expr e)
+         in add_expr "lop_expr" dest_lop_expr
+      and expr_par_op =
+         let dest_par_expr t =
+            let _loc = dest_loc "dest_par_expr" t in
+            let e1, e2 = two_subterms t in
+               MLast.ExPar (_loc, dest_expr e1, dest_expr e2)
+         in add_expr "par_expr" dest_par_expr
+      and expr_pck_op =
+         let dest_pck_expr t =
+            let _loc = dest_loc "dest_pck_expr" t in
+            let me, mto = two_subterms t in
+               MLast.ExPck (_loc, dest_me me, dest_opt dest_mt mto)
+         in add_expr "pck_expr" dest_pck_expr
+      and expr_rpl_op =
+         let dest_rpl_expr t =
+            let _loc = dest_loc "dest_rpl_expr" t in
+            let eo, ls = two_subterms t in
+            let loc2, s = dest_loc_string "dest_rpl_expr" ls in
+               MLast.ExRpl (_loc, Ploc.VaVal (dest_opt dest_expr eo), Ploc.VaVal (loc2, Ploc.VaVal s))
+         in add_expr "rpl_expr" dest_rpl_expr
+      and expr_spw_op =
+         let dest_spw_expr t =
+            let _loc = dest_loc "dest_spw_expr" t in
+            let e = one_subterm "dest_spw_expr" t in
+               MLast.ExSpw (_loc, dest_expr e)
+         in add_expr "spw" dest_spw_expr
+       and expr_xtr_op =
+         let dest_xtr_expr t =
+            let loc = dest_loc "dest_xtr_expr" t in
+            let s, eo = two_subterms t in
+               ExXtr (loc, dest_string s, dest_opt (fun e -> Ploc.VaVal (dest_expr e)) eo)
+         in add_expr "expr_xtr" dest_xtr_expr
       (*
        * Compute a hash value from the struct.
        * vars is a list of the bound variables.
@@ -963,14 +1036,12 @@ struct
                                                  mk_expr vars e3]
              | (<:expr< $int:s$ >>) ->
                   mk_loc_int expr_int_op loc s
-(* XXX
-             | ExNativeInt (_, s) ->
+             | (<:expr< $nativeint:s$ >>) ->
                   mk_loc_int expr_native_int_op loc s
-             | ExInt32 (_, s) ->
+             | (<:expr< $int32:s$ >>) ->
                   mk_loc_int expr_int32_op loc s
-             | ExInt64 (_, s) ->
+             | (<:expr< $int64:s$ >>) ->
                   mk_loc_int expr_int64_op loc s
- *)
              | (<:expr< lazy $e$ >>) ->
                   mk_simple_term expr_laz_op loc [mk_expr vars e]
              | (<:expr< let rec $list:pel$ in $e$ >>) ->
@@ -1014,24 +1085,29 @@ struct
                   mk_simple_term expr_while_op loc [mk_expr vars e; mk_olist_term (List.map (mk_expr vars) el)]
              | MLast.ExVrn (_, Ploc.VaVal s) ->
                   mk_simple_named_term expr_vrn_op loc s []
-             | MLast.ExLab (loc', Ploc.VaVal pl) ->
-(* XXX
-                  let pl =
-                     List.map (fun (p, eo) ->
-                           let t = mk_opt (mk_expr vars) (dest_vala "mk_expr_exlab" eo) in
-                              mk_patt [] p t) pl
-                  in
-                  mk_simple_term expr_lab_op loc [mk_olist_term pl]
- *)
-                  raise (Failure "not implemented")
-             | MLast.ExOlb (loc', p, eo) ->
-(* XXX
-                  let eo = dest_vala "dest_expr_exolb" eo in
-                  mk_simple_term expr_olb_op loc [mk_patt [] p (mk_expr_opt vars eo)]
- *)
-                  raise (Failure "not implemented")
+             | MLast.ExLab (loc', Ploc.VaVal poel) ->
+                  mk_lab_expr vars loc poel
+             | MLast.ExOlb (loc', p, Ploc.VaVal eo) ->
+                  mk_simple_term expr_olb_op loc [mk_patt vars p (fun vars -> mk_expr_opt vars eo)]
              | MLast.ExCoe (l, e, ot, t) ->
                   mk_simple_term expr_coerce_class_op loc [mk_expr vars e; mk_opt mk_type ot; mk_type t]
+             | (<:expr< $e$ .{ $list:el$ } >>) ->
+                  mk_simple_term expr_bigarray_element_op loc [mk_expr vars e; mk_olist_term (List.map (mk_expr vars) el)]
+             | MLast.ExJdf (_, Ploc.VaVal jcl, e) ->
+                  mk_simple_term expr_jdf_op loc [mk_expr vars e; mk_olist_term (List.map (mk_joinclause vars) jcl)]
+             | MLast.ExLop (_, me, e) ->
+                  mk_simple_term expr_lop_op loc [mk_module_expr vars me; mk_expr vars e]
+             | MLast.ExPar (_, e1, e2) ->
+                  mk_simple_term expr_par_op loc [mk_expr vars e1; mk_expr vars e2]
+             | MLast.ExPck (_, me, mto) ->
+                  mk_simple_term expr_pck_op loc [mk_module_expr vars me; mk_opt mk_module_type mto]
+             | MLast.ExRpl (_, Ploc.VaVal eo, Ploc.VaVal (loc2, Ploc.VaVal s)) ->
+                  let ls = mk_loc_string expr_rpl_string_op (num_of_loc loc2) s in
+                    mk_simple_term expr_rpl_op loc [mk_opt (mk_expr vars) eo; ls]
+             | MLast.ExSpw (_, e) ->
+                  mk_simple_term expr_spw_op loc [mk_expr vars e]
+             | ExXtr (loc, s, eo) ->
+                  mk_simple_named_term expr_xtr_op (num_of_loc loc) s [mk_opt (fun e -> (mk_expr vars (dest_vala "ExXtr" e))) eo]
              | MLast.ExArr (_, Ploc.VaAnt _)
              | MLast.ExChr (_, Ploc.VaAnt _)
              | MLast.ExFlo (_, Ploc.VaAnt _)
@@ -1040,6 +1116,7 @@ struct
              | MLast.ExFor (_, Ploc.VaAnt _, _, _, _, _)
              | MLast.ExFun (_, Ploc.VaAnt _)
              | MLast.ExInt (_, Ploc.VaAnt _, _)
+             | MLast.ExInt (_, Ploc.VaVal _, _)
              | MLast.ExLet (_, _, Ploc.VaAnt _, _)
              | MLast.ExLet (_, Ploc.VaAnt _, _, _)
              | MLast.ExLid (_, Ploc.VaAnt _)
@@ -1056,7 +1133,15 @@ struct
              | MLast.ExUid (_, Ploc.VaAnt _)
              | MLast.ExWhi (_, _, Ploc.VaAnt _)
              | MLast.ExVrn (_, Ploc.VaAnt _)
-             | MLast.ExLab (_, Ploc.VaAnt _) ->
+             | MLast.ExLab (_, Ploc.VaAnt _)
+             | MLast.ExObj (_, _, Ploc.VaAnt _)
+             | MLast.ExObj (_, Ploc.VaAnt _, _)
+             | MLast.ExOlb (_, _, Ploc.VaAnt _)
+             | MLast.ExBae (_, _, Ploc.VaAnt _)
+             | MLast.ExJdf (_, Ploc.VaAnt _, _)
+             | MLast.ExRpl (_, Ploc.VaAnt _, _)
+             | MLast.ExRpl (_, _, Ploc.VaAnt _)
+             | MLast.ExRpl (_, _, Ploc.VaVal (_, Ploc.VaAnt _)) ->
                   raise (RefineError ("mk_expr", StringError "antiquotations are not supported"))
 
    (*
@@ -1067,7 +1152,6 @@ struct
       and patt_tuple_end_op 		= mk_ocaml_op "patt_tuple_end"
       and patt_array_arg_op             = mk_ocaml_op "patt_array_arg"
       and patt_array_end_op 		= mk_ocaml_op "patt_array_end"
-      and patt_lab_end_op 		= mk_ocaml_op "patt_lab_end"
       and patt_as_arg_op                = mk_ocaml_op "patt_as_arg"
       and patt_as_end_op                = mk_ocaml_op "patt_as_end"
       and patt_choice_arg_op 		= mk_ocaml_op "patt_choice_arg"
@@ -1125,6 +1209,18 @@ struct
          let p, t = two_subterms t in
             <:patt< $uid:dest_patt_id p$ >>, t
          in add_patt "patt_uid" dest_uid_patt
+      and patt_ty_lid_op =
+         let dest_patt_id t =
+            if is_var_term t then
+               dest_var t
+            else
+               dest_string_param t
+         in
+         let dest_ty_lid_patt t =
+            let _loc = dest_loc "dest_uid_patt" t in
+            let p, t = two_subterms t in
+               <:patt< (type $lid:dest_patt_id p$) >>, t
+         in add_patt "patt_ty_lid" dest_ty_lid_patt
       and patt_var_op =
          let dest_var_patt t =
             let _loc = dest_loc "dest_var_patt" t in
@@ -1212,21 +1308,6 @@ struct
             let loc, s = dest_loc_string "dest_vrn_patt" t in
                MLast.PaVrn (loc, Ploc.VaVal s), t
          in add_patt "patt_vrn" dest_vrn_patt
-      and patt_lab_op =
-         let dest_lab_patt t =
-            let loc = dest_loc "dest_lab_patt" t in
-            let rec dest_lab t =
-               if Opname.eq (opname_of_term t) patt_lab_end_op then
-                  [], one_subterm "dest_lab_patt" t
-               else
-                  let p, t = dest_patt (one_subterm "dest_lab_patt" t) in
-                  let po, t = dest_patt_opt t in
-                  let ppol, t = dest_lab t in
-                     (p, Ploc.VaVal po) :: ppol, t
-            in
-            let ppol, t = dest_lab (one_subterm "dest_lab_patt" t) in
-               MLast.PaLab (loc, Ploc.VaVal ppol), t
-         in add_patt "patt_lab" dest_lab_patt
       and patt_olb_op =
          let dest_olb_patt t =
             let _loc = dest_loc "dest_olb_patt" t in
@@ -1235,6 +1316,13 @@ struct
             let oe = dest_expr_opt oe in
                MLast.PaOlb (_loc, p, Ploc.VaVal oe), t
          in add_patt "patt_olb" dest_olb_patt
+      and patt_unp_op =
+         let dest_unp_patt t =
+            let _loc, s = dest_loc_string "dest_unp_patt" t in
+            let mt, t = two_subterms t in
+            let mto = dest_opt dest_mt mt in
+               MLast.PaUnp (_loc, Ploc.VaVal s, mto), t
+         in add_patt "patt_unp" dest_unp_patt
 (* XXX
       and patt_olb_none_op =
          let dest_olb_none_patt t =
@@ -1242,6 +1330,13 @@ struct
                <:patt< ? $s$ >>, one_subterm "dest_olb_none_patt" t
          in add_patt "patt_olb_none" dest_olb_none_patt
 *)
+      and patt_lazy_op =
+         let dest_lazy_patt t =
+            let _loc = dest_loc "dest_lazy_patt" t in
+            let p = one_subterm "patt_lazy_op" t in
+            let p, t = dest_patt p in
+               <:patt< lazy $p$ >>, t
+         in add_patt "patt_lazy" dest_lazy_patt
       and patt_typ_op =
          let dest_typ_patt t =
             let _loc = dest_loc "dest_typ_patt" t in
@@ -1249,6 +1344,14 @@ struct
             let sl = dest_sl sl in
                <:patt< # $sl$ >>, t
          in add_patt "patt_typ" dest_typ_patt
+       and patt_xtr_op =
+         let dest_xtr_patt t =
+            let loc = dest_loc "dest_xtr_patt" t in
+            let s, po = two_subterms t in
+            let po, t = dest_patt_opt po in
+            let po = match po with Some p -> Some (Ploc.VaVal p) | None -> None in
+               PaXtr (loc, dest_string s, po), t
+         in add_patt "patt_xtr" dest_xtr_patt
       in fun vars patt tailf ->
          let loc = loc_of_patt patt in
             match patt with
@@ -1291,28 +1394,59 @@ struct
                   mk_simple_term patt_cast_op loc [mk_patt vars p tailf; mk_type t']
              | (<:patt< $uid:s$ >>) ->
                   mk_var_term patt_uid_op vars loc s (tailf vars)
+             | (<:patt< (type $lid:s$) >>) ->
+                  mk_var_term patt_ty_lid_op vars loc s (tailf vars)
              | (<:patt< $anti: p$ >>) ->
                   Stdpp.raise_with_loc (MLast.loc_of_patt patt) (Failure "Filter_ocaml.mk_patt: encountered PaAnt")
              | (<:patt< `$s$ >>) ->
                   mk_simple_named_term patt_vrn_op loc s [tailf vars]
-             | (<:patt< ~{ $p1$ = $p2$ } >>) ->
-                  mk_patt_triple vars loc patt_lab_op patt_as_arg_op patt_lab_end_op p1 p2 tailf
+             | PaLab (_loc, Ploc.VaVal ppol) ->
+                  mk_patt_lab vars loc ppol tailf
              | (<:patt< ?{ $p$ $opt:oe$ } >>) ->
                   mk_simple_term patt_olb_op loc [mk_patt vars p tailf; mk_expr_opt vars oe]
-(* XXX
-             | <:patt< ? $s$ >> ->
-                  mk_simple_named_term patt_olb_none_op loc s [tailf vars]
- *)
-             | <:patt< # $sl$ >> ->
+             | (<:patt< # $sl$ >>) ->
                   mk_simple_term patt_typ_op loc [mk_string_list sl]
+             | (<:patt< lazy $p$ >>) ->
+                  mk_simple_term patt_lazy_op loc [mk_patt vars p tailf]
+             | PaUnp (_, Ploc.VaVal s, mto) ->
+                  mk_simple_named_term patt_unp_op loc s [mk_opt mk_module_type mto; tailf vars]
+             | PaXtr (_, s, po) ->
+                  mk_simple_named_term patt_xtr_op loc s [mk_patt_opt_vala loc vars po tailf]
+             | PaArr (_, Ploc.VaAnt _)
+             | PaChr (_, Ploc.VaAnt _)
+             | PaInt _
+             | PaFlo (_, Ploc.VaAnt _)
+             | PaLid (_, Ploc.VaAnt _)
+             | PaRec (_, Ploc.VaAnt _)
+             | PaStr (_, Ploc.VaAnt _)
+             | PaTup (_, Ploc.VaAnt _)
+             | PaUid (_, Ploc.VaAnt _)
+             | PaVrn (_, Ploc.VaAnt _)
+             | PaOlb (_, _, Ploc.VaAnt _)
+             | PaTyp (_, Ploc.VaAnt _)
+             | PaLab (_, Ploc.VaAnt _)
+             | PaNty (_, Ploc.VaAnt _)
+             | PaUnp (_, Ploc.VaAnt _, _) ->
+                  raise (RefineError ("mk_patt", StringError "antiquotations are not supported"))
+
+   and mk_patt_opt_loc loc vars patt tailf =
+      match patt with
+        Some patt ->
+           mk_simple_term pattern_op loc [mk_patt vars patt tailf]
+       | None ->
+           mk_simple_term no_pattern_op loc [tailf vars]
 
    and mk_patt_opt loc vars patt tailf =
-      let loc = num_of_loc loc in
-         match patt with
-           Some patt ->
-              mk_simple_term pattern_op loc [mk_patt vars patt tailf]
-          | None ->
-              mk_simple_term no_pattern_op loc [tailf vars]
+      mk_patt_opt_loc (num_of_loc loc) vars patt tailf
+
+   and mk_patt_opt_vala loc vars patt tailf =
+      match patt with
+        Some (Ploc.VaVal patt) ->
+           mk_simple_term pattern_op loc [mk_patt vars patt tailf]
+       | None ->
+           mk_simple_term no_pattern_op loc [tailf vars]
+       | Some (Ploc.VaAnt _) ->
+           raise (RefineError ("mk_patt_opt_vala", StringError "antiquotations are not supported"))
 
    and mk_patt_triple vars loc op1 op2 op3 p1 p2 tailf =
       let tailf vars = mk_simple_term op3 loc [tailf vars] in
@@ -1348,6 +1482,38 @@ struct
                   tailf vars
          in
             mk_simple_term patt_record_op loc [make ppl vars]
+
+   and mk_patt_lab =
+      let patt_lab_proj_op = mk_ocaml_op "patt_lab_proj"
+      and patt_lab_end_op = mk_ocaml_op "patt_lab_end"
+      in let patt_lab_op =
+         let dest_lab_patt t =
+            let _loc = dest_loc "dest_lab_patt" t in
+            let rec dest_lab t =
+               if Opname.eq (opname_of_term t) patt_lab_end_op then
+                  [], one_subterm "dest_lab_patt" t
+               else
+                  let n, p = two_subterms t in
+                  let p, t = dest_patt p in
+                  let l, t = dest_lab t in
+                     (patt_of_expr_ident (dest_expr n), p) :: l, t
+            in
+            let ppl, t = dest_lab (one_subterm "dest_lab_patt" t) in
+               <:patt< { $list: ppl$ } >>, t
+         in add_patt "patt_lab" dest_lab_patt
+      in fun vars loc ppol tailf ->
+         let tailf vars = mk_simple_term patt_lab_end_op loc [tailf vars] in
+         let rec make ppl vars =
+            match ppol with
+               (p, Ploc.VaVal po)::ppol ->
+                  mk_simple_term patt_lab_proj_op loc [mk_expr vars (expr_of_patt_ident p);
+                                                       mk_patt_opt_loc loc vars po (make ppol)]
+             | (_, Ploc.VaAnt _) :: _ ->
+                  raise (RefineError ("mk_patt_lab", StringError "antiquotations are not supported"))
+             | [] ->
+                  tailf vars
+         in
+            mk_simple_term patt_lab_op loc [make ppol vars]
 
    and mk_patt_list vars loc op1 op2 op3 pl tailf =
       let tailf vars =
@@ -2747,6 +2913,31 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
          in add_expr "try" dest_try_expr
       in fun vars loc pwel e ->
          mk_simple_term expr_try_op loc [mk_fun_vala_aux vars loc pwel; mk_expr vars e]
+
+   and mk_lab_expr =
+      let expr_lab_op =
+         let dest_lab_expr t =
+            let _loc = dest_loc "dest_lab_expr" t in
+            let poel = one_subterm "dest_lab_expr" t in
+            let poel = dest_lab_aux poel in
+               ExLab (_loc, Ploc.VaVal poel)
+         in add_expr "lab" dest_lab_expr
+      in fun vars loc poel ->
+         let make_poe = function
+            (p, Ploc.VaVal oe) ->
+                mk_patt vars p (fun vars -> mk_opt (mk_expr vars) oe)
+          | (_, Ploc.VaAnt _) ->
+                raise (RefineError ("mk_lab_expr", StringError "antiquotations are not supported"))
+         in
+         let rec make = function
+            [poe] ->
+               mk_simple_term patt_if_op loc [make_poe poe]
+          | poe :: t ->
+               mk_simple_term patt_ifelse_op loc [make_poe poe; make t]
+          | [] ->
+               mk_simple_term patt_fail_op loc []
+         in
+            mk_simple_term expr_lab_op loc [make poel]
 
    (*
     * Combined forms.
