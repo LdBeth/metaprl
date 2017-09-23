@@ -32,7 +32,6 @@
  *)
 open Lm_rformat
 open Lm_rprintf
-open Lexing
 
 open Refiner.Refiner.TermShape
 open Refiner.Refiner.RefineError
@@ -48,6 +47,7 @@ open Filter_type
 (*
  * Print an argument list.
  *)
+(* unused
 let rec format_arg_list db buf = function
    (sl, t) :: tl ->
       let rec format = function
@@ -63,6 +63,7 @@ let rec format_arg_list db buf = function
          format_arg_list db buf tl
  | [] ->
       ()
+*)
 
 let format_version buf i =
    let major, minor, rev = unpack_version i in
@@ -148,7 +149,7 @@ let rec format_exn db buf exn =
          format_string buf "! If it does contain unsaved data, you might need to get a different version of MetaPRL";
          format_newline buf;
          format_string buf "! and possibly export the data to a different format."
-    | Stdpp.Exc_located (loc, exn) ->
+    | Ploc.Exc (loc, exn) ->
          format_pushm buf 3;
          format_loc buf loc;
          format_string buf ": ";
@@ -169,8 +170,7 @@ let rec format_exn db buf exn =
             (match where with
                 Pcaml.Finding -> format_string buf "finding quotation"
               | Pcaml.Expanding -> format_string buf "expanding quotation"
-              | Pcaml.ParsingResult _ -> format_string buf "parsing result of quotation"
-              | Pcaml.Locating -> format_string buf "parsing");
+              | Pcaml.ParsingResult _ -> format_string buf "parsing result of quotation");
             format_string buf (" \"" ^ String.escaped name ^ "\":");
             format_space buf;
             format_szone buf;
@@ -238,10 +238,10 @@ let handle_exn db s loc f =
          exn ->
             let exn =
                match exn with
-                  Stdpp.Exc_located _ ->
+                  Ploc.Exc _ ->
                      exn
                 | _ ->
-                     Stdpp.Exc_located (loc, exn)
+                     Ploc.Exc (loc, exn)
             in
             let buf = new_buffer () in
             let () = format_message buf s in

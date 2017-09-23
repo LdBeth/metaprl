@@ -60,26 +60,26 @@ let reloc = fun _ -> dummy_loc
  * Compute a hash value from the struct.
  *)
 let hash_expr index expr =
-   hash index (hash_max (Pcaml.expr_reloc reloc Lexing.dummy_pos expr))
+   hash index (hash_max (Pcaml.expr_reloc reloc 0 expr))
 
 let hash_patt index patt =
-   hash index (hash_max (Pcaml.patt_reloc reloc Lexing.dummy_pos patt))
+   hash index (hash_max (Pcaml.patt_reloc reloc 0 patt))
 
 let hash_type index ctyp =
    hash_expr index <:expr< ( (assert False) : $ctyp$ ) >>
-   (* hash index (hash_max (Pcaml.ctyp_reloc reloc Lexing.dummy_pos ctyp)) *)
+   (* hash index (hash_max (Pcaml.ctyp_reloc reloc 0 ctyp)) *)
 
 let hash_str_item index item =
-   hash index (hash_max (Pcaml.str_item_reloc reloc Lexing.dummy_pos item))
+   hash_expr index (MLast.ExPck (_loc, MLast.MeStr (_loc, Ploc.VaVal [item]), None))
 
 let hash_sig_item index item =
-   hash index (hash_max (Pcaml.sig_item_reloc reloc Lexing.dummy_pos item))
+   hash_patt index (MLast.PaUnp (_loc, Ploc.VaVal "", Some (MLast.MtSig (_loc, Ploc.VaVal [item]))))
 
 let hash_module_type index mt =
-   hash index (hash_max (Pcaml.module_type_reloc reloc Lexing.dummy_pos mt))
+   hash_patt index (MLast.PaUnp (_loc, Ploc.VaVal "", Some mt))
 
 let hash_module_expr index me =
-   hash index (hash_max (Pcaml.module_expr_reloc reloc Lexing.dummy_pos me))
+   hash_expr index (MLast.ExPck (_loc, me, None))
 
 (*
  * -*-
