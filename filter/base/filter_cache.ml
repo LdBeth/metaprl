@@ -154,7 +154,9 @@ let set_lib () =
  * Term signatures.
  *)
 module FSummary = Filter_summary.FilterSummaryTerm (Refiner.Refiner);;
+(* unused
 module FTerm = Refiner.Refiner.Term
+*)
 module FTermCopy = Term_copy2_weak.TermCopy2Weak (Refiner.Refiner) (Refiner_io)
 let term_of_meta_term = FSummary.term_of_meta_term
 
@@ -287,7 +289,9 @@ struct
    (*
     * Identity used for term normalization.
     *)
+(* unused
    let identity x = x (* external identity : 'a -> 'a = "%identity" *)
+*)
 
    (*
     * Unit term used for interfaces.
@@ -450,9 +454,11 @@ struct
    type expr  = MLast.expr
    type item  = MLast.sig_item
    type resource = MLast.ctyp resource_sig
+(* unused
    type arg   = Convert.t
 
    type select = select_type
+ *)
    let select = InterfaceType
 
    type cooked = Convert.cooked summary_type
@@ -489,10 +495,14 @@ struct
    type ctyp  = MLast.ctyp
    type expr  = MLast.expr
    type item  = MLast.str_item
+(* unused
    type arg   = Convert.t
+*)
    type resource = (ctyp, expr) resource_str
 
+(* unused
    type select = select_type
+*)
    let select = ImplementationType
 
    type cooked = Convert.cooked summary_type

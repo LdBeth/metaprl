@@ -2263,7 +2263,7 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
             let loc = dest_loc "dest_mos_wc" t in
             let sl, me = two_subterms t in
                WcMos (loc, Ploc.VaVal (List.map dest_string (dest_olist sl)), dest_me me)
-         in add_wc "wc_module" dest_mos_wc
+         in add_wc "wc_mos" dest_mos_wc
       in function
          WcTyp (loc, Ploc.VaVal sl1, Ploc.VaVal sl2, Ploc.VaVal b, t) ->
             let loc = num_of_loc loc in
@@ -2343,7 +2343,7 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
             let loc = dest_loc "dest_xtr_me" t in
             let s, meo = two_subterms t in
                MeXtr (loc, dest_string s, dest_opt (fun me -> Ploc.VaVal (dest_me me)) meo)
-         in add_me "class_type_xtr" dest_xtr_me
+         in add_me "me_xtr" dest_xtr_me
       in fun vars me ->
          let loc = loc_of_module_expr me in
             match me with
@@ -2461,7 +2461,7 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
             let loc = dest_loc "dest_xtr_ce" t in
             let s, ceo = two_subterms t in
                CeXtr (loc, dest_string s, dest_opt (fun ce -> Ploc.VaVal (dest_ce ce)) ceo)
-         in add_ce "class_type_xtr" dest_xtr_ce
+         in add_ce "class_expr_xtr" dest_xtr_ce
       in fun vars -> function
          MLast.CeApp (loc, ce, e) ->
             mk_simple_term ce_app_op (num_of_loc loc) (**)
@@ -2525,7 +2525,7 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
          let dest_ide_ct t =
             let loc, s = dest_loc_string "dest_ide_ct" t in
                CtIde (loc, Ploc.VaVal s)
-         in add_ct "class_type_app" dest_ide_ct
+         in add_ct "class_type_ide" dest_ide_ct
       and ct_fun_op =
          let dest_fun_ct t =
             let loc = dest_loc "dest_fun_ct" t in

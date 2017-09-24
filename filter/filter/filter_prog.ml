@@ -164,6 +164,7 @@ let list_expr _loc f l =
 (*
  * Construct an expression list.
  *)
+(* unused
 let apply_patt _loc f l =
    let rec map = function
       [h] ->
@@ -176,6 +177,7 @@ let apply_patt _loc f l =
          raise (Invalid_argument "apply_patt")
    in
       map l
+*)
 
 (*
  * Construct an expression list.
@@ -224,8 +226,10 @@ let refiner_ctyp _loc =
 let rewriter_expr _loc =
    <:expr< Refiner.Refiner.Rewrite >>
 
+(* unused
 let rewriter_patt _loc =
    <:patt< Refiner.Refiner.Rewrite >>
+*)
 
 let tactic_type_expr _loc =
    <:expr< Tactic_type.Tactic >>
@@ -311,7 +315,9 @@ let res_fqn path name =
 let refiner_id = "refiner"
 
 let local_refiner_id = "_$global_refiner"
+(* unused
 let stack_id = "_$rewrite_stack"
+*)
 
 let add_lt_expr _loc =
    <:expr< Precedence.add_lt >>
@@ -322,23 +328,14 @@ let add_eq_expr _loc =
 (*
  * Build an expression from a position.
  *)
-let expr_of_pos _loc pos =
-   let { Lexing.pos_fname = fname;
-         Lexing.pos_lnum  = lnum;
-         Lexing.pos_bol   = bol;
-         Lexing.pos_cnum  = cnum
-       } = pos
-   in
-      <:expr< { Lexing.pos_fname = $str: fname$;
-                Lexing.pos_lnum  = $int: string_of_int lnum$;
-                Lexing.pos_bol   = $int: string_of_int bol$;
-                Lexing.pos_cnum  = $int: string_of_int cnum$
-              }
-      >>
-
 let expr_of_loc _loc =
-   let pos1, pos2 = _loc in
-      <:expr< ($expr_of_pos _loc pos1$, $expr_of_pos _loc pos2$) >>
+   let filename = Ploc.file_name _loc in
+   let first_line = Ploc.line_nb _loc in
+   let first_bol = Ploc.bol_pos _loc in
+   let first_pos = Ploc.first_pos _loc in
+   let last_pos = Ploc.last_pos _loc in
+    <:expr< Ploc.make_loc $str:filename$ $int:string_of_int first_line$ $int:string_of_int first_bol$
+            ($int:string_of_int first_pos$, $int:string_of_int last_pos$) "" >>
 
 (*
  * Each rule gets a refiner associated with it, with the following name.
@@ -383,7 +380,7 @@ let rec apply_annotation_processor _loc e args =
                MLast.ExLab _ ->
                   arg
              | _ ->
-                  MLast.ExLab (_loc, "options", Some arg)
+                  <:expr< ~{ $lid:"options"$ = $arg$ } >>
          in
             apply_annotation_processor _loc <:expr< $e$ $arg$ >> args
 
@@ -408,7 +405,9 @@ let rule_id             = "_$rule"
 let addrs_id            = "_$addrs"
 let msequent_goal_id    = "_$mseq_goal"
 let msequent_hyps_id    = "_$mseq_hyps"
+(* unused
 let rule_name_id        = "_$rule_name"
+*)
 
 let expr_of_label _loc = function
    [] ->
@@ -512,7 +511,7 @@ let toploop_item_expr _loc name ctyp =
          let v = sprintf "v%d" index in
          let patt = <:patt< $lid: v$ >> in
          let expr,texpr = collect (succ index) <:expr< $expr$ $lid: v$ >> t2 in
-         let expr = <:expr< fun [ $list: [patt, None, expr]$ ]>> in
+         let expr = <:expr< fun [ $list: [patt, Ploc.VaVal None, expr]$ ]>> in
             begin match t1 with
                <:ctyp< $lid: typ$ >> ->
                   let name = str_lid typ in
@@ -546,19 +545,19 @@ let declare_rewrite _loc rw =
 let declare_define_term _loc _ def =
    [<:sig_item< value $def.term_def_name$ : $rewrite_ctyp _loc$ >>]
 
-let declare_cond_rewrite _loc { crw_name = name; crw_params = params } =
+let declare_cond_rewrite _loc { crw_name = name; crw_params = params; _ } =
    [<:sig_item< value $name$ : $params_ctyp _loc (cond_rewrite_ctyp _loc) params$ >>]
 
-let declare_ml_rewrite _loc { mlterm_name = name; mlterm_params = params } =
+let declare_ml_rewrite _loc { mlterm_name = name; mlterm_params = params; _ } =
    [<:sig_item< value $name$ : $params_ctyp _loc (cond_rewrite_ctyp _loc) params$ >>]
 
 (*
  * Rules.
  *)
-let declare_rule _loc { rule_name = name; rule_params = params } =
+let declare_rule _loc { rule_name = name; rule_params = params; _ } =
    [<:sig_item< value $name$ : $params_ctyp _loc (tactic_ctyp _loc) params$ >>]
 
-let declare_ml_axiom _loc { mlterm_name = name; mlterm_params = params } =
+let declare_ml_axiom _loc { mlterm_name = name; mlterm_params = params; _ } =
    [<:sig_item< value $name$ : $params_ctyp _loc (tactic_ctyp _loc) params$ >>]
 
 (*
@@ -603,7 +602,7 @@ let declare_toploop_item _loc item =
 (*
  * Magic block is a block of items.
  *)
-let declare_magic_block _loc { magic_code = items } =
+let declare_magic_block _loc { magic_code = items; _ } =
    items
 
 (*
@@ -617,19 +616,19 @@ let interf_postlog info _loc =
  *)
 let extract_sig_item (item, loc) =
    match item with
-      Rewrite ({ rw_name = name } as rw) ->
+      Rewrite ({ rw_name = name; _ } as rw) ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_sig_item: rewrite: %s%t" name eflush;
          declare_rewrite loc rw
-    | InputForm { iform_name = name } ->
+    | InputForm { iform_name = name; _ } ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_sig_item: input form: %s%t" name eflush;
          []
-    | CondRewrite ({ crw_name = name } as crw) ->
+    | CondRewrite ({ crw_name = name; _ } as crw) ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_sig_item: cond rewrite: %s%t" name eflush;
          declare_cond_rewrite loc crw
-    | Rule ({ rule_name = name } as item) ->
+    | Rule ({ rule_name = name; _ } as item) ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_sig_item: rule: %s%t" name eflush;
          declare_rule loc item
@@ -643,7 +642,7 @@ let extract_sig_item (item, loc) =
          declare_resource loc name rsrc
     | Improve _ ->
          raise(Invalid_argument "Filter_prog.extract_sig_item")
-    | Parent ({ parent_name = name } as parent) ->
+    | Parent ({ parent_name = name; _ } as parent) ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_sig_item: parent: %s%t" (string_of_path name) eflush;
          declare_parent loc parent
@@ -704,6 +703,7 @@ let extract_sig _ info resources _ _ _ =
  (*
   * Eta-reduction
   *)
+(* unused
 let beta_reduce_var var f =
    let _loc = MLast.loc_of_expr f in
       match f with
@@ -711,6 +711,7 @@ let beta_reduce_var var f =
             v, e
        | _ ->
             var, <:expr< $f$ $lid:var$ >>
+*)
 
 let checkpoint_resources want_checkpoint _loc rule_name rest =
    if want_checkpoint then
@@ -737,11 +738,13 @@ let impr_resource_list proc _loc flag name expr =
    let ctyp, fqn = find_res proc _loc name in
       <:expr< Mp_resource.improve_list $flag_expr _loc flag$ $str:fqn$ (Obj.magic ( $expr$ : list $ctyp$ )) >>
 
+(* unused
 let rec mk_string_list_expr _loc = function
    [] ->
       <:expr< [] >>
  | hd::tl ->
       <:expr< $lid:"::"$ $str:hd$ $mk_string_list_expr _loc tl$ >>
+*)
 
 let binding_let proc _loc (v, bnd) =
    <:patt< $lid:v$ >>,
@@ -1186,7 +1189,8 @@ let define_rule prim_rule deffun proc _loc
     { rule_name = name;
       rule_params = params;
       rule_stmt = stmt;
-      rule_resources = resources
+      rule_resources = resources;
+      _
     }
     extract =
    (* Check the specifications *)
@@ -1246,6 +1250,7 @@ let define_ml_rule want_checkpoint proc _loc
     { mlterm_name       = name;
       mlterm_params     = params;
       mlterm_term       = redex;
+      _
     } code =
    (* Names *)
    let name_rule_id = "_$" ^ name ^ "_rule" in
@@ -1373,7 +1378,8 @@ let define_ml_dform proc _loc
     { dform_name = name;
       dform_modes = modes;
       dform_options = options;
-      dform_redex = t
+      dform_redex = t;
+      _
     }
     { dform_ml_printer = printer;
       dform_ml_buffer = buffer;
@@ -1419,8 +1425,8 @@ let define_resource proc _loc name res =
             ( $res.res_body$ : Mp_resource.resource_info $lid:inp_name$ '$intermediate$ $lid:outp_name$ ) >>]
 
 let rec is_list_expr = function
-   MLast.ExUid(_,"[]") -> true
- | MLast.ExApp(_,MLast.ExApp(_,MLast.ExUid(_,"::"),_),tail) ->
+   MLast.ExUid(_, Ploc.VaVal "[]") -> true
+ | MLast.ExApp(_, MLast.ExApp(_, MLast.ExUid(_, Ploc.VaVal "::"), _), tail) ->
       is_list_expr tail
  | _ -> false
 
@@ -1524,10 +1530,10 @@ let rec wrap_summary_items proc = function
  | item::items ->
       let items = wrap_summary_items proc items in
       begin match item with
-         MLast.StVal (_loc, rec_flag, pel) ->
+         MLast.StVal (_loc, Ploc.VaVal rec_flag, Ploc.VaVal pel) ->
             let pel, toploop = wrap_toploop_items proc _loc pel in
                <:str_item< value $opt:rec_flag$ $list:pel$ >> :: (toploop @ items)
-       | MLast.StExt (_loc, name, ctyp, _ ) when List.mem_assoc name proc.imp_toploop ->
+       | MLast.StExt (_loc, Ploc.VaVal name, ctyp, _ ) when List.mem_assoc name proc.imp_toploop ->
             item :: add_toploop_item proc _loc name (get_top_ctyp proc name) :: items
        | _ ->
          item::items
@@ -1597,74 +1603,74 @@ let implem_postlog proc _loc =
  *)
 let extract_str_item proc (item, loc) =
    match item with
-      Rewrite ({ rw_name = name; rw_proof = Primitive _ } as rw) ->
+      Rewrite ({ rw_name = name; rw_proof = Primitive _; _ } as rw) ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: primrw: %s%t" name eflush;
          prim_rewrite proc loc rw
-    | Rewrite ({ rw_name = name; rw_proof = Derived tac } as rw) ->
+    | Rewrite ({ rw_name = name; rw_proof = Derived tac; _ } as rw) ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: rwthm: %s%t" name eflush;
          derived_rewrite proc loc rw tac
-    | Rewrite ({ rw_name = name; rw_proof = Interactive _ } as rw)
-    | Rewrite ({ rw_name = name; rw_proof = Incomplete } as rw) ->
+    | Rewrite ({ rw_name = name; rw_proof = Interactive _; _ } as rw)
+    | Rewrite ({ rw_name = name; rw_proof = Incomplete; _ } as rw) ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: rwinteractive: %s%t" name eflush;
          interactive_rewrite proc loc rw
-    | InputForm { iform_name = name } ->
+    | InputForm { iform_name = name; _ } ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: primrw: %s%t" name eflush;
          []
-    | CondRewrite ({ crw_name = name; crw_proof = Primitive _ } as crw) ->
+    | CondRewrite ({ crw_name = name; crw_proof = Primitive _; _ } as crw) ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: prim condrw: %s%t" name eflush;
          prim_cond_rewrite proc loc crw
-    | CondRewrite ({ crw_name = name; crw_proof = Derived tac } as crw) ->
+    | CondRewrite ({ crw_name = name; crw_proof = Derived tac; _ } as crw) ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: thm condrw: %s%t" name eflush;
          derived_cond_rewrite proc loc crw tac
-    | CondRewrite ({ crw_name = name; crw_proof = Interactive _ } as crw)
-    | CondRewrite ({ crw_name = name; crw_proof = Incomplete } as crw) ->
+    | CondRewrite ({ crw_name = name; crw_proof = Interactive _; _ } as crw)
+    | CondRewrite ({ crw_name = name; crw_proof = Incomplete; _ } as crw) ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: interactive condrw: %s%t" name eflush;
          interactive_cond_rewrite proc loc crw
-    | MLRewrite ({ mlterm_name = name; mlterm_def = Some rewrite_expr } as mlrw) ->
+    | MLRewrite ({ mlterm_name = name; mlterm_def = Some rewrite_expr; _ } as mlrw) ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: ML rewrite: %s%t" name eflush;
          define_ml_rewrite proc loc mlrw rewrite_expr
-    | MLRewrite ({ mlterm_name = name; mlterm_def = None }) ->
+    | MLRewrite ({ mlterm_name = name; mlterm_def = None; _ }) ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: ML rewrite (unimplemented): %s%t" name eflush;
          raise (Failure "Filter_prog.extract_str_item: ML rewrite is not defined")
-    | Rule ({ rule_name = name; rule_proof = Primitive t } as item) ->
+    | Rule ({ rule_name = name; rule_proof = Primitive t; _ } as item) ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: prim rule: %s%t" name eflush;
          prim_rule proc loc item t
-    | Rule ({ rule_name = name; rule_proof = Derived tac } as item) ->
+    | Rule ({ rule_name = name; rule_proof = Derived tac; _ } as item) ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: thm rule: %s%t" name eflush;
          derived_rule proc loc item tac
-    | Rule ({ rule_name = name; rule_proof = Interactive _ } as item)
-    | Rule ({ rule_name = name; rule_proof = Incomplete } as item) ->
+    | Rule ({ rule_name = name; rule_proof = Interactive _; _ } as item)
+    | Rule ({ rule_name = name; rule_proof = Incomplete; _ } as item) ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: interactive rule: %s%t" name eflush;
          interactive_rule proc loc item
-    | MLAxiom ({ mlterm_name = name; mlterm_def = Some rule_expr } as mlrule) ->
+    | MLAxiom ({ mlterm_name = name; mlterm_def = Some rule_expr; _ } as mlrule) ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: ML axiom: %s%t" name eflush;
          define_ml_rule false proc loc mlrule rule_expr
-    | MLAxiom ({ mlterm_name = name; mlterm_def = None }) ->
+    | MLAxiom ({ mlterm_name = name; mlterm_def = None; _ }) ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: ML axiom unimplemented: %s%t" name eflush;
          raise (Failure "Filter_prog.extract_str_item: ML axiom is not defined")
-    | DForm ({ dform_def = TermDForm expansion} as df) ->
+    | DForm ({ dform_def = TermDForm expansion; _ } as df) ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: dform%t" eflush;
          define_dform proc loc df expansion
-    | DForm ({ dform_def = MLDForm code} as df) ->
+    | DForm ({ dform_def = MLDForm code; _ } as df) ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: dform%t" eflush;
          define_ml_dform proc loc df code
-    | DForm { dform_def = NoDForm } ->
+    | DForm { dform_def = NoDForm; _ } ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: dform%t" eflush;
          raise (Failure "Filter_proof.extract_str_item: dform is not defined")
@@ -1680,11 +1686,11 @@ let extract_str_item proc (item, loc) =
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: resource: %s%t" name eflush;
          define_resource proc loc name res
-    | Improve ({ improve_name = name } as impr) ->
+    | Improve ({ improve_name = name; _ } as impr) ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: improve %s with ... %t" name eflush;
          improve_resource proc loc impr
-    | Parent ({ parent_name = name } as parent) ->
+    | Parent ({ parent_name = name; _ } as parent) ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: parent: %s%t" (string_of_path name) eflush;
          define_parent proc loc parent

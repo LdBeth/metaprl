@@ -158,6 +158,7 @@ let rec format_exn db buf exn =
          format_exn db buf exn;
          format_ezone buf;
          format_popm buf;
+(* TODO[jyh]
     | Pcaml.Qerror (name, where, exn) ->
          let name =
             if name = "" then
@@ -177,6 +178,7 @@ let rec format_exn db buf exn =
             format_exn db buf exn;
             format_ezone buf;
             format_popm buf
+*)
     | Lm_parser.ParseError (loc, s) ->
          format_pushm buf 3;
          format_string buf "Syntax error:";

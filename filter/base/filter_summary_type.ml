@@ -279,7 +279,7 @@ sig
    val add_input_prec    : info -> precedence -> term -> unit
    val add_start         : info -> string -> term -> opname -> unit
    val get_start         : info -> shape StringTable.t
-   val parse             : parse_state -> info -> Lexing.position -> shape -> string -> term
+   val parse             : parse_state -> info -> Ploc.t -> shape -> string -> term
    val compile_parser    : info -> unit
 end
 

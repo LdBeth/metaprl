@@ -1164,12 +1164,7 @@ let parse state gram start loc s =
    in
 
    (* Input channel *)
-   let { Lexing.pos_fname = filename;
-         Lexing.pos_lnum  = line;
-         Lexing.pos_bol   = char;
-         _
-       } = loc
-   in
+   let filename = Ploc.file_name loc in
 (*
    let input = Lm_channel.of_loc_string filename line char s in
  *)

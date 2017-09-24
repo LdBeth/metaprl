@@ -78,7 +78,7 @@ let set_export () =
    Punix.putenv "MP_EXPORT=true"
 
 let add_anon_arg arg =
-   let _, _, name = !Pcaml.position in
+   let name = Plexing.input_file in
       name := arg;
       Pcaml.input_file := arg
 

@@ -49,6 +49,6 @@ PrlC(command) =
    # Put together the command.  This should not be an array,
    # because the alias prlcomp should not be quoted.
    #
-   COMMAND = prlcomp $(command) -pp $(quote-argv $(CAMLP4N) $(LOC))
+   COMMAND = prlcomp $(command) -pp $(quote-argv $(CAMLP5N) $(LOC))
 
    return($(COMMAND))

@@ -5,3 +5,7 @@
 *.omc
 .omakedb*
 .version.*
+bin
+lib
+libmojave
+[xyz]

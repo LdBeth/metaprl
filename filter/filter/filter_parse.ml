@@ -42,9 +42,7 @@ open Pcaml
 
 open Opname
 open Precedence
-open Simple_print
 open File_base_type
-open Term_shape_sig
 open Term_ty_sig
 open Term_sig
 
@@ -53,8 +51,6 @@ open Term_ty_infer
 open Refiner.Refiner
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermOp
-open Refiner.Refiner.TermType
-open Refiner.Refiner.TermSubst
 open Refiner.Refiner.TermMan
 open Refiner.Refiner.TermMeta
 open Refiner.Refiner.TermShape
@@ -112,6 +108,7 @@ let debug_dform =
         debug_value = false
       }
 
+(* unused
 let rec print_terms out = function
    h::t ->
       eprintf "\t%s\n" (SimplePrint.string_of_term h);
@@ -131,6 +128,7 @@ let rec print_vterms out = function
 
 let print_non_vars out params =
    print_terms out (collect_terms params)
+*)
 
 (************************************************************************
  * PATHS                                                                *
@@ -171,7 +169,7 @@ let wrap_code _loc v body =
        | None -> "_$goal"
    in
    let p = <:patt< $lid:v$ >> in
-      <:expr< fun [ $list: [p, None, body]$ ] >>
+      <:expr< fun [ $list: [p, Ploc.VaVal None, body]$ ] >>
 
 (************************************************************************
  * TERM GRAMMAR                                                         *
@@ -242,8 +240,10 @@ let get_checked_bindings loc =
             v, bind) (get_bindings ())
 
 (* Just to make sure we don't use them accidentally *)
+(* unused
 let get_bindings () = ()
 let add_binding () = ()
+*)
 
 (************************************************************************
  * GENERIC CONSTRUCTION                                                 *
@@ -346,15 +346,9 @@ struct
    let input_exp shape id s =
       match !proc_ref with
          Some proc ->
-            let pos =
-               { Lexing.pos_fname = proc.name;
-                 Lexing.pos_lnum  = 1;
-                 Lexing.pos_bol   = 0;
-                 Lexing.pos_cnum  = 0
-               }
-            in
+            let loc = Ploc.make_loc proc.name 1 0 (0, 0) "" in
             let state = mk_parse_state dummy_loc id in
-            let t = FilterCache.parse state proc.cache pos shape s in
+            let t = FilterCache.parse state proc.cache loc shape s in
             let t = TermGrammar.mk_parsed_term t in
                add_parsed_binding (BindTerm t)
        | None ->
@@ -363,15 +357,9 @@ struct
    let input_patt shape id s =
       match !proc_ref with
          Some proc ->
-            let pos =
-               { Lexing.pos_fname = proc.name;
-                 Lexing.pos_lnum  = 1;
-                 Lexing.pos_bol   = 0;
-                 Lexing.pos_cnum  = 0
-               }
-            in
+            let loc = Ploc.make_loc proc.name 1 0 (0, 0) "" in
             let state = mk_parse_state dummy_loc id in
-            let t = FilterCache.parse state proc.cache pos shape s in
+            let t = FilterCache.parse state proc.cache loc shape s in
             let t = TermGrammar.unchecked_term_of_parsed_term dummy_loc (TermGrammar.mk_parsed_term t) in
                Filter_exn.print_exn Dform.null_base (Some "Can not build a pattern out of a term:\n") Filter_patt.build_term_patt t
        | None ->
@@ -393,15 +381,15 @@ struct
    let add_command proc cmd =
       begin
          match fst cmd with
-            Rewrite { rw_name = name }
-          | InputForm { iform_name = name }
-          | CondRewrite { crw_name = name }
-          | Rule { rule_name = name }
-          | MLRewrite { mlterm_name = name }
-          | MLAxiom { mlterm_name = name }
+            Rewrite { rw_name = name; _ }
+          | InputForm { iform_name = name; _ }
+          | CondRewrite { crw_name = name; _ }
+          | Rule { rule_name = name; _ }
+          | MLRewrite { mlterm_name = name; _ }
+          | MLAxiom { mlterm_name = name; _ }
           | MLGramUpd (Infix name)
           | MLGramUpd (Suffix name)
-          | DefineTerm (_, _, { term_def_name = name }) ->
+          | DefineTerm (_, _, { term_def_name = name; _ }) ->
                if StringSet.mem proc.names name then
                   raise (Invalid_argument ("Filter_parse.add_command: duplicate name " ^ name));
                proc.names <- StringSet.add proc.names name
@@ -433,6 +421,7 @@ struct
     *       a. adds the resources
     *       b. adds the infix directives.
     *)
+(* unused
    let rec pp_print_string_list buf sl =
       match sl with
          [s] ->
@@ -443,6 +432,7 @@ struct
             pp_print_string_list buf sl
        | [] ->
             ()
+*)
 
    let declare_parent proc loc path =
       (* Prevent multiple inclusion *)
@@ -1211,16 +1201,19 @@ let bind_item loc i =
 (*
  * Replace a term with another.
  *)
+(* unused
 let subst_term term1 term2 t =
    let v = new_symbol_string "v" in
    let t = var_subst t term1 v in
       subst1 t v term2
+*)
 
 (* Convert the quotation *)
 let parse_quote loc quote token_type bvar_type subterm_type term_type =
    let { ty_params = params;
          ty_bterms = bterms;
-         ty_type   = ty
+         ty_type   = ty;
+         _
        } = quote
    in
    let parse_param param =
@@ -1374,7 +1367,7 @@ EXTEND
                 SigFilter.save proc AnySuffix;
                 SigFilter.extract () proc
           in
-             handle_exn f "interf" _loc, false
+             handle_exn f "interf" _loc, None
        ]];
 
    interf_opening:
@@ -1415,7 +1408,7 @@ EXTEND
                 StrFilter.save proc (OnlySuffixes ["cmoz"]);
                 StrFilter.extract interf proc
           in
-             handle_exn f "implem" _loc, false
+             handle_exn f "implem" _loc, None
        ]];
 
    implem_opening:
@@ -2086,7 +2079,7 @@ EXTEND
             try
                mt, mk_simple_term ((TermGrammarBefore.parsing_state _loc).mk_opname_kind _loc NormalKind ["default_extract"] [] []) []
             with
-               Stdpp.Exc_located (_, Failure _) ->
+               Ploc.Exc (_, Failure _) ->
                   Stdpp.raise_with_loc _loc (Failure "No computational witness (\"extract\") specified for a prim rule and the default_extract{} opname is not declared")
       ]];
 
@@ -2117,12 +2110,12 @@ EXTEND
     *)
    parsed_df_options:
       [[ l = LIST1 singleterm SEP "::" ->
-          Lm_list_util.split_last (List.map (function { aterm = t } -> parse_term _loc t) l)
+          Lm_list_util.split_last (List.map (function { aterm = t; _ } -> parse_term _loc t) l)
        ]];
 
    df_options:
       [[ l = LIST1 singleterm SEP "::" ->
-          Lm_list_util.split_last (List.map (function { aterm = t } -> t) l)
+          Lm_list_util.split_last (List.map (function { aterm = t; _ } -> t) l)
        ]];
 
    (*
@@ -2140,7 +2133,7 @@ EXTEND
 
    opaque_flag:
       [[ opaque = OPT "opaque" ->
-            match opaque with Some _ -> true | None -> false 
+            match opaque with Some _ -> true | None -> false
       ]];
 
    (*

@@ -33,11 +33,9 @@
 open Lm_debug
 
 open Lm_printf
-open Lm_symbol
 
 open Opname
 open Term_sig
-open Term_shape_sig
 open Term_ty_sig
 open Rewrite_sig
 open Refiner.Refiner.TermType
@@ -395,9 +393,10 @@ struct
       cache.sig_summaries <- []
 
    let clear_info info =
-      let { base = cache; name = name } = info in
+      let { base = cache; name = name; _ } = info in
       let { lib = base;
-            str_summaries = str_summaries
+            str_summaries = str_summaries;
+            _
           } = cache
       in
       let path = [name] in
@@ -422,9 +421,9 @@ struct
             (* If only one name left, it should name a term *)
             let rec search = function
                (DeclareTypeClass (_, opname, _, _), _) :: tl
-             | (DeclareType (_, { ty_opname = opname }, _), _) :: tl
-             | (DeclareTerm (_, { ty_opname = opname }), _) :: tl
-             | (DefineTerm (_, { ty_opname = opname }, _), _) :: tl
+             | (DeclareType (_, { ty_opname = opname; _ }, _), _) :: tl
+             | (DeclareTerm (_, { ty_opname = opname; _ }), _) :: tl
+             | (DefineTerm (_, { ty_opname = opname; _ }, _), _) :: tl
                when fst (dst_opname opname) = modname ->
                   modname :: path
              | _ :: tl ->
@@ -478,14 +477,14 @@ struct
    let expand_path cache path =
       if !debug_filter_cache || !debug_filter_path then
          eprintf "Filter_cache.expand_path: %s%t" (string_of_path path) eflush;
-      let { base = { lib = base; sig_summaries = summaries } } = cache in
+      let { base = { lib = base; sig_summaries = summaries; _ }; _ } = cache in
          match path with
             modname :: modpath ->
                (* First search for head module in top level modules *)
                let rec head_search = function
                   [] ->
                      None
-                | { sig_summary = info } :: t ->
+                | { sig_summary = info; _ } :: t ->
                      let modname' = String.capitalize (Base.name base info) in
                         if !debug_filter_path then
                            eprintf "Filter_cache.expand_path.head_search: %s vs. %s%t" modname' modname eflush;
@@ -497,7 +496,7 @@ struct
                let rec mod_search = function
                   [] ->
                      raise Not_found
-                | { sig_summary = info } :: tl ->
+                | { sig_summary = info; _ } :: tl ->
                      let modname' = String.capitalize (Base.name base info) in
                         try modname' :: (expand_in_summary path (SigMarshal.unmarshal (Base.info base info))) with
                            Not_found ->
@@ -905,7 +904,8 @@ struct
       let { typeenv        = typeenv;
             termenv        = termenv;
             typereduce     = typereduce;
-            typereductions = typereductions
+            typereductions = typereductions;
+            _
           } = cache
       in
          { tenv_typeclasses    = get_typeclasses cache;
@@ -960,7 +960,7 @@ struct
            allow_seq_bindings     = wrap1 (delay_tenv allow_seq_bindings);
            apply_iforms           = wrap2 (fun quote t -> Filter_grammar.apply_iforms quote cache.grammar t);
            apply_iforms_mterm     = wrap3 (fun quote mt args -> Filter_grammar.apply_iforms_mterm quote cache.grammar mt args);
-           term_of_string         = (fun loc quote name s -> Filter_grammar.term_of_string quote cache.grammar name (fst loc) s)
+           term_of_string         = (fun loc quote name s -> Filter_grammar.term_of_string quote cache.grammar name loc s)
          }
 
    (************************************************************************
@@ -970,7 +970,7 @@ struct
    (*
     * Projection.
     *)
-   let info { info = info } =
+   let info { info = info; _ } =
       info
 
    (*
@@ -988,8 +988,8 @@ struct
     * Find a summary by its module path.
     *)
    let find_summarized_sig_module cache path =
-      let { base = { lib = base; sig_summaries = summaries } } = cache in
-      let compare { sig_summary = info } =
+      let { base = { lib = base; sig_summaries = summaries; _ }; _ } = cache in
+      let compare { sig_summary = info; _ } =
          Base.pathname base info = path
       in
          Lm_list_util.find compare summaries
@@ -1005,7 +1005,7 @@ struct
     * Find a summary by its module path.
     *)
    let find_summarized_str_module base path =
-      let { lib = base; str_summaries = summaries } = base in
+      let { lib = base; str_summaries = summaries; _ } = base in
       let compare info =
          Base.pathname base info = path
       in
@@ -1035,8 +1035,10 @@ struct
    let sig_infixes cache path =
       (find_summarized_sig_module cache path).sig_infixes
 
+(* unused
    let sig_grammar cache path =
       (find_summarized_sig_module cache path).sig_grammar
+*)
 
    (************************************************************************
     * Grammar.
@@ -1146,7 +1148,8 @@ struct
             typereductions = typereductions;
             typeenv = typeenv;
             termenv = termenv;
-            grammar = grammar
+            grammar = grammar;
+            _
           } = cache
       in
       let code = 0x6ace12d4 in
@@ -1207,8 +1210,10 @@ struct
       in
          search resources
 
+(* unused
    let compare_resources (name1, _) (name2, _) =
       name1 <= name2
+*)
 
    (*
     * Merge two lists, removing duplicates.
@@ -1237,7 +1242,8 @@ struct
       let { sig_typeclasses = typeclasses;
             sig_typeenv     = typeenv;
             sig_termenv     = termenv;
-            sig_typereduce  = typereduce
+            sig_typereduce  = typereduce;
+            _
           } = summ
       in
          List.iter (fun (shapeclass, opname, typeclass_type, typeclass_parent) ->
@@ -1306,7 +1312,7 @@ struct
           | DeclareTypeRewrite (redex, contractum) ->
                { summ with sig_typereduce = (redex, contractum) :: summ.sig_typereduce }
 
-          | Parent { parent_name = path } ->
+          | Parent { parent_name = path; _ } ->
                (* Recursive inline of all ancestors *)
                let info = inline_sig_module barg cache path in
                   { summ with sig_resources = merge_resources info.sig_resources summ.sig_resources;
@@ -1403,7 +1409,7 @@ struct
           | DeclareTypeRewrite (redex, contractum) ->
                { summ with sig_typereduce = (redex, contractum) :: summ.sig_typereduce }
 
-          | Parent { parent_name = path } ->
+          | Parent { parent_name = path; _ } ->
                (* Recursive inline of all ancestors *)
                let info = inline_sig_module barg cache path in
                   cache.grammar <- Filter_grammar.union cache.grammar info.sig_grammar;
@@ -1530,8 +1536,8 @@ struct
     * Also include the term declarations.
     *)
    let load_sig_grammar cache barg alt_select =
-      let { base = base; self = self; name = name } = cache in
-      let { lib = lib; sig_summaries = summaries } = base in
+      let { base = base; self = self; name = name; _ } = cache in
+      let { lib = lib; sig_summaries = summaries; _ } = base in
       let info =
          try find_summarized_sig_module cache [name] with
             Not_found ->
@@ -1591,18 +1597,18 @@ struct
    (*
     * Get the filename of the info.
     *)
-   let filename { lib = base } { self = info } =
+   let filename { lib = base; _ } { self = info; _ } =
       Base.file_name base info
 
-   let name { name = name } =
+   let name { name = name; _ } =
       name
 
    (*
     * Get the signature for the module.
     *)
    let sig_info cache barg alt_select =
-      let { base = base; self = self; name = name; optable = optable } = cache in
-      let { lib = lib; sig_summaries = summaries } = base in
+      let { base = base; self = self; name = name; optable = optable; _ } = cache in
+      let { lib = lib; sig_summaries = summaries; _ } = base in
       let info =
          try (find_summarized_sig_module cache [name]).sig_summary with
             Not_found ->
@@ -1628,7 +1634,7 @@ struct
     * Parse the comments in the sig.
     *)
    let parse_comments cache parse_comment =
-      let { info = info } = cache in
+      let { info = info; _ } = cache in
          cache.info <- FilterSummaryTerm.parse_comments parse_comment info
 
    (*
@@ -1639,7 +1645,8 @@ struct
             base = base;
             info = info;
             select = my_select;
-            grammar = grammar
+            grammar = grammar;
+            _
           } = cache
       in
       let path = [name] in
@@ -1662,11 +1669,12 @@ struct
          proof
       in
       let { name = name;
-            base = { lib = base };
+            base = { lib = base; _ };
             self = self;
             info = info;
             select = my_select;
-            grammar = grammar
+            grammar = grammar;
+            _
           } = cache
       in
       let path = [name] in
@@ -1691,18 +1699,17 @@ struct
           | InteractiveSummary ->
                1
       in
-      let { base = { lib = base }; self = self } = cache in
+      let { base = { lib = base; _ }; self = self; _ } = cache in
          Base.set_magic base self magic
 
    (*
     * Save the cache.
     *)
    let save cache barg suffix =
-      let { base = { lib = base }; name = name; self = self; info = info; grammar = grammar } = cache in
+      let { base = { lib = base; _ }; name = name; self = self; info = info; grammar = grammar; _ } = cache in
       let info =
          if Filter_grammar.is_modified grammar then
-            let pos = { Lexing.dummy_pos with Lexing.pos_fname = Base.file_name base self } in
-            let loc = pos, pos in
+            let loc = Ploc.make_loc (Base.file_name base self) 1 0 (0, 0) "" in
                Filter_summary.add_command info (PRLGrammar grammar, loc)
          else
             info
@@ -1721,7 +1728,7 @@ struct
    (*
     * Debugging.
     *)
-   let eprint_info { info = info } =
+   let eprint_info { info = info; _ } =
       Filter_summary.eprint_info info
 
    (*

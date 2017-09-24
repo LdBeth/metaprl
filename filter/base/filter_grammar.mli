@@ -141,14 +141,14 @@ val pp_print_grammar : Lm_printf.out_channel -> t -> unit
 (*
  * Parse a string.
  *)
-val parse              : parse_state -> t -> shape -> Lexing.position -> string -> term
+val parse              : parse_state -> t -> shape -> Ploc.t -> string -> term
 
 (*
  * Stateful versions.
  * The Filter_cache_fun should try and make sure these functions
  * are called each time the grammar is modified.
  *)
-val term_of_string     : parse_state -> t -> string -> Lexing.position -> string -> term
+val term_of_string     : parse_state -> t -> string -> Ploc.t -> string -> term
 
 (*
  * Iform expansion.
