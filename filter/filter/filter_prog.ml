@@ -203,13 +203,6 @@ let rec fun_expr _loc ids body =
     | [] ->
          body
 
-(*
- * -*-
- * Local Variables:
- * Caml-master: "refiner"
- * End:
- * -*-
- *)
 (************************************************************************
  * SYNTAX                                                               *
  ************************************************************************)
@@ -342,6 +335,9 @@ let expr_of_loc _loc =
  *)
 let refiner_let _loc =
    <:str_item< value $lid: refiner_id$ = $refiner_expr _loc$ .refiner_of_build $lid: local_refiner_id$ >>
+
+let refiner_ignore _loc =
+   <:str_item< value _ = $lid: refiner_id$ >>
 
 let empty_rw_args _loc =
    <:expr< Refiner.Refiner.Rewrite.empty_rw_args >>
@@ -991,6 +987,7 @@ let define_rewrite want_checkpoint force_private code proc _loc rw expr =
        checkpoint_resources want_checkpoint _loc name [
           <:str_item< value $lid:name$ = $wrap_exn proc _loc name create_rw$ >>;
           refiner_let _loc;
+          refiner_ignore _loc;
           toploop_rewrite proc _loc name (if force_private then Private else Public) []
        ]
 
@@ -1056,6 +1053,7 @@ let define_cond_rewrite want_checkpoint code proc _loc crw expr =
           <:str_item< value $rw_id_patt$ = $wrap_exn proc _loc name create_expr $ >>;
           <:str_item< value $lid:name$ = $rw_fun_expr$ >>;
           refiner_let _loc;
+          refiner_ignore _loc;
           toploop_rewrite proc _loc name Public crw.crw_params
        ]
 
@@ -1163,7 +1161,8 @@ let define_ml_rewrite proc _loc mlrw rewrite_expr =
       [
          <:str_item< value $name_patt$ =
             $rewrite_of_pre_rewrite_expr _loc$ ($wrap_exn proc _loc name body $) $addrs_val$ $list_expr _loc lid_expr tparam_ids$ >>;
-         refiner_let _loc
+         refiner_let _loc;
+         refiner_ignore _loc
       ]
 
 (************************************************************************
@@ -1230,6 +1229,7 @@ let define_rule prim_rule deffun proc _loc
         [<:str_item< value $lid:name_rule_id$ = $wrap_exn proc _loc name rule_expr$ >>;
          <:str_item< value $lid:name$ = $name_value$ >>;
          refiner_let _loc;
+         refiner_ignore _loc;
          toploop_rule proc _loc name params]
 
 let prim_rule proc _loc ax extract =
@@ -1292,7 +1292,8 @@ let define_ml_rule want_checkpoint proc _loc
       checkpoint_resources want_checkpoint _loc name (**)
          [<:str_item< value $lid:name_rule_id$ = $wrap_exn proc _loc name body$ >>;
           <:str_item< value $name_patt$ = $bindings_let proc _loc code rule_fun_expr$ >>;
-          refiner_let _loc]
+          refiner_let _loc;
+          refiner_ignore _loc]
 
 let create_dform_expr _loc name modes options term expr =
    let string_expr s = <:expr< $str:s$ >> in
@@ -1392,7 +1393,8 @@ let define_ml_dform proc _loc
             { Dform.dform_term = $lid:term_id$;
               Dform.dform_items = $list_patt _loc (rewrite_type_patt _loc) items$;
               Dform.dform_printer = $lid:printer$;
-              Dform.dform_buffer = $lid:buffer$ } ->
+              Dform.dform_buffer = $lid:buffer$;
+              Dform.dform_state = _ } ->
                $code.item_item$ $lid:term_id$
           | _ ->
                raise (Invalid_argument $str:"ML dform " ^ name ^ " (generated code)"$)
@@ -1469,7 +1471,8 @@ let define_parent proc _loc
          [name] -> [
             <:str_item< Mp_resource.extends_theory $str:name$ >>;
             <:str_item< $exp:refiner_expr _loc$.join_refiner $lid: local_refiner_id$ $parent_path$.$lid: refiner_id$ >>;
-            refiner_let _loc
+            refiner_let _loc;
+            refiner_ignore _loc;
          ]
        | _ ->
             Stdpp.raise_with_loc _loc (Invalid_argument "Including sub-theories not implemented")
@@ -1527,16 +1530,17 @@ let wrap_toploop_items proc _loc pel =
 
 let rec wrap_summary_items proc = function
    [] -> []
- | item::items ->
+ | (item, loc)::items ->
       let items = wrap_summary_items proc items in
       begin match item with
          MLast.StVal (_loc, Ploc.VaVal rec_flag, Ploc.VaVal pel) ->
             let pel, toploop = wrap_toploop_items proc _loc pel in
-               <:str_item< value $opt:rec_flag$ $list:pel$ >> :: (toploop @ items)
+            let toploop = List.map (fun x -> x, _loc) toploop in
+               (<:str_item< value $opt:rec_flag$ $list:pel$ >>, _loc) :: (toploop @ items)
        | MLast.StExt (_loc, Ploc.VaVal name, ctyp, _ ) when List.mem_assoc name proc.imp_toploop ->
-            item :: add_toploop_item proc _loc name (get_top_ctyp proc name) :: items
+            (item, loc) :: (add_toploop_item proc _loc name (get_top_ctyp proc name), _loc) :: items
        | _ ->
-         item::items
+         (item, loc)::items
       end
 
 (*
@@ -1724,6 +1728,9 @@ let extract_str_item proc (item, loc) =
             eprintf "Filter_prog.extract_str_item: infix%t" eflush;
          raise (Failure "Filter_prog.extract_str_item: nested modules are not implemented")
 
+let extract_str_item_list proc ((_, loc) as item) =
+   List.map (fun x -> x, loc) (extract_str_item proc item)
+
 (*
  * Extract a signature.
  *)
@@ -1747,11 +1754,19 @@ let extract_str arg sig_info info resources name group groupdesc =
         imp_num_opnames = 0
       }
    in
-   let items = Lm_list_util.flat_map (extract_str_item proc) (info_items info) in
+   let items = info_items info in
+   let name =
+      match items with
+         [] -> ""
+       | [_, loc]
+       | _ :: (_, loc) :: _ -> Ploc.file_name loc
+   in
+   let dummy_loc = make_dummy_loc name in
+   let items = Lm_list_util.flat_map (extract_str_item_list proc) items in
    let items = wrap_summary_items proc items in
-   let prolog = implem_prolog proc dummy_loc name in
-   let postlog = implem_postlog proc dummy_loc in
-      List.map (fun item -> item, dummy_loc) (prolog @ items @ postlog)
+   let prolog = List.map (fun item -> item, dummy_loc) (implem_prolog proc dummy_loc name) in
+   let postlog = List.map (fun item -> item, dummy_loc) (implem_postlog proc dummy_loc) in
+      prolog @ items @ postlog
 
 module ProofCaches = Filter_cache.MakeCaches (Proof_convert.Convert)
 

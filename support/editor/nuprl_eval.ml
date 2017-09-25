@@ -32,7 +32,6 @@
 open Lm_debug
 open Term_sig
 open Refiner.Refiner.Term
-open Refiner.Refiner.TermType
 open Refiner.Refiner.Refine
 open Basic
 open Utils
@@ -89,8 +88,10 @@ module Nuprl (Edit : ShellEditSig) = struct
    let mp_list_module_op = mk_nuprl5_op [ make_param (token "!mp_list_module")]
    let mp_create_op = mk_nuprl5_op [ make_param (token "!mp_create")]
    let mp_create_rw_op = mk_nuprl5_op [ make_param (token "!mp_create_rw")]
+(* unused
    let mp_create_set_op = mk_nuprl5_op [ make_param (token "!mp_create_set")]
    let mp_set_goal_op = mk_nuprl5_op [ make_param (token "!mp_set_goal")]
+ *)
    let mp_set_thm_op = mk_nuprl5_op [ make_param (token "!mp_set_thm")]
    let mp_set_rw_op = mk_nuprl5_op [ make_param (token "!mp_set_rw")]
    let mp_lookup_op = mk_nuprl5_op [ make_param (token "!mp_lookup_proof")]
@@ -98,23 +99,33 @@ module Nuprl (Edit : ShellEditSig) = struct
    let mp_undo_op = mk_nuprl5_op [ make_param (token "!mp_undo")]
    let mp_save_op = mk_nuprl5_op [ make_param (token "!mp_save")]
    let mp_save_thy_op = mk_nuprl5_op [ make_param (token "!mp_save_thy")]
+(* unused
    let mp_node_op = mk_nuprl5_op [ make_param (token "!mp_node")]
    let refiner_op = mk_nuprl5_op [ make_param (token "!refine")]
+ *)
    let mp_compile_op = mk_nuprl5_op [ make_param (token "!mp_compile")]
 
+(* unused
    let refine_req_p t = opeq refiner_op (operator_of_term t)
+ *)
 
    let current_symaddr = ref []
+(* unused
    let current_pair = ref ("foo", "foo")
+ *)
 
+(* unused
    let refine_args t =
       match dest_term t with
          {term_op = op; term_terms = goal :: tac :: r } when (opeq op refiner_op)
       -> (term_of_unbound_term goal, term_of_unbound_term tac)
        | _ -> error ["refine_args"; "op"; "unrecognized"] [] [t]
+ *)
 
+(* unused
    let iinf_sequent_op = mk_nuprl5_op [make_param (token "!inf_sequent"); Basic.inil_parameter]
    let iinf_sequent_term hyp term = mk_term iinf_sequent_op [(mk_bterm [] hyp); (mk_bterm [Lm_symbol.add ""] term)]
+ *)
 
    let mp_prf_term g tac s e =
       mk_term (mk_nuprl5_op [make_param (token "!mp_prf")])
@@ -128,9 +139,11 @@ module Nuprl (Edit : ShellEditSig) = struct
       mk_term (mk_nuprl5_op [make_param (token "!mp_ref")])
       [(mk_bterm [] g); (mk_bterm [] s); (mk_bterm [] e)]
 
+(* unused
    let inatural_cons_op = (mk_nuprl5_op [make_param (token "!natural_cons")])
    let int_list_of_term_old t =
       map_isexpr_to_list_by_op inatural_cons_op number_of_inatural_term t
+ *)
    let ipui_addr_cons_op = mk_nuprl5_op [make_param (token "!pui_addr_cons")]
 
    let int_list_of_term t =
@@ -162,6 +175,7 @@ module Nuprl (Edit : ShellEditSig) = struct
                    ("term_to_msequent", (Refiner.Refiner.RefineError.TermMatchError
 					 (t, "malformed metasequent"))))
 
+(* unused
    let term_to_symaddr t =
       match string_list_of_term t with
          a::b::c::tl -> (b, c)
@@ -169,6 +183,7 @@ module Nuprl (Edit : ShellEditSig) = struct
             raise (Refiner.Refiner.RefineError.RefineError
                    ("term_to_symaddr", (Refiner.Refiner.RefineError.TermMatchError
 					(t, "malformed msequent"))))
+ *)
 
    let ilist_op = (mk_nuprl5_op [make_param (token "!list")])
 

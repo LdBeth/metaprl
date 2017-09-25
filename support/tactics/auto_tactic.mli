@@ -38,7 +38,6 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
-open Mp_resource
 open Top_resource
 open Refiner.Refiner.TermType
 open Tactic_type.Tactic

@@ -56,14 +56,14 @@ doc <:doc<
    @parents
 >>
 extends Summary
+let _ = refiner
+
 doc docoff
 
-open Lm_debug
 open Lm_symbol
 
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermSubst
-open Refiner.Refiner.RefineError
 
 open Tactic_type
 open Perv

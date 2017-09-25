@@ -171,7 +171,6 @@ doc docoff
 open Lm_debug
 open Lm_printf
 
-open Opname
 open Term_sig
 open Rewrite_sig
 open Refiner.Refiner
@@ -179,7 +178,6 @@ open Refiner.Refiner.TermType
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermAddr
 open Refiner.Refiner.TermSubst
-open Refiner.Refiner.TermMan
 open Refiner.Refiner.TermMeta
 open Refiner.Refiner.Rewrite
 open Refiner.Refiner.RefineError
@@ -338,7 +336,7 @@ let extract_elim_data =
           | (_, _, tac) :: tacs ->
                (tac i thenT check_num_equalT num t) orelseT auto_firstiT hyps select num t i tacs
          in
-         let dT p i = 
+         let dT p i =
             let options = get_options p in
             let t = Sequent.nth_hyp p i in
                if !debug_dtactic then
@@ -642,7 +640,7 @@ let process_elim_resource_annotation ?(options = []) ?labels name args term_args
          in
          let auto_ok = List.mem AutoOK options in
          let options = rule_labels_of_opt_terms labels in
-            begin match thinFirstT with 
+            begin match thinFirstT with
                Some thinT when auto_ok ->
                    [t, (options, true, (fun i -> thinT i orelseT tac i))]
              | Some thinT ->
@@ -668,11 +666,13 @@ let mustSelectT = funT (fun p ->
 let intro_must_select =
    wrap_intro ~name:"mustSelectT" ~fall_through:false mustSelectT
 
+(* unused
 let mustOptionT = funT (fun p ->
    raise (RefineError ("Dtactic.mustOptionT", StringTermError ("String option (optionT) argument required", Sequent.concl p))))
 
 let intro_must_option =
    ("mustOptionT", None, None, AutoNormal, mustOptionT)
+*)
 
 let wrap_elim ?labels tac =
    rule_labels_of_opt_terms labels, false, tac

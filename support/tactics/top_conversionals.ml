@@ -72,9 +72,7 @@ doc docoff
 
 open Lm_debug
 open Lm_printf
-open Lm_symbol
 
-open Opname
 open Rewrite_sig
 open Refiner.Refiner
 open Refiner.Refiner.TermType
@@ -97,7 +95,7 @@ open Top_options
 (*
  * Debugging.
  *)
-let debug_conv =
+let _debug_conv =
    create_debug (**)
       { debug_name = "conv";
         debug_description = "display conversion operation";
@@ -412,8 +410,10 @@ type reduce_conv = conv * (option_table -> conv)
 type reduce_info = rule_labels * conv
 type reduce_entry = term * reduce_info
 
+(* unused
 let opnames_of_terms options =
    List.fold_left (fun options t -> OpnameSet.add options (opname_of_term t)) OpnameSet.empty options
+*)
 
 let wrap_reduce ?labels conv =
    rule_labels_of_opt_terms labels, conv

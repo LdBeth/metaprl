@@ -71,8 +71,6 @@ extends Base_dform
 extends Comment
 extends Ocaml_df
 
-open Lm_debug
-
 open Term_addr_sig
 open Refiner.Refiner.TermOp
 open Refiner.Refiner.TermMan

@@ -286,7 +286,7 @@ THEORY_DEPS[] =
 #
 find-theory(name) =
     THEORYNAME = false
-    foreach(d, $(THEORYPATH))
+    foreach(d => ..., $(THEORYPATH))
         if $(and $(not $(THEORYNAME)), $(file-exists $(d)/$(name)/MetaprlInfo))
             THEORYNAME = $(d)/$(name)
             export
@@ -312,7 +312,7 @@ find-theory(name) =
 #
 find-theories(names) =
     dirs =
-        foreach(name, $(names))
+        foreach(name => ..., $(names))
             find-theory($(name))
     return $(dirs)
 
@@ -326,6 +326,7 @@ Theory(files) =
     if $(not $(THEORYDESCR))
         ConfMsgError($"In $(in $(ROOT), $(CWD)) :$(nl)The THEORYDESCR variable is not defined")
 
+    OCAMLFLAGS += -rectypes
     OCAMLINCLUDES[] += $(find-theories $(THEORY_DEPS))
     OCamlLibrary(theory, $(files))
 
@@ -359,7 +360,7 @@ section
     # Collect the theories that need to be built, paying attention
     # to the value of the THEORY_DEPS variable in each theory.
     TheorySubDir(theories, source) =
-        foreach(thy, $(theories))
+        foreach(thy => ..., $(theories))
             thydir = $(find-theory $(thy))
             if $(not $(mem $(thydir), $(COLLECTED_THEORIES)))
                 if $(not $(file-exists $(thydir)/MetaprlInfo))

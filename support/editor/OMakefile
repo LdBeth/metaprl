@@ -1,6 +1,8 @@
 #
 # MetaPRL editor.
 #
+OCAMLFLAGS += -rectypes
+
 OCAMLINCLUDES[] +=
    $(dir $(ROOT)/$(ENSEMBLE_DIR))
    ../shell

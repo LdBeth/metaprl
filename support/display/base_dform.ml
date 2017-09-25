@@ -48,21 +48,19 @@ extends Mpfont
 extends Mpsymbols
 (* @docoff *)
 
-open Lm_debug
-open Lm_symbol
-
 open Term_sig
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermOp
 open Refiner.Refiner.TermType
 open Refiner.Refiner.TermMan
-open Refiner.Refiner.Rewrite
 open Refiner.Refiner.RefineError
 open Dform
 open Lm_rformat
 open Simple_print
 
+(* unused
 let debug_dform = load_debug "dform"
+ *)
 
 (* @terms *)
 declare df_var[var:v] : Dform

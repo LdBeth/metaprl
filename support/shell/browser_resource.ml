@@ -372,7 +372,8 @@ let add_sessions state info ids =
 let add_edit state info =
    let { browser_id = id;
          browser_files = files;
-         browser_options = options
+         browser_options = options;
+         _
        } = state
    in
       try
@@ -459,7 +460,8 @@ let extract info state =
    let { browser_directories = directories;
          browser_history = history;
          browser_sessions = sessions;
-         browser_options = options
+         browser_options = options;
+         _
        } = state
    in
    let info = add_directories info directories in

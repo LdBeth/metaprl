@@ -26,11 +26,7 @@
  *)
 extends Mptop
 
-open Opname
-open Tactic_boot_sig
 open Refiner.Refiner.Refine
-open Mp_resource
-open Top_resource
 open Options_boot
 
 open Tactic_type.Tactic

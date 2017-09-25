@@ -39,8 +39,6 @@
  *
  * @end[license]
  *)
-open Lm_debug
-
 open Term_ty_sig
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermOp

@@ -30,19 +30,16 @@ extends Top_tacticals
 open Lm_debug
 open Lm_printf
 open Lm_int_set
-open Lm_dag_sig
 open Lm_imp_dag
 
 open Term_sig
 open Rewrite_sig
-open Refiner.Refiner
 open Refiner.Refiner.TermType
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermAddr
 open Refiner.Refiner.TermSubst
 open Refiner.Refiner.TermMan
 open Refiner.Refiner.TermMeta
-open Refiner.Refiner.Rewrite
 open Refiner.Refiner.RefineError
 open Term_match_table
 open Term_hash_code
@@ -106,17 +103,17 @@ let forward_precs () =
  *)
 module type TermTableSig =
 sig
+(* unused
    type t
 
    val empty : t
    val add : t -> term -> t
    val mem : t -> term -> bool
+ *)
 end;;
 
 module TermTable =
 struct
-   type t
-
    let empty = IntMTable.empty
 
    let add table t =
@@ -175,7 +172,7 @@ and it should produce exactly one" main_count,
       subgoalsCheckT (check_main_fun loc) tac
    in
    (* Select the correct precedence *)
-   let select pre1 { forward_prec = pre2 } =
+   let select pre1 { forward_prec = pre2; _ } =
       equal_forward_prec pre2 pre1
    in
    (* We assume no progress when there are no new hyps and the concl has not changed. *)
@@ -201,7 +198,7 @@ and it should produce exactly one" main_count,
       if i = length then
          tac, changed
       else
-         match SeqHyp.get hyps i with 
+         match SeqHyp.get hyps i with
             Hypothesis (_, t) when TermTable.mem new_hyps t ->
                let i = i + 1 in
                   search_tac state hyps length new_hyps ((tryT (state.fwd_thin i)) thenT tac) changed i
@@ -244,7 +241,7 @@ and it should produce exactly one" main_count,
                 | None -> (* Chain *) step state orig_hyps seq.sequent_concl length (i - 1) p
             else
                (* Did the step thin the original hyp? *)
-               let thinned = 
+               let thinned =
                   match SeqHyp.get hyps (i-1) with
                      Hypothesis(_, t) -> not (alpha_equal orig_hyp t)
                    | _ -> true
@@ -273,7 +270,7 @@ and it should produce exactly one" main_count,
        *)
       and step state hyps concl length i p =
          match state with
-            { fwd_precs = pre :: precs; fwd_chain = None } ->
+            { fwd_precs = pre :: precs; fwd_chain = None; _ } ->
                if i = length then
                   (* This precedence level is done, go to the next one *)
                   step {state with fwd_precs = precs} hyps concl length 0 p
@@ -285,14 +282,15 @@ and it should produce exactly one" main_count,
                    | Context _ ->
                         step state hyps concl length (i + 1) p
                   end
-          | { fwd_precs = pre :: precs; fwd_chain = Some t } ->
+          | { fwd_precs = pre :: precs; fwd_chain = Some t; _ } ->
                step_cont {state with fwd_precs = precs} hyps concl length t i (lookup_all tbl (select pre) t) p
-          | { fwd_precs = [] } ->
+          | { fwd_precs = []; _ } ->
                idT
       in
       (fun thinT i p ->
          let { sequent_hyps = hyps;
-               sequent_concl = concl
+               sequent_concl = concl;
+               _
              } = Sequent.explode_sequent_arg p
          in
          let i, chain =

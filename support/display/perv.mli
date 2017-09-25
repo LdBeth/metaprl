@@ -30,7 +30,6 @@
  * jyh@cs.cornell.edu
  *)
 open Lm_symbol
-open Refiner.Refiner.TermType
 open Refiner.Refiner.TermTy
 
 (************************************************************************

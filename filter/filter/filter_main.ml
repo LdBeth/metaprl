@@ -78,9 +78,8 @@ let set_export () =
    Punix.putenv "MP_EXPORT=true"
 
 let add_anon_arg arg =
-   let name = Plexing.input_file in
-      name := arg;
-      Pcaml.input_file := arg
+   Plexing.input_file := arg;
+   Pcaml.input_file := arg
 
 let spec =
    ["-I", String add_include, "add a directory to the path for include files";

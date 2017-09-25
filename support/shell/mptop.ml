@@ -188,8 +188,7 @@ and mk_expr top_expr =
             not_supported loc "array"
        | (<:expr< $e1$ := $e2$ >>) ->
             not_supported loc "assignment"
-       | <:expr< assert $_$ >>
-       | <:expr< assert False >> ->
+       | <:expr< assert $_$ >> ->
             not_supported loc "assert"
        | (<:expr< $chr:c$ >>) ->
             not_supported loc "char"
@@ -204,9 +203,9 @@ and mk_expr top_expr =
        | (<:expr< if $e1$ then $e2$ else $e3$ >>) ->
             not_supported loc "ifthenelse"
        | <:expr< $int:s$ >>
-       | ExNativeInt (_, s)
-       | ExInt64 (_, s)
-       | ExInt32 (_, s) ->
+       | <:expr< $nativeint:s$ >>
+       | <:expr< $int64:s$ >>
+       | <:expr< $int32:s$ >> ->
             IntExpr (int_of_string s)
        | (<:expr< lazy $_$ >>) ->
             not_supported loc "lazy"
@@ -253,6 +252,37 @@ and mk_expr top_expr =
             not_supported loc "ExLab"
        | MLast.ExCoe _ ->
             not_supported loc "ExCoe"
+       | MLast.ExArr (_, Ploc.VaAnt _)
+       | MLast.ExChr (_, Ploc.VaAnt _)
+       | MLast.ExFlo (_, Ploc.VaAnt _)
+       | MLast.ExFor (_, _, _, _, _, Ploc.VaAnt _)
+       | MLast.ExFor (_, _, _, _, Ploc.VaAnt _, _)
+       | MLast.ExFor (_, Ploc.VaAnt _, _, _, _, _)
+       | MLast.ExFun (_, Ploc.VaAnt _)
+       | MLast.ExInt (_, _, _)
+       | MLast.ExLet (_, _, Ploc.VaAnt _, _)
+       | MLast.ExLet (_, Ploc.VaAnt _, _, _)
+       | MLast.ExLid (_, Ploc.VaAnt _)
+       | MLast.ExUid (_, Ploc.VaAnt _)
+       | MLast.ExMat (_, _, Ploc.VaAnt _)
+       | MLast.ExNew (_, Ploc.VaAnt _)
+       | MLast.ExOvr (_, Ploc.VaAnt _)
+       | MLast.ExSeq (_, Ploc.VaAnt _)
+       | MLast.ExSnd (_, _, Ploc.VaAnt _)
+       | MLast.ExStr (_, Ploc.VaAnt _)
+       | MLast.ExTry (_, _, Ploc.VaAnt _)
+       | MLast.ExTup (_, Ploc.VaAnt _)
+       | MLast.ExWhi (_, _, Ploc.VaAnt _)
+       | MLast.ExBae (_, _, _)
+       | ExJdf (_, _, _)
+       | ExLop (_, _, _)
+       | ExPar (_, _, _)
+       | ExPck (_, _, _)
+       | ExRpl (_, _, _)
+       | ExSpw (_, _)
+       | ExXtr (_, _, _) ->
+            not_supported loc "antiquotations"
+
    in
       loc, expr
 
@@ -506,8 +536,18 @@ let rec mk_str_item si =
             not_supported loc "StExc"
        | StUse _ ->
             not_supported loc "str module use"
-       | StRecMod _ ->
-            not_supported loc "str rec modules"
+       | StDcl (_, Ploc.VaAnt _)
+       | StExt (_, _, _, Ploc.VaAnt _)
+       | StExt (_, Ploc.VaAnt _, _, _)
+       | StMod _
+       | StMty (_, Ploc.VaAnt _, _)
+       | StOpn (_, Ploc.VaAnt _)
+       | StTyp (_, Ploc.VaAnt _)
+       | StVal (_, _, Ploc.VaAnt _)
+       | StVal (_, Ploc.VaAnt _, _)
+       | StDef (_, _)
+       | StXtr (_, _, _) ->
+            not_supported loc "antiquotations"
 
 (************************************************************************
  * RESOURCES                                                            *

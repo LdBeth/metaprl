@@ -25,19 +25,16 @@
  * @end[license]
  *)
 extends Mptop
+let _ = refiner
 extends Proof_initialize
+let _ = refiner
 
 open Lm_printf
 
-open Opname
-open Tactic_boot_sig
-open Refiner.Refiner.Refine
 open Refiner.Refiner.TermType
 open Refiner.Refiner.Term
-open Refiner.Refiner.RefineError
-open Mp_resource
-open Top_resource
 open Options_boot
+open Mp_resource
 
 open Tactic_type
 open Tactic_type.Tacticals

@@ -1709,7 +1709,8 @@ struct
       let { base = { lib = base; _ }; name = name; self = self; info = info; grammar = grammar; _ } = cache in
       let info =
          if Filter_grammar.is_modified grammar then
-            let loc = Ploc.make_loc (Base.file_name base self) 1 0 (0, 0) "" in
+            let filename = Base.file_name base self in
+            let loc = Ploc.make_loc filename 1 0 (0, 0) "" in
                Filter_summary.add_command info (PRLGrammar grammar, loc)
          else
             info
@@ -1719,7 +1720,7 @@ struct
             begin
                eprintf "Filter_cache.save: begin%t" eflush;
                eprint_info info
-            end;
+         end;
          Base.set_info base self (StrMarshal.marshal info);
          Base.save base barg self suffix;
          if !debug_filter_cache then

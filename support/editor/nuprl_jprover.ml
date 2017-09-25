@@ -25,7 +25,6 @@
  * Authors: Lori Lorigo, Richard Eaton
  *
  *)
-open Lm_symbol
 open Term_sig
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
@@ -93,6 +92,7 @@ let replace_nuprl_var_terms term = term
 
 let debug_term = ref Basic.ivoid_term
 
+(* unused
 let jprover_debug_hook t =
   print_string "calling jprover hook ";
   let x = Basic.hd_of_icons_term Basic.icons_op t and
@@ -112,6 +112,7 @@ let jprover_debug_hook t =
        e -> (print_string "mbterm failed";
 	     Mbterm.mbterm_of_term (mk_term ijprover_op [])) in
   result
+ *)
 
 let jprover_hook t =
   let mult_limit = Basic.number_of_inatural_term (Basic.hd_of_icons_term Basic.icons_op t) and

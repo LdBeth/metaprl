@@ -29,15 +29,9 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
-open Lm_string_set
-
-open Opname
-open Term_sig
 open Refiner.Refiner.TermType
 
 open Dform
-
-open Filter_type
 
 (*
  * Client functions called somewhere within a toploop.

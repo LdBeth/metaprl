@@ -62,7 +62,6 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
-open Lm_debug
 open Lm_symbol
 open Term_sig
 open Rewrite_sig
@@ -262,7 +261,7 @@ and 'a world_info =
    }
 
 and 'a world =
-   Hypothesis of 'a world_info
+   WorldHypothesis of 'a world_info
  | Empty
 
 (*
@@ -539,7 +538,7 @@ type 'a goal_item =
 (*
  * Construct a new name from the base.
  *)
-let mk_var_name { ext_base = { ext_index = index } as base } =
+let mk_var_name { ext_base = { ext_index = index; _ } as base; _ } =
    base.ext_index <- index + 1;
    Lm_symbol.add ("`" ^ (string_of_int index))
 
@@ -608,17 +607,17 @@ let set_gnames
 (*
  * Get the world for any kind of inference.
  *)
-let world_of_inf { inf_info = info } =
+let world_of_inf { inf_info = info; _ } =
    match info with
-      Inference { inf_world = world }
-    | Hyp { hyp_world = world } ->
+      Inference { inf_world = world; _ }
+    | Hyp { hyp_world = world; _ } ->
          world
 
 (*
  * World naming.
  *)
 let name_of_world = function
-   Hypothesis { world_hyp = { inf_name = name } } ->
+   WorldHypothesis { world_hyp = { inf_name = name; _ }; _ } ->
       name
  | Empty ->
       raise (Invalid_argument "name_of_world")
@@ -628,7 +627,7 @@ let name_of_world = function
  *)
 let push_world_inf world inf =
    match world with
-      Hypothesis w ->
+      WorldHypothesis w ->
          w.world_infs <- inf :: w.world_infs
     | Empty ->
          raise (Invalid_argument "push_world_inf")
@@ -637,7 +636,7 @@ let push_world_inf world inf =
  * Push a new inference onto the forward chaining queue
  * so that we will check it for further inferencing.
  *)
-let push_extract_inf { ext_base = base } inf =
+let push_extract_inf { ext_base = base; _ } inf =
    base.ext_fqueue <- inf :: base.ext_fqueue
 
 (************************************************************************
@@ -651,11 +650,13 @@ let push_extract_inf { ext_base = base } inf =
 let eq_goal
     { goal_concl = t;
       goal_hash = hash;
-      goal_assums = assums
+      goal_assums = assums;
+      _
     }
     { goal_concl = t';
       goal_hash = hash';
-      goal_assums = assums'
+      goal_assums = assums';
+      _
     } =
    let rec aux = function
       ({ assum_term = t; assum_hash = hash }::tl),
@@ -681,7 +682,7 @@ let is_child_of_parent child parent =
          true
       else
          match world with
-            Hypothesis { world_prev = prev } ->
+            WorldHypothesis { world_prev = prev; _ } ->
                aux prev
           | Empty ->
                false
@@ -693,11 +694,12 @@ let is_child_of_parent child parent =
  *)
 let is_child_with_assumptions child assums parent =
    let rec aux world = function
-      { assum_term = t; assum_hash = hash } :: tl ->
+      { assum_term = t; assum_hash = hash; _ } :: tl ->
          begin
             match world with
-               Hypothesis { world_hyp = { inf_value = t'; inf_hash = hash' };
-                            world_prev = prev
+               WorldHypothesis { world_hyp = { inf_value = t'; inf_hash = hash'; _ };
+                                 world_prev = prev;
+                                 _
                } ->
                   if hash = hash' & alpha_equal t t' then
                      aux prev tl
@@ -716,7 +718,7 @@ let is_child_with_assumptions child assums parent =
  * Not idempotent.
  *)
 let bset_tbl_node tbl node =
-   let { node_goal = { goal_hash = hash } } = node in
+   let { node_goal = { goal_hash = hash; _ }; _ } = node in
    let nodes =
       try Hashtbl.find tbl hash with
          Not_found ->
@@ -725,12 +727,12 @@ let bset_tbl_node tbl node =
       Hashtbl.remove tbl hash;
       Hashtbl.add tbl hash (node :: nodes)
 
-let bset_node { ext_goals = tbl } node =
+let bset_node { ext_goals = tbl; _ } node =
    bset_tbl_node tbl node
 
-let bget_nodes { ext_goals = tbl } ({ goal_hash = hash } as goal) =
+let bget_nodes { ext_goals = tbl; _ } ({ goal_hash = hash; _ } as goal) =
    let rec collect = function
-      ({ node_goal = goal' } as node)::tl ->
+      ({ node_goal = goal'; _ } as node)::tl ->
          if goal' == goal then
             node :: collect tl
          else
@@ -749,9 +751,9 @@ let bget_nodes { ext_goals = tbl } ({ goal_hash = hash } as goal) =
  * This gets just one node with the given world,
  * extended by the assumptions in the goal.
  *)
-let bget_node extract world ({ goal_assums = assums } as goal) =
+let bget_node extract world ({ goal_assums = assums; _ } as goal) =
    let nodes = bget_nodes extract goal in
-   let test { node_world = world' } =
+   let test { node_world = world'; _ } =
       is_child_with_assumptions world' assums world
    in
       Lm_list_util.find test nodes
@@ -775,8 +777,8 @@ let fset_entry (ftable : 'a flookup_table) hash (entry : int * 'a fcache_info) =
       Hashtbl.remove ftable hash;
       Hashtbl.add ftable hash (entry :: entries)
 
-let fget_entry { ext_base = { ext_ftable = ftable; ext_rules = rules } } { inf_hash = hash } =
-   let aux (i, ({ finfo_plates = plates } as rl)) =
+let fget_entry { ext_base = { ext_ftable = ftable; ext_rules = rules; _ }; _ } { inf_hash = hash; _ } =
+   let aux (i, ({ finfo_plates = plates; _ } as rl)) =
       let test (rule', _) =
          rule' == rl
       in
@@ -800,7 +802,7 @@ let fset_insts inf (i, _, insts) =
       insts.(i) <- inf :: insts.(i);
       explore 0
 
-let init_insts (rules : 'a info_table) ({ finfo_plates = plates } as rl) =
+let init_insts (rules : 'a info_table) ({ finfo_plates = plates; _ } as rl) =
    let len = List.length plates in
    let entry = Array.create len [] in
    let entries =
@@ -816,7 +818,7 @@ let init_insts (rules : 'a info_table) ({ finfo_plates = plates } as rl) =
  * 'a goal -> 'a bcache_info list interface for blookup_table.
  * Not idempotent.
  *)
-let bset_entry (tbl : 'a blookup_table) ({ binfo_plate = hash } as entry) =
+let bset_entry (tbl : 'a blookup_table) ({ binfo_plate = hash; _ } as entry) =
    let entries =
       try Hashtbl.find tbl hash with
          Not_found ->
@@ -825,14 +827,14 @@ let bset_entry (tbl : 'a blookup_table) ({ binfo_plate = hash } as entry) =
       Hashtbl.remove tbl hash;
       Hashtbl.add tbl hash (entry::entries)
 
-let bget_entries { ext_base = { ext_btable = tbl } } { goal_hash = hash } =
+let bget_entries { ext_base = { ext_btable = tbl; _ }; _ } { goal_hash = hash; _ } =
    Hashtbl.find tbl hash
 
 (*
  * Provide an interface to the terms table.
  * Not idempotent.
  *)
-let set_inf { ext_base = { ext_terms = terms } } ({ inf_hash = hash } as inf) =
+let set_inf { ext_base = { ext_terms = terms; _ }; _ } ({ inf_hash = hash; _ } as inf) =
    let { entry_infs = infs; entry_goals = goals } =
       try Hashtbl.find terms hash with
          Not_found ->
@@ -841,7 +843,7 @@ let set_inf { ext_base = { ext_terms = terms } } ({ inf_hash = hash } as inf) =
       Hashtbl.remove terms hash;
       Hashtbl.add terms hash { entry_infs = inf :: infs; entry_goals = goals }
 
-let set_goal { ext_base = { ext_terms = terms } } ({ goal_hash = hash } as goal) =
+let set_goal { ext_base = { ext_terms = terms; _ }; _ } ({ goal_hash = hash; _ } as goal) =
    let { entry_infs = infs; entry_goals = goals } =
       try Hashtbl.find terms hash with
          Not_found ->
@@ -854,12 +856,12 @@ let set_goal { ext_base = { ext_terms = terms } } ({ goal_hash = hash } as goal)
  * Inferences are found by their term and their world must include
  * the previous inference's world.
  *)
-let find_inf { ext_base = { ext_terms = terms } } world t hash =
-   let test ({ inf_value = t' } as inf) =
+let find_inf { ext_base = { ext_terms = terms; _ }; _ } world t hash =
+   let test ({ inf_value = t'; _ } as inf) =
       let world' = world_of_inf inf in
          alpha_equal t t' & is_child_of_parent world world'
    in
-   let { entry_infs = infs } = Hashtbl.find terms hash in
+   let { entry_infs = infs; _ } = Hashtbl.find terms hash in
       Lm_list_util.find test infs
 
 let inf_is_already_known extract world t hash =
@@ -870,19 +872,19 @@ let inf_is_already_known extract world t hash =
       Not_found ->
          false
 
-let find_goal { ext_base = { ext_terms = terms } } ({ goal_hash = hash } as goal) =
-   let { entry_goals = goals } = Hashtbl.find terms hash in
+let find_goal { ext_base = { ext_terms = terms; _ }; _ } ({ goal_hash = hash; _ } as goal) =
+   let { entry_goals = goals; _ } = Hashtbl.find terms hash in
       Lm_list_util.find (eq_goal goal) goals
 
 (*
  * Find the goalnodes that match the inference.
  *)
 let find_nodes
-    ({ ext_base = { ext_terms = terms }; ext_goals = btable } as extract)
-    ({ inf_value = t; inf_hash = hash } as inf) =
+    ({ ext_base = { ext_terms = terms; _ }; ext_goals = btable; _ } as extract)
+    ({ inf_value = t; inf_hash = hash; _ } as inf) =
    let world = world_of_inf inf in
    let rec filter_goals = function
-      ({ goal_concl = t' } as goal)::tl ->
+      ({ goal_concl = t'; _ } as goal)::tl ->
          if alpha_equal t t' then
             goal :: filter_goals tl
          else
@@ -891,7 +893,7 @@ let find_nodes
          []
    in
    let rec filter_nodes = function
-      ({ node_world = world' } as node)::tl ->
+      ({ node_world = world'; _ } as node)::tl ->
          if is_child_of_parent world world' then
             node :: filter_nodes tl
          else
@@ -899,7 +901,7 @@ let find_nodes
     | [] ->
          []
    in
-   let { entry_goals = goals } = Hashtbl.find terms hash in
+   let { entry_goals = goals; _ } = Hashtbl.find terms hash in
    let goals' = filter_goals goals in
    let nodes = Lm_list_util.flat_map (bget_nodes extract) goals' in
       filter_nodes nodes
@@ -910,10 +912,10 @@ let find_nodes
  * goal itself is in the table.
  *)
 let find_inf_for_node
-    { ext_base = { ext_terms = terms } }
-    { node_goal = { goal_concl = t; goal_hash = hash }; node_world = world } =
+    { ext_base = { ext_terms = terms; _ }; _ }
+    { node_goal = { goal_concl = t; goal_hash = hash; _ }; node_world = world; _ } =
    let rec aux = function
-      ({ inf_value = t' } as inf)::tl ->
+      ({ inf_value = t'; _ } as inf)::tl ->
          let world' = world_of_inf inf in
             if alpha_equal t t' & is_child_of_parent world world' then
                Some inf
@@ -922,22 +924,24 @@ let find_inf_for_node
     | [] ->
          None
    in
-   let { entry_infs = infs } = Hashtbl.find terms hash in
+   let { entry_infs = infs; _ } = Hashtbl.find terms hash in
       aux infs
 
+(* unused
 let is_provable extract goal =
    match find_inf_for_node extract goal with
       Some _ ->
          true
     | None ->
          false
+*)
 
 (*
  * See if a goal is already known.
  *)
-let hash_goal { ext_base = { ext_terms = terms } }
-    ({ goal_concl = t; goal_hash = hash } as goal) =
-   let { entry_goals = goals } = Hashtbl.find terms hash in
+let hash_goal { ext_base = { ext_terms = terms; _ }; _ }
+    ({ goal_concl = t; goal_hash = hash; _ } as goal) =
+   let { entry_goals = goals; _ } = Hashtbl.find terms hash in
       Lm_list_util.find (eq_goal goal) goals
 
 (************************************************************************
@@ -981,11 +985,12 @@ let mix_wild nargs terms wilds =
  *       that is an ancestor of the current world
  *    FindNone: no appropriate world was found
  *)
-let find_world_extension { ext_base = { ext_worlds = worlds } } world t hash =
+let find_world_extension { ext_base = { ext_worlds = worlds; _ }; _ } world t hash =
    let rec search newest = function
-      ((Hypothesis world') as next)::tl ->
-         let { world_hyp = { inf_value = t'; inf_hash = hash' };
-               world_prev = prev
+      ((WorldHypothesis world') as next)::tl ->
+         let { world_hyp = { inf_value = t'; inf_hash = hash'; _ };
+               world_prev = prev;
+               _
              } = world'
          in
             if hash = hash' & alpha_equal t t' then
@@ -1025,7 +1030,7 @@ let find_world_extension { ext_base = { ext_worlds = worlds } } world t hash =
 let create_world_with_hyp extract world t hash =
    try
       let inf = find_inf extract world t hash in
-         [], Hypothesis ({ world_hyp = inf;
+         [], WorldHypothesis ({ world_hyp = inf;
                            world_prev = world;
                            world_infs = []
                          })
@@ -1039,7 +1044,7 @@ let create_world_with_hyp extract world t hash =
               inf_info = Hyp { hyp_world = world' }
             }
          and world' =
-            Hypothesis { world_hyp = inf;
+            WorldHypothesis { world_hyp = inf;
                          world_prev = world;
                          world_infs = [inf]
             }
@@ -1052,8 +1057,8 @@ let create_world_with_hyp extract world t hash =
  * and we just copy the inferences into a new world.
  *)
 let copy_world world world' =
-   let { world_hyp = inf; world_infs = infs } = world' in
-      Hypothesis { world_hyp = inf;
+   let { world_hyp = inf; world_infs = infs; _ } = world' in
+      WorldHypothesis { world_hyp = inf;
                    world_prev = world;
                    world_infs = infs
       }
@@ -1062,7 +1067,7 @@ let copy_world world world' =
  * Find or build a world that is an extension of the current one.
  * Add newly generated inferences to the forward chaining queue.
  *)
-let build_world_with_hyp ({ ext_base = base } as extract) world t hash =
+let build_world_with_hyp ({ ext_base = base; _ } as extract) world t hash =
    match find_world_extension extract world t hash with
       FindNext world' ->
          world'
@@ -1120,9 +1125,9 @@ let construct_subgoals extract just ants =
  * Set the subgoals of a goal given a list of bcache_info
  * that may match this goal.
  *)
-let set_subgoals extract ({ goal_concl = t } as goal) binfo =
+let set_subgoals extract ({ goal_concl = t; _ } as goal) binfo =
    let rec aux = function
-      { binfo_rw = rw; binfo_just = just }::tl ->
+      { binfo_rw = rw; binfo_just = just; _ }::tl ->
          begin
             try
                let ants = rw t in
@@ -1147,7 +1152,7 @@ let set_subgoals extract ({ goal_concl = t } as goal) binfo =
  * It is assumed that the goal is not directly provable
  * from an inference.
  *)
-let expand_subgoals extract ({ goal_subgoals = subgoals } as goal) =
+let expand_subgoals extract ({ goal_subgoals = subgoals; _ } as goal) =
    match subgoals with
       Subgoals _ ->
          true
@@ -1159,7 +1164,7 @@ let expand_subgoals extract ({ goal_subgoals = subgoals } as goal) =
 (*
  * Construct a node from a subgoal.
  *)
-let construct_node extract world ({ goal_assums = assums } as goal) =
+let construct_node extract world ({ goal_assums = assums; _ } as goal) =
    try bget_node extract world goal with
       Not_found ->
          (* Construct a new node *)
@@ -1177,9 +1182,9 @@ let construct_node extract world ({ goal_assums = assums } as goal) =
 (*
  * Set the children of the node from a subgoal list.
  *)
-let find_node_children extract { node_world = world } subgoals =
+let find_node_children extract { node_world = world; _ } subgoals =
    let construct' = construct_node extract world in
-   let aux { sub_goals = goals } =
+   let aux { sub_goals = goals; _ } =
       List.map construct' goals
    in
       List.map aux subgoals
@@ -1189,7 +1194,7 @@ let find_node_children extract { node_world = world } subgoals =
  * In the process, we hash the outgoing subgoals to squash
  * the DAG.
  *)
-let set_node_children extract ({ node_goal = { goal_subgoals = subgoals } } as node) =
+let set_node_children extract ({ node_goal = { goal_subgoals = subgoals; _ }; _ } as node) =
    match subgoals with
       Unsolvable ->
          node.node_status <- Unprovable
@@ -1203,7 +1208,7 @@ let set_node_children extract ({ node_goal = { goal_subgoals = subgoals } } as n
  * Expand a backward chain on a specific node in the tree.
  * Assume that node_status is Unproved.
  *)
-let expand_node extract ({ node_goal = goal } as node) =
+let expand_node extract ({ node_goal = goal; _ } as node) =
    match find_inf_for_node extract node with
       Some inf ->
          node.node_status <- Primitive inf
@@ -1313,7 +1318,7 @@ let pop_succeeded_node fstack =
 let new_bchain node =
    (* Search engine *)
    let fstack = ref [RootNode node] in
-   let search_node extract ({ node_status = status; node_children = subgoals } as node) =
+   let search_node extract ({ node_status = status; node_children = subgoals; _ } as node) =
       match status with
          Unproved ->
             (* Expand subgoals, and restart *)
@@ -1410,7 +1415,7 @@ let update_goalnodes extract inf =
  * Build the results from the values produced
  * during rewriting.
  *)
-let build_results ({ ext_base = base } as extract) world root values =
+let build_results ({ ext_base = base; _ } as extract) world root values =
    let rec aux = function
       t::tl ->
          let hash = shape_of_term t in
@@ -1457,7 +1462,7 @@ let instantiate f world insts =
 (*
  * Try to chain through a particular arglist.
  *)
-let try_arglist_normal ({ ext_base = base } as extract) rw just world = function
+let try_arglist_normal ({ ext_base = base; _ } as extract) rw just world = function
    [] ->
       ()
  | (arg::args) as all_args ->
@@ -1479,7 +1484,7 @@ let try_arglist_normal ({ ext_base = base } as extract) rw just world = function
 (*
  * Try to chain through the new item.
  *)
-let try_fchain_normal extract world { finfo_rw = rw; finfo_just = just } finst =
+let try_fchain_normal extract world { finfo_rw = rw; finfo_just = just; _ } finst =
    let try_arglist_normal' = try_arglist_normal extract rw just in
       if not (List.mem [] finst) then
          instantiate try_arglist_normal' world (List.rev finst)
@@ -1523,7 +1528,7 @@ let try_arglist_wild extract rw wrw nargs just world args =
  * A rewrite is supplied to produce what these wildcard arguments
  * should be.
  *)
-let try_fchain_wild extract world { finfo_rw = rw; finfo_just = just } (wargs, wrw) finst =
+let try_fchain_wild extract world { finfo_rw = rw; finfo_just = just; _ } (wargs, wrw) finst =
    let try_arglist_wild' = try_arglist_wild extract rw wrw wargs just in
       if not (List.mem [] finst) then
          instantiate try_arglist_wild' world (List.rev finst)
@@ -1532,7 +1537,7 @@ let try_fchain_wild extract world { finfo_rw = rw; finfo_just = just } (wargs, w
  * Try chaining through a particular new item.
  * Optimize the case where there are no wildcard entries.
  *)
-let try_fchain extract world ({ finfo_wild = wild } as info) finst =
+let try_fchain extract world ({ finfo_wild = wild; _ } as info) finst =
    match wild with
       None ->
          try_fchain_normal extract world info finst
@@ -1553,7 +1558,7 @@ let try_fchaining extract inf info =
 (*
  * Get something from the queue, and try to chain through it.
  *)
-let fchain ({ ext_base = { ext_fqueue = fqueue } as base } as extract) =
+let fchain ({ ext_base = { ext_fqueue = fqueue; _ } as base; _ } as extract) =
    match fqueue with
       inf::tl ->
          base.ext_fqueue <- tl;
@@ -1802,7 +1807,8 @@ let add_hyp extract i gname t =
          ext_hyps = hyps;
          ext_goal = goal;
          ext_world = world;
-         ext_base = base
+         ext_base = base;
+         _
        } = extract
    in
    let t = subst t names (List.map mk_var_term names) in
@@ -1838,7 +1844,8 @@ let del_hyp
       ext_gnames = gnames;
       ext_hyps = hyps;
       ext_goal = goal;
-      ext_base = base
+      ext_base = base;
+      _
     } i =
    if i = 0 then
       (* Remove all hyps *)
@@ -1883,7 +1890,8 @@ let del_hyp
  *)
 let ref_hyp ({ ext_hcount = hcount;
                ext_hyps = hyps;
-               ext_used = used
+               ext_used = used;
+               _
              } as extract) i =
    let hyp = List.nth hyps (hcount - i - 1) in
       if List.memq hyp used then
@@ -1895,7 +1903,7 @@ let ref_hyp ({ ext_hcount = hcount;
  * Rename a particular hyp.
  *)
 let name_hyp extract i gname =
-   let { ext_hcount = hcount; ext_gnames = gnames } = extract in
+   let { ext_hcount = hcount; ext_gnames = gnames; _ } = extract in
       set_gnames extract (Lm_list_util.replace_nth (hcount - i - 1) gname gnames)
 
 (*
@@ -1910,7 +1918,8 @@ let set_goal extract concl =
          ext_gnames = gnames;
          ext_hyps = hyps;
          ext_world = world;
-         ext_base = base
+         ext_base = base;
+         _
        } = extract
    in
    let t = subst concl gnames (List.map mk_var_term names) in
@@ -1965,7 +1974,7 @@ let set_msequent extract seq =
    in
    let goal, _ = dest_msequent seq in
       match explode_sequent goal with
-         { sequent_hyps = hyps; sequent_concl = concl } ->
+         { sequent_hyps = hyps; sequent_concl = concl; _ } ->
             set_goal (collect 0 (SeqHyp.length hyps) (del_hyp extract 0) hyps) concl
 
 (************************************************************************
@@ -1997,9 +2006,9 @@ type 'a hyplist =
 (*
  * Produce the initial hyp list from the list of worlds in the extract.
  *)
-let init_hyps { ext_hcount = hcount; ext_hyps = hyps } =
+let init_hyps { ext_hcount = hcount; ext_hyps = hyps; _ } =
    let aux = function
-      Hypothesis { world_hyp = inf } ->
+      WorldHypothesis { world_hyp = inf; _ } ->
          { hyp_info = Inf inf }
     | Empty ->
          raise (Invalid_argument "init_hyps")
@@ -2016,7 +2025,7 @@ let init_hyps { ext_hcount = hcount; ext_hyps = hyps } =
 let hyp_index { hyp_count = hcount; hyp_hyps = hyps } =
    let search_root inf =
       match inf with
-         { inf_value = t; inf_info = Inference ({ inf_values = values } as info) } ->
+         { inf_value = t; inf_info = Inference ({ inf_values = values; _ } as info); _ } ->
             let index = Lm_list_util.find_indexq t values in
             let rec search i = function
                ({ hyp_info = Root (j, info') } as hyp)::htl ->
@@ -2060,8 +2069,8 @@ let hyp_index_force hyps inf =
 (*
  * Add a rule as an inference.
  *)
-let hyp_add_info { hyp_count = hcount; hyp_hyps = hyps }
-    ({ inf_values = values } as info) =
+let hyp_add_info { hyp_count = hcount; hyp_hyps = hyps; _ }
+    ({ inf_values = values; _ } as info) =
    let rec aux i l = function
       _::t ->
          aux (i + 1) ({ hyp_info = Root (i, info) }::l) t
@@ -2073,12 +2082,12 @@ let hyp_add_info { hyp_count = hcount; hyp_hyps = hyps }
 (*
  * Find the particular branch of the node that succeeded.
  *)
-let find_and_branch { node_goal = { goal_subgoals = subgoals }; node_children = children } =
+let find_and_branch { node_goal = { goal_subgoals = subgoals; _ }; node_children = children; _ } =
    match subgoals with
       Subgoals subgoals' ->
          let rec search = function
-            (children::ctl), ({ sub_just = just }::gtl) ->
-               let test { node_status = status } =
+            (children::ctl), ({ sub_just = just; _ }::gtl) ->
+               let test { node_status = status; _ } =
                   match status with
                      Primitive _ | Derived -> true
                    | Unproved | Unprovable | Derivable -> false
@@ -2126,13 +2135,13 @@ let rec forechain hyps = function
           | None ->
                (* Infer the inf *)
                match inf with
-                  { inf_info = Inference ({ inf_just = just; inf_args = args } as info) } ->
+                  { inf_info = Inference ({ inf_just = just; inf_args = args; _ } as info); _ } ->
                      let l, hyps' = forechain hyps args in
                      let indices = List.map (hyp_index_force hyps') args in
                      let hyps'' = hyp_add_info hyps' info in
                      let l', hyps''' = forechain hyps'' infs in
                         l @ ((indices, just)::l), hyps'''
-                | { inf_info = Hyp _ } ->
+                | { inf_info = Hyp _; _ } ->
                      failwith "forechain: hyp_error"
       end
 
@@ -2145,7 +2154,8 @@ let rec forechain hyps = function
  *)
 let rec backchain hyps infs
     ({ node_status = status;
-       node_world = world
+       node_world = world;
+       _
      } as node) =
    let ninfs, infs' = split_infs infs world in
    let fjust, hyps' = forechain hyps ninfs in
@@ -2164,7 +2174,7 @@ let rec backchain hyps infs
  * must be satisfied by forward chaining.
  *)
 let collect_infs node =
-   let rec search l ({ node_status = status } as node) =
+   let rec search l ({ node_status = status; _ } as node) =
       match status with
          Primitive inf -> inf::l
        | Derived ->
@@ -2189,7 +2199,7 @@ let collect_infs node =
  *    In the second pass, we combine the forward,
  *    backward chaining.
  *)
-let lookup ({ ext_node = node } as extract) =
+let lookup ({ ext_node = node; _ } as extract) =
    match node with
       Some node' ->
          let hyps = init_hyps extract in
@@ -2205,9 +2215,9 @@ let lookup ({ ext_node = node } as extract) =
 (*
  * Find the handles of the hyps being used.
  *)
-let synthesize ({ ext_used = used } as extract) syns =
+let synthesize ({ ext_used = used; _ } as extract) syns =
    let rec combine = function
-      { syn_used = used' }::t ->
+      { syn_used = used'; _ }::t ->
          Lm_list_util.unionq used (combine t)
     | [] ->
          used
@@ -2218,8 +2228,9 @@ let synthesize ({ ext_used = used } as extract) syns =
  * Get the used hyp numbers.
  *)
 let used_hyps
-    { syn_extract = { ext_hyps = hyps; ext_hcount = hcount };
-      syn_used = used
+    { syn_extract = { ext_hyps = hyps; ext_hcount = hcount; _ };
+      syn_used = used;
+      _
     } =
    List.map (function inf -> hcount - (Lm_list_util.find_indexq inf hyps) - 1) used
 

@@ -24,8 +24,6 @@
  * Modified By: Aleksey Nogin @email{nogin@cs.caltech.edu}
  * @end[license]
  *)
-open Lm_printf
-
 open Tactic_type.Tactic
 open Tactic_type
 open Mp_resource

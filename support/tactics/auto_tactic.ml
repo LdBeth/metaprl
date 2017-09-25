@@ -445,7 +445,9 @@ let dag = ImpDag.create ()
 let compare node1 node2 =
    ImpDag.node_rel dag node1.auto_prec node2.auto_prec = LessThan
 
+(* unused
 let auto_tac tac = tac.auto_tac
+ *)
 
 let sort_nodes = Sort.list compare
 
@@ -561,6 +563,7 @@ let create_auto_prec before after =
 (*
  * Use the tactic as long as progress is being made.
  *)
+(* unused
 let rec check_progress goal = function
    goal' :: goals ->
       if alpha_equal goal goal' then
@@ -569,6 +572,7 @@ let rec check_progress goal = function
          check_progress goal goals
  | [] ->
       false
+ *)
 
 (*
  * Actual tactics.

@@ -54,7 +54,10 @@ let _ =
 (*
  * Dummy MLast.loc value
  *)
-let dummy_loc = Ploc.dummy
+let make_dummy_loc name =
+   Ploc.make_loc name 1 0 (0, 0) ""
+
+let dummy_loc = make_dummy_loc "<dummy>"
 
 (*
  * Construct a location.
@@ -80,7 +83,8 @@ let adjust_pos globpos local_pos =
    let glob_pos_cnum = Ploc.first_pos globpos in
    let glob_pos_enum = Ploc.last_pos globpos in
    let glob_comm = Ploc.comment globpos in
-      Ploc.make_loc (Ploc.file_name globpos) (**)
+   let glob_name = Ploc.file_name globpos in
+      Ploc.make_loc glob_name (**)
          (if local_pos_lnum > 0 then glob_pos_lnum + local_pos_lnum - 1 else glob_pos_lnum)
          (if local_pos_lnum <= 1 then glob_pos_bol else local_pos_bol + glob_pos_cnum)
          (glob_pos_cnum + local_pos_cnum, glob_pos_enum + local_pos_enum)

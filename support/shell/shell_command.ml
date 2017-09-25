@@ -31,8 +31,6 @@ open Lm_debug
 open Lm_rformat
 open Lm_rprintf
 
-open Opname
-
 open Shell_sig
 open Shell_util
 open Shell_internal_sig

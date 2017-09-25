@@ -43,7 +43,6 @@
  *
  * @end[license]
  *)
-open Lm_debug
 open Lm_symbol
 
 open Term_sig
@@ -136,7 +135,7 @@ let collect_decls p =
                filter_hyps subst hyps (i + 1) len
    in
    let goal, assums = dest_msequent (Sequent.msequent p) in
-   let { sequent_hyps = hyps } = TermMan.explode_sequent goal in
+   let { sequent_hyps = hyps; _ } = TermMan.explode_sequent goal in
    let num_hyps = SeqHyp.length hyps in
    let rec filter_assums subst = function
       assum :: tl ->

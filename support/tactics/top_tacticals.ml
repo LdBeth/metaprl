@@ -55,12 +55,9 @@ doc <:doc<
    @end[license]
 >>
 extends Perv
+let _ = refiner
 
-open Lm_printf
-
-open Opname
 open Term_sig
-open Tactic_boot_sig
 open Refiner.Refiner.TermType
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermSubst
@@ -76,6 +73,7 @@ doc <:doc<
    @parents
 >>
 extends Mptop
+let _ = refiner
 
 doc <:doc<
    @modsection{Primitive tactics}
@@ -562,10 +560,12 @@ let rec nameHypsT is vs =
 (*
  * Merging tactics in int -> tactic tables
  *)
+(* unused
 let rec first_with_argT i = function
    [] -> raise (Invalid_argument "Dtactic.first_with_argT")
  | [tac] -> tac i
  | tac :: tacs -> tac i orelseT first_with_argT i tacs
+*)
 
 (*
  * -*-

@@ -59,7 +59,7 @@ let debug_http =
         debug_value = false
       }
 
-let debug_lock =
+let _debug_lock =
    create_debug (**)
       { debug_name = "lock";
         debug_description = "Show locking operations";
@@ -308,7 +308,8 @@ struct
     *)
    let update_challenge state =
       let { state_password = password;
-            state_shared = shared_entry
+            state_shared = shared_entry;
+            _
           } = state
       in
       let challenge =
@@ -425,8 +426,9 @@ struct
                   List.iter (fun (name, v) ->
                         eprintf "Cookie[2]: %s=%s@." name v) cookies;
                (try int_of_string (List.assoc "MetaPRL.width" cookies) / char_width with
-                   Not_found
-                 | Failure "int_of_string" ->
+                   Not_found ->
+                      search rest
+                 | Failure s when s = "int_of_string" ->
                       search rest)
           | _ :: rest ->
                search rest
@@ -547,7 +549,8 @@ struct
                      State.write session_entry (fun session ->
                            let { session_menu_version = menu_version;
                                  session_buttons_version = buttons_version;
-                                 session_content_version = content_version
+                                 session_content_version = content_version;
+                                 _
                                } = session
                            in
                               session.session_menu_version    <- succ menu_version;
@@ -579,7 +582,8 @@ struct
       let { session_buttons_version = buttons_version;
             session_message_version = message_version;
             session_content_version = content_version;
-            session_menu_version    = menu_version
+            session_menu_version    = menu_version;
+            _
           } = session
       in
          session.session_message_version <- succ message_version;
@@ -609,7 +613,8 @@ struct
     *)
    let get_session_state state session =
       let { session_state = info;
-            session_id = id
+            session_id = id;
+            _
           } = session
       in
          match info with
@@ -681,7 +686,8 @@ struct
                info
           | None ->
                let { browser_buf = buffer;
-                     browser_macros = macros
+                     browser_macros = macros;
+                     _
                    } = get_menubar_info state session
                in
                let info =
@@ -702,7 +708,8 @@ struct
                info
           | None ->
                let { browser_buf = buffer;
-                     browser_macros = macros
+                     browser_macros = macros;
+                     _
                    } = get_commandbar_info state session
                in
                let info =
@@ -721,7 +728,7 @@ struct
          Some info ->
             info
        | None ->
-            let { browser_styles = buffer } = get_commandbar_info state session in
+            let { browser_styles = buffer; _ } = get_commandbar_info state session in
                session.session_styles <- Some buffer;
                buffer
 
@@ -735,7 +742,8 @@ struct
    let table_of_state state =
       let { state_table     = table;
             state_challenge = challenge;
-            state_response  = response
+            state_response  = response;
+            _
           } = state
       in
       let table = BrowserTable.add_string table challenge_sym challenge in
@@ -748,7 +756,8 @@ struct
    let print_edit_info info buf =
       let { edit_new = isnew;
             edit_modified = ismodified;
-            edit_point = point
+            edit_point = point;
+            _
           } = info
       in
          Printf.bprintf buf "\tvar editinfo = new Object();\n";
@@ -770,7 +779,8 @@ struct
             session_edit            = edit;
             session_edit_flag       = edit_flag;
             session_edit_external   = edit_external;
-            session_edit_version    = edit_version
+            session_edit_version    = edit_version;
+            _
           } = session
       in
       let id = dest_pid id in
@@ -810,7 +820,8 @@ struct
       let { session_cwd             = cwd;
             session_menu            = menu;
             session_buttons         = buttons;
-            session_styles          = styles
+            session_styles          = styles;
+            _
           } = session
       in
       let table = table_of_state state in
@@ -820,11 +831,11 @@ struct
          Buffer.add_buffer buf (flush state session)
       in
       let print_menu_buffer flush buf =
-         let { menu_buffer = buf' } = flush state session in
+         let { menu_buffer = buf'; _ } = flush state session in
             Buffer.add_buffer buf buf'
       in
       let print_menu_macros flush buf =
-         let { menu_macros = macros } = flush state session in
+         let { menu_macros = macros; _ } = flush state session in
             Buffer.add_buffer buf macros
       in
       let print_cwd buf =
@@ -870,7 +881,7 @@ struct
       let table =
          let id =
             match session with
-               Some { session_id = id } ->
+               Some { session_id = id; _ } ->
                   id
              | None ->
                   main_pid
@@ -909,7 +920,8 @@ struct
     *)
    let print_redisplay_page which_uri server state session outx =
       let { session_id = id;
-            session_cwd = cwd
+            session_cwd = cwd;
+            _
           } = session
       in
       let uri =
@@ -1043,7 +1055,7 @@ struct
     * For the editor, just set the info in the session.
     *)
    let start_edit_command session state target =
-      let { session_edit_version = edit_version } = session in
+      let { session_edit_version = edit_version; _ } = session in
       let flag = LsOptionSet.mem (Top.get_ls_options ()) LsExternalEditor in
          if Sys.file_exists (editname target) then
             Session.add_edit target;
@@ -1581,7 +1593,7 @@ struct
             let serve () =
                let port = !browser_port in
                   if port = 0 then
-                     let rec serve port = 
+                     let rec serve port =
                         try
                            serve_http http_start http_connect state port
                         with
@@ -1592,7 +1604,7 @@ struct
                   else
                      serve_http http_start http_connect state port
             in
-            begin try 
+            begin try
                Filter_exn.print_exn Dform.null_base (Some "Shell_browser.main: Uncaught exception from serve_http: ") serve ()
             with _ ->
                exit 1

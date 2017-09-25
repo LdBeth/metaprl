@@ -32,13 +32,10 @@
  *)
 extends Auto_tactic
 
-open Opname
 open Refiner.Refiner.Refine
 
-open Tactic_type
 open Tactic_type.Tactic
 
-open Mp_resource
 open Top_resource
 open Options_boot
 open Auto_tactic

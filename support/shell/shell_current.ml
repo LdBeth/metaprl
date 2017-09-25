@@ -195,10 +195,10 @@ let default_shell =
    let get_dfm () =
       match !info_ref with
          None -> raise (Invalid_argument "Shell_current.default_shell: internal error")
-       | Some { shell_df_method = dfm } -> dfm
+       | Some { shell_df_method = dfm; _ } -> dfm
    in
    let proof = Shell_root.create packages get_dfm in
-   let rec info =
+   let info =
       { shell_debug          = "root";
         shell_fs             = DirRoot;
         shell_subdir         = [];

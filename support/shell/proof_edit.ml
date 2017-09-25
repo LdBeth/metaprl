@@ -261,8 +261,10 @@ let update_fun ped addr pf =
 (*
  * Replace the current proof.
  *)
+(* unused
 let set_proof ped proof =
    ped.ped_proof <- proof
+ *)
 
 (*
  * Destructors.
@@ -316,7 +318,8 @@ let edit_info_of_ped ped addr =
    let { Proof.step_goal = goal;
          Proof.step_expr = expr;
          Proof.step_subgoals = subgoals;
-         Proof.step_extras = extras
+         Proof.step_extras = extras;
+         _
        } = Proof.info (proof_of_ped ped) addr
    in
    let goal = List.hd goal in

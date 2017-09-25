@@ -1363,11 +1363,11 @@ EXTEND
           let f () =
              let proc = SigFilter.get_proc _loc in
              let id = SigFilter.hash proc in
-                SigFilter.add_command proc (Id id, dummy_loc);
+                SigFilter.add_command proc (Id id, _loc);
                 SigFilter.save proc AnySuffix;
                 SigFilter.extract () proc
           in
-             handle_exn f "interf" _loc, None
+             handle_exn f "interf" _loc, Some _loc
        ]];
 
    interf_opening:
@@ -1408,7 +1408,7 @@ EXTEND
                 StrFilter.save proc (OnlySuffixes ["cmoz"]);
                 StrFilter.extract interf proc
           in
-             handle_exn f "implem" _loc, None
+             handle_exn f "implem" _loc, Some _loc
        ]];
 
    implem_opening:

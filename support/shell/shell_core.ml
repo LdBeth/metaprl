@@ -32,7 +32,6 @@ open Opname
 open Term_sig
 open Refiner.Refiner
 open Refiner.Refiner.Term
-open Refiner.Refiner.TermType
 open Refiner.Refiner.TermShape
 open Refiner.Refiner.RefineError
 
@@ -189,6 +188,7 @@ let touch shell =
 (*
  * Format strings.
  *)
+(* unused
 let string_of_pid pid =
    let id, i = Lm_thread_shell.dest_pid pid in
       sprintf "%s.%d" id i
@@ -228,6 +228,7 @@ let jobs shell =
  *)
 let fg shell pid =
    Lm_thread_shell.set_pid (pid_of_string pid)
+*)
 
 (************************************************************************
  * Package management.
@@ -341,6 +342,7 @@ let display_proof info options =
 (*
  * Creation functions.
  *)
+(* unused
 let create_rw shell name =
    touch shell;
    raise (RefineError ("Shell.create_rw", StringError "not implemented"))
@@ -352,6 +354,7 @@ let create_axiom shell name =
 let create_thm shell name =
    touch shell;
    raise (RefineError ("Shell.create_thm", StringError "not implemented"))
+*)
 
 let create_ax_statement parse_arg shell seq name =
    let display_mode = get_display_mode shell in
@@ -361,6 +364,7 @@ let create_ax_statement parse_arg shell seq name =
       item.edit_save ();
       touch shell
 
+(* unused
 let create_opname shell name =
    touch shell;
    raise (RefineError ("Shell.create_opname", StringError "not implemented"))
@@ -396,6 +400,7 @@ let create_infix shell name =
 let create_ml shell name =
    touch shell;
    raise (RefineError ("Shell.create_ml", StringError "not implemented"))
+*)
 
 (*
  * Proof operations.
@@ -430,7 +435,7 @@ let mk_dep_name opname =
 
 let check shell =
    match shell with
-      { shell_package = Some pack; shell_fs = DirProof (_, mod_name, name) } ->
+      { shell_package = Some pack; shell_fs = DirProof (_, mod_name, name); _ } ->
          begin
             try
                let deps = Refine.compute_dependencies (Package_info.get_refiner pack) (make_opname [name; mod_name]) in
@@ -484,8 +489,10 @@ let refine shell tac =
 (*
  * Get the current goal.
  *)
+(* unused
 let goal shell =
    (shell.shell_proof.edit_info shell.shell_subdir).edit_goal
+*)
 
 let interpret shell command =
    if shell.shell_proof.edit_interpret shell.shell_subdir command then
@@ -704,7 +711,7 @@ let mount_of_fs = function
 (*
  * Change directory.
  *)
-let rec chdir_full parse_arg shell force_flag need_shell verbose (new_fs, new_subdir) =
+let chdir_full parse_arg shell force_flag need_shell verbose (new_fs, new_subdir) =
    let need_mount = force_flag || new_fs <> shell.shell_fs in
       if need_mount then begin
          try
@@ -821,7 +828,7 @@ let view parse_arg shell options =
 (*
  * Apply a function to all elements.
  *)
-let rec apply_all parse_arg shell (f : item_fun) (time : bool) (clean_item : clean_item_fun) (clean_module : clean_module_fun) =
+let apply_all parse_arg shell (f : item_fun) (time : bool) (clean_item : clean_item_fun) (clean_module : clean_module_fun) =
    let dir = shell.shell_fs, shell.shell_subdir in
    let apply_it item mod_name name =
       (*
@@ -952,7 +959,7 @@ let extract parse_arg shell path () =
 
 let term_of_extract shell terms =
    match shell with
-      { shell_package = Some pack; shell_fs = DirProof (_, mod_name, name) } ->
+      { shell_package = Some pack; shell_fs = DirProof (_, mod_name, name); _ } ->
          Refine.extract_term (Package_info.get_refiner pack) (make_opname [name; mod_name]) terms
     | _ ->
          raise (Failure "Shell.term_of_extract only works inside a proof")

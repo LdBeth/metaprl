@@ -1,6 +1,8 @@
 #
 # Don't need any libraries.
 #
+OCAMLFLAGS += -rectypes
+
 OCAMLINCLUDES[] +=
     ../display
     ../shell

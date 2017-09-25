@@ -33,8 +33,6 @@ extends Mpsymbols
 extends Base_dform
 extends Ocaml
 
-open Lm_debug
-
 (*
  * Operators.
  *)

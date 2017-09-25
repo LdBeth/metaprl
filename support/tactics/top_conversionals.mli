@@ -33,12 +33,8 @@
  *)
 extends Mptop
 
-open Lm_symbol
-
-open Opname
 open Term_addr_sig
 open Refiner.Refiner.Refine
-open Mp_resource
 open Top_resource
 open Options_boot
 

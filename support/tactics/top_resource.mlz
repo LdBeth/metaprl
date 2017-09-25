@@ -24,9 +24,7 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
-open Refiner.Refiner.TermType
 open Tactic_type.Tactic
-open Rewrite_sig
 open Mp_resource
 
 (*

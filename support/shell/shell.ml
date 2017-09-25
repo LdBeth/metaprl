@@ -37,8 +37,6 @@ extends Shell_package
 extends Shell_root
 extends Shell_fs
 
-open Exn_boot
-
 open Lm_debug
 open Lm_rprintf
 open Lm_thread
@@ -47,8 +45,6 @@ open Opname
 open Precedence
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermOp
-
-open Theory
 
 open Filter_type
 open Filter_summary
@@ -67,7 +63,9 @@ open Shell_current
 let _ =
    show_loading "Loading Shell%t"
 
+(* unused
 let debug_shell  = load_debug "shell"
+*)
 
 (*
  * Shell takes input parser as an argument.
@@ -77,8 +75,10 @@ struct
    let _ =
       show_loading "Loading Shell module%t"
 
+(* unused
    type t = shell
    type pid = string
+ *)
 
    (*
     * Parsing arguments come from the shell.
@@ -137,9 +137,9 @@ struct
                 | (h, _) :: t ->
                      let names = collect t in
                         match h with
-                           Rewrite { rw_name = name }
-                         | CondRewrite { crw_name = name }
-                         | Rule { rule_name = name } ->
+                           Rewrite { rw_name = name; _ }
+                         | CondRewrite { crw_name = name; _ }
+                         | Rule { rule_name = name; _ } ->
                               name :: names
                          | _ ->
                               names
@@ -158,9 +158,9 @@ struct
                   [] -> (!wnames, !cnames, !anames, !rnames)
                 | (h, _) :: t ->
                      match h with
-                        Rewrite { rw_name = name } -> wnames := name :: !wnames; collect t
-                      | CondRewrite { crw_name = name } -> cnames := name :: !cnames; collect t
-                      | Rule { rule_name = name } -> rnames := name :: !rnames; collect t
+                        Rewrite { rw_name = name; _ } -> wnames := name :: !wnames; collect t
+                      | CondRewrite { crw_name = name; _ } -> cnames := name :: !cnames; collect t
+                      | Rule { rule_name = name; _ } -> rnames := name :: !rnames; collect t
                       | _ -> collect t
                in
                   collect (info_items shell))
@@ -174,7 +174,7 @@ struct
                 | (h, _) :: t ->
                      let names = collect t in
                         match h with
-                           Rewrite { rw_name = name } -> name :: names
+                           Rewrite { rw_name = name; _ } -> name :: names
                          | _ -> names
                in
                   collect (info_items shell))
@@ -190,7 +190,7 @@ struct
                 | (h, _) :: t ->
                      let parents = collect t in
                         match h with
-                           Parent { parent_name = [name] } ->
+                           Parent { parent_name = [name]; _ } ->
                               name :: parents
                          | _ ->
                               parents
@@ -309,7 +309,7 @@ struct
                      []
                 | (h, _) :: t ->
                      match h with
-                        SummaryItem { item_item = <:str_item< open $sl$ >> } ->
+                        SummaryItem { item_item = <:str_item< open $sl$ >>; _ } ->
                            sl :: collect t
                       | _ ->
                            collect t
@@ -356,9 +356,11 @@ struct
                cd_thm modname thmname;
                set_contractum shell t)
 
+(* unused
       let set_assumptions_current tl =
          synchronize (fun shell ->
                set_assumptions shell tl)
+ *)
 
       let set_assumptions modname thmname tl =
          synchronize (fun shell ->
@@ -373,9 +375,11 @@ struct
       (*
        * Return the current node.
        *)
+(* unused
       let addr addr =
          synchronize (fun shell ->
                cd parse_arg shell (string_of_int addr))
+*)
 
       let node addr =
          synchronize (fun shell ->
@@ -400,7 +404,8 @@ struct
                   if proof.edit_interpret addr (ProofRefine (str, expr, tac)) then touch shell;
                   let { edit_goal = goal;
                         edit_subgoals = subgoals;
-                        edit_extras = extras
+                        edit_extras = extras;
+                        _
                       } = proof.edit_info addr
                   in
                   let goal = Sequent.msequent goal in

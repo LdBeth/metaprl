@@ -41,9 +41,6 @@
  *
  * @end[license]
  *)
-
-open Lm_debug
-
 open Lm_ctype
 open Refiner.Refiner.TermOp
 open Lm_rformat

@@ -29,7 +29,6 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
-open Lm_debug
 open Lm_rprintf
 open Lm_rformat
 
@@ -39,7 +38,6 @@ open Basic_tactics
 open Mptop
 
 open Refine_exn
-open Exn_boot
 open Shell_sig
 open Filter_util
 
@@ -194,8 +192,7 @@ struct
          let buf = new_buffer () in
             let need_popm =
                match exn with
-                  Stdpp.Exc_located _
-                | Pcaml.Qerror _ ->
+                  Ploc.Exc _ ->
                      inflush ();
                      false
                 | _ ->

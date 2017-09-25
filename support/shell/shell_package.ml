@@ -31,7 +31,6 @@
  *)
 extends Summary
 
-open Refiner.Refiner.TermMan
 open Refiner.Refiner.RefineError
 
 open Filter_type
@@ -62,6 +61,7 @@ let identity x       = x
 let term_of_expr     = term_of_expr []
 let term_of_str_item = term_of_str_item []
 
+(* unused
 let convert_intf =
    let null_term    = mk_xstring_term "..." in
       { term_f      = identity;
@@ -72,6 +72,7 @@ let convert_intf =
         expr_f      = term_of_expr;
         item_f      = term_of_sig_item
       }
+*)
 
 let convert_impl =
    let convert_proof _ = function
@@ -98,9 +99,11 @@ let convert_impl =
 (*
  * Display the entire package.
  *)
+(* unused
 let term_of_interface pack filter parse_arg =
    let tl = term_list convert_intf (Filter_summary.filter filter (Package_info.sig_info pack parse_arg)) in
       mk_interface_term tl
+ *)
 
 (*
  * Display the entire package.
@@ -192,9 +195,9 @@ let is_documentation = function
  | _ -> false
 
 let is_unjustified_item = function
-   Rewrite { rw_proof = proof }
- | CondRewrite { crw_proof = proof }
- | Rule { rule_proof = proof } ->
+   Rewrite { rw_proof = proof; _ }
+ | CondRewrite { crw_proof = proof; _ }
+ | Rule { rule_proof = proof; _ } ->
       begin match proof with
          Primitive _
        | Derived _ ->

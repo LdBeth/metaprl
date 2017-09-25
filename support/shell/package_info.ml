@@ -56,7 +56,9 @@ let debug_package_info =
         debug_value = false
       }
 
+(* unused
 let debug_sentinal = load_debug "sentinal"
+*)
 
 (************************************************************************
  * TYPES                                                                *
@@ -312,6 +314,7 @@ let find_package weak name =
       find 0
 
 (* Remove a package if it exists *)
+(* unused
 let remove_package weak name =
    let len = Weak.length weak in
    let rec remove i =
@@ -323,6 +326,7 @@ let remove_package weak name =
                remove (i + 1)
    in
       remove 0
+*)
 
 (* Add a package to the weak array, but raise an exception if the array is full *)
 let add_package info pack =
@@ -367,9 +371,9 @@ let get_package pack_entry name =
  * We search for the description, and load it.
  *)
 let load_aux arg pack_info =
-   let { pack_info = pack_entry; pack_name = name } = pack_info in
+   let { pack_info = pack_entry; pack_name = name; _ } = pack_info in
       State.write pack_entry (fun pack ->
-            let { pack_cache = cache } = pack in
+            let { pack_cache = cache; _ } = pack in
                try
                   let info = Cache.StrFilterCache.load cache arg name ImplementationType AnySuffix in
                   let pack_str =
@@ -391,9 +395,9 @@ let load_aux arg pack_info =
  *)
 let auto_loading_str arg pack_info f =
    synchronize_node pack_info (function
-      { pack_str = Some _ } ->
+      { pack_str = Some _; _ } ->
          f pack_info
-    | { pack_str = None } ->
+    | { pack_str = None; _ } ->
          load_aux arg pack_info;
          f pack_info)
 
@@ -428,11 +432,11 @@ let compare pack1 pack2 =
    pack1.pack_name < pack2.pack_name
 
 let modified_packages pack =
-   synchronize_pack pack (fun { pack_modified = modified } ->
+   synchronize_pack pack (fun { pack_modified = modified; _ } ->
          Sort.list compare modified)
 
 let loaded_packages pack =
-   synchronize_pack pack (fun { pack_packages = weak } ->
+   synchronize_pack pack (fun { pack_packages = weak; _ } ->
          let len = Weak.length weak in
          let rec collect packages i =
             if i = len then
@@ -464,10 +468,10 @@ let status pack = pack.pack_status
  *)
 let filename pack_info arg =
    auto_loading_str arg pack_info (function
-      { pack_info = pack_entry; pack_str = Some { pack_str_info = info } } ->
-         State.write pack_entry (fun { pack_cache = cache } ->
+      { pack_info = pack_entry; pack_str = Some { pack_str_info = info; _ }; _ } ->
+         State.write pack_entry (fun { pack_cache = cache; _ } ->
                Cache.StrFilterCache.filename cache info)
-    | { pack_name = name; pack_str = None } ->
+    | { pack_name = name; pack_str = None; _ } ->
          raise (NotLoaded name))
 
 (*
@@ -475,19 +479,19 @@ let filename pack_info arg =
  *)
 let info pack_info arg =
    auto_loading_str arg pack_info (function
-      { pack_str = Some { pack_str_info = info } } ->
+      { pack_str = Some { pack_str_info = info; _ }; _ } ->
          Cache.StrFilterCache.info info
-    | { pack_str = None; pack_name = name } ->
+    | { pack_str = None; pack_name = name; _ } ->
          raise (NotLoaded name))
 
 let sig_info_aux = function
-   { pack_sig_info = Some info } ->
+   { pack_sig_info = Some info; _ } ->
       info
- | { pack_sig_info = None; pack_str = Some { pack_str_info = str_info; pack_parse = arg } } as pack ->
+ | { pack_sig_info = None; pack_str = Some { pack_str_info = str_info; pack_parse = arg }; _ } as pack ->
       let sig_info = Cache.StrFilterCache.sig_info str_info arg InterfaceType in
          pack.pack_sig_info <- Some sig_info;
          sig_info
- | { pack_sig_info = None; pack_str = None; pack_name = name } ->
+ | { pack_sig_info = None; pack_str = None; pack_name = name; _ } ->
       raise (NotLoaded name)
 
 let sig_info pack_info arg =
@@ -497,16 +501,16 @@ let sig_info pack_info arg =
 
 let find pack_info arg name =
    auto_loading_str arg pack_info (function
-      { pack_str = Some { pack_str_info = info } } ->
+      { pack_str = Some { pack_str_info = info; _ }; _ } ->
          fst (Cache.StrFilterCache.find info name)
-    | { pack_str = None; pack_name = name } ->
+    | { pack_str = None; pack_name = name; _ } ->
          raise (NotLoaded name))
 
 let set pack_info arg item =
    auto_loading_str arg pack_info (function
-      { pack_str = Some { pack_str_info = info } } ->
+      { pack_str = Some { pack_str_info = info; _ }; _ } ->
          Cache.StrFilterCache.set_command info (item, dummy_loc)
-    | { pack_str = None; pack_name = name } ->
+    | { pack_str = None; pack_name = name; _ } ->
          raise (NotLoaded name))
 
 (*
@@ -515,7 +519,7 @@ let set pack_info arg item =
 let get_parsing_state pack_info =
    synchronize_node pack_info (fun pack_info ->
          match pack_info.pack_str with
-            Some { pack_str_info = info } ->
+            Some { pack_str_info = info; _ } ->
                Cache.StrFilterCache.get_parsing_state info
           | None ->
                raise (NotLoaded pack_info.pack_name))
@@ -526,13 +530,13 @@ let get_parsing_state pack_info =
 let get_start pack_info =
    synchronize_node pack_info (fun pack_info ->
           match pack_info.pack_str with
-            Some { pack_str_info = info } ->
+            Some { pack_str_info = info; _ } ->
                Cache.StrFilterCache.get_start info
           | None ->
                raise (NotLoaded pack_info.pack_name))
 
 let get_infixes = function
-   { pack_str = Some _; pack_infixes = infixes } -> infixes
+   { pack_str = Some _; pack_infixes = infixes; _ } -> infixes
  | _ -> invalid_arg "Package_info.get_infixes: package not loaded"
 
 (*
@@ -564,11 +568,11 @@ let group_of_module pack name =
  *)
 let save_aux code arg pack_info =
    auto_loading_str arg pack_info (function
-      { pack_str = Some { pack_str_info = info } } ->
+      { pack_str = Some { pack_str_info = info; _ }; _ } ->
          Cache.StrFilterCache.set_mode info InteractiveSummary;
          Cache.StrFilterCache.save info arg (OnlySuffixes [code]);
          set_status pack_info PackUnmodified
-    | { pack_str = None; pack_name = name } ->
+    | { pack_str = None; pack_name = name; _ } ->
          raise (NotLoaded name))
 
 let export = save_aux "prla"
@@ -580,11 +584,11 @@ let backup = save_aux "cmoz"
  *)
 let revert pack_info =
    synchronize_node pack_info (function
-         { pack_info = pack_entry; pack_str = Some str_info } ->
+         { pack_info = pack_entry; pack_str = Some str_info; _ } ->
             let { pack_str_info = info; pack_parse = parse_arg } = str_info in
                Cache.StrFilterCache.revert_proofs info parse_arg;
                set_status pack_info PackUnmodified
-       | { pack_str = None } ->
+       | { pack_str = None; _ } ->
             eprintf "File is already reverted@.")
 
 (*
@@ -594,7 +598,7 @@ let revert pack_info =
 let abandon pack_info =
    synchronize_node pack_info (fun pack ->
          (match pack.pack_str with
-             Some { pack_str_info = info } ->
+             Some { pack_str_info = info; _ } ->
                 Cache.StrFilterCache.clear_info info;
                 pack.pack_str <- None
            | None ->
@@ -644,7 +648,7 @@ let arg_resource pack_info arg name =
  *)
 let new_proof pack_info arg name hyps goal =
    auto_loading_str arg pack_info (function
-      { pack_name = mod_name } ->
+      { pack_name = mod_name; _ } ->
          let sentinal = Tactic_type.Tactic.sentinal_of_refiner_object mod_name name in
          let bookmark = find_bookmark mod_name name in
          let seq = Tactic_type.Tactic.create sentinal (mk_msequent goal hyps) bookmark in
@@ -675,7 +679,7 @@ let node_count_of_proof proof =
  *)
 let ped_of_proof pack_info arg proof goal =
    auto_loading_str arg pack_info (function
-      { pack_name = name } ->
+      { pack_name = name; _ } ->
          begin
             match !proof with
                ProofEdit (_, ped) ->
@@ -691,9 +695,11 @@ let ped_of_proof pack_info arg proof goal =
                      ped
          end)
 
+(* unused
 let proof_of_ped proof arg ped =
    proof := ProofEdit (arg, ped);
    proof
+*)
 
 (*
  * -*-

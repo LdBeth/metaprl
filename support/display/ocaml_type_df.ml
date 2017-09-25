@@ -34,8 +34,6 @@ extends Ocaml
 extends Ocaml_base_df
 extends Ocaml_expr_df
 
-open Lm_debug
-
 open Ocaml_expr_df
 
 (*

@@ -25,7 +25,6 @@
  *)
 extends Mptop
 
-open Opname
 open Refiner.Refiner
 open Refiner.Refiner.TermType
 open Tactic_type.Tactic

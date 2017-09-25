@@ -35,8 +35,6 @@ extends Ocaml_base_df
 extends Ocaml_expr_df
 extends Ocaml_mt_df
 
-open Lm_debug
-
 (*
  * Projection.
  *)

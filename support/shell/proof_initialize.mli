@@ -25,7 +25,6 @@
  * @end[license]
  *)
 open Tactic_type.Tactic
-open Mp_resource
 
 (*
  * Add a resource to initialize tactic arguments.

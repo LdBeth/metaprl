@@ -39,10 +39,6 @@ open Refiner.Refiner.RefineError
 open Shell_sig
 open Shell_util
 
-let eflush out =
-   output_char out '\n';
-   flush out
-
 (************************************************************************
  * TYPES                                                                *
  ************************************************************************)

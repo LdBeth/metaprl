@@ -41,7 +41,6 @@
  * @end[license]
  *)
 
-open Lm_debug
 open Lm_symbol
 
 open Refiner.Refiner.TermType

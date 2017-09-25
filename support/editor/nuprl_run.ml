@@ -31,23 +31,21 @@
  *	ocamlc -o test -custom -I ../../nuprl5/sys/io/mathbus unix.cma io.cma library.cma test.cmo -cclib -lunix
  *
  *)
-open Lm_debug
 open Lm_printf
 
-open Utils
 open Basic
-open Library
-open Nuprl5
 
+(* unused
 exception NoTest
 exception Test of string
-
 exception Testfailed of int
+ *)
 
 (*
  * insert_leaf
  *)
 
+(* unused
 let oiljgs connection =
 
   let cookie = ref "" in
@@ -85,6 +83,7 @@ let oiljgs connection =
     print_endline "open insert leave join get successful.";
 
     !cookie
+ *)
 
 (* restore
    save
@@ -92,6 +91,7 @@ let oiljgs connection =
    oid_import
 *)
 
+(* unused
 let seri connection cookie =
   let lib = restore connection cookie (fun t -> ()) in
   let ex = ref ""
@@ -121,8 +121,11 @@ let seri connection cookie =
   print_endline "save export restore import successful.";
 
   !ncookie
+*)
 
+(* unused
 exception Pleasefail
+ *)
 
 (* join after close, then ... *)
 (* join
@@ -387,6 +390,7 @@ let testall libhost remote_port local_port =
 
 *)
 
+(* unused
 let create_test lib =
    with_transaction lib
 	(fun t ->
@@ -418,6 +422,7 @@ let activate_test lib oid =
 		      oid))
        with e -> raise (Test "Failed")));
   oid
+*)
 
 (*
 let test remote_port local_port =
@@ -526,6 +531,7 @@ module NuprlRun (Nuprl : NuprlSig) = struct
        (library_open_and_loop_eval' port host name rhook))
        (fun s t -> print_string s; print_newline(); Mbterm.print_term t))
 
+(* unused
   let run_dummy_connection lport host name =
     special_error_handler
       (fun () ->
@@ -534,5 +540,6 @@ module NuprlRun (Nuprl : NuprlSig) = struct
 		       (if nuprl_is_all_term x then Mbterm.print_term ivoid_term
 		       else Mbterm.print_term (itoken_term "foo")); x) in f)))
       (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
+ *)
 
 end

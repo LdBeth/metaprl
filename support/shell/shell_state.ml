@@ -37,9 +37,6 @@ open Lm_debug
 open Lm_printf
 open Lm_printf_rbuffer
 open Lm_thread
-open Lm_string_set
-
-open Opname
 
 open Refiner.Refiner.TermMan
 open Refiner.Refiner.TermMeta
@@ -61,7 +58,7 @@ let debug_full_terms =
       debug_value = false;
    }
 
-let debug_lock =
+let _debug_lock =
    create_debug (**)
       { debug_name = "lock";
         debug_description = "Show locking operations";
@@ -79,14 +76,14 @@ let protocol_name =
 
 let cli_comment =
    "use command-line interface instead of the browser one" ^ (**)
-      IFDEF BROWSER_DEFAULT THEN "" ELSE " (default)" ENDIF
+      IFDEF BROWSER_DEFAULT THEN "" ELSE " (default)" END
 
 let cli_flag =
    Env_arg.bool "cli" false cli_comment Env_arg.set_bool_bool
 
 let browser_comment =
    "use browser interface instead of the command-line one" ^ (**)
-      IFDEF BROWSER_DEFAULT THEN " (default)" ELSE "" ENDIF
+      IFDEF BROWSER_DEFAULT THEN " (default)" ELSE "" END
 
 let browser_flag =
    Env_arg.bool "browser" false browser_comment Env_arg.set_bool_bool
@@ -96,7 +93,7 @@ let cli_flag () =
    if !cli_flag && !browser_flag then
       raise (Invalid_argument "Both -cli and -browser options are given, but they are exclusive!")
    else
-      IFDEF BROWSER_DEFAULT THEN !cli_flag ELSE not (!browser_flag) ENDIF or !batch_flag
+      IFDEF BROWSER_DEFAULT THEN !cli_flag ELSE not (!browser_flag) END or !batch_flag
 
 let browser_port_name = "port"
 let browser_port      = Env_arg.int "port" 0 "start browser services on this port" Env_arg.set_int_int
@@ -284,7 +281,9 @@ module TermGrammar = MakeTermGrammar
    let term = Grammar.Entry.create gram "term"
    let parsed_term = Grammar.Entry.create gram "term"
    let quote_term = Grammar.Entry.create gram "quote_term"
+(* unused
    let ty_term = Grammar.Entry.create gram "ty_term"
+ *)
    let mterm = Grammar.Entry.create gram "mterm"
    let bmterm = Grammar.Entry.create gram "bmterm"
    let singleterm = Grammar.Entry.create gram "singleterm"
@@ -330,6 +329,7 @@ let _ = Quotation.default := "term"
  * This comes before get_proc because
  * the get_proc function needs to set the start symbols.
  *)
+(* unused
 let input_exp id s =
    synchronize_state (fun state ->
       let t = TermGrammar.parse_quotation dummy_loc "unknown" id s in
@@ -344,6 +344,7 @@ let add_start name shape =
 
 let add_starts starts =
    StringTable.iter add_start starts
+*)
 
 (*
  * The client also saves the most recent tactic.
@@ -423,7 +424,7 @@ let set_package pack =
             Some pack ->
                state.state_parsing <- Some (Package_info.get_parsing_state pack);
                state.state_infixes <- Package_info.get_infixes pack;
-          | None -> 
+          | None ->
                state.state_infixes <- Infix.Set.empty;
                state.state_parsing <- None)
 
@@ -435,7 +436,7 @@ let update_var_contexts_fun state f =
        | None, None -> None
        | None, Some _ ->
             raise (Invalid_argument "Shell_state.set_so_var_context: internal error: attempting to use outside of a package")
-         
+
 let set_so_var_context context =
    synchronize_write (fun state ->
       let f =
@@ -459,7 +460,7 @@ let set_so_var_context context =
           | None ->
                None
       in
-         update_var_contexts_fun state f)         
+         update_var_contexts_fun state f)
 
 (*
  * Set the display base.
@@ -617,7 +618,7 @@ let get_buffered_text start finish bufs =
          collect count bufs;
          s
       with
-         Failure "collect" ->
+         Failure s when s = "collect" ->
             eprintf "Can't recover input, characters (%d, %d)%t" start finish eflush;
             raise (Failure "get_text")
 
@@ -638,23 +639,25 @@ let get_file_text start finish input =
 (*
  * Get the text from the input.
  *)
-let get_text_aux state (bp, ep) =
+let get_text_aux state loc =
+   let first_pos = Ploc.first_pos loc in
+   let last_pos = Ploc.last_pos loc in
    match state.state_input_info with
       Buffered bufs ->
-         get_buffered_text bp.pos_cnum ep.pos_cnum bufs
+         get_buffered_text first_pos last_pos bufs
     | Filename name ->
          begin
             try
                let input = open_in name in
                   state.state_input_info <- File input;
-                  get_file_text bp.pos_cnum ep.pos_cnum input
+                  get_file_text first_pos last_pos input
             with
                Sys_error _ ->
-                     eprintf "Can't recover input, file %s, characters (%d, %d)%t" name bp.pos_cnum ep.pos_cnum eflush;
+                     eprintf "Can't recover input, file %s, characters (%d, %d)%t" name first_pos last_pos eflush;
                      raise (Failure "get_text")
          end
     | File input ->
-         get_file_text bp.pos_cnum ep.pos_cnum input
+         get_file_text first_pos last_pos input
 
 let get_text loc =
    synchronize_state (function
@@ -674,7 +677,7 @@ let create_buffer () =
 let stream_of_string str =
    synchronize_write (fun state ->
          let buf = { buf_index = 0; buf_buffer = str } in
-         let rec read loc =
+         let read loc =
             let { buf_index = index; buf_buffer = buffer } = buf in
                if index = String.length buffer then
                   None
@@ -784,7 +787,7 @@ let stdin_stream () =
  * Wrap the toplevel input function.
  * Replace the buffer filler so that we record all the input.
  *)
-let rec wrap f lb =
+let wrap f lb =
    let refill = lb.refill_buff in
    let refill' lb =
       let state = State.get state_entry in
