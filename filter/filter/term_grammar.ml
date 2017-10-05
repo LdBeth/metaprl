@@ -1413,11 +1413,11 @@ struct
             ]
           | "plus" RIGHTA
             [  (* t1 +[g] t2  - algebraic plus *)
-               t1 = SELF; sl_plus; "["; g = aterm;  "]"; t2 = SELF ->
-               make_application _loc [mk_field_term _loc (get_aterm _loc g) "+"; make_term t1; make_term t2]
+               t1 = SELF; op = sl_plus; "["; g = aterm;  "]"; t2 = SELF ->
+               make_application _loc [mk_field_term _loc (get_aterm _loc g) op; make_term t1; make_term t2]
              | (* t1 + t2 - disjoint union *)
-               t1 = SELF; op = sl_plus; t2 = SELF ->
-               mk_arith_term _loc op t1 t2
+               t1 = SELF; sl_plus; t2 = SELF ->
+               mk_arith_term _loc "union" t1 t2
              | (* t1 ^+ t2   - algebraic plus for self *)
                t1 = SELF; op = sl_label_self_plus;  t2 = SELF ->
                make_application _loc [mk_field_self_term _loc op; make_term t1; make_term t2]
@@ -1442,11 +1442,11 @@ struct
             ]
           | "prod" RIGHTA
             [ (* t1 *[g] t2  - algebraic multiplication (e.g. group operation) *)
-               t1 = SELF; sl_star; "["; g = aterm;  "]"; t2 = SELF ->
-               make_application _loc [mk_field_term _loc (get_aterm _loc g) "*"; make_term t1; make_term t2]
+               t1 = SELF; op = sl_star; "["; g = aterm;  "]"; t2 = SELF ->
+               make_application _loc [mk_field_term _loc (get_aterm _loc g) op; make_term t1; make_term t2]
              | (* t1 * t2 - type product *)
-               t1 = SELF; op = sl_star; t2 = SELF ->
-               mk_type_term _loc op t1 t2
+               t1 = SELF; sl_star; t2 = SELF ->
+               mk_type_term _loc "prod" t1 t2
              | (* t1 ^* t2   - algebraic multiplication for self *)
                t1 = SELF; op = sl_label_self_star;  t2 = SELF ->
                make_application _loc [mk_field_self_term _loc op; make_term t1; make_term t2]
@@ -2238,7 +2238,10 @@ struct
           ]];
 
       sl_plus:
-         [[ "+" -> "union" ]];
+         [[ "+" -> "+"
+          | "+." -> "+."
+          | "+|" -> "+|"
+         ]];
 
       sl_add: (* other operations with addition prioruty *)
          [[ "-" -> "-" ]];
@@ -2254,7 +2257,10 @@ struct
          [[ "^-" -> "-"]];
 
       sl_star:
-         [[ "*" -> "prod" ]];
+         [[ "*" -> "*"
+          | "*." -> "*."
+          | "*|" -> "*|"
+         ]];
 
       sl_div:
          [[ "/" -> "/"
