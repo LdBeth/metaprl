@@ -5,7 +5,11 @@ include Term_addr_sig
 include Rewrite_sig
 include Opname
 include Term_match_table
+(* TODO[jyh]: apparently there is a bug here, where RefineError
+ * get a NULL tag if Refiner.Refiner is included.  This looks
+ * like a link error to me.
 include Refiner.Refiner
+ *)
 include Refiner.Refiner.TermType
 include Refiner.Refiner.Term
 include Refiner.Refiner.TermAddr
