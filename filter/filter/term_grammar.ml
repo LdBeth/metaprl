@@ -2239,8 +2239,8 @@ struct
 
       sl_plus:
          [[ "+" -> "+"
-          | "+." -> "+."
           | "+|" -> "+|"
+          | "+:"; op = LIDENT -> "+:" ^ op
          ]];
 
       sl_add: (* other operations with addition prioruty *)
@@ -2260,6 +2260,7 @@ struct
          [[ "*" -> "*"
           | "*." -> "*."
           | "*|" -> "*|"
+          | "*:"; op = LIDENT -> "*:" ^ op
          ]];
 
       sl_div:
