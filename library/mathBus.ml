@@ -438,7 +438,7 @@ let string_value_with_unicode node =
 	   Lm_string_util.set "MathBus.string_value_with_unicode" str (i + 1) (Char.chr b);
 	 loop (i + 2) (j + 1))
       | Mnode n -> failwith "string_value") in
-    loop 0 2
+    Bytes.to_string (loop 0 2)
   | Mnode n -> failwith "string_value"
 
 
@@ -460,7 +460,7 @@ let string_value node =
 	   Lm_string_util.set "MathBus.string_value" str (i + 3) (Char.chr b2);
 	 loop (i + 4) (j + 1))
       | Mnode n -> failwith "string_value") in
-    loop 0 2
+    Bytes.to_string (loop 0 2)
   | Mnode n -> failwith "string_value"
 
 (*prints to standard output*)
