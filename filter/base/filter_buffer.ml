@@ -40,7 +40,7 @@ let _ =
    show_loading "Loading Buffer%t"
 
 type t =
-   { mutable buf_str : string;
+   { mutable buf_str : bytes;
      mutable buf_index : int
    }
 
@@ -48,7 +48,7 @@ type t =
  * Create a new empty buffer.
  *)
 let create () =
-   { buf_str = String.create 32;
+   { buf_str = Bytes.create 32;
      buf_index = 0
    }
 
@@ -64,9 +64,9 @@ let clear buf =
  *)
 let putc buf c =
    let { buf_str = str; buf_index = i } = buf in
-      if i = String.length str then
+      if i = Bytes.length str then
          (* Grow the buffer *)
-         buf.buf_str <- str ^ (Lm_string_util.create "Buffer.putc" i);
+         buf.buf_str <- Bytes.cat str (Lm_string_util.create "Buffer.putc" i);
 
       (* Insert the char *)
       str.[i] <- c;
@@ -78,18 +78,18 @@ let putc buf c =
 let puts buf s =
    let { buf_str = str; buf_index = i } = buf in
    let len = String.length s in
-      if i + len > String.length str then
-         buf.buf_str <- str ^ (Lm_string_util.create "Buffer.puts" (i + len));
+      if i + len > Bytes.length str then
+         buf.buf_str <- Bytes.cat str (Lm_string_util.create "Buffer.puts" (i + len));
 
       (* Add the string *)
-      String.blit s 0 str i len;
+      Bytes.blit_string s 0 str i len;
       buf.buf_index <- i + len
 
 (*
  * Get the contents of the buffer.
  *)
 let gets { buf_str = str; buf_index = i } =
-   String.sub str 0 i
+   Bytes.sub_string str 0 i
 
 (*
  * -*-
