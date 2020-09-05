@@ -118,7 +118,7 @@ let raise_spelling_error () =
             ()
       in
       let (word, loc) = Lm_list_util.last !misspelled in
-      let l = Sort.list (<) !misspelled in
+      let l = List.sort Stdlib.compare !misspelled in
          misspelled := [];
          eprintf "The following words may be misspelled:";
          print "" l;
