@@ -84,7 +84,7 @@ let implode_rev chars =
      i := !i - 1;
      rest := tl !rest
   done
- ; s
+ ; Bytes.to_string s
 
 let make_scanner escape white stream =
  (* print_string "make_scanner  "; *)
