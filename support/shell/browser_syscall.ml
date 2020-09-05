@@ -33,7 +33,7 @@ struct
     * A string buffer that allows reading *and* writing.
     *)
    type t =
-      { mutable buf_data : String.t;
+      { mutable buf_data : Bytes.t;
         mutable buf_length : int
       }
 
@@ -41,7 +41,7 @@ struct
     * Create a new buffer.
     *)
    let create n =
-      { buf_data = String.create n;
+      { buf_data = Bytes.create n;
         buf_length = 0
       }
 
@@ -59,7 +59,7 @@ struct
             buf_length = length
           } = buf
       in
-         String.sub data 0 length
+         Bytes.sub_string data 0 length
 
    (*
     * Expand to buffer.  Size grows by powers of 2.
@@ -69,9 +69,9 @@ struct
             buf_length = length
           } = buf
       in
-      let len = String.length data in
-      let data' = String.create (2 * len) in
-         String.blit data 0 data' 0 length;
+      let len = Bytes.length data in
+      let data' = Bytes.create (2 * len) in
+         Bytes.blit data 0 data' 0 length;
          buf.buf_data <- data'
 
    (*

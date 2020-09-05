@@ -804,7 +804,7 @@ struct
       let s = (String.concat "\\\\ " (List.map output_aux strs)) in
       let l = String.length s - 1 in
          if l>=0 && s.[l] = ' ' then begin
-            s.[l] <- '\n'; output_string out s
+            output_string out (String.sub s 0 l ^ "\n")
          end else begin
             output_string out s; output_char out '\n'
          end
