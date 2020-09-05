@@ -38,7 +38,7 @@ MACRO_FILES[] =
     $(CAMLP5LIB)/q_MLast
     pa_macro
     $(CAMLP5LIB)/pa_extend
-    macro_main
+    $(CAMLP5LIB)/odyl
 
 OCamlProgramInstall($(MPINSTALL), $(LIB), macropp, $(CAMLP5LIB)/pr_dump $(MACRO_FILES))
 OCamlProgramInstall($(MPINSTALL), $(LIB), macroprint, $(CAMLP5LIB)/pr_o $(MACRO_FILES))
