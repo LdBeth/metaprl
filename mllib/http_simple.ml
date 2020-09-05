@@ -185,12 +185,12 @@ let print_content_page_err out code content_type buf =
  * Print a file.
  *)
 let copy outx inx =
-   let buffer = String.create 8192 in
+   let buffer = Bytes.create 8192 in
    let rec copy () =
       let count = input inx buffer 0 8192 in
          if count <> 0 then
             begin
-               Lm_ssl.output outx buffer 0 count;
+               Lm_ssl.output outx (Bytes.to_string buffer) 0 count;
                copy ()
             end
    in
