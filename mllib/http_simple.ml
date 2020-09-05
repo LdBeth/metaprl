@@ -356,13 +356,13 @@ let unhex c1 c2 =
  *)
 let decode_hex uri =
    let len = String.length uri in
-   let buf = String.create len in
+   let buf = Bytes.create len in
    let rec convert i j =
       if j = len then
          if i = len then
             buf
          else
-            String.sub buf 0 i
+            Bytes.sub buf 0 i
       else if uri.[j] = '+' then
          begin
             buf.[i] <- ' ';
@@ -379,7 +379,7 @@ let decode_hex uri =
             convert (i + 1) (j + 1)
          end
    in
-      convert 0 0
+      Bytes.to_string (convert 0 0)
 
 (*
  * Encode a string into hex.
@@ -392,10 +392,10 @@ let hex code =
 
 let encode_hex uri =
    let len = String.length uri in
-   let buf = String.create (3 * len) in
+   let buf = Bytes.create (3 * len) in
    let rec convert i j =
       if i = len then
-         String.sub buf 0 j
+         Bytes.sub buf 0 j
       else
          match uri.[i] with
             ('0'..'9' | 'A'..'Z' | 'a'..'z') as c ->
@@ -408,7 +408,7 @@ let encode_hex uri =
                   buf.[j + 2] <- hex (code land 15);
                   convert (succ i) (j + 3)
    in
-      convert 0 0
+      Bytes.to_string (convert 0 0)
 
 let decode_uri uri =
    Lm_filename_util.simplify_path (Lm_filename_util.split_path (decode_hex uri))
@@ -850,13 +850,15 @@ let rec find_content_length = function
 let read_body inx header =
    try
       let length = find_content_length header in
-      let body = String.create length in
+      let body = Bytes.create length in
          if !debug_http then
             eprintf "Http_simple.read_body: trying to read %d chars%t" length eflush;
          Lm_ssl.really_input inx body 0 length;
-         if !debug_http then
-            eprintf "Http_simple.read_body: %d, %s%t" length (String.escaped body) eflush;
-         body
+         let str = Bytes.to_string body in
+            if !debug_http then
+               eprintf "Http_simple.read_body: %d, %s%t" length
+                  (String.escaped str) eflush;
+         str
    with
       Not_found
     | Failure _
