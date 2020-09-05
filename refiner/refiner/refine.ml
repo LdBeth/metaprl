@@ -1633,7 +1633,7 @@ struct
       check_rule name addrs params mterm;
       let subgoals, goal = unzip_mimplies mterm in
          List.iter2 check_subgoal_arg subgoals args;
-         let _ = compute_rule_ext name addrs params goal args result in ()
+         let _ : term_extract = compute_rule_ext name addrs params goal args result in ()
 
    let extract_term refiner opname args =
       let assums, refiner, derivation =
