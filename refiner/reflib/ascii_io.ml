@@ -562,7 +562,7 @@ struct
                 | (l,_,([_;_;_] as io_data)) :: _ when (l.[0]='V') || (l.[0]='v') ->
                      data.out_items <- New (l, name, io_data) :: data.out_items
                 | (l, name, _) :: _ ->  (* XXX HACK: version <= 1.0.7 *)
-                     l.[0] <- 'V';
+                     let l = "V" ^ String.sub l 1 (String.length l - 1) in
                      data.out_items <- New (l, name, [[v]; conts; ts_names]) :: data.out_items
                 | _ ->
                      fail ("out_term - SO variable entry " ^ name ^ " was invalid")
