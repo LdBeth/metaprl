@@ -429,11 +429,11 @@ let get = get_package
  * Package listings.
  *)
 let compare pack1 pack2 =
-   pack1.pack_name < pack2.pack_name
+   Stdlib.compare pack1.pack_name pack2.pack_name
 
 let modified_packages pack =
    synchronize_pack pack (fun { pack_modified = modified; _ } ->
-         Sort.list compare modified)
+         List.sort compare modified)
 
 let loaded_packages pack =
    synchronize_pack pack (fun { pack_packages = weak; _ } ->
@@ -451,7 +451,7 @@ let loaded_packages pack =
                in
                   collect packages (i + 1)
          in
-            Sort.list compare (collect [] 0))
+            List.sort compare (collect [] 0))
 
 (************************************************************************
  * DESTRUCTION                                                          *
@@ -545,7 +545,7 @@ let get_infixes = function
 let groups pack =
    let res = ref [] in
       synchronize_pack pack (fun pack -> Hashtbl.iter (fun gr (dsc, _) -> res := (gr, dsc) :: !res) pack.pack_groups);
-      Sort.list (<) !res
+      List.sort StdLib.compare !res
 
 let group_exists pack group =
    synchronize_pack pack (fun pack -> Hashtbl.mem pack.pack_groups group)
