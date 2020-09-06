@@ -170,7 +170,7 @@ VersionCheck($(OCAMLC_VERSION),     $(OCAMLC))
 VersionCheck($(OCAMLOPT_VERSION),   $(OCAMLOPT))
 VersionCheck($(OCAMLMKTOP_VERSION), $(OCAMLMKTOP))
 section
-    CAML_VERSIONS = 6.17 7.01 7.02 7.03
+    CAML_VERSIONS = $(CAMLP5_VERSIONS)
     VersionCheck($(CAMLP5_VERSION),     $(CAMLP5), ?opt = $"-v")
     VersionCheck($(CAMLP5R_VERSION),    $(CAMLP5R), ?opt = $"-v")
     VersionCheck($(CAMLP5O_VERSION),    $(CAMLP5O), ?opt = $"-v")

@@ -10,7 +10,7 @@ MP_VERSION = 0.9.6.5+
 # XXX: TODO: Once 3.08 compatibility is no longer desired, the appropriate TyPrv code
 # should be added to filter/base/filter_ocaml.ml
 #
-CAML_VERSIONS = 4.02.3 4.05.0
+CAML_VERSIONS = 4.02.3 4.05.0 4.11.0
 
 if $(SHARED_MODE)
    if $(not $(file-exists $(MP_ROOT)/mk/OCaml_version))
@@ -21,7 +21,7 @@ if $(SHARED_MODE)
    include $(MP_ROOT)/mk/OCaml_version
    export CAML_VERSIONS
 
-CAMLP4_VERSIONS = $(CAML_VERSIONS)
+CAMLP5_VERSIONS = 7.12
 
 #
 # Theories to compile - default and all
