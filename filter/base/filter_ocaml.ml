@@ -1142,7 +1142,7 @@ struct
              | MLast.ExJdf (_, Ploc.VaAnt _, _)
              | MLast.ExRpl (_, Ploc.VaAnt _, _)
              | MLast.ExRpl (_, _, Ploc.VaAnt _)
-             | MLast.ExRpl (_, _, Ploc.VaVal (_, Ploc.VaAnt _)) ->
+             | MLast.ExRpl (_, _, Ploc.VaVal (_, Ploc.VaAnt _)) | _ ->
                   raise (RefineError ("mk_expr", StringError "antiquotations are not supported"))
 
    (*
@@ -1432,7 +1432,7 @@ struct
              | PaTyp (_, Ploc.VaAnt _)
              | PaLab (_, Ploc.VaAnt _)
              | PaNty (_, Ploc.VaAnt _)
-             | PaUnp (_, Ploc.VaAnt _, _) ->
+             | PaUnp (_, Ploc.VaAnt _, _) | _ ->
                   raise (RefineError ("mk_patt", StringError "antiquotations are not supported"))
 
    and mk_patt_opt_loc loc vars patt tailf =
@@ -2122,7 +2122,7 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
              | StMod (_, Ploc.VaAnt _, _)
              | StUse (_, _, Ploc.VaAnt _)
              | StUse (_, Ploc.VaAnt _, _)
-             | StDef (_, Ploc.VaAnt _ ) ->
+             | StDef (_, Ploc.VaAnt _ ) | _ ->
                   raise (RefineError ("mk_st", StringError "antiquotations are not supported"))
 
 
@@ -2239,7 +2239,7 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
              | MtQuo (_, Ploc.VaAnt _)
              | MtSig (_, Ploc.VaAnt _)
              | MtUid (_, Ploc.VaAnt _)
-             | MtWit (_, _, Ploc.VaAnt _) ->
+             | MtWit (_, _, Ploc.VaAnt _) | _ ->
                    raise (RefineError ("mk_wc", StringError "antiquotations are not supported"))
 
    and mk_wc =
@@ -2376,7 +2376,7 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
                   mk_simple_named_term me_xtr_op (num_of_loc loc) s [mk_opt (fun me -> (mk_module_expr vars (dest_vala "MeXtr" me))) meo]
              | MeFun (_, Ploc.VaAnt _, _)
              | MeStr (_, Ploc.VaAnt _)
-             | MeUid (_, Ploc.VaAnt _) ->
+             | MeUid (_, Ploc.VaAnt _) | _ ->
                    raise (RefineError ("mk_module_expr", StringError "antiquotations are not supported"))
 
 
