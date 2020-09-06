@@ -82,7 +82,7 @@ struct
             buf_length = length
           } = buf
       in
-      let len = String.length data in
+      let len = Bytes.length data in
          if length = len then
             begin
                expand buf;
@@ -104,7 +104,7 @@ struct
       in
          if i < 0 || i >= length then
             raise (Invalid_argument "get_char");
-         data.[i]
+         Bytes.get data i
 
    (*
     * Clear the buffer.
