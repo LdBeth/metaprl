@@ -524,7 +524,7 @@ let rec mk_str_item si =
             not_supported loc "str module type"
        | (<:str_item< open $sl$ >>) ->
             not_supported loc "str module open"
-       | (<:str_item< type $list:tdl$ >>) ->
+       | (<:str_item< type $flag:b$ $list:tdl$ >>) ->
             not_supported loc "str type"
        | (<:str_item< value $opt:b$ $list:pel$ >>) ->
             not_supported loc "str let"
@@ -542,7 +542,8 @@ let rec mk_str_item si =
        | StMod _
        | StMty (_, Ploc.VaAnt _, _)
        | StOpn (_, Ploc.VaAnt _)
-       | StTyp (_, Ploc.VaAnt _)
+       | StTyp (_, Ploc.VaAnt _, _)
+       | StTyp (_, _, Ploc.VaAnt _)
        | StVal (_, _, Ploc.VaAnt _)
        | StVal (_, Ploc.VaAnt _, _)
        | StDef (_, _)
