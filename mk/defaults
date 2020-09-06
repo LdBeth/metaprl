@@ -21,7 +21,7 @@ if $(SHARED_MODE)
    include $(MP_ROOT)/mk/OCaml_version
    export CAML_VERSIONS
 
-CAMLP5_VERSIONS = 7.12
+CAMLP5_VERSIONS = 7.13
 
 #
 # Theories to compile - default and all
