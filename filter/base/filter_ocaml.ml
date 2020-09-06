@@ -429,11 +429,11 @@ struct
 
    let dest_smt t =
       let s, mt = two_subterms t in
-         Ploc.VaVal (dest_string s), dest_mt mt
+         Ploc.VaVal (Some (Ploc.VaVal (dest_string s))), dest_mt mt
 
    let dest_sme t =
       let s, me = two_subterms t in
-         Ploc.VaVal (dest_string s), dest_me me
+         Ploc.VaVal (Some (Ploc.VaVal (dest_string s))), dest_me me
 
    let dest_sl t =
       let sl = one_subterm "dest_sl" t in
@@ -795,12 +795,13 @@ struct
          in add_expr "lid" dest_lid_expr
       and expr_local_module_op =
          let dest_local_module_expr t =
-            let loc = dest_loc "dest_local_module_expr" t in
+            let _loc = dest_loc "dest_local_module_expr" t in
             let s, me, e = three_subterms t in
-               ExLmd (loc,
+               <:expr< let module $uid:dest_string s$ = $dest_me me$ in $dest_expr e$ >>
+            (* ExLmd (loc,
                       Ploc.VaVal (dest_string s),
                       dest_me me,
-                      dest_expr e)
+                      dest_expr e) *)
          in add_expr "local_module" dest_local_module_expr
       and expr_uid_op =
          let dest_uid_expr t =
@@ -1050,7 +1051,7 @@ struct
                   mk_let vars loc pel e
              | (<:expr< $lid:s$ >>) ->
                   mk_var expr_lid_op vars loc s
-             | ExLmd (_, Ploc.VaVal s, me, e) ->
+             | (<:expr< let module $uid:s$ = $me$ in $e$ >>) ->
                   mk_simple_term expr_local_module_op loc [mk_string_term expr_local_module_op s;
                                                            mk_module_expr vars me;
                                                            mk_expr vars e]
@@ -1321,7 +1322,10 @@ struct
             let _loc, s = dest_loc_string "dest_unp_patt" t in
             let mt, t = two_subterms t in
             let mto = dest_opt dest_mt mt in
-               MLast.PaUnp (_loc, Ploc.VaVal s, mto), t
+            let patt = match mto with
+                          Some mt -> <:patt< (module $uid:s$ :  $mt$) >>
+                        | None    -> <:patt< (module $uid:s$) >> in
+               patt, t
          in add_patt "patt_unp" dest_unp_patt
 (* XXX
       and patt_olb_none_op =
@@ -1408,8 +1412,10 @@ struct
                   mk_simple_term patt_typ_op loc [mk_string_list sl]
              | (<:patt< lazy $p$ >>) ->
                   mk_simple_term patt_lazy_op loc [mk_patt vars p tailf]
-             | PaUnp (_, Ploc.VaVal s, mto) ->
-                  mk_simple_named_term patt_unp_op loc s [mk_opt mk_module_type mto; tailf vars]
+             | (<:patt< (module $uid:s$) >>) ->
+                  mk_simple_named_term patt_unp_op loc s [mk_opt mk_module_type None; tailf vars]
+             | (<:patt< (module $uid:s$ :  $mt$) >>) ->
+                  mk_simple_named_term patt_unp_op loc s [mk_opt mk_module_type (Some mt); tailf vars]
              | PaXtr (_, s, po) ->
                   mk_simple_named_term patt_xtr_op loc s [mk_patt_opt_vala loc vars po tailf]
              | PaArr (_, Ploc.VaAnt _)
@@ -1837,10 +1843,11 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
          in add_sig "sig_dir" dest_dir_sig
       and sig_mod_op =
          let dest_mod_sig t =
-            let loc = dest_loc "dest_recmod_sig" t in
+            let _loc = dest_loc "dest_recmod_sig" t in
             let b, smtl = two_subterms t in
             let smtl = dest_olist smtl in
-               SgMod (loc, Ploc.VaVal (dest_bool b), Ploc.VaVal (List.map dest_smt smtl))
+               <:sig_item< module $flag:dest_bool b$ $list:List.map dest_smt smtl$ >>
+               (* SgMod (loc, Ploc.VaVal (dest_bool b), Ploc.VaVal (List.map dest_smt smtl)) *)
          in add_sig "sig_mod" dest_mod_sig
       and sig_use_op =
          let dest_use_sig t =
@@ -1882,7 +1889,7 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
                   mk_simple_named_term sig_value_op loc s [mk_type t]
              | SgDir (_, Ploc.VaVal s, Ploc.VaVal eo) ->
                   mk_simple_named_term sig_dir_op loc s [mk_expr_opt [] eo]
-             | SgMod (_, Ploc.VaVal b, Ploc.VaVal smtl) ->
+             | (<:sig_item< module $flag:b$ $list:smtl$ >>) ->
                   mk_simple_term sig_mod_op loc [mk_bool b; mk_olist_term (List.map mk_smt smtl)]
              | SgUse (_, Ploc.VaVal s, Ploc.VaVal sigll) ->
                   mk_simple_named_term sig_use_op loc s [mk_olist_term (List.map mk_sigloc sigll)]
@@ -2102,7 +2109,7 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
              | StExt (_, _, _, Ploc.VaAnt _)
              | StExt (_, Ploc.VaAnt _, _, _)
              | StOpn (_, Ploc.VaAnt _)
-             | StTyp (_, Ploc.VaAnt _)
+             | StTyp (_, _, Ploc.VaAnt _)
              | StVal (_, _, Ploc.VaAnt _)
              | StVal (_, Ploc.VaAnt _, _)
              | StDir (_, _, Ploc.VaAnt _)
@@ -2227,7 +2234,7 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
                   mk_simple_term mt_tyo_op (num_of_loc loc) [mk_module_expr [] me]
              | MtXtr (loc, s, mto) ->
                   mk_simple_named_term mt_xtr_op (num_of_loc loc) s [mk_opt (fun mt -> (mk_module_type (dest_vala "MtXtr" mt))) mto]
-             | MtFun (_, Ploc.VaAnt _, _, _)
+             | MtFun (_, Ploc.VaAnt _, _)
              | MtLid (_, Ploc.VaAnt _)
              | MtQuo (_, Ploc.VaAnt _)
              | MtSig (_, Ploc.VaAnt _)
@@ -2367,7 +2374,7 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
                   mk_simple_term me_unp_op (num_of_loc loc) [mk_expr vars e; mk_opt mk_module_type mto]
              | MeXtr (loc, s, meo) ->
                   mk_simple_named_term me_xtr_op (num_of_loc loc) s [mk_opt (fun me -> (mk_module_expr vars (dest_vala "MeXtr" me))) meo]
-             | MeFun (_, Ploc.VaAnt _, _, _)
+             | MeFun (_, Ploc.VaAnt _, _)
              | MeStr (_, Ploc.VaAnt _)
              | MeUid (_, Ploc.VaAnt _) ->
                    raise (RefineError ("mk_module_expr", StringError "antiquotations are not supported"))
@@ -2964,12 +2971,16 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
    and mk_smt =
       let smt_op = mk_ocaml_op "smt"
       in fun (s, mt) ->
-         ToTerm.Term.mk_simple_term smt_op [mk_simple_string (dest_vala "mk_smt" s); mk_module_type mt]
+         match (dest_vala "mk_smt" s) with
+            Some s -> ToTerm.Term.mk_simple_term smt_op [mk_simple_string (dest_vala "mk_smt" s); mk_module_type mt]
+          | None   -> raise (RefineError ("mk_smt", StringError "antiquotations are not supported"))
 
    and mk_sme =
       let sme_op = mk_ocaml_op "sme"
       in fun vars (s, me) ->
-         ToTerm.Term.mk_simple_term sme_op [mk_simple_string (dest_vala "mk_sme" s); mk_module_expr vars me]
+         match (dest_vala "mk_smt" s) with
+            Some s -> ToTerm.Term.mk_simple_term sme_op [mk_simple_string (dest_vala "mk_sme" s); mk_module_expr vars me]
+          | None   -> raise (RefineError ("mk_sme", StringError "antiquotations are not supported"))
 
    and mk_sbt =
       let sbt_op = mk_ocaml_op "sbt"
