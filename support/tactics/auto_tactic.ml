@@ -443,13 +443,13 @@ let dag = ImpDag.create ()
  * Sort the nodes in the list.
  *)
 let compare node1 node2 =
-   ImpDag.node_rel dag node1.auto_prec node2.auto_prec = LessThan
+   Stdlib.compare (ImpDag.node_rel dag node1.auto_prec node2.auto_prec) LessThan
 
 (* unused
 let auto_tac tac = tac.auto_tac
  *)
 
-let sort_nodes = Sort.list compare
+let sort_nodes = List.sort compare
 
 let successT i s = funT (fun p ->
    if !i = 0 then

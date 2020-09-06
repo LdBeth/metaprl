@@ -545,7 +545,7 @@ let get_infixes = function
 let groups pack =
    let res = ref [] in
       synchronize_pack pack (fun pack -> Hashtbl.iter (fun gr (dsc, _) -> res := (gr, dsc) :: !res) pack.pack_groups);
-      List.sort StdLib.compare !res
+      List.sort Stdlib.compare !res
 
 let group_exists pack group =
    synchronize_pack pack (fun pack -> Hashtbl.mem pack.pack_groups group)

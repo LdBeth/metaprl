@@ -142,7 +142,7 @@ let () =
  * Save the text in the input_buffers during each toplevel read.
  *)
 type info =
-   Buffered of (int * int * string) list
+   Buffered of (int * int * bytes) list
  | Filename of string
  | File of in_channel
 
@@ -151,7 +151,7 @@ type info =
  *)
 type input_buf =
    { mutable buf_index : int;
-     mutable buf_buffer : string
+     mutable buf_buffer : bytes
    }
 
 (*
@@ -616,7 +616,7 @@ let get_buffered_text start finish bufs =
    in
       try
          collect count bufs;
-         s
+         Bytes.to_string s
       with
          Failure s when s = "collect" ->
             eprintf "Can't recover input, characters (%d, %d)%t" start finish eflush;
@@ -630,7 +630,7 @@ let get_file_text start finish input =
       try
          seek_in input start;
          really_input input buf 0 (finish - start);
-         buf
+         Bytes.to_string buf
       with
          End_of_file ->
             eprintf "Can't recover input, characters (%d, %d)%t" start finish eflush;
@@ -668,7 +668,7 @@ let get_text loc =
  * Create an empty buffer.
  *)
 let create_buffer () =
-   { buf_index = 0; buf_buffer = "" }
+   { buf_index = 0; buf_buffer = Bytes.empty }
 
 (*
  * Wrap the input channel so that we can recover input.
@@ -676,18 +676,19 @@ let create_buffer () =
  *)
 let stream_of_string str =
    synchronize_write (fun state ->
+         let str = Bytes.of_string str in
          let buf = { buf_index = 0; buf_buffer = str } in
          let read loc =
             let { buf_index = index; buf_buffer = buffer } = buf in
-               if index = String.length buffer then
+               if index = Bytes.length buffer then
                   None
                else
-                  let c = buffer.[index] in
+                  let c = Bytes.get buffer index in
                      buf.buf_index <- index + 1;
                      Some c
          in
             reset_input state;
-            push_buffer state 0 (String.length str) str;
+            push_buffer state 0 (Bytes.length str) str;
             Stream.from read)
 
 (*
@@ -698,14 +699,14 @@ let stream_of_channel inx =
    let buf = create_buffer () in
    let refill loc =
       let state = State.get state_entry in
-      let str = unsynchronize input_line inx ^ "\n" in
+      let str = Bytes.of_string (unsynchronize input_line inx ^ "\n") in
          buf.buf_index <- 0;
          buf.buf_buffer <- str;
-         push_buffer state loc (String.length str) str
+         push_buffer state loc (Bytes.length str) str
    in
    let rec read loc =
       let { buf_index = index; buf_buffer = buffer } = buf in
-         if index = String.length buffer then
+         if index = Bytes.length buffer then
             try
                refill loc;
                read loc
@@ -713,7 +714,7 @@ let stream_of_channel inx =
                End_of_file ->
                   None
          else
-            let c = buffer.[index] in
+            let c = Bytes.get buffer index in
                buf.buf_index <- index + 1;
                Some c
    in
@@ -747,23 +748,24 @@ let stdin_stream () =
       let str = unsynchronize Lm_readline.readline (if !batch_flag then "" else state.state_prompt1) in
       (* XXX HACK (nogin): append ";;" at the end of a line, unless it ends with a '\' *)
       let str =
-         if !batch_flag then
-            str ^ "\n"
-         else if str <> "" && str.[String.length str - 1] = '\\'  then
-            String.sub str 0 (String.length str - 1)
-         else if Str.string_match scscregexp str 0 then
-            str
-         else
-            str ^ ";;"
+         Bytes.of_string
+         (if !batch_flag then
+             str ^ "\n"
+          else if str <> "" && str.[String.length str - 1] = '\\'  then
+             String.sub str 0 (String.length str - 1)
+          else if Str.string_match scscregexp str 0 then
+             str
+          else
+             str ^ ";;")
       in
          state.state_prompt1 <- state.state_prompt2;
          buf.buf_index <- 0;
          buf.buf_buffer <- str;
-         push_buffer state loc (String.length str) str
+         push_buffer state loc (Bytes.length str) str
    in
    let rec read loc =
       let { buf_index = index; buf_buffer = buffer } = buf in
-         if index = String.length buffer then
+         if index = Bytes.length buffer then
             try
                refill loc;
                read loc
@@ -772,13 +774,13 @@ let stdin_stream () =
                   if not !batch_flag then save_readline_history ();
                   None
          else
-            let c = buffer.[index] in
+            let c = Bytes.get buffer index in
                buf.buf_index <- index + 1;
                Some c
    in
    let flush () =
       buf.buf_index <- 0;
-      buf.buf_buffer <- ""
+      buf.buf_buffer <- Bytes.empty
    in
       synchronize_write (fun state -> reset_input state);
       Stream.from read, flush
@@ -791,7 +793,7 @@ let wrap f lb =
    let refill = lb.refill_buff in
    let refill' lb =
       let state = State.get state_entry in
-         lb.lex_buffer <- String.copy lb.lex_buffer;
+         lb.lex_buffer <- Bytes.copy lb.lex_buffer;
          unsynchronize refill lb;
          push_buffer state lb.lex_abs_pos lb.lex_buffer_len lb.lex_buffer
    in
