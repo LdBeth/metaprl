@@ -993,8 +993,8 @@ let define_rewrite want_checkpoint force_private code proc _loc rw expr =
 
 let add_crw_selector _loc res =
    let rec add_crw = function
-      [] -> [ <:expr< ~labels:Perv.crw_labels >> ]
-    | <:expr< ~labels:$labels$ >> :: args -> <:expr< ~labels:[Perv.select_crw :: $labels$] >> :: args
+      [] -> [ <:expr< ~{labels = Perv.crw_labels} >> ]
+    | <:expr< ~{labels = $labels$} >> :: args -> <:expr< ~{labels = [Perv.select_crw :: $labels$]} >> :: args
     | arg :: args -> arg :: (add_crw args)
    in
       { res with res_args = add_crw res.res_args }
