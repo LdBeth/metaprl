@@ -1,7 +1,9 @@
 mldebug.dir
 mp
 mpconfig
+mpdebug
 mpdebug-top
+mprun
 mpkonsole
 mpkonsole-large
 mpshell
