@@ -68,7 +68,7 @@ if $(file-exists $(ROOT)/.svn/entries)
             hi = false
             lo =
             FS = $'"'
-            foreach(ent, $(args))
+            foreach(ent => ..., $(args))
                 if $(file-exists $(ent))
                     awk($(ent))
                     case $'[ \t]*revision="[0-9]*"/>$'

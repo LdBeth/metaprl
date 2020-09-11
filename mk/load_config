@@ -9,7 +9,7 @@
 include mk/defaults
 
 FindBrowser() =
-   foreach(browser, $(DEFAULT_BROWSER_COMMANDS))
+   foreach(browser => ..., $(DEFAULT_BROWSER_COMMANDS))
       if $(CheckProg $(browser))
          return $(which $(browser))
    return $(EMPTY)

@@ -266,7 +266,7 @@ export INCLUDES DEBUGINCLUDES
 mpconfig:
     fprint(mpconfig, $(mpconfig))
 
-foreach (script, $(MP_DIRECT_SCRIPTS))
+foreach(script => ..., $(MP_DIRECT_SCRIPTS))
     $(script): $(LIB)/$(script)
         ln-or-cp $< $@
 
