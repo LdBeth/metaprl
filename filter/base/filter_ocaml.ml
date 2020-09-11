@@ -2971,16 +2971,12 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
    and mk_smt =
       let smt_op = mk_ocaml_op "smt"
       in fun (s, mt) ->
-         match (dest_vala "mk_smt" s) with
-            Some s -> ToTerm.Term.mk_simple_term smt_op [mk_simple_string (dest_vala "mk_smt" s); mk_module_type mt]
-          | None   -> raise (RefineError ("mk_smt", StringError "antiquotations are not supported"))
+         ToTerm.Term.mk_simple_term smt_op [mk_vala "mk_smt" (mk_opt (mk_vala "mk_smt" mk_simple_string)) s; mk_module_type mt]
 
    and mk_sme =
       let sme_op = mk_ocaml_op "sme"
       in fun vars (s, me) ->
-         match (dest_vala "mk_smt" s) with
-            Some s -> ToTerm.Term.mk_simple_term sme_op [mk_simple_string (dest_vala "mk_sme" s); mk_module_expr vars me]
-          | None   -> raise (RefineError ("mk_sme", StringError "antiquotations are not supported"))
+         ToTerm.Term.mk_simple_term sme_op [mk_vala "mk_sme" (mk_opt (mk_vala "mk_sme" mk_simple_string)) s; mk_module_expr vars me]
 
    and mk_sbt =
       let sbt_op = mk_ocaml_op "sbt"
