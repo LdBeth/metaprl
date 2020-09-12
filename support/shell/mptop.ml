@@ -180,6 +180,10 @@ and mk_expr top_expr =
       match top_expr with
          (<:expr< $e1$ . $e2$ >> as top_expr) ->
             mk_proj_expr loc top_expr
+       | MLast.ExApp (_, MLast.ExLid (loc, Ploc.VaVal "-"), e) ->
+            (match mk_expr e with
+                _ ,IntExpr s -> IntExpr (- s)
+              | expr -> ApplyExpr ((loc ,VarExpr "-"), expr))
        | (<:expr< $e1$ $e2$ >>) ->
             ApplyExpr (mk_expr e1, mk_expr e2)
        | (<:expr< $e1$ .( $e2$ ) >>) ->
