@@ -180,9 +180,9 @@ and mk_expr top_expr =
       match top_expr with
          (<:expr< $e1$ . $e2$ >> as top_expr) ->
             mk_proj_expr loc top_expr
-       | MLast.ExApp (_, MLast.ExApp (loc1, MLast.ExLid (loc2, Ploc.VaVal "-"), e1), e2) ->
-            ApplyExpr ((loc1, ApplyExpr ((loc2, VarExpr "-"), mk_expr e1)), mk_expr e2)
-       | MLast.ExApp (_, MLast.ExLid (loc, Ploc.VaVal "-"), e) ->
+       | (<:expr< $e1$ - $e2$ >>) ->
+            ApplyExpr ((loc, ApplyExpr ((loc, VarExpr "-"), mk_expr e1)), mk_expr e2)
+       | (<:expr< - $e$ >>) ->
             (match mk_expr e with
                 _ ,IntExpr s -> IntExpr (- s)
               | expr -> ApplyExpr ((loc, VarExpr "~-"), expr))
@@ -592,7 +592,7 @@ let resource toploop +=
     "Pervasives", "-",      int_int_fun_int_expr ( - ),  int_int_fun_typ;
     "Pervasives", "*",      int_int_fun_int_expr ( * ),  int_int_fun_typ;
     "Pervasives", "/",      int_int_fun_int_expr ( / ),  int_int_fun_typ;
-    "Pervasives", "~-",     int_fun_int_expr ( ~- ),    int_fun_typ;
+    "Pervasives", "~-",     int_fun_int_expr ( ~- ),     int_fun_typ;
     "Pervasives", "::",     cons_expr,                   ConsType;
     "Pervasives", "()",     UnitExpr (),                 UnitType;
     "Pervasives", "[]",     ListExpr [],                 NilType;
