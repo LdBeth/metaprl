@@ -1759,7 +1759,7 @@ let extract_str arg sig_info info resources name group groupdesc =
       match items with
          [] -> ""
        | [_, loc]
-       | _ :: (_, loc) :: _ -> Ploc.file_name loc
+       | _ :: (_, loc) :: _ -> Filename.remove_extension (Ploc.file_name loc)
    in
    let dummy_loc = make_dummy_loc name in
    let items = Lm_list_util.flat_map (extract_str_item_list proc) items in
