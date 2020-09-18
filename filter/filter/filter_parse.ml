@@ -1353,7 +1353,28 @@ let _ =
    Grammar.Unsafe.clear_entry interf;
    Grammar.Unsafe.clear_entry implem
 
-let operator = Pa_o.operator_rparen
+
+let is_operator =
+   let ht = Hashtbl.create 73 in
+   let ct = Hashtbl.create 73 in
+   List.iter (function x -> Hashtbl.add ht x true)
+      ["asr"; "land"; "lor"; "lsl"; "lsr"; "lxor"; "mod"; "or"];
+   List.iter (function x -> Hashtbl.add ct x true)
+      ['!'; '&'; '*'; '+'; '-'; '/'; ':'; '<'; '='; '>'; '@'; '^'; '|'; '~';
+       '?'; '%'; '.'; '$'];
+   function x ->
+      try Hashtbl.find ht x with
+      Not_found -> try Hashtbl.find ct x.[0] with _ -> false
+
+let operator =
+   Grammar.Entry.of_parser gram "operator"
+      (function strm ->
+         match Stream.npeek 2 strm with
+            [("", s); ("", ")")] when is_operator s ->
+               (Stream.junk strm;
+                Stream.junk strm;
+                s)
+          | _ -> raise Stream.Failure)
 
 EXTEND
    GLOBAL: interf implem sig_item str_item expr;
