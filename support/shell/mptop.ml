@@ -174,20 +174,30 @@ and mk_tuple_expr loc = function
  | _ ->
       not_supported loc "tuple expression"
 
+(*
+ * Correctly handle N-ary function application
+ * Learned from CamlP5 source
+ *)
+and unapplist e =
+   let rec unrec acc = function
+      (<:expr< $op$ $arg$ >>) -> unrec (arg::acc) op
+    | op -> (op, acc)
+   in unrec [] e
+
 and mk_expr top_expr =
    let loc = loc_of_expr top_expr in
    let expr =
       match top_expr with
          (<:expr< $e1$ . $e2$ >> as top_expr) ->
             mk_proj_expr loc top_expr
-       | (<:expr< $e1$ - $e2$ >>) ->
-            ApplyExpr ((loc, ApplyExpr ((loc, VarExpr "-"), mk_expr e1)), mk_expr e2)
-       | (<:expr< - $e$ >>) ->
-            (match mk_expr e with
-                _ ,IntExpr s -> IntExpr (- s)
-              | expr -> ApplyExpr ((loc, VarExpr "~-"), expr))
-       | (<:expr< $e1$ $e2$ >>) ->
-            ApplyExpr (mk_expr e1, mk_expr e2)
+       | (<:expr< $e1$ $e2$ >>) as app_expr ->
+            (match unapplist app_expr with
+                (<:expr< $lid:"-"$ >>) , [e] ->
+                   (match mk_expr e with
+                       _ ,IntExpr s -> IntExpr (-s)
+                     | expr -> ApplyExpr ((loc, VarExpr "~-"), expr))
+              | op , args -> snd (List.fold_left (fun e el -> loc, ApplyExpr (e, el))
+                                     (mk_expr op) (List.map mk_expr args)))
        | (<:expr< $e1$ .( $e2$ ) >>) ->
             not_supported loc "array subscript"
        | (<:expr< [| $list:el$ |] >>) ->
