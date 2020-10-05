@@ -210,12 +210,6 @@ struct
    let patt_ifelse_op    = mk_ocaml_op "patt_ifelse"
    let patt_fail_op      = mk_ocaml_op "patt_fail"
 
-   let jc_op             = mk_ocaml_op "joinclause_case"
-   let jcl_op            = mk_ocaml_op "joinclause_list"
-   let joinclause_op     = mk_ocaml_op "joinclause"
-
-   let expr_rpl_string_op = mk_ocaml_op "rpl_string"
-
    (*
     * Loc has two integer describing character offsets.
     * Ignore remaining params.
@@ -278,7 +272,7 @@ struct
     * Variables are wrapped.
     *)
    let dest_var t =
-      let t = one_subterm "dest_var_t" t in
+      let t = one_subterm "dest_var" t in
          if is_var_term t then
             string_of_symbol (ToTerm.Term.dest_var t)
          else
@@ -328,13 +322,13 @@ struct
       let _loc = MLast.loc_of_patt p in
          match p with
             <:patt< $p1$ . $p2$ >> ->
-              <:expr< $expr_of_patt_ident p1$ . $expr_of_patt_ident p2$ >>
+               <:expr< $expr_of_patt_ident p1$ . $expr_of_patt_ident p2$ >>
           | <:patt< $uid: uid$ >> ->
-              <:expr< $uid: uid$ >>
+               <:expr< $uid: uid$ >>
           | <:patt< $lid: lid$ >> ->
-              <:expr< $lid: lid$ >>
+               <:expr< $lid: lid$ >>
           | _ ->
-              Stdpp.raise_with_loc _loc (Failure "Filter_ocaml.expr_of_patt_ident: not an identifier")
+               Stdpp.raise_with_loc _loc (Failure "Filter_ocaml.expr_of_patt_ident: not an identifier")
 
    let rec patt_of_expr_ident e =
       let _loc = MLast.loc_of_expr e in
@@ -577,27 +571,6 @@ struct
       in
          dest
 
-   let dest_joinclause t =
-      let tl = dest_olist t in
-         List.map (fun t ->
-            let loc = dest_loc "dest_joinclause" t in
-            let jcll = one_subterm "dest_joinclause" t in
-            let jcll =
-               List.map (fun t ->
-                  let loc1 = dest_loc "dest_def_str_1" t in
-                  let jcl, e = two_subterms t in
-                  let e = dest_expr e in
-                  let jcl =
-                     List.map (fun t ->
-                        let loc2, s = dest_loc_string "dest_def_str_2" t in
-                        let po = one_subterm "dest_def_str_3" t in
-                        let po, _ = dest_patt_opt po in
-                           loc2, (loc2, Ploc.VaVal s), Ploc.VaVal po) (dest_olist jcll)
-                  in
-                    (loc1, Ploc.VaVal jcl, e)) (dest_olist jcll)
-            in
-               { jcLoc = loc; jcVal = Ploc.VaVal jcll }) tl
-
    let dest_patt_triple t =
       let p1, t = dest_patt (one_subterm "dest_patt_triple" t) in
       let p2, t = dest_patt (one_subterm "dest_patt_triple" t) in
@@ -798,10 +771,6 @@ struct
             let _loc = dest_loc "dest_local_module_expr" t in
             let s, me, e = three_subterms t in
                <:expr< let module $uid:dest_string s$ = $dest_me me$ in $dest_expr e$ >>
-            (* ExLmd (loc,
-                      Ploc.VaVal (dest_string s),
-                      dest_me me,
-                      dest_expr e) *)
          in add_expr "local_module" dest_local_module_expr
       and expr_uid_op =
          let dest_uid_expr t =
@@ -955,45 +924,19 @@ struct
             let eo = dest_expr_opt t in
                MLast.ExOlb (loc, p, Ploc.VaVal eo)
          in add_expr "olb" dest_olb_expr
-      and expr_jdf_op =
-         let dest_jdf_expr t =
-            let loc = dest_loc "dest_jdf_expr" t in
-            let e, jc = two_subterms t in
-            let jc = dest_joinclause jc in
-               MLast.ExJdf (loc, Ploc.VaVal jc, dest_expr e)
-         in add_expr "jdf" dest_jdf_expr
       and expr_lop_op =
          let dest_lop_expr t =
             let _loc = dest_loc "dest_lop_expr" t in
             let me, e = two_subterms t in
-               MLast.ExLop (_loc, dest_me me, dest_expr e)
+               <:expr< let open $dest_me me$ in $dest_expr e$ >>
          in add_expr "lop_expr" dest_lop_expr
-      and expr_par_op =
-         let dest_par_expr t =
-            let _loc = dest_loc "dest_par_expr" t in
-            let e1, e2 = two_subterms t in
-               MLast.ExPar (_loc, dest_expr e1, dest_expr e2)
-         in add_expr "par_expr" dest_par_expr
       and expr_pck_op =
          let dest_pck_expr t =
             let _loc = dest_loc "dest_pck_expr" t in
             let me, mto = two_subterms t in
                MLast.ExPck (_loc, dest_me me, dest_opt dest_mt mto)
          in add_expr "pck_expr" dest_pck_expr
-      and expr_rpl_op =
-         let dest_rpl_expr t =
-            let _loc = dest_loc "dest_rpl_expr" t in
-            let eo, ls = two_subterms t in
-            let loc2, s = dest_loc_string "dest_rpl_expr" ls in
-               MLast.ExRpl (_loc, Ploc.VaVal (dest_opt dest_expr eo), Ploc.VaVal (loc2, Ploc.VaVal s))
-         in add_expr "rpl_expr" dest_rpl_expr
-      and expr_spw_op =
-         let dest_spw_expr t =
-            let _loc = dest_loc "dest_spw_expr" t in
-            let e = one_subterm "dest_spw_expr" t in
-               MLast.ExSpw (_loc, dest_expr e)
-         in add_expr "spw" dest_spw_expr
-       and expr_xtr_op =
+      and expr_xtr_op =
          let dest_xtr_expr t =
             let loc = dest_loc "dest_xtr_expr" t in
             let s, eo = two_subterms t in
@@ -1084,29 +1027,25 @@ struct
                   mk_var expr_uid_op vars loc s
              | (<:expr< while $e$ do { $list:el$ } >>) ->
                   mk_simple_term expr_while_op loc [mk_expr vars e; mk_olist_term (List.map (mk_expr vars) el)]
-             | MLast.ExVrn (_, Ploc.VaVal s) ->
+             | (<:expr< ` $s$ >>) ->
                   mk_simple_named_term expr_vrn_op loc s []
-             | MLast.ExLab (loc', Ploc.VaVal poel) ->
+             | (<:expr< ~{$list:poel$} >>) ->
                   mk_lab_expr vars loc poel
-             | MLast.ExOlb (loc', p, Ploc.VaVal eo) ->
-                  mk_simple_term expr_olb_op loc [mk_patt vars p (fun vars -> mk_expr_opt vars eo)]
-             | MLast.ExCoe (l, e, ot, t) ->
+             | (<:expr< ?{$p$ $opt:oe$} >>) ->
+                  mk_simple_term expr_olb_op loc [mk_patt vars p (fun vars -> mk_expr_opt vars oe)]
+             | MLast.ExCoe (_, e, ot, t) ->
                   mk_simple_term expr_coerce_class_op loc [mk_expr vars e; mk_opt mk_type ot; mk_type t]
              | (<:expr< $e$ .{ $list:el$ } >>) ->
-                  mk_simple_term expr_bigarray_element_op loc [mk_expr vars e; mk_olist_term (List.map (mk_expr vars) el)]
-             | MLast.ExJdf (_, Ploc.VaVal jcl, e) ->
-                  mk_simple_term expr_jdf_op loc [mk_expr vars e; mk_olist_term (List.map (mk_joinclause vars) jcl)]
-             | MLast.ExLop (_, me, e) ->
+                  mk_simple_term expr_bigarray_element_op loc [mk_expr vars e; mk_olist_term (List.map (mk_expr vars) el)]  
+             | (<:expr< let open $me$ in $e$ >>) ->
                   mk_simple_term expr_lop_op loc [mk_module_expr vars me; mk_expr vars e]
-             | MLast.ExPar (_, e1, e2) ->
-                  mk_simple_term expr_par_op loc [mk_expr vars e1; mk_expr vars e2]
              | MLast.ExPck (_, me, mto) ->
                   mk_simple_term expr_pck_op loc [mk_module_expr vars me; mk_opt mk_module_type mto]
-             | MLast.ExRpl (_, Ploc.VaVal eo, Ploc.VaVal (loc2, Ploc.VaVal s)) ->
-                  let ls = mk_loc_string expr_rpl_string_op (num_of_loc loc2) s in
-                    mk_simple_term expr_rpl_op loc [mk_opt (mk_expr vars) eo; ls]
-             | MLast.ExSpw (_, e) ->
-                  mk_simple_term expr_spw_op loc [mk_expr vars e]
+             | MLast.ExRpl (_, _, _)
+             | MLast.ExJdf (_, _, _)
+             | MLast.ExPar (_, _, _)
+             | MLast.ExSpw (_, _) ->
+                  raise (RefineError ("mk_expr", StringError "JoCaml features are not supported"))
              | ExXtr (loc, s, eo) ->
                   mk_simple_named_term expr_xtr_op (num_of_loc loc) s [mk_opt (fun e -> (mk_expr vars (dest_vala "ExXtr" e))) eo]
              | MLast.ExArr (_, Ploc.VaAnt _)
@@ -1139,10 +1078,7 @@ struct
              | MLast.ExObj (_, Ploc.VaAnt _, _)
              | MLast.ExOlb (_, _, Ploc.VaAnt _)
              | MLast.ExBae (_, _, Ploc.VaAnt _)
-             | MLast.ExJdf (_, Ploc.VaAnt _, _)
-             | MLast.ExRpl (_, Ploc.VaAnt _, _)
-             | MLast.ExRpl (_, _, Ploc.VaAnt _)
-             | MLast.ExRpl (_, _, Ploc.VaVal (_, Ploc.VaAnt _)) | _ ->
+             | _ ->
                   raise (RefineError ("mk_expr", StringError "antiquotations are not supported"))
 
    (*
@@ -2036,33 +1972,6 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
             let s, sto = two_subterms t in
                StXtr (loc, dest_string s, dest_opt (fun st -> Ploc.VaVal (dest_str st)) sto)
          in add_str "st_xtr" dest_xtr_st
-      and str_def_op =
-         (* TODO[jyh]: fix this.  I don't understand what a join clause is *)
-         let dest_def_str t =
-            let loc = dest_loc "dest_def_str" t in
-            let jcll = one_subterm "dest_def_str" t in
-            let jcll =
-               List.map (fun t ->
-                  let jcll = one_subterm "dest_def_str" t in
-                  let jcll = dest_olist jcll in
-                  let jcll =
-                     List.map (fun t ->
-                        let loc1 = dest_loc "dest_def_str_1" t in
-                        let jcl, e = two_subterms t in
-                        let e = dest_expr e in
-                        let jcl =
-                           List.map (fun t ->
-                              let loc2, s = dest_loc_string "dest_def_str_2" t in
-                              let po = one_subterm "dest_def_str_3" t in
-                              let po, _ = dest_patt_opt po in
-                                 loc2, (loc2, Ploc.VaVal s), Ploc.VaVal po) (dest_olist jcl)
-                        in
-                          (loc1, Ploc.VaVal jcl, e)) jcll
-                  in
-                     { jcLoc = loc; jcVal = Ploc.VaVal jcll }) (dest_olist jcll)
-             in
-               StDef (loc, Ploc.VaVal jcll)
-         in add_str "str_def" dest_def_str
       in fun vars si ->
          let loc = loc_of_str_item si in
             match si with
@@ -2099,8 +2008,8 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
                   mk_simple_term str_mod_op loc [mk_bool b; mk_olist_term (List.map (mk_sme vars) smel)]
              | StUse (_, Ploc.VaVal s, Ploc.VaVal strll) ->
                   mk_simple_named_term str_use_op loc s [mk_olist_term (List.map (mk_strloc vars) strll)]
-             | StDef (loc, Ploc.VaVal jcl) ->
-                  mk_simple_term str_def_op (num_of_loc loc) [mk_olist_term (List.map (mk_joinclause vars) jcl)]
+             | StDef (_, _) ->
+                  raise (RefineError ("mk_st", StringError "JoCaml features are not supported"))
              | StXtr (loc, s, sto) ->
                   mk_simple_named_term str_xtr_op (num_of_loc loc) s [mk_opt (fun st -> (mk_str_item vars (dest_vala "StXtr" st))) sto]
              | StCls (_, Ploc.VaAnt _)
@@ -2122,30 +2031,8 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
              | StMod (_, Ploc.VaAnt _, _)
              | StUse (_, _, Ploc.VaAnt _)
              | StUse (_, Ploc.VaAnt _, _)
-             | StDef (_, Ploc.VaAnt _ ) | _ ->
+             | _ ->
                   raise (RefineError ("mk_st", StringError "antiquotations are not supported"))
-
-
-   and mk_joinclause =
-     fun vars jc ->
-        match jc with
-           { jcLoc = loc; jcVal = Ploc.VaVal jcll } ->
-              let jcll = List.map (function (loc1, Ploc.VaVal jc, e) ->
-                 let jcl =
-                    List.map (function (loc2, (loc3, Ploc.VaVal s), Ploc.VaVal po) ->
-                        let p = mk_patt_opt loc [] po (fun _ -> mk_simple_term jc_op (num_of_loc loc2) []) in
-                          mk_simple_named_term jc_op (num_of_loc loc2) s [p]
-                     | (_, (_, Ploc.VaAnt _), _)
-                     | (_, _, Ploc.VaAnt _) ->
-                          raise (RefineError ("mk_joinclause", StringError "antiquotations are not supported"))) jc
-                 in
-                    mk_simple_term jcl_op (num_of_loc loc1) [mk_olist_term jcl; mk_expr vars e]
-               | (_, Ploc.VaAnt _, _) ->
-                  raise (RefineError ("mk_joinclause", StringError "antiquotations are not supported"))) jcll
-              in
-                  mk_simple_term joinclause_op (num_of_loc loc) [mk_olist_term jcll]
-        | { jcLoc = _; jcVal = Ploc.VaAnt _ } ->
-           raise (RefineError ("mk_joinclause", StringError "antiquotations are not supported"))
 
    (*
     * Module types.
