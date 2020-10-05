@@ -73,7 +73,7 @@ section
         $(STANDARD_LIBS)
 
     CAMLP5_FILES[] =
-        $(CAMLP5LIB)/pa_o
+        $(ROOT)/util/pa_caml
         $(CAMLP5LIB)/pa_extend
         $(CAMLP5LIB)/q_MLast
         filter/filter_patt
@@ -82,15 +82,8 @@ section
         $(ROOT)/util/pa_macro
         filter/filter_main
 
-    # XXX: http://caml.inria.fr/bin/caml-bugs?selectid=3439 workaround
-    if $(and $(file-exists $(CAMLP5LIB)/argl.cmx), $(file-exists $(CAMLP5LIB)/argl.o), $(file-exists $(CAMLP5LIB)/argl.cmo))
-        CAMLP5_FILES[] =
-            $(CAMLP5LIB)/argl
-            $(CAMLP5_FILES)
-        export
-    else
-        OCAML_LINK_FLAGS += -linkall
-        export
+    OCAML_LINK_FLAGS += -linkall
+    export
 
     CAMLP5N_FILES[] =
         $(CAMLP5LIB)/pr_dump
