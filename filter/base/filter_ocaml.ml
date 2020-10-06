@@ -1565,14 +1565,15 @@ struct
          in add_type "type_record" dest_record_type (* XXX , add_type "type_pvt_record" dest_pvt_record_type *)
       and type_list_op (* XXX , type_pvt_list_op *) =
          let dest_stl t =
-            let l, s, t = dest_loc_string_term "dest_stl" t in
-               l, s, List.map dest_type (dest_olist t)
+            let l, s = dest_loc_string "dest_stl" t in
+            let tl, t = two_subterms t in
+               l, s, List.map dest_type (dest_olist tl), dest_opt dest_type t
          in let dest_list_type t =
             let _loc = dest_loc "dest_list_type" t in
             let stll = dest_olist (one_subterm "dest_list_type" t) in
             let stll = List.map (fun t ->
-               let l, s, tl = dest_stl t in
-               l, Ploc.VaVal s, Ploc.VaVal tl, None) stll
+               let l, s, tl, t = dest_stl t in
+               l, Ploc.VaVal s, Ploc.VaVal tl, t) stll
             in
                <:ctyp< [ $list: stll$ ] >>
 (* XXX
@@ -1666,8 +1667,8 @@ struct
              | (<:ctyp< private [ $list:stll$ ] >>) ->
                   mk_simple_term type_pvt_list_op loc [mk_olist_term (List.map mk_stl stll)]
  *)
-             | (<:ctyp< [ $list:stll$ ] >>) ->
-                  mk_simple_term type_list_op loc [mk_olist_term (List.map mk_stl stll)]
+             | (<:ctyp< [ $list:llslt$ ] >>) ->
+                  mk_simple_term type_list_op loc [mk_olist_term (List.map mk_stl llslt)]
              | (<:ctyp< ( $list:tl$ ) >>) ->
                   mk_simple_term type_prod_op loc [mk_olist_term (List.map mk_type tl)]
              | (<:ctyp< $uid:s$ >>) ->
@@ -2863,9 +2864,9 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
             raise (RefineError ("mk_rf", StringError "antiquotations are not supported"))
 
    and mk_stl =
-      let stl_op =  mk_ocaml_op "stl"
+      let stl_op = mk_ocaml_op "stl"
       in fun (l, s, tl, t) ->
-         mk_simple_named_term stl_op (num_of_loc l) (dest_vala "mk_stl" s) [mk_olist_term (List.map mk_type (dest_vala "mk_smt" tl)); mk_opt mk_type t]
+         mk_simple_named_term stl_op (num_of_loc l) (dest_vala "mk_stl" s) [mk_olist_term (List.map mk_type (dest_vala "mk_stl" tl)); mk_opt mk_type t]
 
    and mk_tc =
       let tc_op = mk_ocaml_op "tc"
