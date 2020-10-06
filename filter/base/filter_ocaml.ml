@@ -1340,8 +1340,8 @@ struct
                   Stdpp.raise_with_loc (MLast.loc_of_patt patt) (Failure "Filter_ocaml.mk_patt: encountered PaAnt")
              | (<:patt< `$s$ >>) ->
                   mk_simple_named_term patt_vrn_op loc s [tailf vars]
-             | PaLab (_loc, Ploc.VaVal ppol) ->
-                  mk_patt_lab vars loc ppol tailf
+             | (<:patt< ~{$list:lpp$} >>) ->
+                  mk_patt_lab vars loc lpp tailf
              | (<:patt< ?{ $p$ $opt:oe$ } >>) ->
                   mk_simple_term patt_olb_op loc [mk_patt vars p tailf; mk_expr_opt vars oe]
              | (<:patt< # $sl$ >>) ->
@@ -1697,21 +1697,15 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
    and mk_sig_item =
       let sig_class_sig_op =
          let dest_class_sig_sig t =
-            let loc = dest_loc "dest_class_sig_sig" t in
+            let _loc = dest_loc "dest_class_sig_sig" t in
             let ctl = dest_olist (one_subterm "dest_class_sig_sig" t) in
-         (*
-               <:sig_item< class $list: List.map dest_class_type ctl$ >>
-         *)
-               SgCls (loc, Ploc.VaVal (List.map dest_class_type_infos ctl))
+               <:sig_item< class $list: List.map dest_class_type_infos ctl$ >>
          in add_sig "sig_class_sig" dest_class_sig_sig
       and sig_class_type_op =
          let dest_class_sig_type t =
-            let loc = dest_loc "dest_class_sig_type" t in
+            let _loc = dest_loc "dest_class_sig_type" t in
             let ctl = dest_olist (one_subterm "dest_class_sig_type" t) in
-         (*
-               <:sig_item< class $list: List.map dest_class_type ctl$ >>
-         *)
-               SgClt (loc, Ploc.VaVal (List.map dest_class_type_infos ctl))
+               <:sig_item< class $list: List.map dest_class_type_infos ctl$ >>
          in add_sig "sig_class_type" dest_class_sig_type
       and sig_subsig_op =
          let dest_subsig_sig t =
@@ -1865,21 +1859,15 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
                   ciExp = dest_ce t
                 }
          in let dest_class_str_str t =
-            let loc = dest_loc "dest_class_str_str" t in
+            let _loc = dest_loc "dest_class_str_str" t in
             let cdl = dest_olist (one_subterm "dest_class_str_str" t) in
-         (*
-               <:str_item< class $list: List.map dest_class cdl$ >>
-         *)
-               StCls (loc, Ploc.VaVal (List.map dest_class_expr_infos cdl))
+               <:str_item< class $list: List.map dest_class_expr_infos cdl$ >>
          in add_str "str_class_str" dest_class_str_str
       and str_class_type_op =
          let dest_class_str_type t =
-            let loc = dest_loc "dest_class_str_type" t in
+            let _loc = dest_loc "dest_class_str_type" t in
             let cdl = dest_olist (one_subterm "dest_class_str_type" t) in
-         (*
-               <:str_item< class $list: List.map dest_class cdl$ >>
-         *)
-               StClt (loc, Ploc.VaVal (List.map dest_class_type_infos cdl))
+               <:str_item< class type $list: List.map dest_class_type_infos cdl$ >>
          in add_str "str_class_type" dest_class_str_type
       and str_substruct_op =
          let dest_substruct_str t =
@@ -1887,12 +1875,6 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
             let stl = subterms_of_term t in
                <:str_item< declare $list: List.map dest_str stl$ end >>
          in add_str "str_substruct" dest_substruct_str
-      and str_exception_op =
-         let dest_exception_str t =
-            let _loc, s = dest_loc_string "dest_exception_str" t in
-            let tl = dest_olist (one_subterm "dest_exception_str" t) in
-               <:str_item< exception $s$ of $list: List.map dest_type tl$ >>
-         in add_str "str_exception" dest_exception_str
       and str_expr_op =
          let dest_expr_str t =
             let _loc = dest_loc "dest_expr_str" t in
@@ -1927,10 +1909,10 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
          in add_str "str_open" dest_open_str
       and str_inc_op =
          let dest_inc_str t =
-            let loc = dest_loc "dest_inc_str" t in
+            let _loc = dest_loc "dest_inc_str" t in
             let me = one_subterm "dest_inc_str" t in
             let me = dest_me me in
-               MLast.StInc (loc, me)
+               <:str_item< include $me$ >>
          in add_str "str_inc" dest_inc_str
       and str_type_op =
          let dest_type_str t =
@@ -1940,31 +1922,31 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
          in add_str "str_type" dest_type_str
       and str_dir_op =
          let dest_dir_str t =
-            let loc, s = dest_loc_string "dest_dir_str" t in
-            let eo = one_subterm "dest_dir_str" t in
-            let eo = dest_expr_opt eo in
-               MLast.StDir (loc, Ploc.VaVal s, Ploc.VaVal eo)
+            let _loc, s = dest_loc_string "dest_dir_str" t in
+            let oe = one_subterm "dest_dir_str" t in
+            let oe = dest_expr_opt oe in
+               <:str_item< # $lid:s$ $opt:oe$ >>
          in add_str "str_dir" dest_dir_str
       and str_exc_op =
          let dest_exc_str t =
-            let loc, s = dest_loc_string "dest_exc_str" t in
-            let tl, sl = two_subterms t in
-            let tl = List.map dest_type (dest_olist tl) in
-            let sl = List.map dest_string (dest_olist sl) in
-               MLast.StExc (loc, Ploc.VaVal s, Ploc.VaVal tl, Ploc.VaVal sl)
+            let _loc, s = dest_loc_string "dest_exc_str" t in
+            let lt, ls = two_subterms t in
+            let lt = List.map dest_type (dest_olist lt) in
+            let ls = List.map dest_string (dest_olist ls) in
+               <:str_item< exception $uid:s$ of $list:lt$ = $list:ls$ >>
          in add_str "str_exc" dest_exc_str
       and str_mod_op =
          let dest_mod_str t =
-            let loc = dest_loc "dest_recmod_str" t in
-            let b, smel = two_subterms t in
-            let smel = dest_olist smel in
-               StMod (loc, Ploc.VaVal (dest_bool b), Ploc.VaVal (List.map dest_sme smel))
+            let _loc = dest_loc "dest_recmod_str" t in
+            let b, lsme = two_subterms t in
+            let lsme = dest_olist lsme in
+               <:str_item< module $flag:dest_bool b$ $list:List.map dest_sme lsme$ >>
          in add_str "str_mod" dest_mod_str
       and str_use_op =
          let dest_use_str t =
-            let loc, s = dest_loc_string "dest_use_str" t in
-            let strll = dest_olist (one_subterm "dest_use_str" t) in
-               StUse (loc, Ploc.VaVal s, Ploc.VaVal (List.map dest_strloc strll))
+            let _loc, s = dest_loc_string "dest_use_str" t in
+            let lsil = dest_olist (one_subterm "dest_use_str" t) in
+               <:str_item< # $str:s$ $list:List.map dest_strloc lsil$ >>
          in add_str "str_use" dest_use_str
        and str_xtr_op =
          let dest_xtr_st t =
@@ -1981,8 +1963,6 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
                   mk_simple_term str_class_type_op loc (List.map mk_class_type_infos cdl)
              | (<:str_item< declare $list:stl$ end >>) ->
                   mk_simple_term str_substruct_op loc (List.map (mk_str_item vars) stl)
-             | (<:str_item< exception $s$ of $list:tl$ >>) ->
-                  mk_simple_named_term str_exception_op loc s [mk_olist_term (List.map mk_type tl)]
              | (<:str_item< $exp:e$ >>) ->
                   mk_simple_term str_expr_op loc [mk_expr [] e]
              | (<:str_item< external $s$ : $t$ = $list:sl$ >>) ->
@@ -1997,17 +1977,17 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
              | (<:str_item< type $list:tdl$ >>) ->
                   mk_simple_term str_type_op loc [mk_olist_term (List.map mk_tdl tdl)]
              | (<:str_item< value $opt:b$ $list:pel$ >>) -> mk_str_fix loc b pel
-             | StInc (_, me) ->
+             | (<:str_item< include $me$ >>) ->
                   mk_simple_term str_inc_op loc [mk_module_expr vars me]
-             | StDir (_, Ploc.VaVal s, Ploc.VaVal eo) ->
-                  mk_simple_named_term str_dir_op loc s [mk_expr_opt vars eo]
-             | StExc (_, Ploc.VaVal s, Ploc.VaVal tl, Ploc.VaVal sl) ->
-                  mk_simple_named_term str_exc_op loc s [mk_olist_term (List.map mk_type tl);
-                                                         mk_string_list sl]
-             | StMod (_, Ploc.VaVal b, Ploc.VaVal smel) ->
-                  mk_simple_term str_mod_op loc [mk_bool b; mk_olist_term (List.map (mk_sme vars) smel)]
-             | StUse (_, Ploc.VaVal s, Ploc.VaVal strll) ->
-                  mk_simple_named_term str_use_op loc s [mk_olist_term (List.map (mk_strloc vars) strll)]
+             | (<:str_item< # $lid:s$ $opt:oe$ >>) ->
+                  mk_simple_named_term str_dir_op loc s [mk_expr_opt vars oe]
+             | (<:str_item< exception $uid:s$ of $list:lt$ = $list:ls$ >>) ->
+                  mk_simple_named_term str_exc_op loc s [mk_olist_term (List.map mk_type lt);
+                                                         mk_string_list ls]
+             | (<:str_item< module $flag:b$ $list:lsme$ >>) ->
+                  mk_simple_term str_mod_op loc [mk_bool b; mk_olist_term (List.map (mk_sme vars) lsme)]
+             | (<:str_item< # $str:s$ $list:lsil$ >>) ->
+                  mk_simple_named_term str_use_op loc s [mk_olist_term (List.map (mk_strloc vars) lsil)]
              | StDef (_, _) ->
                   raise (RefineError ("mk_st", StringError "JoCaml features are not supported"))
              | StXtr (loc, s, sto) ->
