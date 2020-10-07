@@ -438,7 +438,7 @@ struct
       let s, b1, b2 = three_subterms t in
       let b1 = dest_bool b1 in
       let b2 = dest_bool b2 in
-         Ploc.VaVal (Some (dest_string s)), (if b1 then Some b2 else None)
+         Ploc.VaVal (dest_opt dest_string s), (if b1 then Some b2 else None)
 
    let dest_string_opt_bool_opt t =
       let s, b = two_subterms t in
@@ -1950,11 +1950,11 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
                <:str_item< # $str:s$ $list:List.map dest_strloc lsil$ >>
          in add_str "str_use" dest_use_str
        and str_xtr_op =
-         let dest_xtr_st t =
-            let loc = dest_loc "dest_xtr_st" t in
+         let dest_xtr_str t =
+            let loc = dest_loc "dest_xtr_str" t in
             let s, sto = two_subterms t in
                StXtr (loc, dest_string s, dest_opt (fun st -> Ploc.VaVal (dest_str st)) sto)
-         in add_str "st_xtr" dest_xtr_st
+         in add_str "st_xtr" dest_xtr_str
       in fun vars si ->
          let loc = loc_of_str_item si in
             match si with
@@ -1977,7 +1977,7 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
                   mk_simple_term str_open_op loc [mk_olist_term (List.map mk_simple_string sl)]
              | (<:str_item< type $list:tdl$ >>) ->
                   mk_simple_term str_type_op loc [mk_olist_term (List.map mk_tdl tdl)]
-             | (<:str_item< value $opt:b$ $list:pel$ >>) -> mk_str_fix loc b pel
+             | (<:str_item< value $flag:b$ $list:pel$ >>) -> mk_str_fix loc b pel
              | (<:str_item< include $me$ >>) ->
                   mk_simple_term str_inc_op loc [mk_module_expr vars me]
              | (<:str_item< # $lid:s$ $opt:oe$ >>) ->
@@ -1991,8 +1991,8 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
                   mk_simple_named_term str_use_op loc s [mk_olist_term (List.map (mk_strloc vars) lsil)]
              | StDef (_, _) ->
                   raise (RefineError ("mk_st", StringError "JoCaml features are not supported"))
-             | StXtr (loc, s, sto) ->
-                  mk_simple_named_term str_xtr_op (num_of_loc loc) s [mk_opt (fun st -> (mk_str_item vars (dest_vala "StXtr" st))) sto]
+             | StXtr (_, s, sto) ->
+                  mk_simple_named_term str_xtr_op loc s [mk_opt (fun st -> (mk_str_item vars (dest_vala "StXtr" st))) sto]
              | StCls (_, Ploc.VaAnt _)
              | StClt (_, Ploc.VaAnt _)
              | StDcl (_, Ploc.VaAnt _)
