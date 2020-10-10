@@ -304,7 +304,10 @@ struct
        loc_of_sig_item,
        loc_of_str_item,
        loc_of_module_type,
-       loc_of_module_expr =
+       loc_of_module_expr,
+       loc_of_with_constr,
+       loc_of_class_str_item,
+       loc_of_class_sig_item =
       let loc_of_aux f x = num_of_loc (f x)
       in
          loc_of_aux loc_of_expr,
@@ -313,7 +316,10 @@ struct
          loc_of_aux loc_of_sig_item,
          loc_of_aux loc_of_str_item,
          loc_of_aux loc_of_module_type,
-         loc_of_aux loc_of_module_expr
+         loc_of_aux loc_of_module_expr,
+         loc_of_aux loc_of_with_constr,
+         loc_of_aux loc_of_class_str_item,
+         loc_of_aux loc_of_class_sig_item
 
    (*
     * Conversion between pattern and expression identifiers.
@@ -1767,10 +1773,10 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
          in add_sig "sig_value" dest_value_sig
       and sig_dir_op =
          let dest_dir_sig t =
-            let loc, s = dest_loc_string "dest_dir_sig" t in
-            let eo = one_subterm "dest_dir_sig" t in
-            let eo = dest_expr_opt eo in
-               MLast.SgDir (loc, Ploc.VaVal s, Ploc.VaVal eo)
+            let _loc, s = dest_loc_string "dest_dir_sig" t in
+            let oe = one_subterm "dest_dir_sig" t in
+            let oe = dest_expr_opt oe in
+               <:sig_item< # $lid:s$ $opt:oe$ >>
          in add_sig "sig_dir" dest_dir_sig
       and sig_mod_op =
          let dest_mod_sig t =
@@ -1778,13 +1784,12 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
             let b, smtl = two_subterms t in
             let smtl = dest_olist smtl in
                <:sig_item< module $flag:dest_bool b$ $list:List.map dest_smt smtl$ >>
-               (* SgMod (loc, Ploc.VaVal (dest_bool b), Ploc.VaVal (List.map dest_smt smtl)) *)
          in add_sig "sig_mod" dest_mod_sig
       and sig_use_op =
          let dest_use_sig t =
-            let loc, s = dest_loc_string "dest_use_sig" t in
+            let _loc, s = dest_loc_string "dest_use_sig" t in
             let sigll = dest_olist (one_subterm "dest_use_sig" t) in
-               SgUse (loc, Ploc.VaVal s, Ploc.VaVal (List.map dest_sigloc sigll))
+               <:sig_item< # $str:s$ $list:List.map dest_sigloc sigll$ >>
          in add_sig "sig_use" dest_use_sig
        and sig_xtr_op =
          let dest_xtr_sig t =
@@ -1795,9 +1800,9 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
    in fun si ->
          let loc = loc_of_sig_item si in
             match si with
-               SgCls (_, Ploc.VaVal ctl) ->
+               (<:sig_item< class $list:ctl$ >>) ->
                   mk_simple_term sig_class_sig_op loc (List.map mk_class_type_infos ctl)
-             | SgClt (_, Ploc.VaVal ctl) ->
+             | (<:sig_item< class type $list:ctl$ >>) ->
                   mk_simple_term sig_class_type_op loc (List.map mk_class_type_infos ctl)
              | (<:sig_item< declare $list:sil$ end >>) ->
                   mk_simple_term sig_subsig_op loc (List.map mk_sig_item sil)
@@ -1806,7 +1811,7 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
              | (<:sig_item< external $s$ : $t$ = $list:sl$ >>) ->
                   mk_simple_named_term sig_external_op loc s
                      (mk_type t :: List.map mk_simple_string sl)
-             | SgInc (_, mt) ->
+             | (<:sig_item< include $mt$ >>) ->
                   mk_simple_term sig_inc_op loc [mk_module_type mt]
              | (<:sig_item< module $s$ : $mt$ >>) ->
                   mk_simple_named_term sig_module_op loc s [mk_module_type mt]
@@ -1818,12 +1823,12 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
                   mk_simple_term sig_type_op loc [mk_olist_term (List.map mk_tdl tdl)]
              | (<:sig_item< value $s$ : $t$ >>) ->
                   mk_simple_named_term sig_value_op loc s [mk_type t]
-             | SgDir (_, Ploc.VaVal s, Ploc.VaVal eo) ->
-                  mk_simple_named_term sig_dir_op loc s [mk_expr_opt [] eo]
+             | (<:sig_item< # $lid:s$ $opt:oe$ >>) ->
+                  mk_simple_named_term sig_dir_op loc s [mk_expr_opt [] oe]
              | (<:sig_item< module $flag:b$ $list:smtl$ >>) ->
                   mk_simple_term sig_mod_op loc [mk_bool b; mk_olist_term (List.map mk_smt smtl)]
-             | SgUse (_, Ploc.VaVal s, Ploc.VaVal sigll) ->
-                  mk_simple_named_term sig_use_op loc s [mk_olist_term (List.map mk_sigloc sigll)]
+             | (<:sig_item< # $str:s$ $list:lsil$ >>) ->
+                  mk_simple_named_term sig_use_op loc s [mk_olist_term (List.map mk_sigloc lsil)]
              | SgXtr (loc, s, sgo) ->
                   mk_simple_named_term sig_xtr_op (num_of_loc loc) s [mk_opt (fun sg -> (mk_sig_item (dest_vala "SgXtr" sg))) sgo]
              | SgCls (_, Ploc.VaAnt _)
@@ -2068,8 +2073,8 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
       and mt_tyo_op =
          let dest_tyo_mt t =
             let _loc = dest_loc "dest_tyo_mt" t in
-               let me = one_subterm "mt_tyo_op" t in
-                  <:module_type< module type of $dest_me me$ >>
+            let me = one_subterm "mt_tyo_op" t in
+               <:module_type< module type of $dest_me me$ >>
          in add_mt "mt_tyo" dest_tyo_mt
        and mt_xtr_op =
          let dest_xtr_mt t =
@@ -2098,10 +2103,10 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
              | (<:module_type< $mt$ with $list:wcl$ >>) ->
                   mk_simple_term mt_type_with_op loc
                      [mk_module_type mt; mk_olist_term (List.map mk_wc wcl)]
-             | MtTyo (loc, me) ->
-                  mk_simple_term mt_tyo_op (num_of_loc loc) [mk_module_expr [] me]
-             | MtXtr (loc, s, mto) ->
-                  mk_simple_named_term mt_xtr_op (num_of_loc loc) s [mk_opt (fun mt -> (mk_module_type (dest_vala "MtXtr" mt))) mto]
+             | (<:module_type< module type of $me$ >>) ->
+                  mk_simple_term mt_tyo_op loc [mk_module_expr [] me]
+             | MtXtr (_, s, mto) ->
+                  mk_simple_named_term mt_xtr_op loc s [mk_opt (fun mt -> (mk_module_type (dest_vala "MtXtr" mt))) mto]
              | MtFun (_, Ploc.VaAnt _, _)
              | MtLid (_, Ploc.VaAnt _)
              | MtQuo (_, Ploc.VaAnt _)
@@ -2113,19 +2118,19 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
    and mk_wc =
       let wc_type_op =
          let dest_type_wc t =
-            let loc = dest_loc "dest_type_wc" t in
+            let _loc = dest_loc "dest_type_wc" t in
             let sl1, sl2, b, t = four_subterms t in
             let sl1' = List.map dest_string (dest_olist sl1) in
             let sl2' = List.map dest_sbb (dest_olist sl2) in
-               WcTyp (loc, Ploc.VaVal sl1', Ploc.VaVal sl2', Ploc.VaVal (dest_bool b), dest_type t)
+               <:with_constr< type $list:sl1'$ $list:sl2'$ = $flag:dest_bool b$ $dest_type t$ >>
          in add_wc "wc_type" dest_type_wc
       and wc_tys_op =
          let dest_tys_wc t =
-            let loc = dest_loc "dest_tys_wc" t in
+            let _loc = dest_loc "dest_tys_wc" t in
             let sl1, sl2, t = three_subterms t in
             let sl1' = List.map dest_string (dest_olist sl1) in
             let sl2' = List.map dest_sbb (dest_olist sl2) in
-               WcTys (loc, Ploc.VaVal sl1', Ploc.VaVal sl2', dest_type t)
+               <:with_constr< type $list:sl1'$ $list:sl2'$ := $dest_type t$ >>
          in add_wc "wc_tys" dest_tys_wc
       and wc_module_op =
          let dest_module_wc t =
@@ -2139,34 +2144,32 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
             let sl, me = two_subterms t in
                WcMos (loc, Ploc.VaVal (List.map dest_string (dest_olist sl)), dest_me me)
          in add_wc "wc_mos" dest_mos_wc
-      in function
-         WcTyp (loc, Ploc.VaVal sl1, Ploc.VaVal sl2, Ploc.VaVal b, t) ->
-            let loc = num_of_loc loc in
-            let sl1' = mk_olist_term (List.map mk_simple_string sl1) in
-            let sl2' = mk_olist_term (List.map mk_sbb sl2) in
-            let b = mk_bool b in
-              mk_simple_term wc_type_op loc [sl1'; sl2'; b; mk_type t]
-       | WcTys (loc, Ploc.VaVal sl1, Ploc.VaVal sl2, t) ->
-            let loc = num_of_loc loc in
-            let sl1' = mk_olist_term (List.map mk_simple_string sl1) in
-            let sl2' = mk_olist_term (List.map mk_sbb sl2) in
-              mk_simple_term wc_tys_op loc [sl1'; sl2'; mk_type t]
-       | WcMod (loc, Ploc.VaVal sl1, mt) ->
-            let loc = num_of_loc loc in
-            let sl1' = mk_olist_term (List.map mk_simple_string sl1) in
-              mk_simple_term wc_module_op loc [sl1'; mk_module_expr [] mt]
-       | WcMos (loc, Ploc.VaVal sl, me) ->
-            let loc = num_of_loc loc in
-            let sl = mk_olist_term (List.map mk_simple_string sl) in
-              mk_simple_term wc_mos_op loc [sl; mk_module_expr [] me]
-       | WcTyp (_, _, _, Ploc.VaAnt _, _)
-       | WcTyp (_, _, Ploc.VaAnt _, _, _)
-       | WcTyp (_, Ploc.VaAnt _, _, _, _)
-       | WcTys (_, _, Ploc.VaAnt _, _)
-       | WcTys (_, Ploc.VaAnt _, _, _)
-       | WcMod (_, Ploc.VaAnt _, _)
-       | WcMos (_, Ploc.VaAnt _, _) ->
-             raise (RefineError ("mk_wc", StringError "antiquotations are not supported"))
+      in fun wc ->
+         let loc = loc_of_with_constr wc in
+         match wc with
+            WcTyp (_, Ploc.VaVal sl1, Ploc.VaVal sl2, Ploc.VaVal b, t) ->
+               let sl1' = mk_olist_term (List.map mk_simple_string sl1) in
+               let sl2' = mk_olist_term (List.map mk_sbb sl2) in
+               let b = mk_bool b in
+                 mk_simple_term wc_type_op loc [sl1'; sl2'; b; mk_type t]
+          | WcTys (_, Ploc.VaVal sl1, Ploc.VaVal sl2, t) ->
+               let sl1' = mk_olist_term (List.map mk_simple_string sl1) in
+               let sl2' = mk_olist_term (List.map mk_sbb sl2) in
+                 mk_simple_term wc_tys_op loc [sl1'; sl2'; mk_type t]
+          | WcMod (_, Ploc.VaVal sl1, mt) ->
+               let sl1' = mk_olist_term (List.map mk_simple_string sl1) in
+                 mk_simple_term wc_module_op loc [sl1'; mk_module_expr [] mt]
+          | WcMos (_, Ploc.VaVal sl, me) ->
+               let sl = mk_olist_term (List.map mk_simple_string sl) in
+                 mk_simple_term wc_mos_op loc [sl; mk_module_expr [] me]
+          | WcTyp (_, _, _, Ploc.VaAnt _, _)
+          | WcTyp (_, _, Ploc.VaAnt _, _, _)
+          | WcTyp (_, Ploc.VaAnt _, _, _, _)
+          | WcTys (_, _, Ploc.VaAnt _, _)
+          | WcTys (_, Ploc.VaAnt _, _, _)
+          | WcMod (_, Ploc.VaAnt _, _)
+          | WcMos (_, Ploc.VaAnt _, _) ->
+                raise (RefineError ("mk_wc", StringError "antiquotations are not supported"))
 
    (*
     * Module expressions.
@@ -2481,27 +2484,29 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
             let s, b, t = three_subterms t in
                CgVir (loc, Ploc.VaVal (dest_bool b), Ploc.VaVal (dest_string s), dest_type t)
          in add_ctf "class_type_vir" dest_vir_ctf
-      in function
-         CgCtr (loc, s, t) ->
-            mk_simple_term ctf_ctr_op (num_of_loc loc) [mk_type s; mk_type t]
-       | CgDcl (loc, Ploc.VaVal t) ->
-            mk_simple_term ctf_dcl_op (num_of_loc loc) [mk_olist_term (List.map mk_ctf t)]
-       | CgInh (loc, ct) ->
-            mk_simple_term ctf_inh_op (num_of_loc loc) [mk_ct ct]
-       | CgMth (loc, Ploc.VaVal b, Ploc.VaVal s, t) ->
-            mk_simple_term ctf_mth_op (num_of_loc loc) [mk_simple_string s; mk_bool b; mk_type t]
-       | CgVal (loc, Ploc.VaVal b, Ploc.VaVal s, t) ->
-            mk_simple_term ctf_val_op (num_of_loc loc) [mk_simple_string s; mk_bool b; mk_type t]
-       | CgVir (loc, Ploc.VaVal b, Ploc.VaVal s, t) ->
-            mk_simple_term ctf_vir_op (num_of_loc loc) [mk_simple_string s; mk_bool b; mk_type t]
-       | CgDcl (_, Ploc.VaAnt _)
-       | CgMth (_, _, Ploc.VaAnt _, _)
-       | CgMth (_, Ploc.VaAnt _, _, _)
-       | CgVal (_, _, Ploc.VaAnt _, _)
-       | CgVal (_, Ploc.VaAnt _, _, _)
-       | CgVir (_, _, Ploc.VaAnt _, _)
-       | CgVir (_, Ploc.VaAnt _, _, _) ->
-            raise (RefineError ("mk_ctf", StringError "antiquotations are not supported"))
+      in fun ctf ->
+         let loc = loc_of_class_sig_item ctf in
+         match ctf with
+            CgCtr (_, s, t) ->
+               mk_simple_term ctf_ctr_op loc [mk_type s; mk_type t]
+          | CgDcl (_, Ploc.VaVal t) ->
+               mk_simple_term ctf_dcl_op loc [mk_olist_term (List.map mk_ctf t)]
+          | CgInh (_, ct) ->
+               mk_simple_term ctf_inh_op loc [mk_ct ct]
+          | CgMth (_, Ploc.VaVal b, Ploc.VaVal s, t) ->
+               mk_simple_term ctf_mth_op loc [mk_simple_string s; mk_bool b; mk_type t]
+          | CgVal (_, Ploc.VaVal b, Ploc.VaVal s, t) ->
+               mk_simple_term ctf_val_op loc [mk_simple_string s; mk_bool b; mk_type t]
+          | CgVir (_, Ploc.VaVal b, Ploc.VaVal s, t) ->
+               mk_simple_term ctf_vir_op loc [mk_simple_string s; mk_bool b; mk_type t]
+          | CgDcl (_, Ploc.VaAnt _)
+          | CgMth (_, _, Ploc.VaAnt _, _)
+          | CgMth (_, Ploc.VaAnt _, _, _)
+          | CgVal (_, _, Ploc.VaAnt _, _)
+          | CgVal (_, Ploc.VaAnt _, _, _)
+          | CgVir (_, _, Ploc.VaAnt _, _)
+          | CgVir (_, Ploc.VaAnt _, _, _) ->
+               raise (RefineError ("mk_ctf", StringError "antiquotations are not supported"))
 
    and mk_cf =
       let cf_ctr_op =
@@ -2553,46 +2558,40 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
             let s, b, t = three_subterms t in
                CrVav (loc, Ploc.VaVal (dest_bool b), Ploc.VaVal (dest_string s), dest_type t)
          in add_cf "class_vav" dest_vav_cf
-      in fun vars -> function
-         CrCtr (loc, s, t) ->
-            let loc = num_of_loc loc in
+      in fun vars cf ->
+         let loc = loc_of_class_str_item cf in
+         match cf with
+            CrCtr (_, s, t) ->
                mk_simple_term cf_ctr_op loc [mk_type s; mk_type t]
-       | CrDcl (loc, Ploc.VaVal t) ->
-            let loc = num_of_loc loc in
+          | CrDcl (_, Ploc.VaVal t) ->
                mk_simple_term cf_dcl_op loc [mk_cf_list t vars]
-       | CrInh (loc, ce, Ploc.VaVal so) ->
-            let loc = num_of_loc loc in
+          | CrInh (_, ce, Ploc.VaVal so) ->
                mk_simple_term cf_inh_op loc [mk_ce vars ce; mk_string_opt expr_string_op so]
-       | CrIni (loc, e) ->
-            let loc = num_of_loc loc in
+          | CrIni (_, e) ->
                mk_simple_term cf_ini_op loc [mk_expr vars e]
-       | CrMth (loc, Ploc.VaVal b1, Ploc.VaVal b2, Ploc.VaVal s, Ploc.VaVal t, e) ->
-            let loc = num_of_loc loc in
+          | CrMth (_, Ploc.VaVal b1, Ploc.VaVal b2, Ploc.VaVal s, Ploc.VaVal t, e) ->
                mk_simple_term cf_mth_op loc (**)
                   [mk_simple_string s; mk_bool b1; mk_bool b2; mk_expr vars e; mk_opt mk_type t]
-       | CrVal (loc, Ploc.VaVal b1, Ploc.VaVal b2, Ploc.VaVal s, e) ->
-            let loc = num_of_loc loc in
+          | CrVal (_, Ploc.VaVal b1, Ploc.VaVal b2, Ploc.VaVal s, e) ->
                mk_simple_term cf_val_op loc [mk_simple_string s; mk_bool b1; mk_bool b2; mk_expr vars e]
-       | CrVir (loc, Ploc.VaVal b, Ploc.VaVal s, t) ->
-            let loc = num_of_loc loc in
+          | CrVir (_, Ploc.VaVal b, Ploc.VaVal s, t) ->
                mk_simple_term cf_vir_op loc [mk_simple_string s; mk_bool b; mk_type t]
-       | CrVav (loc, Ploc.VaVal b, Ploc.VaVal s, t) ->
-            let loc = num_of_loc loc in
+          | CrVav (_, Ploc.VaVal b, Ploc.VaVal s, t) ->
                mk_simple_term cf_vav_op loc [mk_simple_string s; mk_bool b; mk_type t]
-       | CrDcl (_, Ploc.VaAnt _)
-       | CrInh (_, _, Ploc.VaAnt _)
-       | CrMth (_, _, _,  _, Ploc.VaAnt _, _)
-       | CrMth (_, _, _, Ploc.VaAnt _, _, _)
-       | CrMth (_, _, Ploc.VaAnt _, _, _, _)
-       | CrMth (_, Ploc.VaAnt _, _, _, _, _)
-       | CrVal (_, _, _, Ploc.VaAnt _, _)
-       | CrVal (_, _, Ploc.VaAnt _, _, _)
-       | CrVal (_, Ploc.VaAnt _, _, _, _)
-       | CrVir (_, _, Ploc.VaAnt _, _)
-       | CrVir (_, Ploc.VaAnt _, _, _)
-       | CrVav (_, _, Ploc.VaAnt _, _)
-       | CrVav (_, Ploc.VaAnt _, _, _) ->
-            raise (RefineError ("mk_cf", StringError "antiquotations are not supported"))
+          | CrDcl (_, Ploc.VaAnt _)
+          | CrInh (_, _, Ploc.VaAnt _)
+          | CrMth (_, _, _,  _, Ploc.VaAnt _, _)
+          | CrMth (_, _, _, Ploc.VaAnt _, _, _)
+          | CrMth (_, _, Ploc.VaAnt _, _, _, _)
+          | CrMth (_, Ploc.VaAnt _, _, _, _, _)
+          | CrVal (_, _, _, Ploc.VaAnt _, _)
+          | CrVal (_, _, Ploc.VaAnt _, _, _)
+          | CrVal (_, Ploc.VaAnt _, _, _, _)
+          | CrVir (_, _, Ploc.VaAnt _, _)
+          | CrVir (_, Ploc.VaAnt _, _, _)
+          | CrVav (_, _, Ploc.VaAnt _, _)
+          | CrVav (_, Ploc.VaAnt _, _, _) ->
+               raise (RefineError ("mk_cf", StringError "antiquotations are not supported"))
 
    and mk_cf_list cfl vars =
       mk_olist_term (List.map (mk_cf vars) cfl)
@@ -2854,13 +2853,11 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
 
    and mk_rf rf =
       match rf with
-         PvTag (_, Ploc.VaVal s, Ploc.VaVal b, Ploc.VaVal tl) ->
-            ToTerm.Term.mk_simple_term row_field_tag_op [mk_simple_string s; mk_bool b; mk_olist_term (List.map mk_type tl)]
-       | PvInh (_, t) ->
+         <:poly_variant< `$s$ of $flag:b$ $list:lt$ >> ->
+            ToTerm.Term.mk_simple_term row_field_tag_op [mk_simple_string s; mk_bool b; mk_olist_term (List.map mk_type lt)]
+       | <:poly_variant< $t$ >> ->
             ToTerm.Term.mk_simple_term row_field_inh_op [mk_type t]
-       | PvTag (_, Ploc.VaAnt _, _, _)
-       | PvTag (_, _, Ploc.VaAnt _, _)
-       | PvTag (_, _, _, Ploc.VaAnt _) ->
+       | <:poly_variant< `$_:_$ of $_flag:_$ $_list:_$ >> ->
             raise (RefineError ("mk_rf", StringError "antiquotations are not supported"))
 
    and mk_stl =
