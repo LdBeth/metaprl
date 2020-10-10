@@ -297,7 +297,7 @@ if $(SSL_ENABLED)
     export
 
 if $(READLINE_ENABLED)
-    CFLAGS += $(READLINE_CFLAGS)
+    CFLAGS += -DREADLINE
     OCAML_LINK_FLAGS += -cclib -lreadline
     export
 
