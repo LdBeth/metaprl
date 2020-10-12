@@ -2,4 +2,4 @@ make_mp_version
 mp_version.ml
 nuprl_sig.ml
 nuprl_sig.mli
-svnversion.txt
+gitversion.txt

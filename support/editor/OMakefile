@@ -47,61 +47,24 @@ make_mp_version$(EXE): make_mp_version.ml
     $(OCAMLC) $(OCAMLCFLAGS) -o $@ unix.cma $<
 
 .STATIC:
-    SVNVERSION_AVAILABLE = $(CheckProg svnversion)
+    GIT_AVAILABLE = $(and $(CheckProg git), $(file-exists $(ROOT)/.git/))
 
-if $(file-exists $(ROOT)/.svn/entries)
-    #
-    # Subversion revision potentially depends on all the directories
-    # in the project.
-    #
-    .SCANNER: scan-svnversion.txt: :value: $(project-directories)
-        section
-            entries = $(filter-exists $(file $(addsuffix /.svn/entries, $(project-directories))))
-            println($"svnversion.txt: $(entries)")
+if $(GIT_AVAILABLE)
 
-    if $(SVNVERSION_AVAILABLE)
-        svnversion.txt: $(MLDEBUG_PATH) :scanner: scan-svnversion.txt
-            svnversion $(ROOT) > $@
+    GIT_TAGS = $(filter-exists $(ls $(ROOT)/.git/refs/tags))
+    if $(GIT_TAGS.is-nonempty)
+        gitversion.txt: $(GIT_TAGS) $(ROOT)/.git/logs/HEAD
+            git describe --tags > $@
 
     else
-        svnrevision(args) =
-            hi = false
-            lo =
-            FS = $'"'
-            foreach(ent => ..., $(args))
-                if $(file-exists $(ent))
-                    awk($(ent))
-                    case $'[ \t]*revision="[0-9]*"/>$'
-                        if $(hi)
-                            hi = $(if $(gt $(hi), $2), $(hi), $2)
-                            lo = $(if $(gt $(lo), $2), $2, $(lo))
-                            export
-                        else
-                            hi = $2
-                            lo = $2
-                            export
-                        export
-                    export
-                export
-            if $(hi)
-                if $(eq $(hi), $(lo))
-                    value $(hi)
-                else
-                    value $"$(lo):$(hi)"
-            else
-                value unknown
-
-        write_svnversion(file) =
-            fprintln($(file), $(svnrevision $(get-entries)))
-
-        svnversion.txt: $(MLDEBUG_PATH) :scanner: scan-svnversion.txt
-            write_svnversion($@)
+        gitversion.txt: $(ROOT)/.git/HEAD
+            git describe --all > $@
 
 else
-    svnversion.txt:
+    gitversion.txt:
         fprintln($@, unknown)
 
-mp_version.ml: make_mp_version$(EXE) svnversion.txt
+mp_version.ml: make_mp_version$(EXE) gitversion.txt
     ./make_mp_version -version $(MP_VERSION) -refiner $(REFINER) -terms $(TERMS) > $@
 
 LocalOCamlGeneratedFiles(mp_version.ml)
@@ -119,4 +82,4 @@ LibInstall(svnversion.txt $(basename $(MP_DIRECT_SCRIPTS)))
 # Clean up
 #
 clean:
-    $(CLEAN) mp_version.ml make_mp_version$(EXE) svnversion.txt
+    $(CLEAN) mp_version.ml make_mp_version$(EXE) gitversion.txt

@@ -46,7 +46,7 @@ let main () =
    Arg.parse spec (fun s -> raise (Failure ("bad option: " ^ s))) "make_mp_version";
    let svnversion = 
       try
-         let ch = open_in "svnversion.txt" in
+         let ch = open_in "gitversion.txt" in
          let version = input_line ch in
          let () = close_in ch in
             version
@@ -63,7 +63,7 @@ let main () =
          Unix.tm_sec = sec
        } = Unix.localtime now
    in
-      printf "let version = \"MetaPRL %s  (Subversion rev %s):\\n\\tbuild [%s %s %d %02d:%02d:%02d %d]\\n\\ton %s\\n\\tUses %s Refiner_%s\"\n"
+      printf "let version = \"MetaPRL %s  (Git rev %s):\\n\\tbuild [%s %s %d %02d:%02d:%02d %d]\\n\\ton %s\\n\\tUses %s Refiner_%s\"\n"
          !version
          svnversion
          wday_names.(wday)
