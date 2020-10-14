@@ -524,7 +524,7 @@ let display_term = display_term_aux false
 let display_term_newline = display_term_aux true
 
 let format get_dfm ped addr =
-   display_term_newline (get_dfm()) (term_of_proof (proof_of_ped ped) addr)
+   display_term (get_dfm()) (term_of_proof (proof_of_ped ped) addr)
 
 let format_incomplete get_dfm proof =
    display_term_newline (get_dfm()) (term_of_incomplete proof)

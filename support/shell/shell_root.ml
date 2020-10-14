@@ -95,11 +95,11 @@ let rec edit pack get_dfm =
          [] ->
             let groups = Package_info.groups pack @ ["fs", "Browse MetaPRL Source Code"] in
             let thys = List.map (fun (name, dsc) -> <:con< theory[$name$:s,$dsc$:s] >>) groups in
-               Proof_edit.display_term (get_dfm ()) <:con< theories{$mk_xlist_term thys$} >>
+               Proof_edit.display_term_newline (get_dfm ()) <:con< theories{$mk_xlist_term thys$} >>
        | [ name ] ->
             let dsc, packs = Package_info.group_packages pack name in
             let packs = List.map (fun name -> <:con< package[$name$:s] >>) packs in
-               Proof_edit.display_term (get_dfm ()) <:con< packages[$name$:s,$dsc$:s]{$mk_xlist_term packs$} >>
+               Proof_edit.display_term_newline (get_dfm ()) <:con< packages[$name$:s,$dsc$:s]{$mk_xlist_term packs$} >>
        | _ ->
             raise (Invalid_argument "Shell_root.edit_display: internal error")
    in

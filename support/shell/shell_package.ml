@@ -273,7 +273,7 @@ let edit_check_addr = function
 let rec edit pack_info parse_arg get_dfm =
    let edit_display addr options =
       edit_check_addr addr;
-      Proof_edit.display_term (get_dfm ()) (term_of_implementation pack_info (mk_ls_filter options) parse_arg)
+      Proof_edit.display_term_newline (get_dfm ()) (term_of_implementation pack_info (mk_ls_filter options) parse_arg)
    in
    let edit_copy () =
       edit pack_info parse_arg get_dfm
