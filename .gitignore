@@ -11,6 +11,7 @@
 *.top
 .omakedb*
 .version.*
+.sloppy
 [xyz]
 bin
 lib
