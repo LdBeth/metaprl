@@ -543,9 +543,9 @@ let get_infixes = function
  * Get a loaded theory.
  *)
 let groups pack =
-   let res = ref [] in
-      synchronize_pack pack (fun pack -> Hashtbl.iter (fun gr (dsc, _) -> res := (gr, dsc) :: !res) pack.pack_groups);
-      List.sort Stdlib.compare !res
+   let f gr (dsc, _) res = (gr, dsc) :: res in
+   let res = synchronize_pack pack (fun pack -> Hashtbl.fold f pack.pack_groups [])
+   in List.sort Stdlib.compare res
 
 let group_exists pack group =
    synchronize_pack pack (fun pack -> Hashtbl.mem pack.pack_groups group)
@@ -556,10 +556,9 @@ let group_packages pack group =
          desc, LexStringSet.elements thys)
 
 let group_of_module pack name =
-   let res = ref None in
-      synchronize_pack pack (fun pack ->
-         Hashtbl.iter (fun gr (_, set) -> if LexStringSet.mem set name then res := Some gr) pack.pack_groups);
-      match !res with
+   let f gr (_, set) res = if LexStringSet.mem set name then Some gr else res in
+   let res = synchronize_pack pack (fun pack -> Hashtbl.fold f pack.pack_groups None)
+   in match res with
          Some gr -> gr
        | None -> raise Not_found
 
