@@ -269,7 +269,7 @@ let find_sub_module summary path =
 (*
  * List all the parents.
  *)
-let parents { info_list = summary; _ } =
+let parents { info_list = summary } =
    let rec collect = function
       (item, _) :: t ->
          begin
