@@ -224,7 +224,7 @@ $(concat $(nl), $(add-wrapper $'print_theory "', $'";;', $(THEORIES)))"""
     # Contents of the print.ml file
     #
     $(docname)_print.ml:
-        echo $(quote $(CMDLINE)) > $@
+        echo $(CMDLINE) > $@
 
     #
     # Get MetaPRL to generate the .tex files

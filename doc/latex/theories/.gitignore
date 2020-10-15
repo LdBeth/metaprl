@@ -1,0 +1,14 @@
+theory_print.ml
+all-bodies.tex
+*.aux
+*.dvi
+*.idx
+*.ilg
+*.ind
+*.log
+*.out
+*.toc
+*.bbl
+*.blg
+*.pdf
+*.ps

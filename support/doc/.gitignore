@@ -1,0 +1,12 @@
+theory_print.ml
+*.tex
+*.aux
+*.dvi
+*.idx
+*.ilg
+*.ind
+*.log
+*.out
+*.toc
+*.pdf
+*.ps
