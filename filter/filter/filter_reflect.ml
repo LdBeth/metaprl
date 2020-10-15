@@ -51,7 +51,6 @@ open Filter_shape
 open Filter_summary
 open Filter_summary_util
 open Filter_summary_type
-open Filter_prog
 open Filter_util
 open Term_grammar
 open Proof_boot
