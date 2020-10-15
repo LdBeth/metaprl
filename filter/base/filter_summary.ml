@@ -1348,12 +1348,8 @@ struct
          if is_dep0_dep0_term parent_op t then
             two_subterms t
          else
-            let p, _, r = three_subterms t in
-               (*
-                * XXX: HACK: xnil_term is here because dest_resource_sig can not handle
-                * ASCII IO format 1.0.0, rev < 3297 (formats very not properly versioned yet).
-                *)
-               p, xnil_term
+            let p, _, r = three_subterms t
+            in p, r
       in
          Parent { parent_name = dest_string_param_list path;
                   parent_resources = List.map (dest_resource_sig convert) (dest_xlist resources)
