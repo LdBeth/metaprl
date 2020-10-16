@@ -334,7 +334,7 @@ struct
           | <:patt< $lid: lid$ >> ->
                <:expr< $lid: lid$ >>
           | _ ->
-               Stdpp.raise_with_loc _loc (Failure "Filter_ocaml.expr_of_patt_ident: not an identifier")
+               Ploc.raise _loc (Failure "Filter_ocaml.expr_of_patt_ident: not an identifier")
 
    let rec patt_of_expr_ident e =
       let _loc = MLast.loc_of_expr e in
@@ -346,7 +346,7 @@ struct
           | <:expr< $lid: lid$ >> ->
                <:patt< $lid: lid$ >>
           | _ ->
-               Stdpp.raise_with_loc _loc (Failure "Filter_ocaml.patt_of_expr_ident: not an identifier")
+               Ploc.raise _loc (Failure "Filter_ocaml.patt_of_expr_ident: not an identifier")
 
    (*
     * For looking up destructors in a hashtable.
@@ -1343,7 +1343,7 @@ struct
              | (<:patt< (type $lid:s$) >>) ->
                   mk_var_term patt_ty_lid_op vars loc s (tailf vars)
              | (<:patt< $anti: p$ >>) ->
-                  Stdpp.raise_with_loc (MLast.loc_of_patt patt) (Failure "Filter_ocaml.mk_patt: encountered PaAnt")
+                  Ploc.raise (MLast.loc_of_patt patt) (Failure "Filter_ocaml.mk_patt: encountered PaAnt")
              | (<:patt< `$s$ >>) ->
                   mk_simple_named_term patt_vrn_op loc s [tailf vars]
              | (<:patt< ~{$list:lpp$} >>) ->
@@ -1695,7 +1695,7 @@ struct
                    *   - Remove the "when true" from the above case (it's there to shut up the "unused case"
                    *     warning when compiling under 3.08
                    *)
-                  Stdpp.raise_with_loc (MLast. loc_of_ctyp t) (Invalid_argument "You are using a feature that was added in OCaml 3.09.
+                  Ploc.raise (MLast. loc_of_ctyp t) (Invalid_argument "You are using a feature that was added in OCaml 3.09.
 MetaPRL does not support this yet in order to remain compatible with OCaml 3.08")
 
    (*

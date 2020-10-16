@@ -157,7 +157,7 @@ let get_string_param loc t =
     | [ MString s ] ->
          string_of_symbol s
     | _ ->
-         Stdpp.raise_with_loc loc (RefineError ("Filter_parse.get_string_param", StringTermError ("not a string param", t)))
+         Ploc.raise loc (RefineError ("Filter_parse.get_string_param", StringTermError ("not a string param", t)))
 
 (*
  * Wrap a code block with a binding variable.
@@ -185,7 +185,7 @@ struct
    let parsing_state loc =
       match !parsing_state with
          Some st -> st
-       | None -> Stdpp.raise_with_loc loc (Failure "Filter_parse.parsing_state is uninitialized")
+       | None -> Ploc.raise loc (Failure "Filter_parse.parsing_state is uninitialized")
 
    (*
     * Term grammar.
@@ -437,14 +437,14 @@ struct
    let declare_parent proc loc path =
       (* Prevent multiple inclusion *)
       if StrLSet.mem proc.parents path then
-         Stdpp.raise_with_loc loc (Invalid_argument "Same theory extended twice");
+         Ploc.raise loc (Invalid_argument "Same theory extended twice");
       proc.parents <- StrLSet.add proc.parents path;
 
       (* Lots of errors can occur here *)
       let () =
          try FilterCache.inline_module proc.cache () path with
             exn ->
-               Stdpp.raise_with_loc loc exn
+               Ploc.raise loc exn
       in
 
       (* Add infixes *)
@@ -559,7 +559,7 @@ struct
          let cmd = rewrite_command proc name params args pf res in
             add_command proc (cmd, loc)
       with exn ->
-         Stdpp.raise_with_loc loc exn
+         Ploc.raise loc exn
 
    let declare_input_form proc loc name mt =
       try
@@ -567,7 +567,7 @@ struct
             add_command proc (cmd, loc);
             redex, contractum
       with exn ->
-         Stdpp.raise_with_loc loc exn
+         Ploc.raise loc exn
 
    (* Note that Refine.check_rule has already been issued *)
    let rule_command proc name params mt pf res =
@@ -586,7 +586,7 @@ struct
          add_command proc (rule_command proc name args t pf res, loc)
       with
          exn ->
-            Stdpp.raise_with_loc loc exn
+            Ploc.raise loc exn
 
    (*
     * Infix directive.
@@ -640,7 +640,7 @@ struct
    let get_dfmode loc t =
       let mode = get_string_param loc t in
          if mode = "raw" then
-            Stdpp.raise_with_loc loc (Invalid_argument "Attempts to refer to the built-in \"raw\" mode");
+            Ploc.raise loc (Invalid_argument "Attempts to refer to the built-in \"raw\" mode");
          mode
 
    let get_dform_options proc loc options =
@@ -658,7 +658,7 @@ struct
                    | "except_mode" :: _ ->
                         modes, get_dfmode loc hd :: except_modes, options
                    | _ ->
-                        Stdpp.raise_with_loc loc (Failure("warning: unknown display form option " ^ (SimplePrint.string_of_term hd)))
+                        Ploc.raise loc (Failure("warning: unknown display form option " ^ (SimplePrint.string_of_term hd)))
             end
        | [] ->
             [], [], []
@@ -667,7 +667,7 @@ struct
          [], [], options -> Dform.AllModes, List.rev options
        | modes, [], options -> Dform.Modes modes, List.rev options
        | [], except_modes, options -> Dform.ExceptModes except_modes, List.rev options
-       | _ -> Stdpp.raise_with_loc loc (Failure "Both \"mode\" and \"except_mode\" flags on the same display form")
+       | _ -> Ploc.raise loc (Failure "Both \"mode\" and \"except_mode\" flags on the same display form")
 
    (*
     * Dform declaration.
@@ -702,7 +702,7 @@ struct
                ignore (term_rewrite Rewrite_sig.Relaxed empty_args_spec [t] [expansion])
             with
                exn ->
-                  Stdpp.raise_with_loc loc exn
+                  Ploc.raise loc exn
          end;
          add_command proc (DForm { dform_name = name;
                                    dform_modes = modes;
@@ -741,7 +741,7 @@ struct
    let declare_prec proc loc s =
 (*
       if FilterCache.find_prec proc.cache s then
-         Stdpp.raise_with_loc loc (Failure (sprintf "prec '%s' already declared" s));
+         Ploc.raise loc (Failure (sprintf "prec '%s' already declared" s));
 *)
       add_command proc (Prec s, loc);
       FilterCache.add_prec proc.cache s
@@ -751,9 +751,9 @@ struct
     *)
    let define_prec_rel proc loc s s' rel =
       if not (FilterCache.find_prec proc.cache s) then
-         Stdpp.raise_with_loc loc (Failure (sprintf "prec '%s' not defined" s));
+         Ploc.raise loc (Failure (sprintf "prec '%s' not defined" s));
       if not (FilterCache.find_prec proc.cache s') then
-         Stdpp.raise_with_loc loc (Failure (sprintf "prec '%s' not defined" s'));
+         Ploc.raise loc (Failure (sprintf "prec '%s' not defined" s'));
       add_command proc (PrecRel { prec_rel = rel;
                                   prec_left = s;
                                   prec_right = s'
@@ -793,7 +793,7 @@ struct
                   else if Filename.check_suffix name ".mli" then
                      InterfaceType, Filename.chop_suffix name ".mli"
                   else
-                     Stdpp.raise_with_loc loc (Failure "Input is not a .ml or .mli file")
+                     Ploc.raise loc (Failure "Input is not a .ml or .mli file")
             in
             let cache = FilterCache.create !include_path in
             let info = FilterCache.create_cache cache module_name select in
@@ -998,7 +998,7 @@ let define_rule proc loc name
          StrFilter.add_command proc (cmd, loc)
    with
       exn ->
-         Stdpp.raise_with_loc loc exn
+         Ploc.raise loc exn
 
 let define_prim proc loc name params mterm extract res =
    define_rule proc loc name params mterm (Primitive extract) res
@@ -1066,7 +1066,7 @@ let expr_of_pcon _loc = function
          match shape with
             ShapeString -> "String"
           | _ ->
-               Stdpp.raise_with_loc _loc (Invalid_argument "\"con\" quotation: string constant parameter must be of string kind")
+               Ploc.raise _loc (Invalid_argument "\"con\" quotation: string constant parameter must be of string kind")
       in
          <:expr< Refiner.Refiner.Term.make_param (Term_sig.$uid:shape$ $str:s$) >>
  | ConPToken opname, shape ->
@@ -1087,7 +1087,7 @@ let expr_of_pcon _loc = function
           | ShapeToken -> "MToken"
           | ShapeShape -> "MShape"
           | ShapeOperator -> "MOperator"
-          | _ -> Stdpp.raise_with_loc _loc (Invalid_argument "\"con\" quotation: unsupported meta-parameter")
+          | _ -> Ploc.raise _loc (Invalid_argument "\"con\" quotation: unsupported meta-parameter")
       in
          <:expr< Refiner.Refiner.Term.make_param (Term_sig.$uid:shape$ $str:string_of_symbol s$) >>
  | ConPExpr e, shape ->
@@ -1109,7 +1109,7 @@ let expr_of_pcon _loc = function
       <:expr< Refiner.Refiner.Term.make_param (Term_sig.Number (Lm_num.num_of_int $e$)) >>
  | ConPNum _, _
  | ConPInt _, _ ->
-      Stdpp.raise_with_loc _loc (Invalid_argument "\"con\" quotation: numeric parameter of non-numeric kind?")
+      Ploc.raise _loc (Invalid_argument "\"con\" quotation: numeric parameter of non-numeric kind?")
 
 let is_simp_bterm = function
    [], _ -> true
@@ -1328,11 +1328,11 @@ let parse_dform loc options redex contractum =
       options, redex, contractum
 
 let str_keyword kw loc =
-   Stdpp.raise_with_loc loc (Invalid_argument
+   Ploc.raise loc (Invalid_argument
       ("Implementation keyword encountered where an interface one was expected: \"" ^ kw ^ "\""))
 
 let sig_keyword kw loc =
-   Stdpp.raise_with_loc loc (Invalid_argument
+   Ploc.raise loc (Invalid_argument
       ("Interface keyword encountered where an implementation one was expected: \"" ^ kw ^ "\""))
 
 (************************************************************************
@@ -1409,7 +1409,7 @@ EXTEND
                 if !debug_filter_parse then
                    eprintf "Filter_parse.interf_item: adding item%t" eflush;
                 if get_checked_bindings _loc <> [] then
-                   Stdpp.raise_with_loc _loc (Invalid_argument "Filter_parse.interf_item: sig item has bindings");
+                   Ploc.raise _loc (Invalid_argument "Filter_parse.interf_item: sig item has bindings");
                 match s with
                    <:sig_item< declare $list: []$ end >> ->
                       ()
@@ -1450,7 +1450,7 @@ EXTEND
                 match s with
                    <:str_item< declare $list: []$ end >> ->
                       if get_checked_bindings _loc <> [] then
-                         Stdpp.raise_with_loc _loc (Invalid_argument "Filter_parse.implem_item: empty str item has bindings")
+                         Ploc.raise _loc (Invalid_argument "Filter_parse.implem_item: empty str item has bindings")
                  | _ ->
                       StrFilter.add_command proc (SummaryItem (bind_item _loc s), _loc)
              in
@@ -2082,7 +2082,7 @@ EXTEND
                 | <:expr< $lid:name$ >> ->
                      { res_loc = _loc; res_name = name; res_flag = flag; res_args = tl }
                 | _ ->
-                     Stdpp.raise_with_loc (MLast.loc_of_expr expr) (Failure "resource is not an application")
+                     Ploc.raise (MLast.loc_of_expr expr) (Failure "resource is not an application")
             in
                split_application [] e
       ]];
@@ -2103,7 +2103,7 @@ EXTEND
                mt, mk_simple_term ((TermGrammarBefore.parsing_state _loc).mk_opname_kind _loc NormalKind ["default_extract"] [] []) []
             with
                Ploc.Exc (_, Failure _) ->
-                  Stdpp.raise_with_loc _loc (Failure "No computational witness (\"extract\") specified for a prim rule and the default_extract{} opname is not declared")
+                  Ploc.raise _loc (Failure "No computational witness (\"extract\") specified for a prim rule and the default_extract{} opname is not declared")
       ]];
 
    (*

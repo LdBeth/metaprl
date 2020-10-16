@@ -1933,7 +1933,7 @@ struct
     * Print an error and raise an exception.
     *)
    let implem_error loc s =
-      Stdpp.raise_with_loc loc (IterfImplemMismatch s)
+      Ploc.raise loc (IterfImplemMismatch s)
 
    (*
     * Check parameter lists.

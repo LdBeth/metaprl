@@ -116,7 +116,7 @@ let rule_labels_not_allowed loc labels =
     | Some l when List.for_all automatic_label l ->
          ()
     | Some _ ->
-         Stdpp.raise_with_loc loc (RefineError ("option check", StringError "rule labels are not allowed, or the
+         Ploc.raise loc (RefineError ("option check", StringError "rule labels are not allowed, or the
 annotation processor has not been updated"))
 
 (************************************************************************

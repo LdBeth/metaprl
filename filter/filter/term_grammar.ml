@@ -123,7 +123,7 @@ let raise_spelling_error () =
          eprintf "The following words may be misspelled:";
          print "" l;
          eflush stderr;
-         Stdpp.raise_with_loc loc (Failure ("spelling (" ^ word ^ ")"))
+         Ploc.raise loc (Failure ("spelling (" ^ word ^ ")"))
       end
 
 let create_meta_function t left right =
@@ -539,7 +539,7 @@ struct
 
    let get_aterm loc = function
       { aname = Some v; aterm = t } ->
-         Stdpp.raise_with_loc loc (Invalid_argument
+         Ploc.raise loc (Invalid_argument
             ("Syntax Error: Named term where unnamed one is expected:\n" ^ (string_of_term v) ^ " : " ^ (string_of_term t)))
     | { aname = None; aterm = t } ->
          t
@@ -561,7 +561,7 @@ struct
       else if is_string_term xparam_id_opname t then
          SW_Word (dest_string_term xparam_id_opname t)
       else
-         Stdpp.raise_with_loc loc (Invalid_argument "not a paramater")
+         Ploc.raise loc (Invalid_argument "not a paramater")
 
    let dest_xparam_type loc t =
       List.map (dest_xparam_string loc) (hyps t)
@@ -589,7 +589,7 @@ struct
          let p2 = dest_xparam_exp loc t2 in
             make_param (MLevel (max_level_exp (cast_level p1) (cast_level p2) 0))
       else
-         Stdpp.raise_with_loc loc (RefineError ("dest_xparam_exp", StringTermError ("not a parameter", t)))
+         Ploc.raise loc (RefineError ("dest_xparam_exp", StringTermError ("not a parameter", t)))
 
    let dest_xparam loc t =
       if is_dep0_dep0_term xparam_opname t then
@@ -605,7 +605,7 @@ struct
          let t2 = dest_xparam_type loc t2 in
             cast_param loc (make_param (Operator (opparam_of_term t1))) t2
       else
-         Stdpp.raise_with_loc loc (RefineError ("dest_xparam_exp", StringTermError ("not a parameter", t)))
+         Ploc.raise loc (RefineError ("dest_xparam_exp", StringTermError ("not a parameter", t)))
 
    (*
     * Constructors.
@@ -646,7 +646,7 @@ struct
             aux (mk_dep0_dep0_term op x h) t
       in
          match terms with
-            [] -> Stdpp.raise_with_loc loc (Invalid_argument "Term_grammar.make_application: internal error")
+            [] -> Ploc.raise loc (Invalid_argument "Term_grammar.make_application: internal error")
           | h::t -> wrap_term loc (aux h t)
 
    (*
@@ -685,7 +685,7 @@ struct
     *)
    let make_bvar = function
       ST_Term (_, loc) ->
-         Stdpp.raise_with_loc loc (ParseError "Not a binding var")
+         Ploc.raise loc (ParseError "Not a binding var")
     | ST_String (s, _) ->
          Lm_symbol.add s
 
@@ -698,7 +698,7 @@ struct
       TyBVar1 (ST_Term ({ aname = Some v; aterm = ty }, loc)) ->
          dest_var v, ty
     | TyBVar1 (ST_Term (_, loc)) ->
-         Stdpp.raise_with_loc loc (ParseError "Not a binding var")
+         Ploc.raise loc (ParseError "Not a binding var")
     | TyBVar1 (ST_String (s, _)) ->
          Lm_symbol.add s, unknown_bvar
     | TyBVar2 (id, ty) ->
@@ -716,7 +716,7 @@ struct
     | [TyBVar2 (id, ty)] ->
          make_term id, make_term ty
     | _ ->
-         Stdpp.raise_with_loc loc (ParseError "illegal bterm")
+         Ploc.raise loc (ParseError "illegal bterm")
 
    let get_var_contexts loc v terms =
       match mk_var_contexts loc v (List.length terms) with
@@ -765,7 +765,7 @@ struct
 
    let rec parse_quotation loc curr nm s =
       if nm = curr then
-         Stdpp.raise_with_loc loc (Failure (nm ^ " quotation inside a " ^ curr ^ " quotation"));
+         Ploc.raise loc (Failure (nm ^ " quotation inside a " ^ curr ^ " quotation"));
       match nm with
          "term"
        | "" ->
@@ -787,9 +787,9 @@ struct
             let state = mk_parse_state loc nm in
                try term_of_string (q_shift_loc loc nm) state nm s with
                   Not_found ->
-                     Stdpp.raise_with_loc loc (Failure ("parse_quotation: grammar is not defined: " ^ nm))
+                     Ploc.raise loc (Failure ("parse_quotation: grammar is not defined: " ^ nm))
                 | exn ->
-                     Stdpp.raise_with_loc loc exn
+                     Ploc.raise loc exn
 
    and parse_comment loc math spell space s =
       let pos = loc in
@@ -1511,7 +1511,7 @@ struct
                  [name] ->
                     ST_Term({ aname = Some (mk_var_term (Lm_symbol.add name)); aterm = make_term t }, _loc)
                | _ ->
-                    Stdpp.raise_with_loc _loc (ParseError "illegal binding variable")
+                    Ploc.raise _loc (ParseError "illegal binding variable")
             ]
 
             (* type constraints *)
@@ -1635,7 +1635,7 @@ struct
                    let a, b = two_subterms t in
                       mk_dep0_dep2_term rfun_op f (mk_gensym ()) a b
                 else
-                   Stdpp.raise_with_loc _loc (ParseError "body of <rfun> is not a function")
+                   Ploc.raise _loc (ParseError "body of <rfun> is not a function")
             | "!"; v = var ->
                encode_free_var v
             | x = QUOTATION ->

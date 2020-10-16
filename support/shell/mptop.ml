@@ -146,7 +146,7 @@ let resource (item, item list -> top_table) toploop =
  * Right now most things are not supported.
  *)
 let not_supported loc str =
-   Stdpp.raise_with_loc loc (RefineError ("mptop", StringStringError ("operation is not implemented", str)))
+   Ploc.raise loc (RefineError ("mptop", StringStringError ("operation is not implemented", str)))
 
 let rec mk_proj_expr loc top_expr =
    let rec collect names top_expr =
@@ -307,7 +307,7 @@ and mk_expr top_expr =
  ************************************************************************)
 
 let type_error loc str =
-   Stdpp.raise_with_loc loc (RefineError ("Type error", StringError str))
+   Ploc.raise loc (RefineError ("Type error", StringError str))
 
 let rec str_typ = function
    UnitType -> "unit"
@@ -340,7 +340,7 @@ let find_proj_expr base loc names v =
     | _ :: tl ->
          search modname v tl
     | [] ->
-         Stdpp.raise_with_loc loc (RefineError ("mk_proj_expr", StringStringError ("undefined variable", modname ^ "." ^ v)))
+         Ploc.raise loc (RefineError ("mk_proj_expr", StringStringError ("undefined variable", modname ^ "." ^ v)))
    in
       match names with
          [modname] ->
@@ -377,7 +377,7 @@ let rec expr_tp base loc = function
    begin try
       let _, _, typ = Table.find base v in typ
    with Not_found ->
-      Stdpp.raise_with_loc loc (RefineError ("Mptop.mk_var_expr", StringStringError ("undefined variable", v)))
+      Ploc.raise loc (RefineError ("Mptop.mk_var_expr", StringStringError ("undefined variable", v)))
    end
  | VarProjExpr (names,v) ->
       snd (find_proj_expr base loc names v)
@@ -406,7 +406,7 @@ let rec expr_tp base loc = function
  | TacticFunExpr _ | IntTacticFunExpr _ | ConvFunExpr _ | AddressFunExpr _
  | IntListFunExpr _ | StringListFunExpr _ | TermListFunExpr _ | TacticListFunExpr _
  | ConvListFunExpr _ | FunExpr _ | Addr_itemListFunExpr _ ->
-      Stdpp.raise_with_loc loc (Invalid_argument "Mptop: function expression without an explicit type")
+      Ploc.raise loc (Invalid_argument "Mptop: function expression without an explicit type")
 
 and expr_type base (loc, expr) = expr_tp base loc expr
 
@@ -419,7 +419,7 @@ and expr_typechk base loc typ expr =
  ************************************************************************)
 
 let runtime_error loc =
-   Stdpp.raise_with_loc loc (Invalid_argument "Mptop: type mismatch not caught by type-checking")
+   Ploc.raise loc (Invalid_argument "Mptop: type mismatch not caught by type-checking")
 
 (*
  * Lookup a variable from the table.
@@ -454,7 +454,7 @@ let addr_item_expr loc = function
    Addr_itemExpr i -> i
  | IntExpr i ->
       if i = 0 then
-         Stdpp.raise_with_loc loc (**)
+         Ploc.raise loc (**)
             (Invalid_argument "Subterm address can not be 0.\n\tSubterms are numbered 1..n left-to-right and -1..-n right-to-left")
       else
          Subterm i

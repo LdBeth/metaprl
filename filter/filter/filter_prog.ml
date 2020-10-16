@@ -411,7 +411,7 @@ let expr_of_label _loc = function
  | [h] ->
       <:expr< Some $str: h$ >>
  | _ ->
-      Stdpp.raise_with_loc _loc (Invalid_argument "Filter_prog.expr_of_label: multi-component labels not supported")
+      Ploc.raise _loc (Invalid_argument "Filter_prog.expr_of_label: multi-component labels not supported")
 
 (*
  * Print a message on loading, and catch errors.
@@ -483,7 +483,7 @@ let rec parent_path_ctyp _loc = function
       raise (Invalid_argument "parent_path")
 
 let raise_toploop_exn loc =
-   Stdpp.raise_with_loc loc (RefineError ("topval", StringError
+   Ploc.raise loc (RefineError ("topval", StringError
                                           "The types allowed in toploop expressions are limited.\n\
 Your type is not understood. See the support/shell/shell_sig.mlz file\n\
 for the list of allowed types."))
@@ -582,7 +582,7 @@ let declare_parent _loc _ =
  *)
 let declare_summary_item loc item =
    if item.item_bindings <> [] then
-      Stdpp.raise_with_loc loc (Invalid_argument "Signature items can not have bindings in them!");
+      Ploc.raise loc (Invalid_argument "Signature items can not have bindings in them!");
    [item.item_item]
 
 let declare_toploop_item _loc item =
@@ -591,7 +591,7 @@ let declare_toploop_item _loc item =
             (* Check that the type is understood *)
             ignore(toploop_item_expr (MLast.loc_of_ctyp t) s t)
        | _ ->
-            Stdpp.raise_with_loc _loc (RefineError ("declare_toploop_item", StringError "illegal topval"))
+            Ploc.raise _loc (RefineError ("declare_toploop_item", StringError "illegal topval"))
    end;
    [item]
 
@@ -678,7 +678,7 @@ let extract_sig_item (item, loc) =
             eprintf "Filter_prog.extract_sig_item: mlaxiom%t" eflush;
          declare_ml_axiom loc item
     | Module (name, _) ->
-         Stdpp.raise_with_loc loc (Failure "Filter_sig.extract_sig_item: nested modules are not implemented")
+         Ploc.raise loc (Failure "Filter_sig.extract_sig_item: nested modules are not implemented")
 
 (*
  * Extract a signature.
@@ -720,7 +720,7 @@ let find_res proc loc name =
       List.assoc name proc.imp_resources
    with
       Not_found ->
-         Stdpp.raise_with_loc loc (Failure ("Attempted to use undeclared resource " ^ name))
+         Ploc.raise loc (Failure ("Attempted to use undeclared resource " ^ name))
 
 let flag_expr _loc = function
    Private -> <:expr< Mp_resource.Private >>
@@ -1455,7 +1455,7 @@ let define_parent proc _loc
       [] ->
          List.iter (fun (_, name, _) ->
                eprintf "Resource: %s@." name) proc.imp_all_resources;
-         Stdpp.raise_with_loc _loc (Invalid_argument (**)
+         Ploc.raise _loc (Invalid_argument (**)
                                        (Printf.sprintf "Filter_prog.define_parent: %s: resource %s unknown" (string_of_path path) name))
     | (path, name', _) :: _ when name = name' ->
          path
@@ -1475,7 +1475,7 @@ let define_parent proc _loc
             refiner_ignore _loc;
          ]
        | _ ->
-            Stdpp.raise_with_loc _loc (Invalid_argument "Including sub-theories not implemented")
+            Ploc.raise _loc (Invalid_argument "Including sub-theories not implemented")
 
 (*
  * Collect the toploop values in this module.

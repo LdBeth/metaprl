@@ -925,22 +925,22 @@ struct
    let wrap1 f loc arg =
       try f arg with
          exn ->
-            Stdpp.raise_with_loc loc exn
+            Ploc.raise loc exn
 
    let wrap2 f loc arg1 arg2 =
       try f arg1 arg2 with
          exn ->
-            Stdpp.raise_with_loc loc exn
+            Ploc.raise loc exn
 
    let wrap3 f loc arg1 arg2 arg3 =
       try f arg1 arg2 arg3 with
          exn ->
-            Stdpp.raise_with_loc loc exn
+            Ploc.raise loc exn
 
    let wrap4 f loc arg1 arg2 arg3 arg4 =
       try f arg1 arg2 arg3 arg4 with
          exn ->
-            Stdpp.raise_with_loc loc exn
+            Ploc.raise loc exn
 
    let get_parsing_state cache =
       let delay_tenv f arg = f (tenv_of_cache cache) arg in

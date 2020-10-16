@@ -786,7 +786,7 @@ let unfold_xvar_term state t =
                raise Not_found
       with
 (* TODO[jyh]: fixme
-         Stdpp.Exc_located _
+         Ploc.Exc _
 *)
        | RefineError _
        | Failure _

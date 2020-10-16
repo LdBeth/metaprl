@@ -242,7 +242,7 @@ value substp mloc env =
         let ppl = List.map (fun (p, e) -> (p, loop e)) pel in
         <:patt< { $list:ppl$ } >>
     | _ ->
-        Stdpp.raise_with_loc mloc
+        Ploc.raise mloc
           (Failure
              "this macro cannot be used in a pattern (see its definition)") ]
 ;
@@ -311,7 +311,7 @@ value may_eval =
 ;
 
 value incorrect_number loc l1 l2 =
-  Stdpp.raise_with_loc loc
+  Ploc.raise loc
     (Failure
        (Printf.sprintf "expected %d parameters; found %d"
           (List.length l2) (List.length l1)))

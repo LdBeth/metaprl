@@ -179,7 +179,7 @@ let mk_var_contexts_null loc v i =
    if i = 0 then
       None
    else
-      Stdpp.raise_with_loc loc (Failure "No context known for SO variables (need to specify contexts explicitly when not inside a rule")
+      Ploc.raise loc (Failure "No context known for SO variables (need to specify contexts explicitly when not inside a rule")
 
 let default_saved_tactic =
    let _loc = dummy_loc in
@@ -269,7 +269,7 @@ module TermGrammar = MakeTermGrammar
       synchronize_state (function state ->
          match state.state_parsing with
             Some st -> st
-          | None -> Stdpp.raise_with_loc loc (Failure "Shell_state: no current package, can not parse terms"))
+          | None -> Ploc.raise loc (Failure "Shell_state: no current package, can not parse terms"))
 
    (*
     * Term grammar.
@@ -451,7 +451,7 @@ let set_so_var_context context =
                            if i = 0 then
                               None
                            else
-                              Stdpp.raise_with_loc loc (Failure "Unknown SO variable, please specify contexts explicitly")
+                              Ploc.raise loc (Failure "Unknown SO variable, please specify contexts explicitly")
                   in
                      update_var_contexts_fun state (Some f);
                      f loc v i
