@@ -55,7 +55,6 @@ doc <:doc<
    @end[license]
 >>
 extends Perv
-let _ = refiner
 
 open Term_sig
 open Refiner.Refiner.TermType
@@ -73,7 +72,6 @@ doc <:doc<
    @parents
 >>
 extends Mptop
-let _ = refiner
 
 doc <:doc<
    @modsection{Primitive tactics}

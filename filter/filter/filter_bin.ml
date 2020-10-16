@@ -34,18 +34,10 @@
 open Arg
 open Lm_debug
 
-open Lm_printf
-
 open File_base_type
 
-open Refiner.Refiner.TermType
-
-open Filter_type
-open Filter_summary
 open Filter_summary_type
-open Filter_prog
 open Filter_magic
-open Proof_convert
 
 open Filter_prog.ProofCaches
 
@@ -109,7 +101,7 @@ let compile_sig name =
          (theory_groupdsc ())
    in
       (* Print them *)
-      (!Pcaml.print_interf) items
+      (!Pcaml.print_interf) (items, Ploc.dummy)
 
 (*
  * Compile an implementation to ML.
@@ -132,7 +124,7 @@ let compile_str name =
          (theory_groupdsc ())
    in
       (* Print them *)
-      (!Pcaml.print_implem) items
+      (!Pcaml.print_implem) (items, Ploc.dummy)
 
 (*
  * Generate a reflected signature.
@@ -166,7 +158,7 @@ let compile_reflect_sig name =
          (theory_groupdsc ())
    in
       (* Print the ML part *)
-      (!Pcaml.print_interf) items
+      (!Pcaml.print_interf) (items, Ploc.dummy)
 
 (*
  * Generate a reflected implementation.
@@ -225,7 +217,7 @@ let compile_reflect_str name =
          (theory_groupdsc ())
    in
       (* Print them *)
-      (!Pcaml.print_implem) items
+      (!Pcaml.print_implem) (items, Ploc.dummy)
 
 (*
  * Compile a file.

@@ -26,25 +26,19 @@
  *)
 open Lm_debug
 open Lm_printf
-open Lm_symbol
 
-open Term_sig
 open Term_ty_sig
 open Term_ty_infer
 
 open Refiner.Refiner
 open Refiner.Refiner.TermType
 open Refiner.Refiner.Term
-open Refiner.Refiner.TermTy
 open Refiner.Refiner.TermMan
 open Refiner.Refiner.TermMeta
-open Refiner.Refiner.TermSubst
-open Refiner.Refiner.Rewrite
 open Refiner.Refiner.RefineError
 open Refiner.Refiner.Refine
 
 open Opname
-open Simple_print
 open Filter_base_type
 open Filter_type
 open Filter_shape
@@ -73,6 +67,7 @@ let () = show_loading "Loading Filter_reflect%t"
 (************************************************************************
  * Variables.
  *)
+(* unused
 let var_p = Lm_symbol.add "p"
 let var_d = Lm_symbol.add "d"
 
@@ -81,6 +76,7 @@ let maybe_new_var v vars =
       new_name v (SymbolSet.mem vars)
    else
       v
+*)
 
 (************************************************************************
  * Base term grammar
@@ -92,7 +88,7 @@ struct
    let parsing_state loc =
       match !term_parsing_state with
          Some st -> st
-       | None -> Stdpp.raise_with_loc loc (Failure "Filter_reflect.parsing_state is uninitialized")
+       | None -> Ploc.raise loc (Failure "Filter_reflect.parsing_state is uninitialized")
 
    (*
     * Term grammar.
@@ -120,6 +116,7 @@ module TermGrammar = MakeTermGrammar (TermGrammarBefore)
 (*
  * The bindings contain terms.
  *)
+(* unused
 let add_binding bind =
    let bind =
       match bind with
@@ -130,6 +127,7 @@ let add_binding bind =
             bind
    in
       add_binding bind
+*)
 
 let bind_item i =
    { item_item = i;
@@ -163,7 +161,7 @@ let reflect_filename new_name orig_path =
  *)
 let not_exn_located exn =
    match exn with
-      Stdpp.Exc_located _ ->
+      Ploc.Exc _ ->
          false
     | _ ->
          true
@@ -201,7 +199,7 @@ let declare_parent_path cache loc path =
    let () =
       try SigFilterCache.inline_module cache () path with
          exn ->
-            Stdpp.raise_with_loc loc exn
+            Ploc.raise loc exn
    in
 
    (* Add resources and grammar start symbols *)
@@ -213,11 +211,11 @@ let declare_parent_path cache loc path =
       SigFilterCache.add_command cache (Parent info, loc)
 
 let declare_parent cache loc item =
-   let { parent_name = path } = item in
+   let { parent_name = path; _ } = item in
    let head, name =
       try Lm_list_util.split_last path with
          Failure _ ->
-            Stdpp.raise_with_loc loc (EmptyModulePath "Filter_reflect.declare_parent")
+            Ploc.raise loc (EmptyModulePath "Filter_reflect.declare_parent")
    in
    let name = reflect_prefix ^ String.uncapitalize name in
    let path = head @ [name] in
@@ -268,9 +266,9 @@ let compile_sig_item (info : SigFilterCache.info) ((item : StrFilterCache.str_el
       (*
        * Supported items.
        *)
-      Parent { parent_name = ["itt_hoas_theory"] } ->
+      Parent { parent_name = ["itt_hoas_theory"]; _ } ->
          ()
-    | Parent ({ parent_name = name } as parent) ->
+    | Parent ({ parent_name = name; _ } as parent) ->
          if !debug_filter_reflect then
             eprintf "Filter_reflect.extract_sig_item: parent: %s@." (string_of_path name);
          declare_parent info loc parent
@@ -289,30 +287,30 @@ let compile_sig_item (info : SigFilterCache.info) ((item : StrFilterCache.str_el
          copy_sig_item info loc item
     | DeclareTypeRewrite _ ->
          (* JYH: probably we will never support type equalities *)
-         Stdpp.raise_with_loc loc (Failure "Filter_reflect.compile_sig_item: type rewrites are not supported")
+         Ploc.raise loc (Failure "Filter_reflect.compile_sig_item: type rewrites are not supported")
 
       (*
        * Illegal items.
        *)
     | Module _ ->
-         Stdpp.raise_with_loc loc (Failure "Filter_sig.extract_sig_item: nested modules are not implemented")
+         Ploc.raise loc (Failure "Filter_sig.extract_sig_item: nested modules are not implemented")
     | Improve _ ->
-         Stdpp.raise_with_loc loc (Invalid_argument "Filter_reflect.extract_sig_item")
+         Ploc.raise loc (Invalid_argument "Filter_reflect.extract_sig_item")
 
       (*
        * MetaPRL will ensure that the implementation has exactly the same
        * rule, so we just declare the term corresponding to the rule here.
        *)
-    | Rule { rule_name = name } ->
+    | Rule { rule_name = name; _ } ->
          add_simple_term info loc ("rule_" ^ name)
 
       (*
        * We want to support rewrites eventually, but they are currently
        * unsupported.
        *)
-    | Rewrite { rw_name = name }
-    | CondRewrite { crw_name = name } ->
-         Stdpp.raise_with_loc loc (Failure (Printf.sprintf "Filter_reflect.compile_sig_item: %s: rewrites are not implemented" name))
+    | Rewrite { rw_name = name; _ }
+    | CondRewrite { crw_name = name; _ } ->
+         Ploc.raise loc (Failure (Printf.sprintf "Filter_reflect.compile_sig_item: %s: rewrites are not implemented" name))
 
       (*
        * The rest are ignored.
@@ -359,7 +357,7 @@ let compile_sig info orig_name orig_info =
  *)
 type ref_rule =
    { ref_rule_name      : string;
-     ref_rule_resources : (ProofCaches.StrFilterCache.str_expr, term) resource_def;
+     ref_rule_resources : (StrFilterCache.str_expr, term) resource_def;
      ref_rule_params    : term_param list;
      ref_rule_term      : meta_term
    }
@@ -417,7 +415,8 @@ let check_rule info loc mt terms =
  *)
 let add_open info _loc name =
    let cache = info.info_cache in
-   let item = <:str_item< open $uid:name$ >> in
+   (* XXX: LDB: TODO: this should be changed for CamlP5 8.00 *)
+   let item = <:str_item< open $list:[name]$ >> in
       StrFilterCache.add_command cache (SummaryItem (bind_item item), _loc)
 
 (*
@@ -446,7 +445,7 @@ let define_parent_path info loc path =
    let () =
       try StrFilterCache.inline_module cache () path with
          exn ->
-            Stdpp.raise_with_loc loc exn
+            Ploc.raise loc exn
    in
 
    (* Add resources and grammar start symbols *)
@@ -458,11 +457,11 @@ let define_parent_path info loc path =
       StrFilterCache.add_command cache (Parent info, loc)
 
 let define_parent info loc item =
-   let { parent_name = path } = item in
+   let { parent_name = path; _ } = item in
    let head, name =
       try Lm_list_util.split_last path with
          Failure _ ->
-            Stdpp.raise_with_loc loc (EmptyModulePath "Filter_reflect.define_parent")
+            Ploc.raise loc (EmptyModulePath "Filter_reflect.define_parent")
    in
    let name = reflect_prefix ^ String.uncapitalize name in
    let path = head @ [name] in
@@ -475,8 +474,10 @@ let define_parent info loc item =
 (*
  * Parse the parameter lists.
  *)
+(*
 let parse_params info loc mt params =
    extract_params (context_vars mt) params
+*)
 
 (*
  * Type checking.
@@ -525,7 +526,7 @@ let define_rule info loc name
          StrFilterCache.add_command info.info_cache (cmd, loc)
    with
       exn ->
-         Stdpp.raise_with_loc loc exn
+         Ploc.raise loc exn
 
 (*
  * We use this internally to create theorems for the various
@@ -547,7 +548,8 @@ let define_thm info loc name params mterm s res =
 let add_define info rules loc item =
    let { ref_rule_name = name;
          ref_rule_term = def;
-         ref_rule_params = params
+         ref_rule_params = params;
+         _
        } = item
    in
 
@@ -683,7 +685,7 @@ let add_rule info theorems rules loc item =
  * Add a logic membership rule.
  *)
 let add_mem_logic info logic_name t_logic loc item =
-   let { ref_rule_name = name } = item in
+   let { ref_rule_name = name; _ } = item in
    let opname = Opname.mk_opname name (opname_prefix info loc) in
    let t_rule = mk_term (mk_op opname []) [] in
    let mt = Filter_reflection.mk_mem_logic_thm info.info_parse_info t_logic t_rule in
@@ -700,7 +702,7 @@ thenT autoT" (**)
 let add_mem_logic info logic_name t_logic (loc, item) =
    try add_mem_logic info logic_name t_logic loc item with
       exn when not_exn_located exn ->
-         Stdpp.raise_with_loc loc exn
+         Ploc.raise loc exn
 
 (*
  * Add an introduction rule in "Provable" form.
@@ -737,14 +739,14 @@ let add_intro info t_logic loc is_prim item =
 let add_intro info t_logic is_prim (loc, item) =
    try add_intro info t_logic loc is_prim item with
       exn when not_exn_located exn ->
-         Stdpp.raise_with_loc loc exn
+         Ploc.raise loc exn
 
 (************************************************
  * Add the multi-step elimination rule for proof induction.
  *)
 let add_proof_check_elim info loc item =
    let { ref_rule_name = name;
-         ref_rule_term = mt
+         ref_rule_term = mt; _
        } = item
    in
    let rule_name = "elim_check_" ^ name in
@@ -792,7 +794,7 @@ let add_multi_step_elim info loc name t_logic rules intro_rules parents =
       add_elim_start info loc name t_logic
    with
       exn when not_exn_located exn ->
-         Stdpp.raise_with_loc loc exn
+         Ploc.raise loc exn
 
 (************************************************
  * Add the huge elimination rule for proof induction.
@@ -813,7 +815,7 @@ let add_elim info loc name t_logic items parents =
 let add_elim info loc name t_logic rules =
    try add_elim info loc name t_logic rules with
       exn when not_exn_located exn ->
-         Stdpp.raise_with_loc loc exn
+         Ploc.raise loc exn
 
 (*
  * Postprocessing primitive rules.
@@ -912,9 +914,9 @@ let compile_str_item_parent info parents item loc =
        * If the original theory extends Name,
        * then the reflected theory extends Reflect_name.
        *)
-      Parent { parent_name = ["itt_hoas_theory"] } ->
+      Parent { parent_name = ["itt_hoas_theory"]; _ } ->
          parents
-    | Parent ({ parent_name = name } as parent) ->
+    | Parent ({ parent_name = name; _ } as parent) ->
          if !debug_filter_reflect then
             eprintf "Filter_reflect.extract_sig_item: parent: %s@." (string_of_path name);
          define_parent info loc parent;
@@ -949,7 +951,7 @@ let compile_str_item info theorems rules item loc =
          theorems, rules
     | DeclareTypeRewrite _ ->
          (* JYH: probably we will never support type equalities *)
-         Stdpp.raise_with_loc loc (Failure "Filter_reflect.compile_str_item: type rewrites are not supported")
+         Ploc.raise loc (Failure "Filter_reflect.compile_str_item: type rewrites are not supported")
 
       (*
        * Convert a rule.
@@ -975,20 +977,20 @@ let compile_str_item info theorems rules item loc =
        * We want to support rewrites eventually, but they are currently
        * unsupported.
        *)
-    | Rewrite { rw_name = name }
-    | CondRewrite { crw_name = name } ->
-         Stdpp.raise_with_loc loc (Failure (Printf.sprintf "Filter_reflect.compile_str_item: %s: rewrites are not implemented" name))
+    | Rewrite { rw_name = name; _ }
+    | CondRewrite { crw_name = name; _ } ->
+         Ploc.raise loc (Failure (Printf.sprintf "Filter_reflect.compile_str_item: %s: rewrites are not implemented" name))
 
       (*
        * Illegal items.
        *)
     | Module _ ->
-         Stdpp.raise_with_loc loc (Failure "Filter_reflect.compile_str_item: nested modules are not implemented")
+         Ploc.raise loc (Failure "Filter_reflect.compile_str_item: nested modules are not implemented")
     | Improve _ ->
-         Stdpp.raise_with_loc loc (Failure "Filter_reflect.compile_str__item: bogus Improve item")
+         Ploc.raise loc (Failure "Filter_reflect.compile_str__item: bogus Improve item")
     | MLAxiom _
     | MLRewrite _ ->
-         Stdpp.raise_with_loc loc (Failure "Filter_reflect.compile_str_item: ML rules are not supported")
+         Ploc.raise loc (Failure "Filter_reflect.compile_str_item: ML rules are not supported")
 
       (*
        * The rest are ignored.
@@ -1008,12 +1010,12 @@ let compile_str_item info theorems rules item loc =
 let compile_str_item_parent info parents (item, loc) =
    try compile_str_item_parent info parents item loc with
       exn when not_exn_located exn ->
-         Stdpp.raise_with_loc loc exn
+         Ploc.raise loc exn
 
 let compile_str_item info theorems rules (item, loc) =
    try compile_str_item info theorems rules item loc with
       exn when not_exn_located exn ->
-         Stdpp.raise_with_loc loc exn
+         Ploc.raise loc exn
 
 let compile_str cache orig_name orig_info =
    let info = create_info dummy_loc cache in

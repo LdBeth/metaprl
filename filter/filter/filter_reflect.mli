@@ -27,7 +27,6 @@
 open Refiner.Refiner.TermType
 
 open Filter_type
-open Filter_prog
 open Filter_summary
 open Filter_summary_type
 open Proof_convert

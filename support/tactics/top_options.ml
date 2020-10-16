@@ -25,9 +25,7 @@
  * @end[license]
  *)
 extends Mptop
-let _ = refiner
 extends Proof_initialize
-let _ = refiner
 
 open Lm_printf
 

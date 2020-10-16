@@ -56,7 +56,6 @@ doc <:doc<
    @parents
 >>
 extends Summary
-let _ = refiner
 
 doc docoff
 
