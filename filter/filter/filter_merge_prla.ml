@@ -1,5 +1,6 @@
 (*
- * Merge two .prla files (creating a file that contains an "append" of the two).
+ * Merge two .prla files (creating a file that contains an "append" of the two),
+ * or inspect proofs in one .prla file.
  *
  * ----------------------------------------------------------------
  *
@@ -29,8 +30,8 @@
  * Author: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 
-open Format
 open Lm_debug
+open Format
 open Lm_file_util
 open MLast
 
@@ -105,6 +106,55 @@ let extract_proof term =
             None
    with _ ->
       None
+
+let string_of_term = Dform.string_of_term Dform.null_base
+
+type proof = Proof of int list * string * proof list * string list
+
+let dest_proof term =
+   let term = one_subterm term in
+   let rec dest_rule nums num term =
+      let tac = dest_string_param term in
+      let _, _, subgoals, extras = four_subterms term in
+      let subgoals = (dest_xlist subgoals) in
+      let nums = num :: nums in
+      let ns = List.init (List.length subgoals) (fun x -> x + 1) in
+      let subgoals = List.fold_right2 (fun n g l -> dest_rule nums n g :: l) ns subgoals [] in
+         Proof (nums, tac, subgoals, List.map string_of_term (dest_xlist extras))
+   in dest_rule [] 1 term
+
+let format_num num =
+   String.concat "." (List.map Int.to_string (List.rev num))
+
+let format_proof =
+   let format_tac ppf (nums, tac) = fprintf ppf "@[<hv>%s by@ %s@]" (format_num nums) tac in
+   let rec format_aux ppf (Proof (nums, tac, subgoals, extras)) =
+      let format_goals ppf = function
+         [] -> fprintf ppf "No Subgoals"
+       | subgoals -> List.iter (format_aux ppf) subgoals in
+      let format_extras ppf = function 
+         (num, []) -> fprintf ppf "Close %s" (format_num nums)
+       | (num, extras) -> fprintf ppf "%s Has Xtra: @[<v>%a@]" (format_num nums)
+                          (fun ppf -> List.iter (fprintf ppf "%s@,")) extras in
+         fprintf ppf "@[<v 0>@[<v 2>%a@ %a@]@,%a@]@," 
+         format_tac (nums, tac) format_goals subgoals format_extras (nums, extras)
+   in format_aux
+
+let print_prla input =
+   let tbl = with_input_file input read_table in
+   let t = dest_xlist (get_term tbl) in
+   let print_proof term =
+      match extract_proof term with
+         Some (name, pf) ->
+            let fmt ppf () = match trivial_proof pf with
+                             Empty -> fprintf ppf "No proof"
+                           | Real -> fprintf ppf "@[<3>Proof:@ %a@]" format_proof (dest_proof pf)
+                           | Primitive -> fprintf ppf "Prim" in
+               printf "@[<hov 3>Rule/Rewrite %s:@ %a@]@." name fmt ()
+       | None -> ()
+   in
+      List.iter print_proof t
+   
 
 let merge_prla (inp1, inp2, outp) =
    let tbl1 = with_input_file inp1 read_table in
@@ -198,13 +248,14 @@ let merge_prla (inp1, inp2, outp) =
  * process it.
  *)
 let _ =
-   if Array.length Sys.argv <> 4 then begin
-      eprintf "Usage: %s input1.prla input2.prla output.prla\n\tIf both inputs have proofs of a theorem, the second one \"wins\"@." Sys.argv.(0);
-      exit 1
-   end else begin
-      Filter_exn.print_exn Dform.null_base (Some "Filter_merge_prla") merge_prla (Sys.argv.(1), Sys.argv.(2), Sys.argv.(3));
-      exit 0
-   end
+   match Array.length Sys.argv with
+      4 -> Filter_exn.print_exn Dform.null_base (Some "Filter_merge_prla") merge_prla (Sys.argv.(1), Sys.argv.(2), Sys.argv.(3));
+           exit 0
+    | 2 -> print_prla Sys.argv.(1)
+    | _ -> eprintf "@[<2>Usage: %s input1.prla [input2.prla output.prla]@ %s@ %s@]@." Sys.argv.(0)
+           "If both inputs have proofs of a theorem, the second one \"wins\"."
+           "If only one file is supplied, it prints out proofs in that .prla file.";
+           exit 1
 
 (*
  * -*-
