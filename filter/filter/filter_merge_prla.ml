@@ -82,7 +82,7 @@ let trivial_proof t =
       else if
             Opname.eq op interactive_op &&
             let t = one_subterm t in
-            let pf = io_proof_of_term (fun _ -> ExUid(dummy_loc, "()")) (fun _ -> idT) t in
+            let pf = io_proof_of_term (fun _ -> ExUid(dummy_loc, Ploc.VaVal "()")) (fun _ -> idT) t in
                fst (node_count_of_io_proof pf) = 0
          then
             Empty

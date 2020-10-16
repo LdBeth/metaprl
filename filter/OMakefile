@@ -101,8 +101,6 @@ section
     export LIB_PROGS
 
 section
-    OCAML_LIBS[] +=
-        $(STANDARD_LIBS)
 
     #
     # Files for binary compiler.

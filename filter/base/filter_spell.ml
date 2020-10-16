@@ -31,13 +31,12 @@
  *)
 let dat_magic = 0x2557f3ef
 
-let lib = Setup.lib ()
-let dat_filename = Filename.concat lib "english_dictionary.dat"
-
-let words_filenames = [
-   Filename.concat lib "words.metaprl";
-   Filename.concat lib "words.linux";
-]
+(*
+ * Defer requesting MP_ROOT to init()
+ *)
+let lib = ref ""
+let dat_filename = ref ""
+let words_filenames = ref []
 
 (*
  * The loaded dictionary.
@@ -49,7 +48,7 @@ let dict = ref None
  *)
 let check_magic () =
    try
-      let inx = open_in_bin dat_filename in
+      let inx = open_in_bin !dat_filename in
          try
             let i = input_binary_int inx in
                close_in inx;
@@ -65,7 +64,7 @@ let check_magic () =
 
 let check_dict () =
    if check_magic () then
-      let tmp_stat = Unix.stat dat_filename in
+      let tmp_stat = Unix.stat !dat_filename in
       let check_magic' file =
          (try
              let file_stat = Unix.stat file in
@@ -74,7 +73,7 @@ let check_dict () =
              Unix.Unix_error _ ->
                 false)
       in
-         List.exists check_magic' words_filenames
+         List.exists check_magic' !words_filenames
    else
       true
 
@@ -100,7 +99,8 @@ let add_file table filename =
  *)
 let make_dict () =
    let prng = Random.State.make_self_init () in
-   let lib = Setup.lib () in
+   let lib = !lib in
+   let dat_filename = !dat_filename in
    let rec try_name counter =
       if counter >= 1000 then
          invalid_arg "Filter_spell.open_temp_file: lib directory nonexistent or full";
@@ -113,7 +113,7 @@ let make_dict () =
          try_name (counter + 1)
    in
    let table = Hashtbl.create 1037 in
-      List.iter (add_file table) words_filenames;
+      List.iter (add_file table) !words_filenames;
       dict := Some table;
       let tmp, out = try_name 0 in
       let out = Pervasives.open_out_bin tmp in
@@ -133,7 +133,7 @@ let make_dict () =
  *)
 let load_dict () =
    try
-      let inx = open_in_bin dat_filename in
+      let inx = open_in_bin !dat_filename in
          try
             let magic = input_binary_int inx in
                if magic <> dat_magic then
@@ -155,6 +155,11 @@ let load_dict () =
 let init () =
    match !dict with
       None ->
+         lib := Setup.lib();
+         dat_filename := Filename.concat !lib "english_dictionary.dat";
+         words_filenames := [Filename.concat !lib "words.metaprl";
+                             Filename.concat !lib "words.linux";
+                            ];
          if check_dict () then
             make_dict ()
          else
