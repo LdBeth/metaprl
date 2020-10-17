@@ -1,7 +1,6 @@
 LCFILES[] =
     print_symbols
     truncate
-    putenv
     execvp
     profile
     exit

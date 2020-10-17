@@ -46,7 +46,7 @@ value c_mktime(value v_date)
     struct tm time;
     time_t when;
 
-    memset(&time, sizeof(time), 0);
+    memset(&time, 0, sizeof(time));
     time.tm_sec = Int_val(Field(v_date, 0));
     time.tm_min = Int_val(Field(v_date, 1));
     time.tm_hour = Int_val(Field(v_date, 2));

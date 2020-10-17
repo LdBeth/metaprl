@@ -185,7 +185,7 @@ let gethostname, sethostname =
                      Not_found ->
                         begin
                            let name = Unix.gethostname () in
-                              Punix.putenv (hostname_env ^ "=" ^ name);
+                              Unix.putenv hostname_env name;
                               name
                         end
                in
@@ -194,7 +194,7 @@ let gethostname, sethostname =
             end
    in
    let setter name tbl =
-      Punix.putenv (hostname_env ^ "=" ^ name);
+      Unix.putenv hostname_env name;
       (Hashtbl.replace tbl nm name)
    in
       (fun () -> State.write shared_state getter),

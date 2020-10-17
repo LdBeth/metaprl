@@ -15,7 +15,7 @@
 value caml_execv(value command, value argv)
 {
 	 CAMLparam2(command,argv);
-    char *command_str = String_val(command);
+    const char *command_str = String_val(command);
     int len = Wosize_val(argv);
     char **argv_str=malloc((len+1)*sizeof (char *));
     int i;
@@ -36,7 +36,7 @@ value caml_execv(value command, value argv)
 value caml_execvp(value command, value argv)
 {
 	 CAMLparam2(command,argv);
-    char *command_str = String_val(command);
+    const char *command_str = String_val(command);
     int len = Wosize_val(argv);
     char **argv_str=malloc((len+1)*sizeof (char *));
     int i;

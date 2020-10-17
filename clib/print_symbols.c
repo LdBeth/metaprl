@@ -61,7 +61,7 @@ value ml_extern_symbols(value symbols)
 void print_symbol(int pc)
 {
     int i, j, k, pos = 0, cpos, length;
-    char *modname;
+    const char *modname;
     value symbol;
 
     if(function_symbols) {

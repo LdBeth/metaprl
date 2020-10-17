@@ -30,7 +30,6 @@
  * jyh@cs.cornell.edu
  *)
 open Arg
-open Printf
 
 open Lm_debug
 
@@ -71,11 +70,10 @@ let remove_output_file () =
          ()
 
 let set_lib s =
-   let var = sprintf "MPLIB=%s" s in
-      Punix.putenv var
+   Unix.putenv "MPLIB" s
 
 let set_export () =
-   Punix.putenv "MP_EXPORT=true"
+   Unix.putenv "MP_EXPORT" "true"
 
 let add_anon_arg arg =
    Plexing.input_file := arg;
