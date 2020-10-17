@@ -109,7 +109,7 @@ let extract_proof term =
 
 let string_of_term = Dform.string_of_term Dform.null_base
 
-type proof = Proof of int list * string * proof list * string list
+type proof = Proof of int list * string * proof list * proof list
 
 let dest_proof term =
    let term = one_subterm term in
@@ -117,26 +117,39 @@ let dest_proof term =
       let tac = dest_string_param term in
       let _, _, subgoals, extras = four_subterms term in
       let subgoals = (dest_xlist subgoals) in
+      let extras = (dest_xlist extras) in
       let nums = num :: nums in
-      let ns = List.init (List.length subgoals) (fun x -> x + 1) in
-      let subgoals = List.fold_right2 (fun n g l -> dest_rule nums n g :: l) ns subgoals [] in
-         Proof (nums, tac, subgoals, List.map string_of_term (dest_xlist extras))
-   in dest_rule [] 1 term
+      let ns = ref 1 in
+      (* Encode numbering into proofs *)
+      let dest_goals g =
+         let n = !ns in
+         ns := 1 + n;
+         dest_rule nums n g
+      in
+      let subgoals = List.map dest_goals subgoals in
+      let extras = List.map dest_goals extras in
+         Proof (nums, tac, subgoals, extras)
+   in dest_rule [] 0 term
 
 let format_num num =
    String.concat "." (List.map Int.to_string (List.rev num))
 
 let format_proof =
+   let rec format_list f ppf = function 
+      [x] -> f ppf x
+    | (x :: xs) -> fprintf ppf "%a@,%a" f x (format_list f) xs
+    | [] -> ()
+   in
    let format_tac ppf (nums, tac) = fprintf ppf "@[<hv>%s by@ %s@]" (format_num nums) tac in
    let rec format_aux ppf (Proof (nums, tac, subgoals, extras)) =
       let format_goals ppf = function
          [] -> fprintf ppf "No Subgoals"
-       | subgoals -> List.iter (format_aux ppf) subgoals in
+       | subgoals -> format_list format_aux ppf subgoals in
       let format_extras ppf = function 
          (num, []) -> fprintf ppf "Close %s" (format_num nums)
        | (num, extras) -> fprintf ppf "%s Has Xtra: @[<v>%a@]" (format_num nums)
-                          (fun ppf -> List.iter (fprintf ppf "%s@,")) extras in
-         fprintf ppf "@[<v 0>@[<v 2>%a@ %a@]@,%a@]@," 
+                          (format_list format_aux) extras in
+         fprintf ppf "@[<v 0>@[<v 2>%a@ %a@]@,%a@]" 
          format_tac (nums, tac) format_goals subgoals format_extras (nums, extras)
    in format_aux
 
