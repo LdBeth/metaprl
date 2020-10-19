@@ -79,7 +79,6 @@ section
         filter/filter_patt
         filter/filter_prog
         filter/filter_parse
-        $(ROOT)/util/pa_macro
         filter/filter_main
 
     OCAML_LINK_FLAGS += -linkall

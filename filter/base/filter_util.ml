@@ -230,6 +230,7 @@ let make_groupdsc_opts () =
  * BINDINGS IN STR ITEMS                                                *
  ************************************************************************)
 
+(* TODO: LDB: fix dummy loc *)
 let add_binding, get_bindings =
    let _loc = dummy_loc in
    let decls = ref [] in

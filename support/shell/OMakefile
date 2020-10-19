@@ -26,25 +26,20 @@ MPFILES[] =
     shell_fs
     shell_current
     shell_syscall
-    shell_state
     shell
     browser_resource
     shell_theory
 
 InstallCmizFiles($(MPFILES))
 
+# Preprocessing files
+PPFILES[] =
+    shell_state
+
 # All library files
 include Files
 
 FILES = $(SHELL_FILES)
-
-#
-# For backwards-compatibility
-#
-if $(not $(defined ocaml-escaped))
-    ocaml-escaped(s) =
-        value $s
-    export
 
 shell_state.mlh: :value: $(DEFAULT_UI) $(BROWSER_COMMAND)
     section eval
@@ -64,7 +59,13 @@ shell_state.mlh: :value: $(DEFAULT_UI) $(BROWSER_COMMAND)
 #
 section
     export($(STANDARD_BUILD_ENV))
-    files = $(filter-out $(MPFILES), $(FILES))
+
+    # shell_state requires preprocessing
+    section
+        OCAMLPPFLAGS = -pp $(quote-argv $(MACROPP) $(LOC))
+        $(addsuffixes .cmi .cmo .cmx $(EXT_OBJ), $(PPFILES)):
+
+    files = $(filter-out $(MPFILES) $(PPFILES), $(FILES))
     files = $(addsuffixes .cmi .cmo .cmx $(EXT_OBJ), $(files))
     $(files):
 
