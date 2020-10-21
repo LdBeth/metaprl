@@ -145,8 +145,7 @@ and hash_normal_term venv code e =
    let { term_op = op; term_terms = bterms } = dest_term e in
 
    (*
-    * XXX: BUG: This isn't quite right, because Lm_num has multiple
-    * representations for the same number.
+    * Since Lm.num has adopted hash safe Zarith, this should work fine.
     *)
    let code = hash_item code op in
       List.fold_left (hash_bterm venv) code bterms

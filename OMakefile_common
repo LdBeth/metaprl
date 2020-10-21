@@ -1,7 +1,7 @@
 #
 # Make sure omake is up-to-date
 #
-OMakeVersion(0.9.8.5)
+OMakeVersion(0.10.0.1)
 
 ########################################################################
 # Config cleaning
@@ -79,6 +79,9 @@ InstVarErr(var) =
         $"Please consult doc/htmlman/mp-install.html (http://metaprl.org/install.html)"
         $"for instructions on compiling OCaml and setting the $(var) variable."
     return $(err)
+
+OCAMLINCLUDES += $(dir $(CAMLLIB)/zarith)
+OCAML_OTHER_LIBS += zarith
 
 if $(file-exists $(CAMLLIB)/../compiler-lib/parsetree.cmi)
    OCAMLINCLUDES += $(dir $(CAMLLIB)/../compiler-lib)

@@ -2,7 +2,7 @@ OMakeroot = $"""\
 #
 # Make sure omake is up-to-date
 #
-OMakeVersion(0.9.8.1)
+OMakeVersion(0.10.0.1)
 
 #
 # Include the standard installed configuration files.

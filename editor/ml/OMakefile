@@ -75,6 +75,7 @@ else
 CMXADEPS[] =
     $(CAMLLIB)/unix.cmxa
     $(CAMLLIB)/str.cmxa
+    $(CAMLLIB)/zarith/zarith.cmxa
     $(OPTTHREADSLIB)
     $(CAMLP5LIB)/odyl$(PROF_EXT).cmxa
     $(CAMLP5LIB)/camlp5$(PROF_EXT).cmxa
@@ -93,6 +94,7 @@ CMADEPS[] =
     $(CAMLP5LIB)/odyl.cma
     $(CAMLLIB)/unix.cma
     $(CAMLLIB)/str.cma
+    $(CAMLLIB)/zarith/zarith.cma
     $(THREADSLIB)
     $(CAMLP5LIB)/camlp5.cma
     $(CAMLP5LIB)/camlp5_top.cma
@@ -106,6 +108,7 @@ TCMADEPS[] =
     $(CAMLP5LIB)/odyl.cma
     $(CAMLLIB)/unix.cma
     $(CAMLLIB)/str.cma
+    $(CAMLLIB)/zarith/zarith.cma
     $(THREADSLIB)
     $(CAMLP5LIB)/camlp5.cma
     $(BASE_CMAS)
@@ -146,17 +149,17 @@ if $(NATIVE_ENABLED)
 if $(MPRUN_ENABLED)
     $(MP).run: $(BYTE_DEPS) $(OCAMLMKTOP_VERSION) $(RCMAMPLIBS)
         $(RM) $@
-        $(OCAMLMKTOP) $(OCAMLFLAGS) $(OCAMLCFLAGS) -o $@ -custom \
+        $(OCAMLMKTOP) $(OCAMLFLAGS) $(OCAMLCFLAGS) $(PREFIXED_OCAMLINCLUDES) -o $@ -custom \
             $(CMOBJS) $(RCMAMPLIBS) $(BYTE_CCLIBS) $(LIBS) $(OCAML_LINK_FLAGS)
 
 $(MP).top: $(TOP_DEPS) $(TCMAMPLIBS)
     $(RM) $@
-    $(OCAMLLINK) $(OCAMLFLAGS) $(OCAMLCFLAGS) -o $@ -custom \
+    $(OCAMLLINK) $(OCAMLFLAGS) $(OCAMLCFLAGS) $(PREFIXED_OCAMLINCLUDES) -o $@ -custom \
         $(TCMOBJS) $(TCMAMPLIBS) $(BYTE_CCLIBS) $(LIBS) $(OCAML_LINK_FLAGS)
 
 $(MP).opt: $(OPT_DEPS) $(TCMXAMPDEPS)
     $(RM) $@
-    $(OCAMLOPTLINK) $(OCAMLFLAGS) $(OCAMLOPTFLAGS) -o $@ \
+    $(OCAMLOPTLINK) $(OCAMLFLAGS) $(OCAMLOPTFLAGS) $(PREFIXED_OCAMLINCLUDES) -o $@ \
         $(CMXOBJS) $(TCMXAMPLIBS) $(NATIVE_CCLIBS) $(LIBS) $(OCAML_LINK_FLAGS)
 
 #
