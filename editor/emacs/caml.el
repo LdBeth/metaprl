@@ -274,7 +274,7 @@ point is outside the region."
     (5  t   match & with & (* | &) -> &2 (* (+ | &) -> &2))
     (5  nil (alt function fun) & (* | &) -> &2 (* (+ | &) -> &2))
     (8  t   if & then & (opt else &if))
-    (1  t   IFDEF & THEN & ENDIF)
+    (1  t   IFDEF & THEN & END)
     (1  t   for & (alt to downto) & do & done)
     (1  t   while & do & done)
     (5  t   (opt &+) (alt val open extends include exception external) &)
