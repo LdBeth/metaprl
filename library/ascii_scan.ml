@@ -173,10 +173,10 @@ let digits_to_num digits =
     else aux (add_num (mult_num (power_num num10 power)
 			        (num_of_string (Char.escaped (hd digits))))
 		       acc)
- 	     (succ_num power)
+ 	     (succ power)
 	     (tl digits)
 
-    in aux (num_of_int 0) (num_of_int 0) digits
+    in aux zero_num 0 digits
 
 let scan_num s =
  let acc = ref [] in
