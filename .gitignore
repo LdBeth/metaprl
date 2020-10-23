@@ -6,6 +6,7 @@
 *.p4
 *.p4i
 *.ppo
+*.ppi
 *.prlb
 *.run
 *.top
