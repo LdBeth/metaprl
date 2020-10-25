@@ -506,7 +506,7 @@ let display_term_aux newline dfm term =
       DisplayText ->
          Dform.format_term dfm.df_base buf term;
          if newline then Lm_rformat.format_newline buf;
-         Lm_rformat_text.print_text_channel (Lm_termsize.term_width Pervasives.stdout dfm.df_width) buf stdout;
+         Lm_rformat_text.print_text_channel (Lm_termsize.term_width Stdlib.stdout dfm.df_width) buf stdout;
          flush stdout
     | DisplayTex ->
          let out = Shell_tex.open_file () in

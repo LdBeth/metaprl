@@ -34,7 +34,7 @@ type permutation = int array
 
 (* identity element *)
 let id_perm n =
-   let result = Array.create n 0 in
+   let result = Array.make n 0 in
    for i=0 to pred n do
       Array.unsafe_set result i i
    done;
@@ -46,7 +46,7 @@ let permute_list p = function
  | hd::tl ->
       let l = Array.length p in
       if succ (List.length tl) = l then
-         let res = Array.create l hd in
+         let res = Array.make l hd in
          let rec aux i = function
             [] -> ()
           | hd::tl ->
@@ -80,7 +80,7 @@ let rec get_permut_aux res l2 i = function
 
 let get_permut l1 l2 =
    let l = List.length l2 in
-   let res = Array.create l (-1) in
+   let res = Array.make l (-1) in
    get_permut_aux res l2 0 l1;
    for i=0 to pred l do
       if res.(i) < 0 then raise (Failure "Permutations.get_permut")

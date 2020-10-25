@@ -141,22 +141,22 @@ let format_num num =
    String.concat "." (List.map Int.to_string (List.rev num))
 
 let format_proof =
-   let rec format_list f ppf = function 
+   let rec format_list f ppf = function
       [x] -> f ppf x
     | (x :: xs) -> fprintf ppf "%a@,%a" f x (format_list f) xs
     | [] -> ()
    in
    let format_tac ppf (nums, tac) = fprintf ppf "@[<hv>%s by@ %s@]" (format_num nums) tac in
-   let rec format_aux ppf = function 
+   let rec format_aux ppf = function
       (Proof (nums, tac, subgoals, extras)) ->
          let format_goals ppf = function
             [] -> fprintf ppf "No Subgoals"
           | subgoals -> format_list format_aux ppf subgoals in
-         let format_extras ppf = function 
+         let format_extras ppf = function
             (num, []) -> fprintf ppf "Close %s" (format_num nums)
           | (num, extras) -> fprintf ppf "%s Has Xtra: @[<v>%a@]" (format_num nums)
                              (format_list format_aux) extras in
-            fprintf ppf "@[<v 0>@[<v 2>%a@ %a@]@,%a@]" 
+            fprintf ppf "@[<v 0>@[<v 2>%a@ %a@]@,%a@]"
             format_tac (nums, tac) format_goals subgoals format_extras (nums, extras)
     | Goal -> fprintf ppf "<< Goal >>"
    in format_aux
@@ -175,7 +175,7 @@ let print_prla input =
        | None -> ()
    in
       List.iter print_proof t
-   
+
 
 let merge_prla (inp1, inp2, outp) =
    let tbl1 = with_input_file inp1 read_table in

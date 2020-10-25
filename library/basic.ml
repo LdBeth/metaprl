@@ -46,7 +46,7 @@ let stringeq a b = (a = b)
 
 let listeq p a b =
    (List.length a = List.length b)
-   & try for_all2 p a b with _ -> false
+   && try for_all2 p a b with _ -> false
 
 let rec parmeq p q =
 
@@ -67,7 +67,7 @@ let opeq a b =
   -> (match dest_op b with
   	{ op_name = bopname;
 	  op_params = bparms }
-	-> (aopname = bopname & listeq parmeq aparms bparms))
+	-> (aopname = bopname && listeq parmeq aparms bparms))
 
 open Hashtbl
 
@@ -206,7 +206,7 @@ let parameter_of_carrier p t =
   match Lib_term.dest_term t with
     { term_op = o; term_terms = []}
     -> (match dest_op o with
-      { op_name = opname; op_params = [p'; c] } when (parmeq p p' & nuprl5_opname_p opname)
+      { op_name = opname; op_params = [p'; c] } when (parmeq p p' && nuprl5_opname_p opname)
       -> c
     |_ -> error ["term"; "carrier"; "op"] [] [t; mk_term (mk_nuprl5_op [p]) []])
   |_ -> error ["term"; "carrier"; "subterms"] [] [t]
@@ -215,7 +215,7 @@ let parameters_of_carrier p t =
   match Lib_term.dest_term t with
     { term_op = o; term_terms = []}
     -> (match dest_op o with
-      { op_name = opname; op_params = p':: r } when (parmeq p p' & nuprl5_opname_p opname)
+      { op_name = opname; op_params = p':: r } when (parmeq p p' && nuprl5_opname_p opname)
       -> r
     | _ -> error ["term"; "carrier"; "op"] [] [t; mk_term (mk_nuprl5_op [p]) []])
   | _ -> error ["term"; "carrier"; "subterms"] [] [t]
@@ -329,7 +329,7 @@ let term_to_stamp t =
     -> (match dest_op op with
 	{ op_name = opname;
 	  op_params = [istamp; pseq; ptime; ptseq; ppid] }
-	    when (nuprl5_opname_p opname & parmeq istamp istamp_parameter)
+	    when (nuprl5_opname_p opname && parmeq istamp istamp_parameter)
          ->
 	(match dest_param ppid with Token pid ->
 	(match dest_param ptseq with Number tseq when Lm_num.is_integer_num tseq ->
@@ -364,7 +364,7 @@ let stamp_to_object_id stamp = make_object_id (List.tl (parameters_of_term stamp
 let in_transaction_p = fun
   { process_id = pid1; transaction_seq = tseq1; _ }
   { process_id = pid2; transaction_seq = tseq2; _ } ->
-    pid1 = pid2 & tseq1 = tseq2
+    pid1 = pid2 && tseq1 = tseq2
 
 let transaction_less = fun
   { term = term1; process_id = pid1; seq = seq1; time = time1; _ }
@@ -388,7 +388,7 @@ let get_pid =
                String.concat "_"
 			      [ string_of_inet_addr inet_addr
 			      ; string_of_int (getpid())
-			      ; string_of_int (Pervasives.truncate (time()))
+			      ; string_of_int (Stdlib.truncate (time()))
 			      ]
             in
                pidref := Some pid;
@@ -413,12 +413,12 @@ let make_stamp pid tseq seq time =
 
 let equal_stamps_p a b =
  a.process_id = b.process_id
- & a.transaction_seq = b.transaction_seq
- & a.seq = b.seq
- & (eq_num a.time b.time)
+ && a.transaction_seq = b.transaction_seq
+ && a.seq = b.seq
+ && (eq_num a.time b.time)
 
 let get_stamp () =
-   make_stamp (get_pid ()) !stamp_count !stamp_count (num_of_int (Pervasives.truncate (time())))
+   make_stamp (get_pid ()) !stamp_count !stamp_count (num_of_int (Stdlib.truncate (time())))
 
 let new_stamp () =
    incr stamp_count; get_stamp ()
@@ -492,7 +492,7 @@ let map_isexpr_to_list_by_op iop f t =
        -> acc
     | { term_op = op; term_terms = [] } when not (opeq op iop)
        -> (f t) :: acc
-    | { term_op = op; term_terms = [l; r] } when ((opeq op iop) & (unbound_bterm_p l) & (unbound_bterm_p r))
+    | { term_op = op; term_terms = [l; r] } when ((opeq op iop) && (unbound_bterm_p l) && (unbound_bterm_p r))
        -> aux (term_of_unbound_term l) (aux (term_of_unbound_term r) acc)
     |_ -> (f t) :: acc
   in
@@ -505,7 +505,7 @@ let map_isexpr_by_op iop f t =
        -> ()
     | { term_op = op; term_terms = [] } when not (opeq op iop)
        -> (f t); ()
-    | { term_op = op; term_terms = [l; r] } when ((opeq op iop) & (unbound_bterm_p l) & (unbound_bterm_p r))
+    | { term_op = op; term_terms = [l; r] } when ((opeq op iop) && (unbound_bterm_p l) && (unbound_bterm_p r))
        -> aux (term_of_unbound_term l); aux (term_of_unbound_term r); ()
     |_ -> (f t); ()
   in
@@ -544,7 +544,7 @@ let property_of_iproperty_term pt =
     { term_op = pto; term_terms = [prop] }
     -> (match dest_op pto with
 	{ op_name = po; op_params = [iprop; name] } when (nuprl5_opname_p po
-							  & parmeq iprop iproperty_parameter)
+							  && parmeq iprop iproperty_parameter)
 	  -> (string_of_token_parameter name, term_of_unbound_term prop)
 	|_ -> error ["iproperty"; "op"; "not"; ""] [] [pt])
     |_ -> error ["iproperty"; "term"; "not"; ""] [] [pt]

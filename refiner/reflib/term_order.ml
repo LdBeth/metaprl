@@ -160,7 +160,7 @@ struct
             Number n1    , Number n2     -> Lm_num.compare_num n1 n2
           | Number _     , _             -> -1
           | _            , Number _      -> 1
-          | String s1    , String s2     -> Pervasives.compare s1 s2
+          | String s1    , String s2     -> Stdlib.compare s1 s2
           | String _     , _             -> -1
           | _            , String _      -> 1
           | Token t1     , Token t2      -> Opname.compare t1 t2
@@ -207,7 +207,7 @@ struct
          match Opname.compare op1.opparam_name op2.opparam_name with
             0 ->
                begin match compare_plists op1.opparam_params op2.opparam_params with
-                  0 -> Pervasives.compare op1.opparam_arities op2.opparam_arities
+                  0 -> Stdlib.compare op1.opparam_arities op2.opparam_arities
                 | i -> i
                end
           | i -> i

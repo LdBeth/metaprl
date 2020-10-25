@@ -37,7 +37,7 @@ open Term_io
 (*
  * Header.
  *)
-let magic = "MP-Caml3.06 terms:"
+let magic = "MP-OCaml terms:"
 let magic_len = String.length magic
 
 let check_magic s =

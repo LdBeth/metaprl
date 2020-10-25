@@ -152,7 +152,7 @@ let strings_of_dir dirname =
 
 let entries_of_dir dirname =
    let names = strings_of_dir dirname in
-   let names = List.sort (fun s1 s2 -> Pervasives.compare s1 s2) names in
+   let names = List.sort (fun s1 s2 -> Stdlib.compare s1 s2) names in
       List.map (fun name ->
             let modifier =
                try

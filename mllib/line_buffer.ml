@@ -54,7 +54,7 @@ struct
    let max_queue_length = 100
 
    let create () =
-      { lines = Array.create max_queue_length None;
+      { lines = Array.make max_queue_length None;
         first = 0;
         length = 0
       }

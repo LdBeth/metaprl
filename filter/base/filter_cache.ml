@@ -595,11 +595,11 @@ struct
 
       (* Now write the term *)
       let newname = filename ^ ".new" in
-      let outx = Pervasives.open_out_bin newname in
+      let outx = Stdlib.open_out_bin newname in
       let major, minor, rev = unpack_version (List.hd versions) in
          Printf.fprintf outx "#PRL version %d.%d.%d ASCII term\n" major minor rev;
          PreAsciiIO.write_term outx table term;
-         Pervasives.close_out outx;
+         Stdlib.close_out outx;
          Unix.rename newname filename
 end
 

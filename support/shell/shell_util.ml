@@ -61,7 +61,7 @@ type ls_option =
 module LsOptionCompare =
 struct
    type t = ls_option
-   let compare = Pervasives.compare
+   let compare = Stdlib.compare
 end
 
 module LsOptionSet = Lm_set.LmMake (LsOptionCompare)

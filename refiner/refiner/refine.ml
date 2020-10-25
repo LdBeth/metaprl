@@ -223,8 +223,8 @@ struct
    module Deps = struct
       type t = dependency * opname
       let compare (d1, o1) (d2, o2) =
-         match Pervasives.compare d1 d2 with
-            0 -> Pervasives.compare (List.rev (dest_opname o1)) (List.rev (dest_opname o2))
+         match Stdlib.compare d1 d2 with
+            0 -> Stdlib.compare (List.rev (dest_opname o1)) (List.rev (dest_opname o2))
           | c -> c
    end
    module DepSet = Lm_set.LmMake (Deps)

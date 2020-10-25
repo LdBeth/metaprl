@@ -116,10 +116,10 @@ let make_dict () =
       List.iter (add_file table) !words_filenames;
       dict := Some table;
       let tmp, out = try_name 0 in
-      let out = Pervasives.open_out_bin tmp in
-         Pervasives.output_binary_int out dat_magic;
+      let out = Stdlib.open_out_bin tmp in
+         Stdlib.output_binary_int out dat_magic;
          Marshal.to_channel out table [];
-         Pervasives.close_out out;
+         Stdlib.close_out out;
          try
             Unix.rename tmp dat_filename
          with exn ->

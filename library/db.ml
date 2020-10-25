@@ -77,7 +77,7 @@ let level_of_byte b = ((b land 0x30) lsr 4)
 type catetype =   COpid  | CBinding | CParameter | COperator | CTerm | CNumeral
 
 let catetypes =
-  let a = create 6 COpid in
+  let a = make 6 COpid in
     set a 0 COpid;
     set a 1 CBinding;
     set a 2 CParameter;
@@ -103,12 +103,12 @@ type level =
 let level_array_growth = 256
 let level_array_initial = (Opid "")
 
-let new_level n = {items = (create n level_array_initial); fill = 0 }
+let new_level n = {items = (make n level_array_initial); fill = 0 }
 
 let level_allocate_slot l =
   let fill = l.fill in
     (if inteq fill (Array.length l.items)
-       then let nitems = create (fill + level_array_growth) level_array_initial in
+       then let nitems = make (fill + level_array_growth) level_array_initial in
          blit l.items 0 nitems 0 fill;
          l.items <- nitems
     );
@@ -522,9 +522,9 @@ let mk_real_param_from_strings stp value ptype =
   | "s" -> (String value)
   | "q" -> (ParamList [(make_param (token "quote")); (make_param (token value))])
   | "b" -> ( ParamList [ (make_param (token "bool"))
-                        ; if (stringeq value "false") or (stringeq value "F") then
+                        ; if (stringeq value "false") || (stringeq value "F") then
                           make_param (Number (Lm_num.num_of_int 0))
-                          else if (stringeq value "true") or (stringeq value "T") then
+                          else if (stringeq value "true") || (stringeq value "T") then
                           make_param (Number (Lm_num.num_of_int 1))
                           else error ["real_parameter_from_string"; value] [] []
                       ])
@@ -589,7 +589,7 @@ let string_to_bindings value =
 let rec string_to_parameter s ptype =
   (*if s = "!stamp" then failwith "stamp";*)
   let len = String.length s in
-    if (len < 2 or not (chareq '%' (Lm_string_util.get "Db.string_to_parameter" s 0)))
+    if (len < 2 || not (chareq '%' (Lm_string_util.get "Db.string_to_parameter" s 0)))
      then make_param (mk_real_param_from_strings string_to_parameter s ptype)
     else
      let ss = (Lm_string_util.sub "Db.string_to_parameter" s 2 (len -2)) in

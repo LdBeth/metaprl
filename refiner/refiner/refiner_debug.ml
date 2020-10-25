@@ -2829,11 +2829,11 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
       module ShapeCompare =
       struct
          type t = shape
-         let compare = Pervasives.compare
+         let compare = Stdlib.compare
       end
 
 (* unused
-      let shape_compare = Pervasives.compare
+      let shape_compare = Stdlib.compare
 *)
 
       module ShapeSet = Lm_set.LmMake (ShapeCompare);;

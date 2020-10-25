@@ -210,7 +210,7 @@ struct
 		type t = (position * position) * int
 
 		let compare (p1,i1) (p2,i2) =
-			let c = Pervasives.compare (i1:int) i2 in
+			let c = Stdlib.compare (i1:int) i2 in
 			if c = 0 then
 				OrderedPositionPair.compare p1 p2
 			else

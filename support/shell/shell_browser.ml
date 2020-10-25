@@ -1487,7 +1487,7 @@ struct
       let http_url = sprintf "%s://%s:%d/" Shell_state.protocol_name host port in
          (* Start page *)
          print_start_page out state;
-         Pervasives.flush out;
+         Stdlib.flush out;
          Unix.close fd;
 
          (* Start the browser if requested *)

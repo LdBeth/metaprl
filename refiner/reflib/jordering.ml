@@ -253,7 +253,7 @@ struct
        | Atom,Atom -> 0
        | Atom,_ -> -1
        | Const _,(EmptyVar|Atom) -> 1
-       | Const i, Const j -> Pervasives.compare i j
+       | Const i, Const j -> Stdlib.compare i j
        | Const _, _ -> -1
        | Dummy,(EmptyVar|Atom|Const _) -> 1
        | Dummy, Dummy -> 0
@@ -262,13 +262,13 @@ struct
        | EigenVar, EigenVar -> 0
        | EigenVar, _ -> -1
        | NewVar _,(Atom|Const _|Dummy|EmptyVar|EigenVar) -> 1
-       | NewVar i, NewVar j -> Pervasives.compare i j
+       | NewVar i, NewVar j -> Stdlib.compare i j
        | NewVar _, _ -> -1
        | NewVarQ _, (Atom|Const _|Dummy|EmptyVar|EigenVar|NewVar _) -> 1
-       | NewVarQ i, NewVarQ j -> Pervasives.compare i j
+       | NewVarQ i, NewVarQ j -> Stdlib.compare i j
        | NewVarQ _, _ -> -1
        | Var _,(Atom|Const _|Dummy|EmptyVar|EigenVar|NewVar _|NewVarQ _) -> 1
-       | Var i, Var j -> Pervasives.compare i j
+       | Var i, Var j -> Stdlib.compare i j
        | Var _, _ -> -1
        | Root,
          (Atom|Const _|Dummy|EmptyVar|EigenVar
@@ -276,7 +276,7 @@ struct
        | Root,Root -> 0
 *)
    let compare (a,(i:int)) (b,j) =
-		Pervasives.compare i j
+		Stdlib.compare i j
 
 end
 

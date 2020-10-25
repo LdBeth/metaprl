@@ -122,7 +122,7 @@ let scan_at_eof_p s = s.eofp (*or scan_stream_eof_p s *)
 let scan_escape_p s = s.escapep
 
 let scan_cur_char s = s.cchar
-let scan_at_char_p s c = (not (scan_at_eof_p s)) & (s.cchar = c) & not (scan_escape_p s)
+let scan_at_char_p s c = (not (scan_at_eof_p s)) && (s.cchar = c) && not (scan_escape_p s)
 
 let scan_char s c =
  if scan_at_char_p s c
@@ -133,7 +133,7 @@ let scan_char s c =
  ; ()
 
 let scan_cur_byte s = code s.cchar
-let scan_at_byte_p s c = (not (scan_at_eof_p s)) & (code s.cchar) = c  & not (scan_escape_p s)
+let scan_at_byte_p s c = (not (scan_at_eof_p s)) && (code s.cchar) = c  && not (scan_escape_p s)
 
 let scan_byte s c =
  if scan_at_byte_p s c
@@ -146,17 +146,17 @@ let scan_byte s c =
 let numeric_digits = ['0'; '1'; '2'; '3'; '4'; '5'; '6'; '7'; '8'; '9']
 
 let scan_at_digit_p s =
-  (not (scan_at_eof_p s))  & (mem s.cchar numeric_digits)
+  (not (scan_at_eof_p s))  && (mem s.cchar numeric_digits)
 
 let rec scan_whitespace s =
- if (not (scan_at_eof_p s)) & (mem s.cchar s.whitespace)
+ if (not (scan_at_eof_p s)) && (mem s.cchar s.whitespace)
     then (scan_next s; scan_whitespace s)
  ; ()
 
 let scan_string s =
  (* print_string " sstr "; *)
  let acc = ref [] in
- while not (scan_at_eof_p s) & not ((mem s.cchar s.escape) & (not s.escapep))
+ while not (scan_at_eof_p s) && not ((mem s.cchar s.escape) && (not s.escapep))
   do acc := s.cchar :: !acc; scan_next s
   done
 
@@ -181,7 +181,7 @@ let digits_to_num digits =
 let scan_num s =
  let acc = ref [] in
 
- while (not (scan_at_eof_p s)) & (scan_at_digit_p s)
+ while (not (scan_at_eof_p s)) && (scan_at_digit_p s)
   do acc := s.cchar :: !acc;  scan_next s
   done
 

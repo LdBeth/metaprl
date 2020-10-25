@@ -598,20 +598,20 @@ let clause_addr_expr i =
    Addr_itemExpr (ClauseAddr i)
 
 let resource toploop +=
-   ["Pervasives", "+",      int_int_fun_int_expr ( + ),  int_int_fun_typ;
-    "Pervasives", "-",      int_int_fun_int_expr ( - ),  int_int_fun_typ;
-    "Pervasives", "*",      int_int_fun_int_expr ( * ),  int_int_fun_typ;
-    "Pervasives", "/",      int_int_fun_int_expr ( / ),  int_int_fun_typ;
-    "Pervasives", "~-",     int_fun_int_expr ( ~- ),     int_fun_typ;
-    "Pervasives", "::",     cons_expr,                   ConsType;
-    "Pervasives", "()",     UnitExpr (),                 UnitType;
-    "Pervasives", "[]",     ListExpr [],                 NilType;
-    "Pervasives", "True",   BoolExpr true,               BoolType;
-    "Pervasives", "False",  BoolExpr false,              BoolType;
-    "Pervasives", "Arg",    Addr_itemExpr (ArgAddr),     Addr_itemType;
-    "Pervasives", "Concl",  clause_addr_expr 0,          Addr_itemType;
-    "Pervasives", "Hyp",    IntFunExpr clause_addr_expr, FunType(IntType, Addr_itemType);
-    "Pervasives", "Clause", IntFunExpr clause_addr_expr, FunType(IntType, Addr_itemType)]
+   ["Stdlib", "+",      int_int_fun_int_expr ( + ),  int_int_fun_typ;
+    "Stdlib", "-",      int_int_fun_int_expr ( - ),  int_int_fun_typ;
+    "Stdlib", "*",      int_int_fun_int_expr ( * ),  int_int_fun_typ;
+    "Stdlib", "/",      int_int_fun_int_expr ( / ),  int_int_fun_typ;
+    "Stdlib", "~-",     int_fun_int_expr ( ~- ),     int_fun_typ;
+    "Stdlib", "::",     cons_expr,                   ConsType;
+    "Stdlib", "()",     UnitExpr (),                 UnitType;
+    "Stdlib", "[]",     ListExpr [],                 NilType;
+    "Stdlib", "True",   BoolExpr true,               BoolType;
+    "Stdlib", "False",  BoolExpr false,              BoolType;
+    "Stdlib", "Arg",    Addr_itemExpr (ArgAddr),     Addr_itemType;
+    "Stdlib", "Concl",  clause_addr_expr 0,          Addr_itemType;
+    "Stdlib", "Hyp",    IntFunExpr clause_addr_expr, FunType(IntType, Addr_itemType);
+    "Stdlib", "Clause", IntFunExpr clause_addr_expr, FunType(IntType, Addr_itemType)]
 
 let tactic_of_ocaml_expr base expr =
    let (loc, expr) as lexpr = mk_expr expr in

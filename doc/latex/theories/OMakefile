@@ -3,6 +3,7 @@
 #
 ALL_THEORIES[] =
     meta
+    itt
     czf
 
 ALL_BODIES = $(file $(add-wrapper $(ROOT)/theories/, /theory-body.tex, $(ALL_THEORIES)))

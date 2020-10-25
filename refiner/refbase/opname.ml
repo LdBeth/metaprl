@@ -228,7 +228,7 @@ let xconcl_opname  = mk_opname "xconcl" xperv
  * Sets and tables.
  *)
 let compare { opname_name = name1; _ } { opname_name = name2; _ } =
-   Pervasives.compare name1 name2
+   Stdlib.compare name1 name2
 
 module OpnameCompare =
 struct

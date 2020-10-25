@@ -41,7 +41,7 @@ module type HypsSig = sig
     type 'a hyps
     type addr
     val get_cmp : 'a hyps -> addr -> 'a cmp
-	 val dest_cmp : 'a cmp -> var * var * num
+	  val dest_cmp : 'a cmp -> var * var * num
     val get_v1 : 'a hyps -> addr -> var
     val get_v2 : 'a hyps -> addr -> var
     val get_const : 'a hyps -> addr -> num
@@ -72,7 +72,7 @@ module SimpleHyps = struct
 end
 *)
 
-let num0=num_of_int 0
+let num0 = zero_num
 
 module ArrayTools (Hyps: HypsSig) =
 struct
@@ -118,8 +118,8 @@ let debug_graph_arith3 =
         debug_value = false
       }
 
-module Graph =
-functor (Hyps : HypsSig) -> struct
+module Graph = functor (Hyps : HypsSig) ->
+struct
    module ArrayTool = ArrayTools(Hyps)
    open Hyps
    open ArrayTool

@@ -80,7 +80,7 @@ let patt_vars patt =
 let free_vars expr =
    let rec free bvars l = function
       <:expr< $lid:v$ >> ->
-         if List.mem v bvars or List.mem v l then
+         if List.mem v bvars || List.mem v l then
             l
          else
             v :: l

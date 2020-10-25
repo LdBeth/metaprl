@@ -130,10 +130,10 @@ module TentFunctor =
 
   let tent_lookup_woid tent stamp oid =
    let f sent =
-      (in_transaction_p sent.stamp stamp) & (OID.equal sent.oid oid)  in
+      (in_transaction_p sent.stamp stamp) && (OID.equal sent.oid oid)  in
     match (assoc_if f tent.pending) with
       None -> (let f sent =
-		(transaction_less sent.stamp stamp) & (OID.equal sent.oid oid) in
+		(transaction_less sent.stamp stamp) && (OID.equal sent.oid oid) in
               match (assoc_if f tent.committed) with
 		None -> error ["Tent"; "LookupWoid"; "None"][][]
               | Some sent -> sent)

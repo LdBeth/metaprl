@@ -162,7 +162,7 @@ let root () = commands.root ()
 let exit () = raise End_of_file
 
 let abort () =
-   Pervasives.exit 126
+   Stdlib.exit 126
 
 let set_debug = set_debug
 
@@ -174,13 +174,13 @@ let eprintln s =
 
 let print_gc_stats () =
    Lm_rprintf.flush stdout;
-   Gc.print_stat Pervasives.stdout;
-   Pervasives.flush Pervasives.stdout
+   Gc.print_stat Stdlib.stdout;
+   Stdlib.flush Stdlib.stdout
 
 let gc_compact () =
    Gc.compact ();
-   Gc.print_stat Pervasives.stdout;
-   Pervasives.flush Pervasives.stdout
+   Gc.print_stat Stdlib.stdout;
+   Stdlib.flush Stdlib.stdout
 
 let set_tex_file = Shell_tex.set_file
 

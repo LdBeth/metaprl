@@ -411,7 +411,7 @@ let put_get_test lib oid i =
  (with_transaction lib
    (function t ->
      if not ((i = number_of_inatural_term (get_term t oid))
-	     & (i+1) = number_of_inatural_term (get_property t oid "foo"))
+	     && (i+1) = number_of_inatural_term (get_property t oid "foo"))
         then raise (Test "Failed")));
  oid
 

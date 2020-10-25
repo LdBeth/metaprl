@@ -108,7 +108,7 @@ sig
     * These are the functions that are useful.
     *)
    val read_table : in_channel -> io_table
-   val write_term : Pervasives.out_channel -> io_table -> term -> unit
+   val write_term : Stdlib.out_channel -> io_table -> term -> unit
 
    (*
     * INPUT
@@ -156,9 +156,9 @@ sig
    val simple_name_bterm : bound_term -> string * string
    val simple_name_hyp : hypothesis -> string * string
    val simple_name_seq : esequent -> string * string
-   val simple_output_line : Pervasives.out_channel -> io_item -> unit
+   val simple_output_line : Stdlib.out_channel -> io_item -> unit
 
    (* io_control uning simple_* functions *)
-   val make_simple_control : Pervasives.out_channel -> out_control
+   val make_simple_control : Stdlib.out_channel -> out_control
 
 end

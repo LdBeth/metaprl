@@ -42,5 +42,5 @@ let dest_object_id object_id  = object_id
 
 let equal_object_ids oida oidb =
  (length oida) = (length oidb)
- & try  for_all2 (fun a b -> (eq_parms_p a b))
+ && try  for_all2 (fun a b -> (eq_parms_p a b))
    with _ -> false

@@ -287,7 +287,7 @@ end
 
 module StrLSet = Lm_set.LmMake (struct
    type t = string list
-   let compare = Pervasives.compare
+   let compare = Stdlib.compare
 end)
 
 (*

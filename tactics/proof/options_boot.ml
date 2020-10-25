@@ -88,7 +88,7 @@ let add_option (options, i) t info =
       options, i
 
 let cmp ((i1:int), _) (i2, _) =
-   Pervasives.compare i1 i2
+   Stdlib.compare i1 i2
 
 let list_options (options, _) =
    let lst = OpnameTable.fold (fun l op (n, dec) -> (n, (mk_label_term op, if dec then OptionAllow else OptionExclude)) :: l) [] options in

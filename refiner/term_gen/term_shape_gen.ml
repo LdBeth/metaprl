@@ -267,7 +267,7 @@ struct
          in
          let cmp = Opname.compare opname1 opname2 in
             if cmp = 0 then
-               Pervasives.compare (params1, arities1) (params2, arities2)
+               Stdlib.compare (params1, arities1) (params2, arities2)
             else
                cmp
    end

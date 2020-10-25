@@ -31,7 +31,7 @@
 module StringCompare =
 struct
    type t = string
-   let compare = Pervasives.compare
+   let compare = Stdlib.compare
 end;;
 
 module StringSet = Set.Make (StringCompare);;

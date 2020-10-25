@@ -199,7 +199,7 @@ let cookie_of_icallback_term t =
   match dest_term t with
     { term_op = op; term_terms = [s] }
     ->  (match dest_op op with
-      { op_name = opn; op_params = [icp; ckp] } when (nuprl5_opname_p opn & parmeq icp icallback_param)
+      { op_name = opn; op_params = [icp; ckp] } when (nuprl5_opname_p opn && parmeq icp icallback_param)
       -> (match dest_param ckp with
 	String s -> s
       |_ -> error ["icallback"; "not"; "param"] [] [t])
@@ -211,7 +211,7 @@ let stamp_of_icallback_term t =
     { term_op = op; term_terms = [s] }
     -> (match dest_op op with
       { op_name = opn; op_params = (icp :: rest) }
-      when (nuprl5_opname_p opn & parmeq icp icallback_param)
+      when (nuprl5_opname_p opn && parmeq icp icallback_param)
       ->  (term_of_unbound_term s)
     |_ -> error ["icallback"; "not"; "op"] [] [t])
   |_ -> error ["icallback"; "not"; "term"] [] [t]

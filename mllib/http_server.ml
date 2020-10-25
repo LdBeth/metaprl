@@ -252,7 +252,7 @@ let head out uri protocol =
                fprintf out "%s %d %s\r\n" http_protocol code msg
    in
       search !http_path;
-      Pervasives.flush out;
+      Stdlib.flush out;
       close_out out
 
 (*
@@ -315,7 +315,7 @@ let get out uri protocol =
             fprintf out "%s\n" not_found_msg
    in
       search !http_path;
-      Pervasives.flush out;
+      Stdlib.flush out;
       close_out out
 
 (*
