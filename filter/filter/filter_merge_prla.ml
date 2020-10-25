@@ -110,25 +110,31 @@ let extract_proof term =
 let string_of_term = Dform.string_of_term Dform.null_base
 
 type proof = Proof of int list * string * proof list * proof list
+           | Goal
+
+let ext_rule_op = mk_opname "ext_rule" summary_opname
 
 let dest_proof term =
    let term = one_subterm term in
    let rec dest_rule nums num term =
-      let tac = dest_string_param term in
-      let _, _, subgoals, extras = four_subterms term in
-      let subgoals = (dest_xlist subgoals) in
-      let extras = (dest_xlist extras) in
-      let nums = num :: nums in
-      let ns = ref 1 in
-      (* Encode numbering into proofs *)
-      let dest_goals g =
-         let n = !ns in
-         ns := 1 + n;
-         dest_rule nums n g
-      in
-      let subgoals = List.map dest_goals subgoals in
-      let extras = List.map dest_goals extras in
-         Proof (nums, tac, subgoals, extras)
+      let opname = opname_of_term term in
+         if Opname.eq opname ext_rule_op then
+            let tac = dest_string_param term in
+            let _, _, subgoals, extras = four_subterms term in
+            let subgoals = (dest_xlist subgoals) in
+            let extras = (dest_xlist extras) in
+            let nums = num :: nums in
+            let ns = ref 1 in
+            (* Encode numbering into proofs *)
+            let dest_goals g =
+               let n = !ns in
+                  ns := 1 + n;
+                  dest_rule nums n g
+            in
+            let subgoals = List.map dest_goals subgoals in
+            let extras = List.map dest_goals extras in
+               Proof (nums, tac, subgoals, extras)
+         else Goal
    in dest_rule [] 0 term
 
 let format_num num =
@@ -141,16 +147,18 @@ let format_proof =
     | [] -> ()
    in
    let format_tac ppf (nums, tac) = fprintf ppf "@[<hv>%s by@ %s@]" (format_num nums) tac in
-   let rec format_aux ppf (Proof (nums, tac, subgoals, extras)) =
-      let format_goals ppf = function
-         [] -> fprintf ppf "No Subgoals"
-       | subgoals -> format_list format_aux ppf subgoals in
-      let format_extras ppf = function 
-         (num, []) -> fprintf ppf "Close %s" (format_num nums)
-       | (num, extras) -> fprintf ppf "%s Has Xtra: @[<v>%a@]" (format_num nums)
-                          (format_list format_aux) extras in
-         fprintf ppf "@[<v 0>@[<v 2>%a@ %a@]@,%a@]" 
-         format_tac (nums, tac) format_goals subgoals format_extras (nums, extras)
+   let rec format_aux ppf = function 
+      (Proof (nums, tac, subgoals, extras)) ->
+         let format_goals ppf = function
+            [] -> fprintf ppf "No Subgoals"
+          | subgoals -> format_list format_aux ppf subgoals in
+         let format_extras ppf = function 
+            (num, []) -> fprintf ppf "Close %s" (format_num nums)
+          | (num, extras) -> fprintf ppf "%s Has Xtra: @[<v>%a@]" (format_num nums)
+                             (format_list format_aux) extras in
+            fprintf ppf "@[<v 0>@[<v 2>%a@ %a@]@,%a@]" 
+            format_tac (nums, tac) format_goals subgoals format_extras (nums, extras)
+    | Goal -> fprintf ppf "<< Goal >>"
    in format_aux
 
 let print_prla input =
@@ -160,9 +168,9 @@ let print_prla input =
       match extract_proof term with
          Some (name, pf) ->
             let fmt ppf () = match trivial_proof pf with
-                             Empty -> fprintf ppf "No proof"
-                           | Real -> fprintf ppf "@[<3>Proof:@ %a@]" format_proof (dest_proof pf)
-                           | Primitive -> fprintf ppf "Prim" in
+                                Empty -> fprintf ppf "No proof"
+                              | Real -> fprintf ppf "@[<3>Proof:@ %a@]" format_proof (dest_proof pf)
+                              | Primitive -> fprintf ppf "Prim" in
                printf "@[<hov 3>Rule/Rewrite %s:@ %a@]@." name fmt ()
        | None -> ()
    in
