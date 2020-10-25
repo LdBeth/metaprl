@@ -293,11 +293,11 @@ let popm df = format_popm df.dform_buffer
 let translate_font s =
    match s with
       "bf" -> Lm_terminfo.enter_bold_mode
-    | "it" | "em" -> "snrmq" (* enter_italics_mode *)
-    | "rm" -> "snrmq" (* enter_normal_quality *)
-    | "sub" -> "ssubm" (* enter_subscript_mode *)
-    | "sup" -> "ssupm" (* enter_superscript_mode *)
-    | "ul" -> "smul" (* begin underline mode *)
+    | "it" | "em" -> Lm_terminfo.enter_italics_mode
+    | "rm" -> Lm_terminfo.enter_normal_quality
+    | "sub" -> Lm_terminfo.enter_subscript_mode
+    | "sup" -> Lm_terminfo.enter_superscript_mode
+    | "ul" -> Lm_terminfo.enter_underline_mode
     | _ -> Lm_terminfo.exit_attribute_mode
 
 let changefont buf s =
