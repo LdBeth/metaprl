@@ -223,6 +223,16 @@ dform apply_cons_parse_df3 : parens :: apply_cons_list_parse{'e1; 'e2} =
    pushm[0] df_rev_concat{xcons{hspace; xcons{keyword["::"]; hspace}}; xcons{szone{'e2}; 'e1}} popm
 
 (*
+ * Label.
+ *)
+
+dform lab_df1 : "lab"{'poel} =
+   szone "~" patt_format{'poel; onil} ezone
+
+dform lab_df2 : "lab"[start:n, finish:n]{'e1} =
+   lab{'e1}
+
+(*
  * Subscripting.
  *)
 dform array_subscript_df1 : parens :: "prec"[prec_proj] :: "array_subscript"{'e1; 'e2} =

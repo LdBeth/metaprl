@@ -132,7 +132,7 @@ dform patt_float_df2 : patt_format{patt_float[start:n, finish:n, x:s]{'p1}; 'p2}
 dform patt_var_df1 : patt_format{patt_var{x. 'p1}; 'p2} =
    patt_format{'p1; ocons{'x; 'p2}}
 
-dform patt_var_df2 : patt_format{patt_var[start:n, finish:n]{x. 'p1}; 'p2} =
+dform patt_var_df3 : patt_format{patt_var[start:n, finish:n]{x. 'p1}; 'p2} =
    patt_format{patt_var{x. 'p1}; 'p2}
 
 dform patt_uid_df1 : patt_format{patt_uid{patt_uid[name:s]; 'p1}; 'p2} =
@@ -161,6 +161,18 @@ dform patt_proj_arg_df2 : patt_format{patt_proj_arg[start:n, finish:n]{'p1}; 'p2
 
 dform patt_proj_end_df2 : patt_format{patt_proj_end[start:n, finish:n]{'p1}; 'p2} =
    patt_format{patt_proj_end{'p1}; 'p2}
+
+(*
+ * Optional expr.
+ *)
+(* XXX: HACK: LDB: need to add unique form for label *)
+dform patt_poe_df1 : patt_format{some{'e1}; ocons{'p1; 'p2}} =
+   slot{'p1} ":" slot{'e1}
+   patt_format{'p2; onil}
+
+dform patt_poe_df2 : patt_format{none; ocons{'p1; 'p2}} =
+   slot{'p1}
+   patt_format{'p2; onil}
 
 (*
  * Simultaneous match.

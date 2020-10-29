@@ -96,6 +96,12 @@ declare apply{'e1 : TyOCaml; 'e2 : TyOCaml} : TyOCaml
 declare inj{'e1 : TyOCaml; 'e2 : TyOCaml} : TyOCaml
 
 (*
+ * Label.
+ *)
+declare lab{'e1 : TyOCaml} : TyOCaml
+declare lab[start:n, finish:n]{'e1 : TyOCaml} : TyOCaml
+
+(*
  * Subscripting.
  *)
 declare string_subscript{'e1 : TyOCaml; 'e2 : TyOCaml} : TyOCaml

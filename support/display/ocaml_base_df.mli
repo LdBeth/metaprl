@@ -71,6 +71,7 @@ declare ";" : TyOCaml
 declare "->" : TyOCaml
 declare "|" : TyOCaml
 declare "<>" : TyOCaml
+declare "~" : TyOCaml
 declare ":" : TyOCaml
 declare "_" : TyOCaml
 declare "#" : TyOCaml

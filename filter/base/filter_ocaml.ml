@@ -2794,12 +2794,12 @@ MetaPRL does not support this yet in order to remain compatible with OCaml 3.08"
             let _loc = dest_loc "dest_lab_expr" t in
             let poel = one_subterm "dest_lab_expr" t in
             let poel = dest_lab_aux poel in
-               ExLab (_loc, Ploc.VaVal poel)
+               <:expr< ~{$list:poel$} >>
          in add_expr "lab" dest_lab_expr
       in fun vars loc poel ->
          let make_poe = function
             (p, Ploc.VaVal oe) ->
-                mk_patt vars p (fun vars -> mk_opt (mk_expr vars) oe)
+                mk_patt vars p (fun vars -> mk_expr_opt vars oe)
           | (_, Ploc.VaAnt _) ->
                 raise (RefineError ("mk_lab_expr", StringError "antiquotations are not supported"))
          in
