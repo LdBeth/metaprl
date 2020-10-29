@@ -890,6 +890,9 @@ dform subgoals_df4 : subgoals{'number; xcons{goal{goal_status{'status}; 'label; 
 dform subgoals_df5 : subgoals{'number; xnil; xnil} =
    `""
 
+dform subgoals_df6 : subgoals{xnil; xnil} =
+   `""
+
 dform child_df1 : child_df{'number; goal_list{'child}} =
    szone info_begin df_down{'number} `". " pushm `"[" goal_list_status{'child} `"]" info_end newline child_df{'child} popm ezone
 
