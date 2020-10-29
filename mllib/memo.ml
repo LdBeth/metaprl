@@ -80,10 +80,10 @@ struct
         memo_convert = convert;
         memo_compare = compare;
 
-        memo_f_table = Array.create size [];
+        memo_f_table = Array.make size [];
         memo_f_count = 0;
 
-        memo_g_table = Array.create size [];
+        memo_g_table = Array.make size [];
         memo_g_count = 0
       }
 
@@ -101,7 +101,7 @@ struct
          done
       in
       let len = (len * 2) + 1 in
-      let table = Array.create len [] in
+      let table = Array.make len [] in
       let insert bucket =
          let insert ((x, _) as entry) =
             let index = Hashtbl.hash x mod len in

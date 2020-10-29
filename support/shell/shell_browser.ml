@@ -960,12 +960,12 @@ struct
       (* Strip the .proxyedit *)
       let filename = filename_of_proxyedit filename in
          try
-            bprintf buf "host = \"%s\"\n" (String.escaped host);
-            bprintf buf "port = %d\n" port;
-            bprintf buf "name = \"file/%s\"\n" (String.escaped filename);
-            bprintf buf "passwd = \"%s\"\n" (String.escaped response);
-            bprintf buf "keyfile = \"%s\"\n" (String.escaped (string_of_abspath_file (Setup.client_pem())));
-            bprintf buf "content = \"%s\"\n" (String.escaped (string_of_root_file filename));
+            Printf.bprintf buf "host = \"%s\"\n" (String.escaped host);
+            Printf.bprintf buf "port = %d\n" port;
+            Printf.bprintf buf "name = \"file/%s\"\n" (String.escaped filename);
+            Printf.bprintf buf "passwd = \"%s\"\n" (String.escaped response);
+            Printf.bprintf buf "keyfile = \"%s\"\n" (String.escaped (string_of_abspath_file (Setup.client_pem())));
+            Printf.bprintf buf "content = \"%s\"\n" (String.escaped (string_of_root_file filename));
             print_content_page outx OkCode "application/x-metaprl" buf
          with
             Not_found ->
@@ -1043,7 +1043,7 @@ struct
          eprintf "Executing windowed command %s@." command;
       try Browser_syscall.start state.state_io command with
          Unix.Unix_error _ ->
-            Lm_format.eprintf "%s: failed\n" command
+            Lm_format.eprintf "%s: failed@." command
 
    let start_inline_command session state command =
       if !debug_http then

@@ -109,14 +109,14 @@ struct
     *)
    let issue_upcalls queue upcalls =
       let issue upcall =
-         if !debug_queue or true then
+         if !debug_queue || true then
             begin
                lock_printer ();
                eprintf "Remote_queue_null.issue_upcall: begin%t" eflush;
                unlock_printer ()
             end;
          Lm_thread_event.sync 0 (Lm_thread_event.send queue.queue_chan upcall);
-         if !debug_queue or true then
+         if !debug_queue || true then
             begin
                lock_printer ();
                eprintf "Remote_queue_null.issue_upcall: end%t" eflush;
@@ -168,7 +168,7 @@ struct
     *)
    let lock queue =
       Mutex.lock queue.queue_lock;
-      if !debug_queue or true then
+      if !debug_queue || true then
          begin
             lock_printer ();
             eprintf "Remote_queue_null.lock: %d/%d%t" (**)

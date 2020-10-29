@@ -44,7 +44,7 @@ type ('key, 'value) t =
 let create i comp =
    {
       compare = comp;
-      table = Array.create i [];
+      table = Array.make i [];
       count = 0;
    }
 
@@ -64,7 +64,7 @@ let rehash table =
       done
    in
    let len = (len * 2) + 1 in
-   let table = Array.create len [] in
+   let table = Array.make len [] in
    let insert bucket =
       let insert ((x, _) as entry) =
          let index = Hashtbl.hash x mod len in

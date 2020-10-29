@@ -29,7 +29,7 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
-module Shell = Shell.Shell (Shell_p4.ShellP4)
+module Shell = Shell.Shell (Shell_mp.ShellP4)
 
 open Shell
 open Lm_printf
@@ -93,7 +93,7 @@ let edit_set_goal = Edit.set_goal
 let edit_set_redex = Edit.set_redex
 let edit_set_contractum = Edit.set_contractum
 let edit_set_assumptions = Edit.set_assumptions
-let edit_set_params = Edit.set_params
+(* let edit_set_params = Edit.set_params *)
 let edit_refine = Edit.refine
 let edit_node = Edit.node
 let edit_save = Edit.save
@@ -101,7 +101,7 @@ let edit_undo = Edit.undo
 
 let shell_get_term = Shell_state.get_term
 
-let _ = Shell.Main.main ()
+(* let _ = Shell.Main.main () *)
 
 let _ =
    eprintf "

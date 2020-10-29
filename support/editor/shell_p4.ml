@@ -73,6 +73,7 @@ struct
     * _after_ the toploop module initializes its environment, and _before_
     * the user gets a chance to input anything.
     *)
+   (*
    let _ =
       let wrapped = !Toploop.parse_toplevel_phrase in
       let open_module m =
@@ -93,6 +94,7 @@ struct
       in
          Toploop.parse_toplevel_phrase := motd;
          Toploop.parse_use_file := wrap_file !Toploop.parse_use_file
+    *)
 
    (************************************************************************
     * COMPILING TACTICS                                                    *

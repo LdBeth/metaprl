@@ -66,7 +66,7 @@ struct
 
       { hash_func = hf;
         compare = comp;
-        table = Array.create i [];
+        table = Array.make i [];
         count = 0;
 
         gc_on = false;
@@ -82,7 +82,7 @@ struct
     *)
    let rehash info =
       let len = (Array.length info.table * 2) + 1 in
-      let table = Array.create len [] in
+      let table = Array.make len [] in
       let insert bucket =
          let insert ((x, _) as entry) =
             let index = (info.hash_func x) mod len in

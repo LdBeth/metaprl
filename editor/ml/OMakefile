@@ -97,7 +97,7 @@ CMADEPS[] =
     $(CAMLLIB)/zarith/zarith.cma
     $(THREADSLIB)
     $(CAMLP5LIB)/camlp5.cma
-    $(CAMLP5LIB)/camlp5_top.cma
+    # $(CAMLP5LIB)/camlp5_top.cma
     $(BASE_CMAS)
     $(CAMLP5LIB)/pa_o.cmo
     $(CAMLP5LIB)/pa_op.cmo

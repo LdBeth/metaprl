@@ -31,10 +31,10 @@
  *)
 open Refiner.Refiner.Refine
 
-open Tactic_type.Tacticals
+(* open Tactic_type.Tacticals *)
 
 open Shell_sig
-open Proof_edit
+(* open Proof_edit *)
 
 (*
  * BUG JYH: reenable these?

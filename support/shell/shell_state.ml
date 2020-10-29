@@ -93,7 +93,7 @@ let cli_flag () =
    if !cli_flag && !browser_flag then
       raise (Invalid_argument "Both -cli and -browser options are given, but they are exclusive!")
    else
-      IFDEF BROWSER_DEFAULT THEN !cli_flag ELSE not (!browser_flag) END or !batch_flag
+      IFDEF BROWSER_DEFAULT THEN !cli_flag ELSE not (!browser_flag) END || !batch_flag
 
 let browser_port_name = "port"
 let browser_port      = Env_arg.int "port" 0 "start browser services on this port" Env_arg.set_int_int

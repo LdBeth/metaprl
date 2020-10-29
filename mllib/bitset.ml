@@ -15,7 +15,7 @@ let int_size = 30
 type t = int array
 
 let create len =
-   Array.create ((len + int_size - 1) / int_size) 0
+   Array.make ((len + int_size - 1) / int_size) 0
 
 let set bits i =
    let index = i / int_size in

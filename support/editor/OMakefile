@@ -24,7 +24,7 @@ MLZFILES[] =
 RUNFILES[] =
     mp_version
     shell_mp
-    shell_p4
+    # shell_p4
     nuprl_sig
     nuprl_eval
     nuprl_jprover

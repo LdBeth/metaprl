@@ -368,7 +368,7 @@ let decode_hex uri =
             buf.[i] <- ' ';
             convert (i + 1) (j + 1)
          end
-      else if uri.[j] = '%' & j < len - 2 then
+      else if uri.[j] = '%' && j < len - 2 then
          begin
             buf.[i] <- unhex uri.[j + 1] uri.[j + 2];
             convert (i + 1) (j + 3)
