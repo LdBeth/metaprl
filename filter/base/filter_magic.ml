@@ -144,7 +144,7 @@ let term_versions = List.map (pack_version 1 0) [34;33;32;31;30;29;28;27;25;24]
  * Options_boot has a HACK needed to read some rev 25-26 files.
  * Filter_summary has another HACK needed to read some rev ??-27 files.
  *)
-let ascii_versions = List.map (pack_version 1 0) [28;27;26;25;24;23;22;21;20;19;18;17;16;15;14;13;12;11;10;9;8;7;6;5;4;3;2;1;0]
+let ascii_versions = List.map (pack_version 1 0) [28;27;26;25;24;23;22;21;20;19;18;17;16;15;14;13]
 
 (************************************************************************
  * Magic numbers for interactive files                                  *
