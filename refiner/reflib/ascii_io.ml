@@ -83,9 +83,7 @@ struct
       io_opnames : (string,opname) Hashtbl.t;
       io_params : (string,hashed_param) Hashtbl.t;
       io_hyps : (string,hypothesis_header) Hashtbl.t;
-      mutable io_seq : (string * term_index * hypothesis_header list) option; (*XXX HACK: field needed for compatibility with file format versions 1.0.6 and below *)
       io_bterms : (string,bound_term_header) Hashtbl.t;
-      mutable io_old_format : bool; (* XXX HACK: field needed for compatibility with file format versions 1.0.7 and below *)
     }
 
    let new_record () =
@@ -96,8 +94,6 @@ struct
         io_params = Hashtbl.create init_size;
         io_hyps = Hashtbl.create init_size;
         io_bterms = Hashtbl.create init_size;
-        io_seq = None;
-        io_old_format = false;
       } in
       Hashtbl.add r.io_opnames "nil" nil_opname;
       Hashtbl.add r.io_opnames "NIL" nil_opname;
@@ -120,18 +116,7 @@ struct
          let (op,params) = Hashtbl.find r.io_ops op in
          let btrms = List.map (Hashtbl.find r.io_bterms) bterms in
          let t =
-            if Opname.eq op var_opname && btrms <> [] then (* XXX HACK: Version <= 1.0.7 compatiility *)
-               let t = retrieve (lookup (Term { op_name = op; op_params = params; term_terms = [] })) in
-               match TM.Term.dest_params (TM.Term.dest_op (TM.Term.dest_term t).term_op).Term_sig.op_params with
-                  [Var v] ->
-                     let dest bt =
-                        if bt.TM.TermHash.bvars = [] then bt.TM.TermHash.bterm else
-                        raise(Invalid_argument "Ascii_io: invalid old-style variable term")
-                     in
-                        lookup (SOVar(v, [v], List.map dest btrms))
-                | _ -> raise(Invalid_argument "Ascii_io: invalid old-style variable term")
-            else
-               lookup (Term { op_name = op; op_params = params; term_terms = btrms })
+            lookup (Term { op_name = op; op_params = params; term_terms = btrms })
          in
          hash_add_new r.io_terms name t;
          t
@@ -177,11 +162,6 @@ struct
       (_, name, [[v];conts;terms]) ->
          let terms = List.map (Hashtbl.find r.io_terms) terms in
          hash_add_new r.io_hyps name (Context(Lm_symbol.add v,List.map Lm_symbol.add conts,terms))
-    | (_, name, [v::terms]) -> (* XXX HACK: format versions <= 1.0.7 compatibility *)
-         let terms = List.map (Hashtbl.find r.io_terms) terms in
-         let v = Lm_symbol.add v in
-         r.io_old_format <- true;
-         hash_add_new r.io_hyps name (Context(v,[v],terms))
     | _ ->
          fail "add_context"
 
@@ -202,27 +182,8 @@ struct
                               } ) in
          hash_add_new r.io_terms name t;
          t
-    | (_, name, [args::hyps]) -> (* XXX HACK: file format versions 1.0.6 and below compatibility mode *)
-         let args = Hashtbl.find r.io_terms args in
-         let hyps = List.map (Hashtbl.find r.io_hyps) hyps in
-         r.io_seq <- Some (name, args, hyps);
-         args
     | _ ->
          fail "add_seq"
-
-   let add_goal r (_, name, goals) = (* XXX HACK: function needed only for file format versions 1.0.6 and below compatibility *)
-         match goals, r.io_seq with
-            [concls], Some (name',args,hyps) when name = name' ->
-               let concl = find_concl concls in
-               let concl = Hashtbl.find r.io_terms concl in
-               let t = lookup ( Seq { seq_arg = args;
-                                      seq_hyps = hyps;
-                                      seq_concl = concl
-                                    } ) in
-               hash_add_new r.io_terms name t;
-               t
-          | _ ->
-               fail "add_goal"
 
    let add_var r = function
       (_, name, [[var];conts;terms]) ->
@@ -265,8 +226,6 @@ struct
          hash_add_new r.io_params name (constr_param (MShape (Lm_symbol.add s)))
     | (_, name, [["MOperator"; s]]) ->
          hash_add_new r.io_params name (constr_param (MOperator (Lm_symbol.add s)))
-    | (_, name, [["MVar"; s]]) (* XXX HACK: support file versions 1.0.5 and below *) ->
-         hash_add_new r.io_params name (constr_param (Var (Lm_symbol.add s)))
     | (_, name, ["MLevel" :: n :: vars]) ->
          let l = TM.Term.make_level { le_const = int_of_string n; le_vars = level_exp_vars vars } in
          hash_add_new r.io_params name (constr_param (MLevel l))
@@ -276,7 +235,6 @@ struct
    let add_items_aux r ((long, _, _) as item) =
       match long.[0] with
          'T'|'t' -> ignore (add_term r item)
-       | 'G'|'g' -> ignore (add_goal r item)  (* XXX: HACK: Version <= 1.0.6 compatibility *)
        | 'S'|'s' -> ignore (add_seq r item)
        | 'V'|'v' -> ignore (add_var r item)
        | 'B'|'b' -> add_bterm r item
@@ -292,7 +250,6 @@ struct
       try
          match long.[0] with
             'T'|'t' -> ignore (add_term r item)
-          | 'G'|'g' -> ignore (add_goal r item)
           | 'S'|'s' -> ignore (add_seq r item)
           | 'V'|'v' -> ignore (add_var r item)
           | 'B'|'b' -> add_bterm r item
@@ -319,30 +276,20 @@ struct
          (long,short,_) as item :: items ->
             let r = new_record () in
             add_items r items;
-            let res =
             retrieve (
                match long.[0] with
                   'T'|'t' -> add_term r item
-                | 'G'|'g' -> add_goal r item
                 | 'S'|'s' -> add_seq r item
                 | 'V'|'v' -> add_var r item
                 | _ -> fail ("get_term: " ^ long)
-            ) in
-            if r.io_old_format then begin
-               eprintf "Warning: converting a term read from an old .prla file%t" eflush;
-               TM.TermMeta.term_of_parsed_term (fun _ -> true) res (* XXX HACK: format version <= 1.0.7 support *)
-            end else res
+            )
        | [] -> fail "get_term1"
       end with Not_found -> fail "get_term - empty file"
 
    let get_named_term t name =
       let r = new_record () in
-      add_items r !t;
-      let res = retrieve (Hashtbl.find r.io_terms name) in
-      if r.io_old_format then begin
-         eprintf "Warning: converting a term read from an old .prla file%t" eflush;
-         TM.TermMeta.term_of_parsed_term (fun _ -> true) res (* XXX HACK: format version <= 1.0.7 support *)
-      end else res
+         add_items r !t;
+         retrieve (Hashtbl.find r.io_terms name)
 
    let read_table inx =
       let table = initialize () in
@@ -448,8 +395,6 @@ struct
                let rest' = Lm_list_util.smap rename rest in if rest == rest' then record else [var::rest']
           | ('C' | 'V'), [var; conts; terms] ->
                let terms' = Lm_list_util.smap rename terms in if terms' == terms then record else [var; conts; terms']
-          | ('C' | 'V'), [var::rest] -> (* XXX HACK: format versions <= 1.0.7 compatibility *)
-               let rest' = Lm_list_util.smap rename rest in if rest == rest' then record else [var::rest']
           | 'P', [[("Token"|"Shape"|"Operator" as knd); s]] ->
                let s' = rename s in if s == s' then record else [[knd; s]]
           | 'P', _ ->
@@ -458,11 +403,8 @@ struct
                raise (Invalid_argument ("ASCII IO: internal error: clean_inputs does not know what to do with "^comment))
          in
          match Hashtbl.find_all h_reverse (c, record'), c with
-            [], _ | _, ('S'| 'G' ) -> (* XXX HACK: S/G exception only needed for format version <= 1.0.6??? *)
-               begin match c with
-                  'S'| 'G' -> ()
-                | _ -> Hashtbl.add h_reverse (c, record') name
-               end;
+            [], _ ->
+               Hashtbl.add h_reverse (c, record') name;
                let item' =
                   if record==record' then item else (comment,name,record')
                in
@@ -551,23 +493,8 @@ struct
          let ind = lookup (SOVar(v, conts, ts_inds)) in
          let v = string_of_symbol v in let conts = List.map string_of_symbol conts in
          try
-            let name = HashTerm.find data.out_terms ind in
-            if not (StringSet.mem data.new_names name) then begin (* XXX HACK: check_old replacement for versions <= 1.0.7 *)
-               (* This item existed in the old version of the file *)
-               data.new_names <- StringSet.add data.new_names name;
-               match Hashtbl.find_all data.old_items name with
-                  (_, _, [[v2]; conts2; ts_names2]) :: _ when v = v2 && conts = conts2 && ts_names = ts_names2 ->
-                     data.io_names <- StringSet.add data.io_names name;
-                     data.out_items <- Old name :: data.out_items
-                | (l,_,([_;_;_] as io_data)) :: _ when (l.[0]='V') || (l.[0]='v') ->
-                     data.out_items <- New (l, name, io_data) :: data.out_items
-                | (l, name, _) :: _ ->  (* XXX HACK: version <= 1.0.7 *)
-                     let l = "V" ^ String.sub l 1 (String.length l - 1) in
-                     data.out_items <- New (l, name, [[v]; conts; ts_names]) :: data.out_items
-                | _ ->
-                     fail ("out_term - SO variable entry " ^ name ^ " was invalid")
-            end;
-            (name, ind)
+            let name = HashTerm.find data.out_terms ind
+            in (name, ind)
          with Not_found ->
             let name = rename v data in
             HashTerm.add data.out_terms ind name;
@@ -584,25 +511,8 @@ struct
          let i_data3 = [concl_name] in
          let i_data2 = List.map fst hyps in
          try
-            let name = HashTerm.find data.out_terms ind in
-            if not (StringSet.mem data.new_names name) then begin (* XXX HACK: check_old replacement for versions <= 1.0.7 *)
-               (* This item existed in the old version of the file *)
-               data.new_names <- StringSet.add data.new_names name;
-               match Hashtbl.find_all data.old_items name with
-                  (l2,_,io_data2)::(l1,_,io_data1)::_     (* XXX HACK: version <= 1.0.6 *)
-                     when (l1.[0]='G' || l1.[0]='g') && (l2.[0]='S' || l2.[0]='s') ->
-                        if !debug_ascii_io then
-                           eprintf "ASCII IO: old-style sequent entry converted: %s%t" name eflush;
-                        data.out_items <- New (l2, name, [[arg_name];i_data2; i_data3]) :: data.out_items
-                | (_,_,[[io_arg]; io_data2; io_data3]) :: _ when io_data2 = i_data2 && io_data3 = i_data3 ->
-                     data.io_names <- StringSet.add data.io_names name;
-                     data.out_items <- Old name :: data.out_items
-                | (l,_,([_;_;_] as io_data)) :: _ when (l.[0]='S') || (l.[0]='s') ->
-                     data.out_items <- New (l, name, io_data) :: data.out_items
-                | _ ->
-                     fail ("out_term - sequent entry " ^ name ^ " was invalid")
-            end;
-            (name, ind)
+            let name = HashTerm.find data.out_terms ind
+            in (name, ind)
          with Not_found ->
             let lname, name = ctrl.out_name_seq seq in
             let name = rename name data in
@@ -763,12 +673,6 @@ struct
             print_out out_line (StringSet.add printed name) data o rest
        | (Old name :: nrest), _ when StringSet.mem printed name ->
             print_out out_line printed data o nrest
-       | (Old _ :: _), ((_, name, _) as item :: ((_, name', _) as item') :: orest)
-            when name=name' && StringSet.mem data.io_names name ->
-            (* XXX: HACK: Version <= 1.0.6 compatibility *)
-            out_line item;
-            out_line item';
-            print_out out_line (StringSet.add printed name) data orest n
        | (Old _ :: _), ((_, name, _) as item :: orest) when StringSet.mem data.io_names name ->
             out_line item;
             print_out out_line (StringSet.add printed name) data orest n

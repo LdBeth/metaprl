@@ -46,9 +46,6 @@ sig
    module Term : TermBaseMinimalSig with module TermTypes = TermType
    module TermSubst: TermSubstMinimalSig with module SubstTypes = TermType
    module TermMan : TermManMinimalSig with module ManTypes = TermType
-   module TermMeta : sig  (* XXX HACK: TermMan is here only for ASCII IO format versions <= 1.0.7 support *)
-      val term_of_parsed_term : (TermType.term -> bool) -> TermType.term -> TermType.term
-   end
    module TermShape : sig
       val shape_of_term : TermType.term -> shape
       val opparam_of_term : TermType.term -> TermType.param op_param
@@ -73,9 +70,6 @@ sig
    module Term : TermBaseInternalSig with module TermTypes = TermType
    module TermSubst: TermSubstMinimalSig with module SubstTypes = TermType
    module TermMan : TermManMinimalSig with module ManTypes = TermType
-   module TermMeta : sig  (* XXX HACK: TermMan is here only for ASCII IO format versions <= 1.0.7 support *)
-      val term_of_parsed_term : (TermType.term -> bool) -> TermType.term -> TermType.term
-   end
    module TermShape : sig
       val shape_of_term : TermType.term -> shape
       val opparam_of_term : TermType.term -> TermType.param op_param

@@ -57,7 +57,6 @@ struct
       module Term = Term
       module TermSubst = TermSubst
       module TermMan = TermMan
-      module TermMeta = TermMeta (* XXX HACK: TermMan is here only for ASCII IO format versions <= 1.0.7 support *)
       module TermShape = TermShape
       module Refine = Refine
    end
