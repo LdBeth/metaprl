@@ -1,0 +1,6 @@
+[submodule "libmojave"]
+	path = libmojave
+	url = https://github.com/owo-lang/libmojave.git
+[submodule "theories"]
+	path = theories
+	url = git@github.com:LdBeth/theories.git
