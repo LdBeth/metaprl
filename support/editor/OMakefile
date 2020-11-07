@@ -51,14 +51,8 @@ make_mp_version$(EXE): make_mp_version.ml
 
 if $(GIT_AVAILABLE)
 
-    GIT_TAGS = $(filter-exists $(ls $(ROOT)/.git/refs/tags))
-    if $(GIT_TAGS.is-nonempty)
-        gitversion.txt: $(GIT_TAGS) $(ROOT)/.git/logs/HEAD
-            git describe --tags > $@
-
-    else
-        gitversion.txt: $(ROOT)/.git/HEAD
-            git describe --all > $@
+    gitversion.txt: $(ROOT)/.git/logs/HEAD
+        git describe --tags --always > $@
 
 else
     gitversion.txt:
