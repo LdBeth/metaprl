@@ -1,0 +1,263 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% METAPRL DEFINITIONS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand\widepage{%
+\addtolength{\textwidth}{1in}%
+\addtolength{\oddsidemargin}{-0.5in}%
+\addtolength{\evensidemargin}{-0.5in}%
+\addtolength{\textheight}{0.8in}%
+\addtolength{\topmargin}{-0.5in}}
+
+%
+% Coloring
+%
+\usepackage{graphicx}
+\usepackage{color}
+\definecolor{figgray}{gray}{0.5}
+\definecolor{darkgray}{gray}{0.25}
+\definecolor{mediumgray}{gray}{0.5}
+\definecolor{lightgray}{gray}{0.75}
+\definecolor{almostwhite}{gray}{0.95}
+
+\newsavebox{\savecolorbox}
+\newenvironment{boundbox}[2][black]
+    {\def\colorboxedge{#1}
+     \def\colorboxinner{#2}
+     \begin{lrbox}{\savecolorbox}}
+    {\end{lrbox}
+     \fcolorbox{\colorboxedge}{\colorboxinner}{\usebox{\savecolorbox}}}
+
+\newdimen\innerwidth
+\innerwidth=\textwidth
+\advance\innerwidth by -0.5in
+\newsavebox{\saveinnerbox}
+\newenvironment{shadebox}
+   {\begin{lrbox}{\savecolorbox}
+    \begin{minipage}{\innerwidth}}
+   {\end{minipage}
+    \end{lrbox}
+    \begin{lrbox}{\saveinnerbox}
+    \colorbox{almostwhite}{\usebox{\savecolorbox}}
+    \end{lrbox}
+    \hbox to \textwidth{\hss\colorbox{white}{\usebox{\saveinnerbox}}\hss}}
+
+%
+% Main tex flag is used for commenting MetaPRL regions.
+%
+\newif\iftex
+\texfalse
+
+%
+% Flag telling whether we are in the tabbing environment
+%
+%% \usepackage{ifthen}
+%% \newboolean{mptab}
+%% \setboolean{mptab}{false}
+%% \newcommand\bgmptab{\ifthenelse{\boolean{mptab}}{}{\setboolean{mptab}{true}\begin{tabbing}}\setboolean{mptab}{true}}
+%% \newcommand\enmptab{\ifthenelse{\boolean{mptab}}{\end{tabbing}}{}\setboolean{mptab}{false}}
+\newif\ifmptab
+\mptabfalse
+\newcommand\bgmptab{\ifmptab\else\mptabtrue\begin{tabbing}\fi}
+\newcommand\enmptab{\ifmptab\end{tabbing}\mptabfalse\fi}
+
+%
+% Make sure \|,\< and \> always produce an appropriate symbol
+%
+\def\|{\ifmmode\mid\else$\mid$\fi}
+\def\lt{\ifmmode<\else\texttt{<}\fi}
+\def\gt{\ifmmode>\else\texttt{>}\fi}
+\def\makehat{\ifmmode\hat{\ }\else\^{}\fi}
+
+%
+% Sectioning commands
+%
+\newcommand\theory[1]{\chapter{#1}}
+\newcommand\module[1]{\section{#1}}
+\newcommand\labelmodule[2]{\section{#2 module}
+  \hypertarget{hypmodule:#1}{}
+  \label{module:#1}}
+\newcommand\modsection[1]{\subsection{#1}}
+\newcommand\modsubsection[1]{\subsubsection{#1}}
+\newcommand\labelchapter[2]{\chapter{#2}
+  \hypertarget{hypsection:#1}{}
+  \label{section:#1}}
+\newcommand\labelsection[2]{\section{#2}
+  \hypertarget{hypsection:#1}{}
+  \label{section:#1}}
+\newcommand\labelsubsection[2]{\subsection{#2}
+  \hypertarget{hypsection:#1}{}
+  \label{section:#1}}
+\newcommand\labelsubsubsection[2]{\subsubsection{#2}
+  \hypertarget{hypsection:#1}{}
+  \label{section:#1}}
+
+\newcommand\hreflabelmodule[2]{\hyperlink{hypmodule:#1}{{\tt #2}}}
+\newcommand\reflabelmodule[1]{\ref{module:#1}}
+
+\newcommand\hreflabelchapter[2]{\hyperlink{hypsection:#1}{{\tt #2}}}
+\newcommand\reflabelchapter[1]{\ref{section:#1}}
+
+\newcommand\hreflabelsection[2]{\hyperlink{hypsection:#1}{{\tt #2}}}
+\newcommand\reflabelsection[1]{\ref{section:#1}}
+
+\newcommand\hreflabelsubsection[2]{\hyperlink{hypsection:#1}{{\tt #2}}}
+\newcommand\reflabelsubsection[1]{\ref{section:#1}}
+
+\newcommand\hreflabelsubsubsection[2]{\hyperlink{hypsection:#1}{{\tt #2}}}
+\newcommand\reflabelsubsubsection[1]{\ref{section:#1}}
+
+\newcommand\parents{\thysection{Parents}}
+%\newcommand\terms{\thysection{Terms}}
+\newcommand\resources{\thysection{Resources}}
+\newcommand\tactics{\thysection{Tactics}}
+\newcommand\tacticals{\thysection{Tacticals}}
+\newcommand\rules{\thysection{Rules}}
+\newcommand\rewrites{\thysection{Rewrites}}
+\newcommand\conversions{\thysection{Conversions}}
+\newcommand\conversionals{\thysection{Conversionals}}
+\newcommand\convs{\thysection{Conversions}}
+
+%
+% Hyperlinks
+%
+\newcommand\labeltarget[2]{%
+  \label{target:#1}
+  \hypertarget{hyptarget:#1}{{\tt #2}}\index{Targets!#1@{\it #2}}}
+
+\newcommand\labelterm[2]{%
+  \label{term:#1}
+  \hypertarget{hypterm:#1}{{\tt #2}}\index{Terms!#1@{\it #2}}}
+\newcommand\labelresource[2]{%
+  \label{resource:#1}
+  \hypertarget{hypresource:#1}{{\tt #2}}\index{Resources!#1@{\it #2}}}
+\newcommand\labelrewrite[2]{%
+  \label{rewrite:#1}
+  \hypertarget{hyprewrite:#1}{{\tt #2}}\index{Rewrites!#1@{\it #2}}}
+\newcommand\labeltactic[2]{%
+  \label{tactic:#1}
+  \hypertarget{hyptactic:#1}{{\tt #2}}\index{Tactics!#1@{\it #2}}}
+\newcommand\labelconv[2]{%
+  \label{conv:#1}
+  \hypertarget{hypconv:#1}{{\tt #2}}\index{Conversions!#1@{\it #2}}}
+\newcommand\labelrule[2]{%
+  \label{rule:#1}
+  \hypertarget{hyprule:#1}{{\tt #2}}\index{Rules!#1@{\it #2}}}
+
+\newcommand\hreflabeltarget[2]{\hyperlink{hyptarget:#1}{{\tt #2}}}
+\newcommand\hreflabelterm[2]{\hyperlink{hypterm:#1}{{\tt #2}}}
+\newcommand\hreflabelresource[2]{\hyperlink{hypresource:#1}{{\tt #2}}}
+\newcommand\hreflabelrewrite[2]{\hyperlink{hyprewrite:#1}{{\tt #2}}}
+\newcommand\hreflabeltactic[2]{\hyperlink{hyptactic:#1}{{\tt #2}}}
+\newcommand\hreflabelconv[2]{\hyperlink{hypconv:#1}{{\tt #2}}}
+\newcommand\hreflabelrule[2]{\hyperlink{hyprule:#1}{{\tt #2}}}
+
+\newcommand\reftarget[1]{\pageref{target:#1}}
+\newcommand\refterm[1]{\pageref{term:#1}}
+\newcommand\refresource[1]{\pageref{resource:#1}}
+\newcommand\refrewrite[1]{\pageref{rewrite:#1}}
+\newcommand\reftactic[1]{\pageref{tactic:#1}}
+\newcommand\refconv[1]{\pageref{conv:#1}}
+\newcommand\refrule[1]{\pageref{rule:#1}}
+
+\newcommand\labelfigure[1]{\label{figure:#1}}
+\newcommand\reffigure[1]{\ref{figure:#1}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% MACROS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\usepackage{latexsym}
+
+%
+% Quote a name
+%
+\newcommand\ms[1]{\hbox{{\it #1}}}
+
+%
+% Names
+%
+\newcommand\Nuprl{\textsf{Nuprl}}
+\newcommand\NuPRL{\Nuprl}
+\newcommand\MetaPRL{\textsf{MetaPRL}}
+\newcommand\OCaml{\textsf{OCaml}}
+\newcommand\MartinLof{Martin-L\"{o}f}
+
+%
+% Terms
+%
+\newcommand\univ{\mathbb{U}}
+\newcommand\Type{{\it Type}}
+\newcommand\Unit{{\it Unit}}
+\newcommand\Void{{\it Void}}
+\newcommand\Atom{{\it Atom}}
+\newcommand\Bool{{\it Bool}}
+\newcommand\Top{{\it Top}}
+
+%
+% Simple terms
+%
+\newcommand{\sq}[1]{\mbox{{\large\bf[}}{#1}\mbox{{\large\bf]}}}
+
+%
+% A proof step
+%
+\newcommand\xtac[4]{%
+\begin{array}{||l}
+\begin{array}{l}
+  #3
+\end{array}\\
+\multicolumn{1}{||@{}l}{\hbox{---\tt BY #1}\ {#2}}\\
+\begin{array}{l}
+  #4
+\end{array}
+\end{array}}
+
+%
+% A rule definition
+%
+\newcommand\defrule[4]{%
+\begin{array}{ll}
+\multicolumn{2}{l}{\hbox{\textbf{rule} \texttt{#1}}\ #2 =}\\
+\qquad &
+  \begin{array}{l}
+    #3
+  \end{array}\\
+& \begin{array}{l}
+  #4
+  \end{array}
+\end{array}}
+
+%
+% Comments
+%
+\newif\ifcomment
+\commenttrue
+\newdimen\commentwidth
+\setlength{\commentwidth}{\textwidth}
+\newcommand\comment[1]{%
+  \ifcomment
+    \begin{center}
+      \advance\commentwidth by -0.5in
+      \fbox{\begin{minipage}{\commentwidth}
+            \sf #1
+            \end{minipage}}
+    \end{center}
+  \fi}
+\newcommand\nocomment[1]{}
+
+%
+% Rewrites
+%
+\newcommand\xrewlabel[1]{\hypertarget{xrewrite:#1}{\textrm{[#1]}}}
+\newcommand\xrewref[1]{\hyperlink{xrewrite:#1}{\textrm{[#1]}}}
+\def\xrewriteskip{4.5 em}
+\newcommand\xrewrite[3]{{%
+   \hbox to \xrewriteskip{\xrewlabel{#1} \hfill}
+   #2\longleftrightarrow#3}}
+\newcommand\xrewriteII[3]{{%
+   \renewcommand{\arraystretch}{1}
+   \begin{array}{@{}l@{}l}
+   \hbox to \xrewriteskip{\xrewlabel{#1} \hfill} & #2\\
+   \longleftrightarrow & #3
+   \end{array}}}
