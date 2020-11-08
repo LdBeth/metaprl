@@ -61,7 +61,7 @@ type pf_kind =
 (*
  * XXX: HACK: nogin: the proper way would be to decode the actual module items and then
  * do a proper filtering and merging. However I do not want to write this at the time as
- * I am hoping that it would become much easiere to do this one the new_io branch is
+ * I am hoping that it would become much easiere to do this once the new_io branch is
  * finished and merged.
  *)
 let summary_opname  = mk_opname "Summary"      nil_opname

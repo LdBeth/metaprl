@@ -125,8 +125,6 @@ let term_versions = List.map (pack_version 1 0) [34;33;32;31;30;29;28;27;25;24]
  * Rev 27: changed the stging encoding of option_info
  * Rev 28: added "opaque" qualifier to the "define" statements
  *
- * Term_man_minimal_sig has extra stuff for rev 0-7 file support.
- * Filter_summary has a HACK needed to read rev 0-8 files.
  * Proof_term_boot has a HACK needed to read rev 0-9 files.
  * Ascii_io has another HACK needed to read some rev 0-10 files.
  * Filter_summary has another HACK needed to read some rev 0-11 files.
