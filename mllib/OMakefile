@@ -14,7 +14,6 @@ FILES[] =
     setup
     env_arg
     list_neq_append
-    bitset
     precedence
     file_base
     file_type_base
