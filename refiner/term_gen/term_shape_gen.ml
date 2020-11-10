@@ -148,8 +148,8 @@ struct
          shape_arities = arities2
        } =
       (Opname.eq name1 name2)
-      & (params1 = params2)
-      & (arities1 = arities2)
+      && (params1 = params2)
+      && (arities1 = arities2)
 
    let shape_eq = eq
 

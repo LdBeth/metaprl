@@ -54,7 +54,7 @@ type ('arg, 'select, 'cooked) common_info = ('arg, 'select, 'cooked) file_info l
  ************************************************************************)
 
 let pack_version major minor rev =
-   if (major < 0) or (minor < 0) or (rev < 0) then
+   if (major < 0) || (minor < 0) || (rev < 0) then
       raise(Invalid_argument "File_type_base.pack_version: version components must be non-negative");
    if (major >= 1 lsl 15) then
       raise(Invalid_argument "File_type_base.pack_version: major number is too big");

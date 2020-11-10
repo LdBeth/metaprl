@@ -250,7 +250,7 @@ struct
       let rec search infos = function
          io::tl ->
             let { info_select = select'; info_suffix = suffix'; info_disabled = disabled; _ } = io in
-               if select' = select & not !disabled then
+               if select' = select && not !disabled then
                   let infos =
                      match suffix with
                         AnySuffix ->
@@ -316,7 +316,7 @@ struct
       let rec search = function
          info'::tl ->
             let { info_dir = dir'; info_file = file'; info_type = select'; _ } = info' in
-               if dir' = dir & file' = file & select' = select then
+               if dir' = dir && file' = file && select' = select then
                   info'
                else
                   search tl
@@ -390,7 +390,7 @@ struct
       let { io_table = table; _ } = base in
       let rec search = function
          { info_dir = dir'; info_file = file'; info_type = select'; _ }::tl ->
-            if dir' = dir & file' = file & select' = select then
+            if dir' = dir && file' = file && select' = select then
                raise (Invalid_argument "File_base.save_as")
             else
                search tl
