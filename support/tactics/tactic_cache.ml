@@ -756,7 +756,7 @@ let bget_node extract world ({ goal_assums = assums; _ } as goal) =
    let test { node_world = world'; _ } =
       is_child_with_assumptions world' assums world
    in
-      Lm_list_util.find test nodes
+      List.find test nodes
 
 (*
  * Provide an interface to flookup_table of type
@@ -783,7 +783,7 @@ let fget_entry { ext_base = { ext_ftable = ftable; ext_rules = rules; _ }; _ } {
          rule' == rl
       in
       let rules = Hashtbl.find rules plates in
-      let _, insts = Lm_list_util.find test rules in
+      let _, insts = List.find test rules in
          i, rl, insts
    in
    let l = Hashtbl.find ftable hash in
@@ -862,7 +862,7 @@ let find_inf { ext_base = { ext_terms = terms; _ }; _ } world t hash =
          alpha_equal t t' & is_child_of_parent world world'
    in
    let { entry_infs = infs; _ } = Hashtbl.find terms hash in
-      Lm_list_util.find test infs
+      List.find test infs
 
 let inf_is_already_known extract world t hash =
    try
@@ -874,7 +874,7 @@ let inf_is_already_known extract world t hash =
 
 let find_goal { ext_base = { ext_terms = terms; _ }; _ } ({ goal_hash = hash; _ } as goal) =
    let { entry_goals = goals; _ } = Hashtbl.find terms hash in
-      Lm_list_util.find (eq_goal goal) goals
+      List.find (eq_goal goal) goals
 
 (*
  * Find the goalnodes that match the inference.
@@ -942,7 +942,7 @@ let is_provable extract goal =
 let hash_goal { ext_base = { ext_terms = terms; _ }; _ }
     ({ goal_concl = t; goal_hash = hash; _ } as goal) =
    let { entry_goals = goals; _ } = Hashtbl.find terms hash in
-      Lm_list_util.find (eq_goal goal) goals
+      List.find (eq_goal goal) goals
 
 (************************************************************************
  * UTILITIES                                                            *

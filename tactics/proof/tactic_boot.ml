@@ -1197,7 +1197,7 @@ struct
    let firstT =
       let non_id tac = (tac != idT) in
          fun tacl ->
-            match Lm_list_util.filter non_id tacl with
+            match List.filter non_id tacl with
                [tac] -> tac
              | tacl -> ThreadRefinerTacticals.first tacl
 *)

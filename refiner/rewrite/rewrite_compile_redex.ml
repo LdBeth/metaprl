@@ -286,7 +286,7 @@ struct
                   (* XXX: TODO *)
                   raise (Invalid_argument "Matching non-sequent context intances is not supported yet")
 
-               else if Lm_array_util.mem v st.st_addrs then
+               else if Array.mem v st.st_addrs then
                   (* All the vars should be free variables *)
                   let vars' = List.map (var_index st.st_bvars) vars in
                   let index = List.length stack in
@@ -452,11 +452,11 @@ struct
                   else
                      let index =
                         if i = mc then
-                           if Lm_array_util.mem v st.st_ints then
+                           if Array.mem v st.st_ints then
                               REF_RAISE (RefineError ("compile_so_redex_sequent_inner", StringVarError("Last context of the sequent does not need to be passed in as an argument",v)))
                            else
                               i - len
-                        else if Lm_array_util.mem v st.st_ints then
+                        else if Array.mem v st.st_ints then
                            Lm_array_util.index v st.st_ints
                         else
                            REF_RAISE (RefineError ("compile_so_redex_sequent_inner", RewriteMissingContextArg v))

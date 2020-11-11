@@ -295,7 +295,7 @@ let test_proof name = function
  | _ -> false
 
 let find_proof { info_list = summary } name =
-   try Some (Lm_list_util.find (test_proof name) summary) with
+   try Some (List.find (test_proof name) summary) with
       Not_found ->
          None
 
@@ -311,7 +311,7 @@ let test_rewrite name (item, _) =
          false
 
 let find_rewrite { info_list = summary } name =
-   try Some (Lm_list_util.find (test_rewrite name) summary) with
+   try Some (List.find (test_rewrite name) summary) with
       Not_found ->
          None
 
@@ -327,7 +327,7 @@ let test_iform name (item, _) =
 
 (* unused
 let find_iform { info_list = summary } name =
-   try Some (Lm_list_util.find (test_iform name) summary) with
+   try Some (List.find (test_iform name) summary) with
       Not_found ->
          None
 *)
@@ -342,7 +342,7 @@ let test_mlrewrite name = function
       false
 
 let find_mlrewrite { info_list = summary } name =
-   try Some (Lm_list_util.find (test_mlrewrite name) summary) with
+   try Some (List.find (test_mlrewrite name) summary) with
       Not_found ->
          None
 
@@ -353,7 +353,7 @@ let test_mlaxiom name = function
       false
 
 let find_mlaxiom { info_list = summary } name =
-   try Some (Lm_list_util.find (test_mlaxiom name) summary) with
+   try Some (List.find (test_mlaxiom name) summary) with
       Not_found ->
          None
 
@@ -368,7 +368,7 @@ let test_module name (item, _) =
          false
 
 let find_module { info_list = summary } name =
-   try Some (Lm_list_util.find (test_module name) summary) with
+   try Some (List.find (test_module name) summary) with
       Not_found ->
          None
 
@@ -383,7 +383,7 @@ let test_dform name (item, _) =
          false
 
 let find_dform { info_list = summary } name =
-   try Some (Lm_list_util.find (test_dform name) summary) with
+   try Some (List.find (test_dform name) summary) with
       _ -> None
 
 (*
@@ -397,7 +397,7 @@ let test_prec name (item, _) =
          false
 
 let find_prec { info_list = summary } name =
-   try Some (Lm_list_util.find (test_prec name) summary) with
+   try Some (List.find (test_prec name) summary) with
       Not_found ->
          None
 
@@ -485,7 +485,7 @@ let find { info_list = summary } name =
        | _ ->
             false
    in
-      Lm_list_util.find test summary
+      List.find test summary
 
 (*
  * Set an item by name.
@@ -529,7 +529,7 @@ let info_items { info_list = info } =
    List.rev info
 
 let filter pred { info_list = info } =
-   { info_list = Lm_list_util.filter pred info }
+   { info_list = List.filter pred info }
 
 (*
  * Optional application.

@@ -992,7 +992,7 @@ struct
       let compare { sig_summary = info; _ } =
          Base.pathname base info = path
       in
-         Lm_list_util.find compare summaries
+         List.find compare summaries
 
    (*
     * Get a previous module.
@@ -1009,7 +1009,7 @@ struct
       let compare info =
          Base.pathname base info = path
       in
-         Lm_list_util.find compare summaries
+         List.find compare summaries
 
    (*
     * Inherited access.

@@ -210,12 +210,12 @@ struct
    let rstack_p_mem shape v = List.exists (rstack_p_mem_prop shape v)
    let rstack_c_mem v = List.exists (rstack_c_mem_prop v)
 
-   let array_rstack_mem v = Lm_array_util.exists (rstack_mem_prop v)
-   let array_rstack_so_pattern_mem v = Lm_array_util.exists (rstack_so_pattern_mem_prop v)
-   let array_rstack_freefo_mem v = Lm_array_util.exists (rstack_freefo_mem_prop v)
-   let array_rstack_fo_mem v = Lm_array_util.exists (rstack_fo_mem_prop v)
-   let array_rstack_c_mem v = Lm_array_util.exists (rstack_c_mem_prop v)
-   let array_rstack_p_mem shape v = Lm_array_util.exists (rstack_p_mem_prop shape v)
+   let array_rstack_mem v = Array.exists (rstack_mem_prop v)
+   let array_rstack_so_pattern_mem v = Array.exists (rstack_so_pattern_mem_prop v)
+   let array_rstack_freefo_mem v = Array.exists (rstack_freefo_mem_prop v)
+   let array_rstack_fo_mem v = Array.exists (rstack_fo_mem_prop v)
+   let array_rstack_c_mem v = Array.exists (rstack_c_mem_prop v)
+   let array_rstack_p_mem shape v = Array.exists (rstack_p_mem_prop shape v)
 
    (*
     * Indexing.
