@@ -27,92 +27,6 @@
 open Lm_printf
 open Lm_thread
 
-module Buffer =
-struct
-   (*
-    * A string buffer that allows reading *and* writing.
-    *)
-   type t =
-      { mutable buf_data : Bytes.t;
-        mutable buf_length : int
-      }
-
-   (*
-    * Create a new buffer.
-    *)
-   let create n =
-      { buf_data = Bytes.create n;
-        buf_length = 0
-      }
-
-   (*
-    * Length of the buffer.
-    *)
-   let length buf =
-      buf.buf_length
-
-   (*
-    * Convert contents to a string.
-    *)
-   let contents buf =
-      let { buf_data = data;
-            buf_length = length
-          } = buf
-      in
-         Bytes.sub_string data 0 length
-
-   (*
-    * Expand to buffer.  Size grows by powers of 2.
-    *)
-   let expand buf =
-      let { buf_data = data;
-            buf_length = length
-          } = buf
-      in
-      let len = Bytes.length data in
-      let data' = Bytes.create (2 * len) in
-         Bytes.blit data 0 data' 0 length;
-         buf.buf_data <- data'
-
-   (*
-    * Add a new character.
-    *)
-   let rec add_char buf c =
-      let { buf_data = data;
-            buf_length = length
-          } = buf
-      in
-      let len = Bytes.length data in
-         if length = len then
-            begin
-               expand buf;
-               add_char buf c
-            end
-         else
-            begin
-               data.[length] <- c;
-               buf.buf_length <- succ length
-            end
-
-   (*
-    * Get a character from the buffer.
-    *)
-   let get_char buf i =
-      let { buf_data = data;
-            buf_length = length
-          } = buf
-      in
-         if i < 0 || i >= length then
-            raise (Invalid_argument "get_char");
-         Bytes.get data i
-
-   (*
-    * Clear the buffer.
-    *)
-   let clear buf =
-      buf.buf_length <- 0
-end
-
 (*
  * Buffer for storing output from commands.
  *)
@@ -305,7 +219,7 @@ let get_char inx =
                    | ProcessIdle ->
                         raise End_of_file
                else
-                  let c = Buffer.get_char buf index in
+                  let c = Buffer.nth buf index in
                      inx.in_index <- succ index;
                      c)
 

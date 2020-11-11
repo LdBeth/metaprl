@@ -1,6 +1,4 @@
 BASE_FILES[] =
-    filter_buffer
-    free_vars
     filter_shape
     filter_base_type
     filter_summary_util
