@@ -3,7 +3,6 @@
 #
 if $(SSL_ENABLED)
    PROXYEDIT_FILES[] =
-       ../mllib/punix
        ../mllib/setup
        proxyedit_lex
        proxyedit_main

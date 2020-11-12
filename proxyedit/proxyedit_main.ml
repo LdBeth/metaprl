@@ -68,7 +68,7 @@ type info =
      info_content  : string
    }
 
-let print_info out info =
+let _print_info out info =
    let { info_host     = host;
          info_port     = port;
          info_name     = name;
@@ -91,7 +91,7 @@ let print_info out info =
  *)
 let connect info keyfile =
    let { info_host = machine;
-         info_port = port;
+         info_port = port; _
        } = info
    in
    let fd = Lm_ssl.socket keyfile in
@@ -126,7 +126,8 @@ let put_file info =
    let { info_name = name;
          info_filename = filename;
          info_keyfile = key;
-         info_passwd = passwd
+         info_passwd = passwd;
+         _
        } = info
    in
 
@@ -185,7 +186,7 @@ let put_file info =
 let edit_file info =
    let { info_name = name;
          info_filename = filename;
-         info_content = content
+         info_content = content; _
        } = info
    in
 
