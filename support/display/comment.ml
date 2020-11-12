@@ -1764,17 +1764,17 @@ dform tex_array_lines_xnil_df7 : tex_array_lines{xcons{math_cline[s]; xnil}} =
 
 dform tex_array_lines_cons_df1 : tex_array_lines{xcons{line{'l}; xcons{'h; 't}}} =
    tex_strip_white{xnil; 'l; tex_array_ln}
-   izone `"\\\\" ezone
+   cr
    tex_array_lines{xcons{'h; 't}}
 
 dform tex_array_lines_cons_df2 : tex_array_lines{xcons{math_line{'l}; xcons{'h; 't}}} =
    tex_strip_white{xnil; 'l; tex_array_ln}
-   izone `"\\\\" ezone
+   cr
    tex_array_lines{xcons{'h; 't}}
 
 dform tex_array_lines_cons_df3 : tex_array_lines{xcons{comment_block{'l}; xcons{'h; 't}}} =
    tex_strip_white{xnil; 'l; tex_array_ln}
-   izone `"\\\\" ezone
+   cr
    tex_array_lines{xcons{'h; 't}}
 
 dform tex_array_lines_cons_df4 : tex_array_lines{xcons{hline; xcons{'h; 't}}} =
@@ -1805,10 +1805,13 @@ dform tex_apply_array_line_df1 : tex_apply{tex_array_ln; 'l} =
 dform tex_array_line_df1 : tex_array_line{xcons{'h; xnil}} =
    'h
 
-dform tex_array_line_df2 : tex_array_line{xcons{'h; xcons{'hd; 'tl}}} =
+dform tex_array_line_df2 : mode[tex] :: tex_array_line{xcons{'h; xcons{'hd; 'tl}}} =
    'h
    izone `"&" ezone
    tex_array_line{xcons{'hd; 'tl}}
+
+dform tex_array_line_df3 : except_mode[tex] :: tex_array_line{xcons{'h; xcons{'hd; 'tl}}} =
+   'h tex_array_line{xcons{'hd; 'tl}}
 
 dform tex_array_line_df3 : tex_array_line{xnil} =
    `""
