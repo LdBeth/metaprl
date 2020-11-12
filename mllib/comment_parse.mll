@@ -216,39 +216,50 @@ let string_of_term = function
 (*
  * State for parsing quotations.
  *
- * BUG JYH: this code is not thread-safe.
- * It is unlikely that we use threads with
- * the parser.  However, we should be sure
- * to pass the state as an argument once
- * we upgrade to 3.0.7+.
+ * Threading the state into parsing functions.
  *)
-let level = ref 0
-let tag = ref (Lexing.dummy_pos, "")
-let buffer = Buffer.create 19
+type parse_state =
+   { buffer : Buffer.t;
+     mutable level : int;
+     mutable tag : Lexing.position * string
+   }
 
-let set_tag lexbuf tag' =
-   tag := (Lexing.lexeme_start_p lexbuf, tag');
-   Buffer.clear buffer
+let new_state () =
+   { buffer = Buffer.create 19;
+     level = 0;
+     tag = (Lexing.dummy_pos, "")
+   }
 
-let add_string s =
-   Buffer.add_string buffer s
+let set_tag st lexbuf tag' =
+   st.tag <- (Lexing.lexeme_start_p lexbuf, tag');
+   Buffer.clear st.buffer
 
-let flush_buffer () =
-   let s = Buffer.contents buffer in
-   let pos, tag = !tag in
-      Buffer.clear buffer;
+let add_string st s =
+   Buffer.add_string st.buffer s
+
+let flush_buffer st =
+   let s = Buffer.contents st.buffer in
+   let pos, tag = st.tag in
+      Buffer.clear st.buffer;
       TokQuote (pos, tag, s)
 
-let flush_string () =
-   let s = Buffer.contents buffer in
-      Buffer.clear buffer;
+let flush_string st =
+   let s = Buffer.contents st.buffer in
+      Buffer.clear st.buffer;
       s
+
+let incr_level st =
+   st.level <- st.level + 1
+
+let decr_level st =
+   st.level <- st.level - 1
 
 (*
  * Pushback buffer.
  *)
 type token_buffer =
    { lexbuf : Lexing.lexbuf;
+     state : parse_state;
      mutable tokens : token list
    }
 
@@ -285,7 +296,7 @@ let number = ['0'-'9']+
 let special = ['[' ']' ';' ',' '_' '^' '!']
 let varname = '\'' ['a'-'z' 'A'-'Z'] ['a'-'z' 'A'-'Z' '0'-'9']*
 
-rule main = parse
+rule main st = parse
    (* White space *)
    newline
    { lexbuf_newline lexbuf; TokWhite true }
@@ -294,22 +305,22 @@ rule main = parse
 
    (* Nested comments *)
  | "(*"
-   { comment lexbuf; main lexbuf }
+   { comment lexbuf; main st lexbuf }
 
    (* Quotations *)
  | "<<"
-   { set_tag lexbuf "";
-     quotation lexbuf
+   { set_tag st lexbuf "";
+     quotation st lexbuf
    }
  | "<:" name '<'
    { let buf = Lexing.lexeme lexbuf in
-        set_tag lexbuf (String.sub buf 2 ((String.length buf) - 3));
-        quotation lexbuf
+        set_tag st lexbuf (String.sub buf 2 ((String.length buf) - 3));
+        quotation st lexbuf
    }
 
    (* Strings *)
  | '"'
-   { TokQString (string lexbuf) }
+   { TokQString (string st lexbuf) }
  | '\'' varname '\''
    { TokString (false, Lexing.lexeme lexbuf) }
  | '\'' varname
@@ -321,7 +332,7 @@ rule main = parse
  | '$'
    { TokMath false }
  | '@'
-   { opname lexbuf }
+   { opname st lexbuf }
  | '{'
    { TokLeftBrace }
  | '}'
@@ -357,11 +368,11 @@ and comment = parse
 (*
  * Read the first string in the opname.
  *)
-and opname = parse
+and opname st = parse
    name
    { TokName (Lexing.lexeme lexbuf) }
  | '"'
-   { TokName (string lexbuf) }
+   { TokName (string st lexbuf) }
  | _
    { TokString (false, Lexing.lexeme lexbuf) }
  | eof
@@ -371,35 +382,35 @@ and opname = parse
  * Quotations.
  * Watch for nested quotations.
  *)
-and quotation = parse
+and quotation st = parse
    "<<"
-   { add_string "<<";
-     incr level;
-     quotation lexbuf
+   { add_string st "<<";
+     incr_level st;
+     quotation st lexbuf
    }
  | "<:" name '<'
-   { add_string (Lexing.lexeme lexbuf);
-     incr level;
-     quotation lexbuf
+   { add_string st (Lexing.lexeme lexbuf);
+     incr_level st;
+     quotation st lexbuf
    }
  | ">>"
-   { if !level = 0 then
-        flush_buffer ()
+   { if st.level = 0 then
+        flush_buffer st
      else
         begin
-           add_string ">>";
-           decr level;
-           quotation lexbuf
+           add_string st ">>";
+           decr_level st;
+           quotation st lexbuf
         end
    }
  | newline
-   { add_string (Lexing.lexeme lexbuf);
+   { add_string st (Lexing.lexeme lexbuf);
      lexbuf_newline lexbuf;
-     quotation lexbuf
+     quotation st lexbuf
    }
  | _
-   { add_string (Lexing.lexeme lexbuf);
-     quotation lexbuf
+   { add_string st (Lexing.lexeme lexbuf);
+     quotation st lexbuf
    }
  | eof
    { parse_error_buf "quotation is not terminated" lexbuf }
@@ -408,29 +419,29 @@ and quotation = parse
  * Strings.
  * Remove escaped eol.
  *)
-and string = parse
+and string st = parse
    '"' (* '"' *)
-      { flush_string () }
+      { flush_string st }
  | '\\'
-      { escape lexbuf }
+      { escape st lexbuf }
  | newline
-      { add_string (Lexing.lexeme lexbuf);
+      { add_string st (Lexing.lexeme lexbuf);
         lexbuf_newline lexbuf;
-        string lexbuf
+        string st lexbuf
       }
  | _
-      { add_string (Lexing.lexeme lexbuf);
-        string lexbuf
+      { add_string st (Lexing.lexeme lexbuf);
+        string st lexbuf
       }
  | eof
       { parse_error_buf "string is not terminated" lexbuf }
 
-and escape = parse
+and escape st = parse
     newline
-      { lexbuf_newline lexbuf; string lexbuf }
+      { lexbuf_newline lexbuf; string st lexbuf }
   | _
-      { add_string (Lexing.lexeme lexbuf);
-        string lexbuf
+      { add_string st (Lexing.lexeme lexbuf);
+        string st lexbuf
       }
   | eof
       { parse_error_buf "escape sequence is not terminated" lexbuf }
@@ -487,8 +498,8 @@ let parse_token buf =
       { tokens = token :: t; _ } ->
          buf.tokens <- t;
          token
-    | { lexbuf = lexbuf; _ } ->
-         main lexbuf
+    | { lexbuf = lexbuf; state = st; _ } ->
+         main st lexbuf
 
 let push_back token buf =
    buf.tokens <- token :: buf.tokens
@@ -828,7 +839,7 @@ and parse_inner_args mode items buf =
  *)
 let parse math s =
    let lexbuf = Lexing.from_string s in
-   let buf = { lexbuf = lexbuf; tokens = [] } in
+   let buf = { lexbuf = lexbuf; state = new_state (); tokens = [] } in
    let _, items = parse_block [TermEof] (if math then ModeMath else ModeNormal) [] buf in
       items
 }
