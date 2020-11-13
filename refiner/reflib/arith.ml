@@ -79,9 +79,8 @@ struct
    open Hyps
 
    let d2_1 (n,x,y) = n*x+y
-(* unused
-   let d1_2 n i =let x=i/n in (n,x,i-n*x)
-*)
+   let d1_2 n i = let x = i/n in x,i-n*x
+
    let get a coord = Array.get a (d2_1 coord)
    let set a coord e = Array.set a (d2_1 coord) e
 (* unused
@@ -130,10 +129,10 @@ struct
    type dist = Disconnected | Int of num * (addr list)
 
    let maxd d1 d2 = match (d1,d2) with
-       (Disconnected,Disconnected) -> d1
+         (Disconnected,Disconnected) -> d1
        | (Disconnected,Int _) -> d2
        | (Int _, Disconnected) -> d1
-       | (Int (i1,a1), Int (i2,a2)) -> if gt_num i2 i1 then d2 else d1
+       | (Int (i1,_), Int (i2,_)) -> if gt_num i2 i1 then d2 else d1
 
    let pos_dist d = match d with
        Disconnected -> false
@@ -143,14 +142,13 @@ struct
        let d1=get cij (n,a,b) in
        let d2=get cij (n,b,c) in
        match (d1,d2) with
-       (Disconnected,Disconnected) -> d1
-       | (Disconnected,Int _) -> d1
-       | (Int _, Disconnected) -> d2
-       | (Int (i1,a1), Int (i2,a2)) ->
-				if (a=b) && (b=c) then
-					d1
-				else
-					Int (add_num i1 i2, a1 @ a2)
+          (Disconnected, _)
+        | (_, Disconnected) -> Disconnected
+        | (Int (i1,a1), Int (i2,a2)) ->
+             if (a=b) && (b=c) then
+                d1
+             else
+                Int (add_num i1 i2, a1 @ a2)
 
   	let print_dist dst =
 	   match dst with
@@ -163,9 +161,10 @@ struct
 		    	end;
 		()
 
-	let print_i_dist i dst =
-		eprintf "%i-> " i;
-		print_dist dst
+    let print_i_dist n i dst =
+       let x, y = d1_2 n i in
+          eprintf "%i %i-> " x y;
+          print_dist dst
 
    let init_c h va =
 		let n=Array.length va in
@@ -183,7 +182,7 @@ struct
 		begin
 			iter h f;
 			if !debug_graph_arith3 then
-				Array.iteri print_i_dist cij;
+				Array.iteri (print_i_dist n) cij;
 			cij
 		end
 
@@ -237,22 +236,18 @@ struct
 		end
 
    let solve h =
-		begin
 	   	if !debug_graph_arith1 then
-		   	print_hyps stderr h;
-	   	let result=compute h (vars_of_hyps h) in
+         print_hyps stderr h;
+	   	let d, dar =compute h (vars_of_hyps h) in
 	   	begin
 			   if !debug_graph_arith2 then
-					let (d,dar)=result in
-					begin
+         begin
 						print_dist d;
 						Array.iter print_dist dar
-					end
-				else
-					();
-				result
-		  	end
-	   end
+         end;
+         d
+      end
+
 end
 
 open Refiner.Refiner
@@ -271,7 +266,7 @@ struct
     type addr = int
 
     let get_cmp h a = h.(a)
-	 let dest_cmp (t1,t2,n,tac) = (t1,t2,n)
+	  let dest_cmp (t1,t2,n,tac) = (t1,t2,n)
     let get_v1 h a = let (v,_,_,_)=get_cmp h a in v
     let get_v2 h a = let (_,v,_,_)=get_cmp h a in v
     let get_const h a = let (_,_,c,_)=get_cmp h a in c
@@ -300,11 +295,10 @@ open RefineError
 let find_contradiction l =
 	let ar=Array.of_list l in
    match TG.solve ar with
-      TG.Int (_,r),_ ->
-         let aux3 i al = (ar.(i))::al in
-         let rl = List.fold_right aux3 r [] in
-		   if !debug_graph_arith2 then
-				eprintf"Cycle size %i, list size %i%t" (List.length r) (List.length rl) eflush;
-         rl
-    | TG.Disconnected,_ ->
+      TG.Int (_,r) ->
+         let rl = List.map (fun i -> ar.(i)) r in
+            if !debug_graph_arith2 then
+               eprintf"Cycle size %i, list size %i%t" (List.length r) (List.length rl) eflush;
+            rl
+    | TG.Disconnected ->
          raise (RefineError("arithT", StringError "Proof by contradiction - No contradiction found"))
