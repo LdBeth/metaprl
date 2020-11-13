@@ -166,11 +166,7 @@ struct
           eprintf "%i %i-> " x y;
           print_dist dst
 
-   let init_c h va =
-		let n=Array.length va in
-(*    let ini (_,i,j) = if i=j then Int (0,[]) else Disconnected in
-      let cij=init n n ini in
-*)
+   let init_c n h va =
 		let cij = Array.make (n*n) Disconnected in
 		let f a acmp =
 			let (v1,v2,const) = dest_cmp acmp in
@@ -186,9 +182,12 @@ struct
 			cij
 		end
 
+   (* TODO: LDB: can use Hashtbl as sparse matrix and only
+    * save diagonal array
+    *)
    let compute h va =
-       let cij=init_c h va in
        let n = Array.length va in
+       let cij=init_c n h va in
        let k = ref 0 in
        let i = ref 0 in
        let poscycle = ref false in
