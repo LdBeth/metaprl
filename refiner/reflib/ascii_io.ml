@@ -493,8 +493,20 @@ struct
          let ind = lookup (SOVar(v, conts, ts_inds)) in
          let v = string_of_symbol v in let conts = List.map string_of_symbol conts in
          try
-            let name = HashTerm.find data.out_terms ind
-            in (name, ind)
+            let name = HashTerm.find data.out_terms ind in
+            begin
+               (* This item existed in the old version of the file *)
+               data.new_names <- StringSet.add data.new_names name;
+               match Hashtbl.find_all data.old_items name with
+                  (_, _, [[v2]; conts2; ts_names2]) :: _ when v = v2 && conts = conts2 && ts_names = ts_names2 ->
+                     data.io_names <- StringSet.add data.io_names name;
+                     data.out_items <- Old name :: data.out_items
+                | (l,_,([_;_;_] as io_data)) :: _ when (l.[0]='V') || (l.[0]='v') ->
+                     data.out_items <- New (l, name, io_data) :: data.out_items
+                | _ ->
+                     fail ("out_term - SO variable entry " ^ name ^ " was invalid")
+            end;
+            (name, ind)
          with Not_found ->
             let name = rename v data in
             HashTerm.add data.out_terms ind name;
@@ -511,8 +523,20 @@ struct
          let i_data3 = [concl_name] in
          let i_data2 = List.map fst hyps in
          try
-            let name = HashTerm.find data.out_terms ind
-            in (name, ind)
+            let name = HashTerm.find data.out_terms ind in
+            begin
+               (* This item existed in the old version of the file *)
+               data.new_names <- StringSet.add data.new_names name;
+               match Hashtbl.find_all data.old_items name with
+                  (_,_,[[io_arg]; io_data2; io_data3]) :: _ when io_data2 = i_data2 && io_data3 = i_data3 ->
+                     data.io_names <- StringSet.add data.io_names name;
+                     data.out_items <- Old name :: data.out_items
+                | (l,_,([_;_;_] as io_data)) :: _ when (l.[0]='S') || (l.[0]='s') ->
+                     data.out_items <- New (l, name, io_data) :: data.out_items
+                | _ ->
+                     fail ("out_term - sequent entry " ^ name ^ " was invalid")
+            end;
+            (name, ind)
          with Not_found ->
             let lname, name = ctrl.out_name_seq seq in
             let name = rename name data in
