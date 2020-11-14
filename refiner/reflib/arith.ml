@@ -40,11 +40,7 @@ module type HypsSig = sig
     type 'a cmp (*= var * var * num*)
     type 'a hyps
     type addr
-    val get_cmp : 'a hyps -> addr -> 'a cmp
-	  val dest_cmp : 'a cmp -> var * var * num
-    val get_v1 : 'a hyps -> addr -> var
-    val get_v2 : 'a hyps -> addr -> var
-    val get_const : 'a hyps -> addr -> num
+ 	 val dest_cmp : 'a cmp -> var * var * num
     val compare : var -> var -> bool
     val iter : 'a hyps -> (addr -> 'a cmp -> unit) -> unit
     val print_hyps : out_channel -> 'a hyps -> unit
@@ -83,12 +79,6 @@ struct
 
    let get a coord = Array.get a (d2_1 coord)
    let set a coord e = Array.set a (d2_1 coord) e
-(* unused
-   let init n m f = Array.init (n*m) (fun x -> (f (d1_2 n x)))
-*)
-
-(*    exception NotFound of (SimpleHyps.var * (SimpleHyps.var array))
-*)
 
    let find a (e: var) =
       let len = Array.length a in
@@ -128,38 +118,35 @@ struct
 *)
    type dist = Disconnected | Int of num * (addr list)
 
-   let maxd d1 d2 = match (d1,d2) with
-         (Disconnected,Disconnected) -> d1
+   let maxd d1 d2 =
+      match (d1,d2) with
+         (Int (i1,_), Int (i2,_)) -> if gt_num i2 i1 then d2 else d1
        | (Disconnected,Int _) -> d2
-       | (Int _, Disconnected) -> d1
-       | (Int (i1,_), Int (i2,_)) -> if gt_num i2 i1 then d2 else d1
+       | _ -> d1
 
-   let pos_dist d = match d with
-       Disconnected -> false
+   let pos_dist d =
+      match d with
+         Disconnected -> false
        | Int (i,_) -> (gt_num i num0)
 
    let add_dist cij n a b c =
        let d1=get cij (n,a,b) in
        let d2=get cij (n,b,c) in
        match (d1,d2) with
-          (Disconnected, _)
-        | (_, Disconnected) -> Disconnected
-        | (Int (i1,a1), Int (i2,a2)) ->
+          (Int (i1,a1), Int (i2,a2)) ->
              if (a=b) && (b=c) then
                 d1
              else
                 Int (add_num i1 i2, a1 @ a2)
+        | _  -> Disconnected
 
   	let print_dist dst =
-	   match dst with
-	   	Disconnected -> eprintf "Disconnected\n%t" eflush
-	    | Int(d, al) ->
-	    		begin
-		    		eprintf "Int %s|" (string_of_num d);
-		    		List.iter (eprintf "%a:" print_addr) al;
-		    		eprintf "\n%t" eflush;
-		    	end;
-		()
+       match dst with
+          Disconnected -> eprintf "Disconnected\n%t" eflush
+        | Int(d, al) ->
+             eprintf "Int %s|" (string_of_num d);
+             List.iter (eprintf "%a:" print_addr) al;
+             eprintf "\n%t" eflush
 
     let print_i_dist n i dst =
        let x, y = d1_2 n i in
@@ -182,35 +169,26 @@ struct
 			cij
 		end
 
-   (* TODO: LDB: can use Hashtbl as sparse matrix and only
-    * save diagonal array
-    *)
+   exception Positive of dist
+
    let compute h va =
-       let n = Array.length va in
-       let cij=init_c n h va in
-       let k = ref 0 in
-       let i = ref 0 in
-       let poscycle = ref false in
-       begin
-           while (not !poscycle) && !k<n do
-               i:=0;
-               while (not !poscycle) && !i<n do
-                   for j=0 to n-1 do
-                       let coord=(n,!i,j) in
-                       set cij coord (maxd (get cij coord)
-                                           (add_dist cij n !i !k j))
-                   done;
-                   poscycle:=(pos_dist (get cij (n,!i,!i)));
-                   i:=!i+1
+      let n = Array.length va in
+      let cij = init_c n h va in
+         try
+            for k=0 to n-1 do
+               for i=0 to n-1 do
+                  for j=0 to n-1 do
+                     let coord=(n,i,j) in
+                        set cij coord (maxd (get cij coord)
+                                       (add_dist cij n i k j))
+                  done;
+                  let d = get cij (n,i,i) in
+                     if pos_dist d then raise (Positive d)
                done;
-               k:=!k+1
-           done;
-           if !poscycle then
-               let posi=(!i)-1 in
-                   (get cij (n,posi,posi), cij)
-           else
-               (Disconnected, cij)
-       end
+            done;
+            Disconnected, cij
+         with
+            Positive d -> d, cij
 
 	let print_i_var oc i v =
 		fprintf oc "%i-> " i;
@@ -264,11 +242,7 @@ struct
     type 'a hyps = 'a inequality array
     type addr = int
 
-    let get_cmp h a = h.(a)
-	  let dest_cmp (t1,t2,n,tac) = (t1,t2,n)
-    let get_v1 h a = let (v,_,_,_)=get_cmp h a in v
-    let get_v2 h a = let (_,v,_,_)=get_cmp h a in v
-    let get_const h a = let (_,_,c,_)=get_cmp h a in c
+	 let dest_cmp (t1,t2,n,tac) = (t1,t2,n)
     let iter h f =
        Array.iteri f h
 
