@@ -95,13 +95,13 @@ struct
       match Flist.last clist1, Flist.first clist2 with
          RewriteConv rw1, RewriteConv rw2 ->
             let rw = RewriteConv (rw_f rw1 rw2) in
-               if Flist.singleton clist1 & Flist.singleton clist2 then
+               if Flist.singleton clist1 && Flist.singleton clist2 then
                   rw
                else
                   make (Flist.append_skip clist1 rw clist2)
        | CondRewriteConv crw1, CondRewriteConv crw2 ->
             let crw = CondRewriteConv (crw_f crw1 crw2) in
-               if Flist.singleton clist1 & Flist.singleton clist2 then
+               if Flist.singleton clist1 && Flist.singleton clist2 then
                   crw
                else
                   make (Flist.append_skip clist1 crw clist2)

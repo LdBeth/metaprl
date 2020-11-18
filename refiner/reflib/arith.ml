@@ -77,8 +77,8 @@ struct
    let d2_1 (n,x,y) = n*x+y
    let d1_2 n i = let x = i/n in x,i-n*x
 
-   let get a coord = Array.get a (d2_1 coord)
-   let set a coord e = Array.set a (d2_1 coord) e
+   let get a coord = Array.unsafe_get a (d2_1 coord)
+   let set a coord e = Array.unsafe_set a (d2_1 coord) e
 
    let find a (e: var) =
       let len = Array.length a in
