@@ -604,20 +604,20 @@ struct
       let term, index = standardize_term index term in
          term :: terms, index
 
-   and standardize_hyps_step (hyps, subst, index) hyp =
+   and standardize_hyps_step (subst, index) hyp =
       match hyp with
          Hypothesis (v, t) ->
             let v' = standardize_var index v in
             let t, index = standardize_term (succ index) (apply_subst subst t) in
             let subst = (v, mk_var_term v') :: subst in
-            let hyps = Hypothesis (v', t) :: hyps in
-               hyps, subst, index
+            let hyps = Hypothesis (v', t) in
+               (subst, index), hyps
        | Context (cv, vars, args) ->
              let vars = List.map (subst_var subst) vars in
              let args = List.fold_left (fun args arg -> apply_subst subst arg :: args) [] args in
              let args, index = List.fold_left standardize_terms_step ([], index) args in
-             let hyps = Context (cv, vars, List.rev args) :: hyps in
-                hyps, subst, index
+             let hyps = Context (cv, vars, List.rev args) in
+                (subst, index), hyps
 
    and standardize_term index t =
       match get_core t with
@@ -635,17 +635,16 @@ struct
                core_term(SOContext(v, t, conts, ts)), index
        | Sequent seq ->
             (*
-             * XXX: TODO: this could be more efficient if the Array module
-             * contained a fold_map function.
+             * XXX: Uses fold_map function.
              *)
             let arg, index = standardize_term index seq.sequent_args in
-            let hyps, subst, index =
-               List.fold_left standardize_hyps_step ([], [], index) (SeqHyp.to_list seq.sequent_hyps)
+            let (subst, index), hyps =
+               SeqHyp.fold_map standardize_hyps_step ([], index) seq.sequent_hyps
             in
             let concl, index = standardize_term index (apply_subst subst seq.sequent_concl) in
             let seq = {
                sequent_args = arg;
-               sequent_hyps = SeqHyp.of_list (List.rev hyps);
+               sequent_hyps = hyps;
                sequent_concl = concl
             } in
                core_term (Sequent seq), index

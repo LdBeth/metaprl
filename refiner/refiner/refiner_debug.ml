@@ -1195,6 +1195,9 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
       let map f t = of_list (List.map f (to_list t))
       let fold f x (t1, t2) =
          SeqHyp1.fold (fun r i h -> f r i (merge_hyp "SeqHyp.fold" h (SeqHyp2.get t2 i))) x t1
+      let fold_map f x t =
+         let a, l = (Lm_list_util.fold_map f x (to_list t)) in
+            a, of_list l
       let lazy_apply = map
       let mapi f t = init (length t) (fun i -> f i (get t i))
       let lazy_sub_map f t i len = of_list (Array.to_list (Lm_array_util.sub_map f (Array.of_list (to_list t)) i len))
@@ -3534,4 +3537,3 @@ end
    end
 
 end
-
