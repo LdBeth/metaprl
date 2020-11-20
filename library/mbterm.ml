@@ -186,7 +186,7 @@ let rec param_of_mbparameter mbparameter =
       |	Mbint b -> failwith "subterm should be a node"
     in make_param (ObId (make_object_id (loop (mbnode_nSubtermsq mbparameter) [])))
 
-  else if bequal b !mbs_Level or bequal b !mbs_MLevel then
+  else if bequal b !mbs_Level || bequal b !mbs_MLevel then
     let nsubterms = mbnode_nSubtermsq mbparameter in
     match mbnode_subtermq mbparameter 1 with
       Mnode n1 -> let constant = integer_value n1 and
@@ -269,8 +269,8 @@ let rec term_of_mbterm mbterm =
   let rec loop index leaves  =
     match mbterm.(index) with
       Mnode node -> if
-	(bequal (mbnode_label node) !mbs_Term) or
-	(bequal (mbnode_label node) !mbs_Bindings) or
+	(bequal (mbnode_label node) !mbs_Term) ||
+	(bequal (mbnode_label node) !mbs_Bindings) ||
 	(bequal (mbnode_label node) !mbs_TermIndex) then
 	let rec loop1 i b =
 	  (match mbterm.(i) with

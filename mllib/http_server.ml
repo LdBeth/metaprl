@@ -167,7 +167,7 @@ let decode_hex uri =
             buf
          else
             Bytes.sub buf 0 i
-      else if uri.[j] = '%' & j < len - 2 then
+      else if uri.[j] = '%' && j < len - 2 then
          begin
             buf.[i] <- unhex uri.[j + 1] uri.[j + 2];
             convert (i + 1) (j + 3)
@@ -259,7 +259,7 @@ let head out uri protocol =
  * Copy the input file to the output stream.
  *)
 let copy_fd out fd =
-   let buffer = String.create 8192 in
+   let buffer = Bytes.create 8192 in
    let rec copy () =
       try
          let count = Unix.read fd buffer 0 8192 in
@@ -388,7 +388,7 @@ let serve connect fd =
          let client = Lm_inet.accept fd in
          let fd' = Lm_inet.file_descr_of_client client in
             if !debug_http then
-               eprintf "Editor_http: connection on fd=%d%t" (Obj.magic fd') eflush;
+               eprintf "Editor_http: connection on fd=%d%t" (Lm_unix_util.int_of_fd fd') eflush;
 
             (* Ignore errors when the connection is handled *)
             try handle fd connect client with

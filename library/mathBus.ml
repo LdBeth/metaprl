@@ -237,7 +237,7 @@ let mb_number num =
   else
     let node = make_mbnode !mbs_LongInteger 2 in
     let base = (a//1000000000) in
-    Array.set node 1 (if num >=/ (num_of_int 0) then
+    Array.set node 1 (if num >=/ zero_num then
       (Mbint (mk_bint base))
     else (Mbint (bminus (mk_bint 0) base)));
     Array.set node 2 (Mbint (mk_bint (a mod 1000000000)));
@@ -262,7 +262,7 @@ let mb_number num =
       (Array.set node i (List.hd l);
        assign (i+1) (List.tl l)) in
   assign 1 ints;
-  (if Lm_num.lt_num num (num_of_int 0) then
+  (if Lm_num.lt_num num zero_num then
     let bval = (match node.(1) with
       Mbint b -> b
     | Mnode n -> failwith "node ") in
@@ -285,7 +285,7 @@ let mb_numberq num label =
       (Array.set node i (List.hd l);
        assign (i+1) (List.tl l)) in
   assign 0 ints;
-  (if Lm_num.lt_num num (num_of_int 0) then
+  (if Lm_num.lt_num num zero_num then
     let bval = (match node.(1) with
       Mbint b -> b
     | Mnode n -> failwith "node") in
@@ -357,7 +357,7 @@ let number_value node=
     Mbint b -> let base = num_of_int (dest_bint b) in if nsubterms = 1 then base
     else (match (mbnode_subtermq node 2) with
       Mbint c -> let int = Lm_num.add_num (Lm_num.mult_num (abs_num base) (num_of_int 1000000000)) (num_of_int (dest_bint c)) in
-      if Lm_num.ge_num base (num_of_int 0) then int else (Lm_num.sub_num (num_of_int 0) int)
+      if Lm_num.ge_num base zero_num then int else (Lm_num.sub_num (num_of_int 0) int)
     | Mnode n -> failwith "integer_value")
   | Mnode n -> failwith "integer_value"
 
