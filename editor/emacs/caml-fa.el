@@ -2,8 +2,6 @@
 ;; This compiles finite automata for CAML-mode.
 ;;
 
-(require 'caml-util)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Munge functions on the syntax description.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -22,26 +20,26 @@
 (defun caml-get-all-terminals-aux (all l)
   "Get all the terminals in a production specification"
   (cond ((symbolp l)
-	 ;; Add symbols to the list of terminals
-	 (if (memq l '(& &- &+))
-	     all
-	   (let* ((str (symbol-name l))
-		  (len (length str))
-		  (strx (substring str 1)))
-	     (if (and (> len 0) (= (aref str 0) ?&) (= (string-to-number strx) 0))
-		 (setq l (intern strx))))
-	   (if (memq l all) all (cons l all))))
+   ;; Add symbols to the list of terminals
+   (if (memq l '(& &- &+))
+       all
+     (let* ((str (symbol-name l))
+      (len (length str))
+      (strx (substring str 1)))
+       (if (and (> len 0) (= (aref str 0) ?&) (= (string-to-number strx) 0))
+     (setq l (intern strx))))
+     (if (memq l all) all (cons l all))))
 
-	((consp l)
-	 ;; Don't add the first arg in lists
-	 (setq l (cdr l))
-	 (while l
-	   (setq all (caml-get-all-terminals-aux all (car l)))
-	   (setq l (cdr l)))
-	 all)
+  ((consp l)
+   ;; Don't add the first arg in lists
+   (setq l (cdr l))
+   (while l
+     (setq all (caml-get-all-terminals-aux all (car l)))
+     (setq l (cdr l)))
+   all)
 
-	;; Ignore other things
-	(t all)))
+  ;; Ignore other things
+  (t all)))
 
 ;;
 ;; Get precedence of terminals.
@@ -53,10 +51,10 @@
       (setq prec (car (car l)))
       (setq terminals (caml-get-all-terminals-aux nil (cdr (car l))))
       (while terminals
-	(setq token (car terminals))
-	(if (not (assq token precs))
-	    (setq precs (cons (cons token prec) precs)))
-	(setq terminals (cdr terminals)))
+  (setq token (car terminals))
+  (if (not (assq token precs))
+      (setq precs (cons (cons token prec) precs)))
+  (setq terminals (cdr terminals)))
       (setq l (cdr l)))
     precs))
 
@@ -69,15 +67,15 @@
     (while l
       (setq pattern (car l))
       (when (nth 1 pattern)
-	    (setq pattern (nthcdr 2 pattern))
-	    (setq new nil)
-	    (while (and (not new) pattern)
-	      (setq new (caml-get-all-terminals-aux nil (car pattern)))
-	      (if new (setq all (nconc all new)))
-	      (setq pattern (cdr pattern))))
+      (setq pattern (nthcdr 2 pattern))
+      (setq new nil)
+      (while (and (not new) pattern)
+        (setq new (caml-get-all-terminals-aux nil (car pattern)))
+        (if new (setq all (nconc all new)))
+        (setq pattern (cdr pattern))))
       (setq l (cdr l)))
     all))
-		    
+
 ;;
 ;; Get the terminals that start a production.
 ;;
@@ -86,14 +84,14 @@
   (let (all)
     (while l
       (let (new pattern (prod (cdr (cdr (car l)))))
-	(while (not new)
-	  (setq pattern (car prod))
-	  (setq new (caml-get-all-terminals-aux nil pattern))
-	  (setq prod (cdr prod)))
-	(if new (setq all (nconc all new))))
+  (while (not new)
+    (setq pattern (car prod))
+    (setq new (caml-get-all-terminals-aux nil pattern))
+    (setq prod (cdr prod)))
+  (if new (setq all (nconc all new))))
       (setq l (cdr l)))
     all))
-		    
+
 ;;
 ;; Put all the terminals into a regex string.
 ;;
@@ -102,8 +100,8 @@
   (if (not suffix) (setq suffix ""))
   (let (all)
     (when l
-	  (setq all (concat (caml-quote-regex-name (car l)) suffix))
-	  (setq l (cdr l)))
+    (setq all (concat (caml-quote-regex-name (car l)) suffix))
+    (setq l (cdr l)))
     (while l
       (setq all (concat (caml-quote-regex-name (car l)) suffix "\\|" all))
       (setq l (cdr l)))
@@ -112,13 +110,13 @@
 (defun caml-quote-regex-name (name)
   "Turn a literal string match into a regular expression"
   (let ((l (length name))
-	(i 0)
-	new c)
+  (i 0)
+  new c)
     (while (< i l)
       (setq c (elt name i))
-      (if (memq c '(?[ ?] ?. ?* ?+ ?? ?^ ?$ ?\\))
-	  (setq new (cons c (cons ?\\ new)))
-	(setq new (cons c new)))
+      (if (memq c '(?\[ ?\] ?. ?* ?+ ?? ?^ ?$ ?\\))
+    (setq new (cons c (cons ?\\ new)))
+  (setq new (cons c new)))
       (setq i (1+ i)))
     (concat (reverse new))))
 
@@ -134,11 +132,11 @@
   "Take the union of a list of sorted integer lists"
   (if args
       (let ((new (car args)))
-	(setq args (cdr args))
-	(while args
-	  (setq new (caml-list-union-aux new (car args)))
-	  (setq args (cdr args)))
-	new)))
+  (setq args (cdr args))
+  (while args
+    (setq new (caml-list-union-aux new (car args)))
+    (setq args (cdr args)))
+  new)))
 
 (defun caml-list-union-aux (list1 list2)
   "Take the union of two sorted lists of integers"
@@ -147,15 +145,15 @@
       (setq item1 (car list1))
       (setq item2 (car list2))
       (cond ((< item1 item2)
-	     (setq new (cons item1 new))
-	     (setq list1 (cdr list1)))
-	    ((> item1 item2)
-	     (setq new (cons item2 new))
-	     (setq list2 (cdr list2)))
-	    (t
-	     (setq new (cons item1 new))
-	     (setq list1 (cdr list1))
-	     (setq list2 (cdr list2)))))
+       (setq new (cons item1 new))
+       (setq list1 (cdr list1)))
+      ((> item1 item2)
+       (setq new (cons item2 new))
+       (setq list2 (cdr list2)))
+      (t
+       (setq new (cons item1 new))
+       (setq list1 (cdr list1))
+       (setq list2 (cdr list2)))))
     (nconc (nreverse new) list1 list2)))
 
 ;;
@@ -168,15 +166,15 @@
       (setq item1 (car list1))
       (setq item2 (car list2))
       (cond ((< item1 item2)
-	     (setq new (cons item1 new))
-	     (setq list1 (cdr list1)))
-	    ((> item1 item2)
-	     (setq list2 (cdr list2)))
-	    (t
-	     (setq list1 (cdr list1))
-	     (setq list2 (cdr list2)))))
+       (setq new (cons item1 new))
+       (setq list1 (cdr list1)))
+      ((> item1 item2)
+       (setq list2 (cdr list2)))
+      (t
+       (setq list1 (cdr list1))
+       (setq list2 (cdr list2)))))
     (if list1
-	(nconc (nreverse new) list1)
+  (nconc (nreverse new) list1)
       (nreverse new))))
 
 ;;
@@ -189,10 +187,10 @@
       (setq item1 (car list1))
       (setq item2 (car list2))
       (cond ((< item1 item2)
-	     (setq list1 (cdr list1)))
-	    ((> item1 item2)
-	     (setq list2 (cdr list2)))
-	    (t (setq flag t))))
+       (setq list1 (cdr list1)))
+      ((> item1 item2)
+       (setq list2 (cdr list2)))
+      (t (setq flag t))))
     flag))
 
 ;;
@@ -202,21 +200,21 @@
   "Insert an integer into a sorted list of integers, destructively."
   (if l
       (let ((s l) (flag t) lp item2)
-	;; Search for the insertion point
-	(while (and l flag)
-	  (setq item2 (car l))
-	  (if (>= item2 item)
-	      (setq flag nil)
-	    (setq lp l)
-	    (setq l (cdr l))))
+  ;; Search for the insertion point
+  (while (and l flag)
+    (setq item2 (car l))
+    (if (>= item2 item)
+        (setq flag nil)
+      (setq lp l)
+      (setq l (cdr l))))
 
-	;; Insert it
-	(if l
-	    (cond ((= item (car l)))
-		  (lp (setcdr lp (cons item l)))
-		  (t (setq s (cons item s))))
-	  (setcdr lp (cons item nil)))
-	s)
+  ;; Insert it
+  (if l
+      (cond ((= item (car l)))
+      (lp (setcdr lp (cons item l)))
+      (t (setq s (cons item s))))
+    (setcdr lp (cons item nil)))
+  s)
 
     ;; If the list is empty, just make a singleton list
     (cons item nil)))
@@ -272,47 +270,47 @@
 (defun caml-compile-pattern (prec pattern)
   "Compile an NFA from a pattern"
   (cond ((eq pattern '&+)
-	 ;; Three states.  Later, final states will be linked to the $
-	 (vector nil (cons (list '$ 2) nil) nil))
+   ;; Three states.  Later, final states will be linked to the $
+   (vector nil (cons (list '$ 2) nil) nil))
 
-	((and (symbolp pattern)
-	      ;; In this case, if the symbol starts with &, then it
-	      ;; is a new production.
-	      (let* ((str (symbol-name pattern))
-		     (len (length str))
-		     code)
-		(when (and (> len 0) (= (aref str 0) ?&))
-		      (setq str (substring str 1))
-		      (setq code
-			    (cond ((equal str "") '(1))
-				  ((equal str "-") nil)
-				  (t
-				   (let ((i (string-to-number str)))
-				     (if (> i 0) (cons i nil) (intern str))))))
-		      (vector `(((,code . ,prec) 1)) nil)))))
+  ((and (symbolp pattern)
+        ;; In this case, if the symbol starts with &, then it
+        ;; is a new production.
+        (let* ((str (symbol-name pattern))
+         (len (length str))
+         code)
+    (when (and (> len 0) (= (aref str 0) ?&))
+          (setq str (substring str 1))
+          (setq code
+          (cond ((equal str "") '(1))
+          ((equal str "-") nil)
+          (t
+           (let ((i (string-to-number str)))
+             (if (> i 0) (cons i nil) (intern str))))))
+          (vector `(((,code . ,prec) 1)) nil)))))
 
-	((symbolp pattern)
-	 ;; Single word automaton
-	 (vector `((,pattern 1)) nil))
+  ((symbolp pattern)
+   ;; Single word automaton
+   (vector `((,pattern 1)) nil))
 
-	((listp pattern)
-	 ;; Complex construction
-	 (let ((command (car pattern))
-	       (rest (cdr pattern)))
-	   (cond ((eq command 'seq)
-		  (caml-compile-seq-pattern prec rest))
-		 ((eq command 'alt)
-		  (caml-compile-alt-pattern prec rest))
-		 ((eq command '*)
-		  (caml-compile-*-pattern prec rest))
-		 ((eq command '+)
-		  (caml-compile-+-pattern prec rest))
-		 ((eq command 'opt)
-		  (caml-compile-opt-pattern prec rest)))))
+  ((listp pattern)
+   ;; Complex construction
+   (let ((command (car pattern))
+         (rest (cdr pattern)))
+     (cond ((eq command 'seq)
+      (caml-compile-seq-pattern prec rest))
+     ((eq command 'alt)
+      (caml-compile-alt-pattern prec rest))
+     ((eq command '*)
+      (caml-compile-*-pattern prec rest))
+     ((eq command '+)
+      (caml-compile-+-pattern prec rest))
+     ((eq command 'opt)
+      (caml-compile-opt-pattern prec rest)))))
 
-	(t
-	 ;; Null automaton
-	 (vector nil nil))))
+  (t
+   ;; Null automaton
+   (vector nil nil))))
 
 ;;
 ;; Compile a pattern that is the sequence of other patterns.
@@ -321,38 +319,38 @@
 ;;
 (defun caml-compile-seq-pattern (prec patterns)
   "Compile a finite automaton from the sequence of others"
-  (caml-sequence-nfa (mapcar '(lambda (x) (caml-compile-pattern prec x)) patterns)))
+  (caml-sequence-nfa (mapcar #'(lambda (x) (caml-compile-pattern prec x)) patterns)))
 
 (defun caml-sequence-nfa (automata)
   "Compute the sequence of a NFAs"
   (cond ((null automata) (vector nil nil))
-	((null (cdr automata)) (car automata))
-	(t
-	 ;; Construct a list of automata to be catted
-	 (let (nfa nfa2 len index newautomata)
-	   ;; Get initial automaton
-	   (setq nfa (car automata))
-	   (setq len (length nfa))
-	   (setq index len)
-	   (setq newautomata (cons nfa nil))
+  ((null (cdr automata)) (car automata))
+  (t
+   ;; Construct a list of automata to be catted
+   (let (nfa nfa2 len index newautomata)
+     ;; Get initial automaton
+     (setq nfa (car automata))
+     (setq len (length nfa))
+     (setq index len)
+     (setq newautomata (cons nfa nil))
 
-	   ;; Walk through the remaining automata
-	   (setq automata (cdr automata))
-	   (while automata
-	     (setq nfa2 (car automata))
-	     (setq automata (cdr automata))
+     ;; Walk through the remaining automata
+     (setq automata (cdr automata))
+     (while automata
+       (setq nfa2 (car automata))
+       (setq automata (cdr automata))
 
-	     ;; Add the epsilon edge to the final state, and push it
-	     (caml-add-final-epsilon-edge nfa index)
+       ;; Add the epsilon edge to the final state, and push it
+       (caml-add-final-epsilon-edge nfa index)
 
-	     ;; Shift the next automaton
-	     (setq nfa (caml-shift-nfa nfa2 index))
-	     (setq len (length nfa))
-	     (setq index (+ index len))
-	     (setq newautomata (cons nfa newautomata)))
+       ;; Shift the next automaton
+       (setq nfa (caml-shift-nfa nfa2 index))
+       (setq len (length nfa))
+       (setq index (+ index len))
+       (setq newautomata (cons nfa newautomata)))
 
-	   ;; Cat them
-	   (apply 'vconcat (nreverse newautomata))))))
+     ;; Cat them
+     (apply 'vconcat (nreverse newautomata))))))
 
 ;;
 ;; Compile a pattern that is the alternate of other patterns.
@@ -360,39 +358,39 @@
 ;;
 (defun caml-compile-alt-pattern (prec patterns)
   "Compile a finite automaton from the alternate of others"
-  (caml-alternate-nfa (mapcar '(lambda (x) (caml-compile-pattern prec x)) patterns)))
+  (caml-alternate-nfa (mapcar #'(lambda (x) (caml-compile-pattern prec x)) patterns)))
 
 (defun caml-alternate-nfa (automata)
   "Compile a finite automaton from the alternate of others"
   (cond ((null automata) (vector nil))
-	((null (cdr automata)) (car automata))
-	(t
-	 (let (nfa len index final newautomata istates l)
-	   ;; Figure out the initial states, and the max state
-	   (setq final 1)
-	   (setq l automata)
-	   (while l
-	     (setq istates (cons final istates))
-	     (setq final (+ final (length (car l))))
-	     (setq l (cdr l)))
+  ((null (cdr automata)) (car automata))
+  (t
+   (let (nfa len index final newautomata istates l)
+     ;; Figure out the initial states, and the max state
+     (setq final 1)
+     (setq l automata)
+     (while l
+       (setq istates (cons final istates))
+       (setq final (+ final (length (car l))))
+       (setq l (cdr l)))
 
-	   ;; Shift and add all the automata
-	   (setq index 1)
-	   (setq newautomata `((((t ,@(nreverse istates))))))
-	   (while automata
-	     ;; Shift it, and add epsilon edge
-	     (setq nfa (caml-shift-nfa (car automata) index))
-	     (setq nfa (caml-add-final-epsilon-edge nfa final))
-	     (setq newautomata (cons nfa newautomata))
+     ;; Shift and add all the automata
+     (setq index 1)
+     (setq newautomata `((((t ,@(nreverse istates))))))
+     (while automata
+       ;; Shift it, and add epsilon edge
+       (setq nfa (caml-shift-nfa (car automata) index))
+       (setq nfa (caml-add-final-epsilon-edge nfa final))
+       (setq newautomata (cons nfa newautomata))
 
-	     (setq index (+ index (length nfa)))
-	     (setq automata (cdr automata)))
+       (setq index (+ index (length nfa)))
+       (setq automata (cdr automata)))
 
-	   ;; Add final state
-	   (setq newautomata (cons (cons nil nil) newautomata))
+     ;; Add final state
+     (setq newautomata (cons (cons nil nil) newautomata))
 
-	   ;; Cat them
-	   (apply 'vconcat (nreverse newautomata))))))
+     ;; Cat them
+     (apply 'vconcat (nreverse newautomata))))))
 
 ;;
 ;; Compile a Kleene closure.
@@ -402,9 +400,9 @@
 (defun caml-compile-*-pattern (prec patterns)
   "Compile the Kleene closure of a sequence.  This is performed in-place."
   (let* ((nfa (caml-compile-seq-pattern prec patterns))
-	 (final (1- (length nfa))))
+   (final (1- (length nfa))))
     (if (= final 0)
-	nfa
+  nfa
       (setq nfa (caml-add-epsilon-edge nfa 0 final))
       (caml-add-epsilon-edge nfa final 0))))
 
@@ -424,7 +422,7 @@
 (defun caml-compile-opt-pattern (prec patterns)
   "Compile a pattern zero-or-one times"
   (let* ((nfa (caml-compile-seq-pattern prec patterns))
-	 (final (1- (length nfa))))
+   (final (1- (length nfa))))
     (caml-add-epsilon-edge nfa 0 final)))
 
 ;;
@@ -435,12 +433,12 @@
   (if (= index 0)
       nfa
     (let* ((len (length nfa))
-	   (i 0))
+     (i 0))
 
       ;; Shift the edges
       (while (< i len)
-	(caml-shift-nfa-entry (aref nfa i) index)
-	(setq i (1+ i)))
+  (caml-shift-nfa-entry (aref nfa i) index)
+  (setq i (1+ i)))
 
       nfa)))
 
@@ -449,7 +447,7 @@
   (let ((l entry) edge)
     (while l
       (setq edge (car l))
-      (setcdr edge (mapcar '(lambda (i) (+ i index)) (cdr edge)))
+      (setcdr edge (mapcar #'(lambda (i) (+ i index)) (cdr edge)))
       (setq l (cdr l)))
     entry))
 
@@ -459,14 +457,14 @@
 (defun caml-link-final-states (nfa)
   "Link all final states to &+ patterns."
   (let* ((len (length nfa))
-	 (final (1- len))
-	 (i 0)
-	 edge)
+   (final (1- len))
+   (i 0)
+   edge)
     ;; Find all $ states
     (while (< i len)
       (setq edge (assq '$ (aref nfa i)))
       (when edge
-	    (caml-add-epsilon-edge nfa final i))
+      (caml-add-epsilon-edge nfa final i))
       (setq i (1+ i)))
     nfa))
 
@@ -477,9 +475,9 @@
   "Add an epsilon edge to the NFA from state i to state j.
 This operation is destructive"
   (let* ((entry (aref nfa i))
-	 (edge (assq 't entry)))
+   (edge (assq 't entry)))
     (if edge
-	(setcdr edge (caml-list-insert j (cdr edge)))
+  (setcdr edge (caml-list-insert j (cdr edge)))
       (aset nfa i (cons (list t j) entry)))
     nfa))
 
@@ -496,8 +494,8 @@ This operation is destructive"
 (defun caml-remove-epsilon-edges (nfa)
   "Remove the epsilon edges from the NFA destructively"
   (let* ((len (length nfa))
-	 (table (make-vector len nil))
-	 (i 0))
+   (table (make-vector len nil))
+   (i 0))
     ;; Initialize the table
     (while (< i len)
       (aset table i (cdr-safe (assq 't (aref nfa i))))
@@ -525,22 +523,22 @@ This operation is destructive"
 (defun caml-compute-epsilon-closure-edge (table i)
   "Compute the closure of a particular edge in the NFA"
   (let ((states (aref table i))
-	(nstates (cons i nil))
-	state)
+  (nstates (cons i nil))
+  state)
     ;; Loop through all these states
     (while states
       (setq state (car states))
       (setq states (cdr states))
       (setq nstates (caml-list-insert state nstates))
       (cond ((= state i))
-	    ((< state i)
-	     ;; Lower entries are fully expanded
-	     (setq nstates (caml-list-union nstates (aref table state))))
-	    (t
-	     ;; Add all the states we haven't examined before
-	     (setq states (caml-list-union states
-					   (caml-list-subtract (aref table state)
-							       nstates))))))
+      ((< state i)
+       ;; Lower entries are fully expanded
+       (setq nstates (caml-list-union nstates (aref table state))))
+      (t
+       ;; Add all the states we haven't examined before
+       (setq states (caml-list-union states
+             (caml-list-subtract (aref table state)
+                     nstates))))))
 
     ;; Save the result
     (aset table i nstates)))
@@ -551,15 +549,15 @@ This operation is destructive"
 (defun caml-epsilon-convert-edge (nfa table i)
   "Expand a particular edge in the NFA"
   (let ((entry (aref nfa i))
-	edge label states nentry)
+  edge label states nentry)
     ;; Expand all the edges
     (while entry
       (setq edge (car entry))
       (setq label (car edge))
       (unless (eq label t)
-	      (setq states (mapcar '(lambda (state) (aref table state)) (cdr edge)))
-	      (setq states (apply 'caml-list-union states))
-	      (setq nentry (cons (cons label states) nentry)))
+        (setq states (mapcar #'(lambda (state) (aref table state)) (cdr edge)))
+        (setq states (apply 'caml-list-union states))
+        (setq nentry (cons (cons label states) nentry)))
       (setq entry (cdr entry)))
 
     ;; Set the result
@@ -597,14 +595,14 @@ This operation is destructive"
 (defun caml-expand-dfa-state (entries new index)
   "Expand the DFA state specified by (car index)"
   (let ((states (car (car index)))
-	l state final)
+  l state final)
 
     ;; Determine if this is a final state
     (setq final (if (member (1- (length entries)) states) t nil))
 
     ;; Combine edge lists
     (setq l (caml-combine-edge-lists
-	     (mapcar '(lambda (state) (aref entries state)) states)))
+       (mapcar '(lambda (state) (aref entries state)) states)))
 
     ;; Save the new state description
     (setcdr (car index) (cons final l))
@@ -613,7 +611,7 @@ This operation is destructive"
     (while l
       (setq state (cdr (car l)))
       (unless (assoc state new)
-	      (setcdr index (cons (cons state nil) (cdr index))))
+        (setcdr index (cons (cons state nil) (cdr index))))
       (setq l (cdr l)))))
 
 ;;
@@ -624,24 +622,24 @@ This operation is destructive"
   "Combine the edge lists into a single edge list"
   (if entries
       (let ((entry (car entries))
-	    nentry edge label oedge)
+      nentry edge label oedge)
 
-	;; Loop through the entries
-	(setq entries (cdr entries))
-	(while entries
-	  (setq nentry (car entries))
+  ;; Loop through the entries
+  (setq entries (cdr entries))
+  (while entries
+    (setq nentry (car entries))
 
-	  ;; Loop through the new entry
-	  (while nentry
-	    (setq edge (car nentry))
-	    (setq label (car edge))
-	    (setq oedge (assoc label entry))
-	    (if oedge
-		(setcdr oedge (caml-list-union (cdr edge) (cdr oedge)))
-	      (setq entry (cons edge entry)))
-	    (setq nentry (cdr nentry)))
-	  (setq entries (cdr entries)))
-	entry)))
+    ;; Loop through the new entry
+    (while nentry
+      (setq edge (car nentry))
+      (setq label (car edge))
+      (setq oedge (assoc label entry))
+      (if oedge
+    (setcdr oedge (caml-list-union (cdr edge) (cdr oedge)))
+        (setq entry (cons edge entry)))
+      (setq nentry (cdr nentry)))
+    (setq entries (cdr entries)))
+  entry)))
 
 ;;
 ;; Convert the DFA spec into a DFA vector.
@@ -660,9 +658,9 @@ This operation is destructive"
       (setq entry (cdr (car l)))
       (setq final (car entry))
       (setq edges (cdr entry))
-      (aset dfa i (cons final (mapcar '(lambda (edge)
-					 (caml-convert-dfa-spec-edge spec edge))
-				      edges)))
+      (aset dfa i (cons final (mapcar #'(lambda (edge)
+           (caml-convert-dfa-spec-edge spec edge))
+              edges)))
       (setq l (cdr l))
       (setq i (1+ i)))
 
@@ -671,8 +669,8 @@ This operation is destructive"
 (defun caml-convert-dfa-spec-edge (spec edge)
   "Convert the edge spec into DFA form"
   (let ((label (car edge))
-	(states (cdr edge))
-	(i 0))
+  (states (cdr edge))
+  (i 0))
 
     ;; Search for the state
     (while (not (equal states (car (car spec))))
@@ -692,7 +690,7 @@ This operation is destructive"
 ;;    1. Build a table containing a flag for each pair of states
 ;;    2. Mark each pair containing one final and one non-final state
 ;;       as different, but unexplored
-;;     
+;;
 ;;    3. Repeat the following until no more progress:
 ;;       a. For each pair of states p, q that are different
 ;;          but unexplored, find all:
@@ -712,9 +710,9 @@ This operation is destructive"
 (defun caml-minimize-dfa (dfa)
   "Optimize the DFA using the algorithm from Hopcroft & Ullman"
   (let ((len (length dfa))
-	(rdfa (caml-reverse-dfa dfa))
-	table i j entryi finali edgesi entryj finalj edgesj
-	entry equals index)
+  (rdfa (caml-reverse-dfa dfa))
+  table i j entryi finali edgesi entryj finalj edgesj
+  entry equals index)
 
     ;; Sort the edges in the DFA
     (caml-sort-edge-lists dfa)
@@ -734,12 +732,12 @@ This operation is destructive"
       (setq finali (car entryi))
       (setq edgesi (cdr entryi))
       (while (< j i)
-	(setq entryj (aref dfa j))
-	(setq finalj (car entryj))
-	(setq edgesj (cdr entryj))
-	(if (or (not (eq finali finalj)) (not (equal edgesi edgesj)))
-	    (caml-mark-different-states dfa rdfa table i j))
-	(setq j (1+ j)))
+  (setq entryj (aref dfa j))
+  (setq finalj (car entryj))
+  (setq edgesj (cdr entryj))
+  (if (or (not (eq finali finalj)) (not (equal edgesi edgesj)))
+      (caml-mark-different-states dfa rdfa table i j))
+  (setq j (1+ j)))
       (setq i (1+ i)))
 
     ;; Compute the equality table
@@ -750,12 +748,12 @@ This operation is destructive"
       (setq entry (aref table i))
       (setq j 0)
       (while (and (< j i) (/= (aref entry j) 0))
-	(setq j (1+ j)))
+  (setq j (1+ j)))
       (aset equals i
-	    (if (= j i)
-		(- j index)
-	      (setq index (1+ index))
-	      (aref equals j)))
+      (if (= j i)
+    (- j index)
+        (setq index (1+ index))
+        (aref equals j)))
       (setq i (1+ i)))
 
     ;; Compute the new DFA
@@ -767,8 +765,8 @@ This operation is destructive"
 (defun caml-sort-edge-lists (dfa)
   "Sort the edges in the DFA"
   (let ((len (length dfa))
-	(i 0)
-	entry)
+  (i 0)
+  entry)
     (while (< i len)
       (setq entry (aref dfa i))
       (setcdr entry (sort (cdr entry) 'caml-compare-edges))
@@ -779,19 +777,19 @@ This operation is destructive"
   "Compare two edges.  We base this first on the destination state,
 then second on the label.  Symbols always come before lists."
   (let ((label1 (car edge1))
-	(label2 (car edge2))
-	(state1 (cdr edge1))
-	(state2 (cdr edge2)))
+  (label2 (car edge2))
+  (state1 (cdr edge1))
+  (state2 (cdr edge2)))
     (cond ((< state1 state2) t)
-	  ((> state1 state2) nil)
-	  (t
-	   (if (symbolp label1)
-	       (if (symbolp label2)
-		   (string< (symbol-name label1) (symbol-name label2))
-		 t)
-	     (if (symbolp label2)
-		 nil
-	       (caml-compare-edges label1 label2)))))))
+    ((> state1 state2) nil)
+    (t
+     (if (symbolp label1)
+         (if (symbolp label2)
+       (string< (symbol-name label1) (symbol-name label2))
+     t)
+       (if (symbolp label2)
+     nil
+         (caml-compare-edges label1 label2)))))))
 
 ;;
 ;; "Reverse" the automaton.  That is, for each state and
@@ -800,7 +798,7 @@ then second on the label.  Symbols always come before lists."
 (defun caml-reverse-dfa (dfa)
   "\"Reverse\" the DFA"
   (let ((len (length dfa))
-	i table edges edge label state aentry)
+  i table edges edge label state aentry)
     ;; Make a vector of alists
     (setq table (make-vector len nil))
 
@@ -809,14 +807,14 @@ then second on the label.  Symbols always come before lists."
     (while (< i len)
       (setq edges (cdr (aref dfa i)))
       (while edges
-	(setq edge (car edges))
-	(setq label (car edge))
-	(setq state (cdr edge))
-	(setq aentry (assoc label (aref table state)))
-	(if aentry
-	    (setcdr aentry (caml-list-insert i (cdr aentry)))
-	  (aset table state (cons (list label i) (aref table state))))
-	(setq edges (cdr edges)))
+  (setq edge (car edges))
+  (setq label (car edge))
+  (setq state (cdr edge))
+  (setq aentry (assoc label (aref table state)))
+  (if aentry
+      (setcdr aentry (caml-list-insert i (cdr aentry)))
+    (aset table state (cons (list label i) (aref table state))))
+  (setq edges (cdr edges)))
       (setq i (1+ i)))
 
     table))
@@ -837,64 +835,64 @@ then second on the label.  Symbols always come before lists."
   "Mark states in the DFA that differ"
   (while l
     (let ((statesa (car (car l)))
-	  (statesb (cdr (car l)))
-	  statea stateb label edgesa edgesb edgea edgeb sa sb tmp lb)
+    (statesb (cdr (car l)))
+    statea stateb label edgesa edgesb edgea edgeb sa sb tmp lb)
       (setq l (cdr l))
 
       ;; Loop through al combinations
       (while statesa
-	(setq statea (car statesa))
-	(setq lb statesb)
-	(while lb
-	  (setq stateb (car lb))
+  (setq statea (car statesa))
+  (setq lb statesb)
+  (while lb
+    (setq stateb (car lb))
 
-	  ;; Sort the states
-	  (when (< statea stateb)
-		(setq tmp statea)
-		(setq statea stateb)
-		(setq stateb tmp))
+    ;; Sort the states
+    (when (< statea stateb)
+    (setq tmp statea)
+    (setq statea stateb)
+    (setq stateb tmp))
 
-	  ;; Not different already
-	  (when (= (aref (aref table statea) stateb) 0)
-		(aset (aref table statea) stateb 1)
+    ;; Not different already
+    (when (= (aref (aref table statea) stateb) 0)
+    (aset (aref table statea) stateb 1)
 
-		;; Recursively mark different states
-		(setq edgesa (aref rdfa statea))
-		(setq edgesb (aref rdfa stateb))
+    ;; Recursively mark different states
+    (setq edgesa (aref rdfa statea))
+    (setq edgesb (aref rdfa stateb))
 
-		;; Loop through different states
-		(while edgesa
-		  (setq edgea (car edgesa))
-		  (setq label (car edgea))
-		  (setq sa (cdr edgea))
-		  (setq edgeb (assoc label edgesb))
-		  (when edgeb
-			(setq sb (cdr edgeb))
-			(setq l (cons (cons sa sb) l)))
-		  (setq edgesa (cdr edgesa))))
+    ;; Loop through different states
+    (while edgesa
+      (setq edgea (car edgesa))
+      (setq label (car edgea))
+      (setq sa (cdr edgea))
+      (setq edgeb (assoc label edgesb))
+      (when edgeb
+      (setq sb (cdr edgeb))
+      (setq l (cons (cons sa sb) l)))
+      (setq edgesa (cdr edgesa))))
 
-	  (setq lb (cdr lb)))
-	(setq statesa (cdr statesa))))))
-	
+    (setq lb (cdr lb)))
+  (setq statesa (cdr statesa))))))
+
 ;;
 ;; Squash bogus states out of the DFA.
 ;;
 (defun caml-squash-dfa (dfa equals len2)
   "Squash unused states out of the DFA"
   (let ((dfa2 (make-vector len2 nil))
-	(len (length dfa))
-	(i 0)
-	j entry)
+  (len (length dfa))
+  (i 0)
+  j entry)
     (while (< i len)
       (setq j (aref equals i))
       (unless (aref dfa2 j)
-	      (setq entry (aref dfa i))
-	      (setcdr entry (mapcar '(lambda (edge)
-				       (cons (car edge) (aref equals (cdr edge))))
-				    (cdr entry)))
-	      (aset dfa2 j entry))
+        (setq entry (aref dfa i))
+        (setcdr entry (mapcar #'(lambda (edge)
+               (cons (car edge) (aref equals (cdr edge))))
+            (cdr entry)))
+        (aset dfa2 j entry))
       (setq i (1+ i)))
-    
+
     dfa2))
 
 ;;
@@ -906,7 +904,7 @@ then second on the label.  Symbols always come before lists."
     (while entry
       (setq label (car (car entry)))
       (if (and (symbolp label) (not (memq label '(t $ nil))))
-	  (setq all (cons label all)))
+    (setq all (cons label all)))
       (setq entry (cdr entry)))
     all))
 
@@ -917,19 +915,19 @@ then second on the label.  Symbols always come before lists."
 (defun caml-adjust-precedences (dfa)
   "Adjust precedences of production edges and compute forward terminals."
   (let ((len (length dfa))
-	(i 0)
-	final entry edge entry2)
+  (i 0)
+  final entry edge entry2)
     (while (< i len)
       (setq entry (cdr (aref dfa i)))
       (while entry
-	(setq edge (car entry))
-	(when (consp (car edge))
-	      ;; This is a production edge
-	      (setq entry2 (aref dfa (cdr edge)))
-	      (setcar edge `(,(car (car edge))
-			     ,(if (car entry2) (cdr (car edge)) 0)
-			     . ,(caml-get-edge-labels (cdr entry2)))))
-	(setq entry (cdr entry)))
+  (setq edge (car entry))
+  (when (consp (car edge))
+        ;; This is a production edge
+        (setq entry2 (aref dfa (cdr edge)))
+        (setcar edge `(,(car (car edge))
+           ,(if (car entry2) (cdr (car edge)) 0)
+           . ,(caml-get-edge-labels (cdr entry2)))))
+  (setq entry (cdr entry)))
       (setq i (1+ i)))
     dfa))
 
@@ -938,12 +936,12 @@ then second on the label.  Symbols always come before lists."
 ;;
 (defun caml-compile-syntax (syntax)
   "Compile the CAML syntax description into a NFA"
-  (let ((automata (mapcar '(lambda (x)
-			     (let ((prec (car x))
-				   (pattern (cons 'seq (nthcdr 2 x))))
-			       (caml-compile-pattern prec pattern)))
-			  syntax))
-	dfa nfa)
+  (let ((automata (mapcar #'(lambda (x)
+           (let ((prec (car x))
+           (pattern (cons 'seq (nthcdr 2 x))))
+             (caml-compile-pattern prec pattern)))
+        syntax))
+  dfa nfa)
     (setq nfa (caml-alternate-nfa automata))
     (setq nfa (caml-link-final-states nfa))
     (setq nfa (caml-remove-epsilon-edges nfa))
