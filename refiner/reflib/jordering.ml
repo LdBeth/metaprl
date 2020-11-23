@@ -383,7 +383,7 @@ struct
    exception Reflexive
 
    let transitive_irreflexive_closure_aux addset const pos fset =
-      if (pos = const) or (Set.mem fset const) then
+      if (pos = const) || (Set.mem fset const) then
 (* check reflexsivity during transitive closure wrt. addset ONLY!!! *)
          if Set.mem addset pos then
             raise Reflexive

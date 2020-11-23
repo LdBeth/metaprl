@@ -330,7 +330,7 @@ let rec all_variable_check eqlist =
             let fs_first = List.hd fs
             and ft_first = List.hd ft
             in
-            if (is_const fs_first) or (is_const ft_first) then
+            if (is_const fs_first) || (is_const ft_first) then
                false
             else
                all_variable_check rest_eq
@@ -376,7 +376,7 @@ let r5 eq =
 let r6 eq =
       match eq with
        | _, s1::_, [], r1::rtl ->
-		 		is_var s1 & is_const r1 (* r6 *)
+		 		is_var s1 && is_const r1 (* r6 *)
        | _ ->
             false
 
@@ -405,7 +405,7 @@ let r10 eq =
    match eq with
       _, v::stl, _, x::rtl ->
          var_le v x && (v <> x) &&
-         ((stl =[]) or (is_const x) or (rtl <> []))
+         ((stl =[]) || (is_const x) || (rtl <> []))
     | _ -> false
 
 (*
