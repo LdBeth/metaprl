@@ -146,15 +146,10 @@ struct
      | _ ->
          fail "add_bterm"
 
-   let v1010 = Lm_symbol.make "" 1010 (* XXX HACK: format versions <= 1.0.10 compatibility *)
-
    let add_hyp r = function
       (_, name, [[var;term]]) ->
          let term = Hashtbl.find r.io_terms term in
          hash_add_new r.io_hyps name (Hypothesis(Lm_symbol.add var,term))
-    | (_, name, [[term]]) -> (* XXX HACK: format versions <= 1.0.10 compatibility *)
-         let term = Hashtbl.find r.io_terms term in
-         hash_add_new r.io_hyps name (Hypothesis(v1010, term))
     | _ ->
          fail "add_hyp"
 
@@ -387,8 +382,6 @@ struct
                let term' = rename term in if term == term' then record else [term'::vars]
           | 'H', [[var;name]] ->
                let name' = rename name in if name == name' then record else [[var;name']]
-          | 'H', [[_]] -> (* XXX HACK: format versions <= 1.0.10 compatibility *)
-               smap_rename record
           | 'N', [[_;"NIL"]] ->
                record
           | 'N', [var::rest] ->
@@ -476,7 +469,7 @@ struct
          (* This item existed in the old version of the file *)
          data.new_names <- StringSet.add data.new_names name;
          let (lname,_,io_data) = Hashtbl.find data.old_items name in
-         if i_data<> io_data then begin
+         if i_data <> io_data then begin
             if !debug_ascii_io then
                eprintf "ASCII IO: Duplicate entry updated: %s%t" name eflush;
             data.out_items <- New (lname, name, i_data) :: data.out_items
@@ -492,20 +485,10 @@ struct
          let ts_names, ts_inds = List.split (List.map (out_term ctrl data) ts) in
          let ind = lookup (SOVar(v, conts, ts_inds)) in
          let v = string_of_symbol v in let conts = List.map string_of_symbol conts in
+         let i_data = [[v];conts;ts_names] in
          try
             let name = HashTerm.find data.out_terms ind in
-            begin
-               (* This item existed in the old version of the file *)
-               data.new_names <- StringSet.add data.new_names name;
-               match Hashtbl.find_all data.old_items name with
-                  (_, _, [[v2]; conts2; ts_names2]) :: _ when v = v2 && conts = conts2 && ts_names = ts_names2 ->
-                     data.io_names <- StringSet.add data.io_names name;
-                     data.out_items <- Old name :: data.out_items
-                | (l,_,([_;_;_] as io_data)) :: _ when (l.[0]='V') || (l.[0]='v') ->
-                     data.out_items <- New (l, name, io_data) :: data.out_items
-                | _ ->
-                     fail ("out_term - SO variable entry " ^ name ^ " was invalid")
-            end;
+            check_old data name i_data;
             (name, ind)
          with Not_found ->
             let name = rename v data in
@@ -522,26 +505,16 @@ struct
                                   seq_concl = concl_ind } ) in
          let i_data3 = [concl_name] in
          let i_data2 = List.map fst hyps in
+         let i_data = [[arg_name]; i_data2; i_data3] in
          try
             let name = HashTerm.find data.out_terms ind in
-            begin
-               (* This item existed in the old version of the file *)
-               data.new_names <- StringSet.add data.new_names name;
-               match Hashtbl.find_all data.old_items name with
-                  (_,_,[[io_arg]; io_data2; io_data3]) :: _ when io_data2 = i_data2 && io_data3 = i_data3 ->
-                     data.io_names <- StringSet.add data.io_names name;
-                     data.out_items <- Old name :: data.out_items
-                | (l,_,([_;_;_] as io_data)) :: _ when (l.[0]='S') || (l.[0]='s') ->
-                     data.out_items <- New (l, name, io_data) :: data.out_items
-                | _ ->
-                     fail ("out_term - sequent entry " ^ name ^ " was invalid")
-            end;
+            check_old data name i_data;
             (name, ind)
          with Not_found ->
             let lname, name = ctrl.out_name_seq seq in
             let name = rename name data in
             HashTerm.add data.out_terms ind name;
-            data.out_items <- New ("S" ^ lname, name, [[arg_name]; i_data2; i_data3]) :: data.out_items;
+            data.out_items <- New ("S" ^ lname, name, i_data) :: data.out_items;
             (name, ind)
       else
          let t' = TM.Term.dest_term t in

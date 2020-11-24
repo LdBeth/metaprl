@@ -39,7 +39,7 @@ open File_type_base
  ************************************************************************
  *
  * Current MD5 hash of the summary-related types (as computed by OMake):
- * FILTER_MD5: b54f751adc83c28aa68e11406b3d265a
+ * FILTER_MD5: d7ca1629afb5b5decc25662ad703ddae
  *
  * The arguments for pack_version are:
  *    major version number, minor sub-version number, revision number
@@ -125,9 +125,7 @@ let term_versions = List.map (pack_version 1 0) [34;33;32;31;30;29;28;27;25;24]
  * Rev 27: changed the stging encoding of option_info
  * Rev 28: added "opaque" qualifier to the "define" statements
  *
- * Proof_term_boot has a HACK needed to read rev 0-9 files.
- * Ascii_io has another HACK needed to read some rev 0-10 files.
- * Filter_summary has another HACK needed to read some rev 0-11 files.
+  * Filter_summary has another HACK needed to read some rev 0-11 files.
  * Filter_ocaml has a HACK needed to read some rev 0-12 files.
  * Ascii_io has another HACK needed to read some rev 0-14 files.
  * Filter_summary has another HACK needed to read some rev 0-15 files.

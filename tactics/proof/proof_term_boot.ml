@@ -767,16 +767,7 @@ struct
       let op = opname_of_term t in
          if Opname.eq op tactic_arg_op then
             let label = dest_string_param t in
-            (*
-             * XXX HACK: The "match" is here because tactic_arg terms used to have 3 subterms in old files.
-             * (ASCII IO format <= 1.0.9 and Term IO format <= 1.0.6)
-             *)
-            let goal, args = (* two_subterms t *)
-               match (dest_term t).term_terms with
-                  [g; a]
-                | [g; a; _ ] -> (dest_bterm g).bterm, (dest_bterm a).bterm
-                | _ -> raise (RefineError ("Proof_boot.tactic_arg_header_of_term", StringError "ill-formed proof"))
-            in
+            let goal, args = two_subterms t in
                term_add_msequent goal,
                label,
                term_add_attributes info args
