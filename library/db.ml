@@ -523,9 +523,9 @@ let mk_real_param_from_strings stp value ptype =
   | "q" -> (ParamList [(make_param (token "quote")); (make_param (token value))])
   | "b" -> ( ParamList [ (make_param (token "bool"))
                         ; if (stringeq value "false") || (stringeq value "F") then
-                          make_param (Number (Lm_num.num_of_int 0))
+                          make_param (Number Lm_num.zero_num)
                           else if (stringeq value "true") || (stringeq value "T") then
-                          make_param (Number (Lm_num.num_of_int 1))
+                          make_param (Number Lm_num.one_num)
                           else error ["real_parameter_from_string"; value] [] []
                       ])
   | "v" -> (Var (Lm_symbol.add value))

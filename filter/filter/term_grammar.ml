@@ -572,7 +572,7 @@ struct
             make_param (Number i)
       else if is_number_term xparam_neg_opname t then
          let i = dest_number_term xparam_neg_opname t in
-            make_param (Number (Lm_num.mult_num i (Lm_num.num_of_int (-1))))
+            make_param (Number (Lm_num.neg_num i))
       else if is_string_term xparam_string_opname t then
          let s = dest_string_term xparam_string_opname t in
             make_param (String s)
@@ -1717,7 +1717,7 @@ struct
            | n = sl_number ->
              make_param (Number n)
            | "-"; n = sl_number ->
-             make_param (Number (Lm_num.mult_num n (Lm_num.num_of_int (-1))))
+             make_param (Number (Lm_num.neg_num n))
            | "@" ->
              make_param Quote
           ]
