@@ -1,6 +1,6 @@
 (* -*- Mode: text -*- *)
 doc <:doc<
-   @spelling{typeclass typesystem typeclasses}
+   @spelling{typesystem}
 
    @chapter[declare]{Declarations}
 

@@ -1,5 +1,4 @@
 doc <:doc<
-   @spelling{th}
    @module[Top_conversionals]
 
    @emph{Conversions} and @emph{conversionals} are analogs of tactics and tacticals

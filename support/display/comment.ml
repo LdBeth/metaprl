@@ -1,5 +1,5 @@
 doc <:doc<
-   @spelling{typeset verbatim subparagraph italicizes hypertext}
+   @spelling{hypertext}
    @module[Comment]
 
    The @tt{Comment} module defines @emph{structured} comments.

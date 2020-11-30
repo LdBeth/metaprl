@@ -46,6 +46,7 @@ toplevel
 toploop
 typecheck
 typeclass
+typeclasses
 typehood
 unrollings
 wellformedness
