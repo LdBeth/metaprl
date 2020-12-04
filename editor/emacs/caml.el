@@ -1,4 +1,4 @@
-;;
+;; -*- lexical-binding:t -*-
 ;; This is a major mode for editing CAML files.
 ;;
 
