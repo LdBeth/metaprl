@@ -21,46 +21,19 @@ SATISFYING DEPENDENCIES
    Connection.  See <http://developer.apple.com/membership/index.html>
    for more information.
 
-2. MetaPRL requires the OCaml programming language tools version 3.08.
+2. MetaPRL requires the OCaml programming language tools version 4.11.
    Follow the directions at
 
-      <http://caml.inria.fr/ocaml/distrib-3.08.html>
+      <https://ocaml.org/docs/install.html>
 
-   for downloading the OCaml sources.
-
-   Now run ./configure with the -with-pthreads option.  You may also
-   want to specify other options, such as -prefix.  Compile the OCaml
-   tools using "make world.opt" and install them using "make install".
+   for installing OCaml.
 
 3. Make sure that the location that you chose to put the binaries in is
-   in your path.  If the OCaml libraries were installed into
-   /usr/local/lib/ocaml, you'll need to run the following two commands:
-
-      ranlib /usr/local/lib/ocaml/camlp4/camlp4.a
-      ranlib /usr/local/lib/ocaml/camlp4/odyl.a
-
-   [Sidenote:  This ranlib issue should be fixed in post-3.08.0 OCaml
-   releases.  There will be no need to run ranlib as stated above.  The
-   final fixes were committed to OCaml CVS sometime on 2004-07-30.]
-
-   You also need to copy some files from your OCaml build directory.
-   Copy these files into the OCaml library directory (e.g., ./lib/ocaml)
-   using (for example) this command (run from within the OCaml source
-   directory):
-
-    cp parsing/location.cmi \
-       parsing/location.mli \
-       parsing/longident.cmi \
-       parsing/longident.mli \
-       parsing/parsetree.cmi \
-       parsing/parsetree.mli \
-       typing/typecore.cmi \
-       typing/typecore.mli \
-           /usr/local/lib/ocaml  # Or wherever you've installed ocaml
+   in your path.
 
 4. The OMake build tool is used to build MetaPRL.  OMake can be obtained
-   from <http://mojave.caltech.edu/download.html>.  Follow the included
-   directions for building and installing OMake.
+   from <http://projects.camlcity.org/projects/omake.html>.  Follow the
+   included directions for building and installing OMake.
 
 
 
@@ -73,12 +46,12 @@ BUILDING METAPRL
    itself).
 
    If OCaml was not installed into /usr, you will need to create a
-   file mk/config.local and define CAMLLIB and CAMLP4LIB to point to where
+   file mk/config.local and define CAMLLIB and CAMLP5LIB to point to where
    the ocaml and ocaml/camlp4 library directories are located.  For example,
    config.local may contain the following lines:
 
       CAMLLIB=/usr/local/lib/ocaml
-      CAMLP4LIB=/usr/local/lib/ocaml/camlp4
+      CAMLP5LIB=/usr/local/lib/ocaml/camlp5
 
 6. If you have Fink installed and want readline and ncurses support in
    MetaPRL (for, e.g. command history and editing) you might want to add

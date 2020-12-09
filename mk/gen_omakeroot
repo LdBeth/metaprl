@@ -60,7 +60,7 @@ OCAMLDEP_MODULES_ENABLED = false
 #
 OCAMLINCLUDES[] +=
     $$(CAMLLIB)
-    $$(CAMLP4LIB)
+    $$(CAMLP5LIB)
     $$(MP_LIB)
 
 #

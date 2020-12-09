@@ -65,6 +65,6 @@ if $(not $(defined CAMLLIB))
     CAMLLIB = $(dir $(getenv CAMLLIB, $(getenv OCAMLLIB, $(CAMLLIB_DEFAULT))))
     export
 
-if $(not $(defined CAMLP4LIB))
-    CAMLP4LIB = $(dir $(getenv CAMLP4LIB, $"$(CAMLLIB)/camlp4"))
+if $(not $(defined CAMLP5LIB))
+    CAMLP5LIB = $(dir $(getenv CAMLP5LIB, $"$(CAMLLIB)/camlp5"))
     export
