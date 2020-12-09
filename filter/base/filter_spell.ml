@@ -24,19 +24,18 @@
  *)
 
 (*
- * The dictionary is compiled from /usr/dict/words and
- * $(MPLIB)/words.  Both file just contain words
- * that are correctly spelled.  The dictionary is saved
- * as a hashtable in /tmp/metaprl-spell.dat.
+ * The dictionary is compiled from $MP_ROOT/filter/words
+ * contain sorted words that are correctly spelled.
+ * The dictionary is saved as a hashtable in /tmp/metaprl-spell.dat.
  *)
 let dat_magic = 0x2557f3ef
 
 (*
- * Defer requesting MP_ROOT to init()
+ * Defer requesting $MP_ROOT to init()
  *)
 let lib = ref ""
 let dat_filename = ref ""
-let words_filenames = ref []
+let words_filename = ref ""
 
 (*
  * The loaded dictionary.
@@ -73,7 +72,7 @@ let check_dict () =
              Unix.Unix_error _ ->
                 false)
       in
-         List.exists check_magic' !words_filenames
+         check_magic' !words_filename
    else
       true
 
@@ -113,7 +112,7 @@ let make_dict () =
          try_name (counter + 1)
    in
    let table = Hashtbl.create 1037 in
-      List.iter (add_file table) !words_filenames;
+      add_file table !words_filename;
       dict := Some table;
       let tmp, out = try_name 0 in
       let out = Stdlib.open_out_bin tmp in
@@ -157,9 +156,7 @@ let init () =
       None ->
          lib := Setup.lib();
          dat_filename := Filename.concat !lib "english_dictionary.dat";
-         words_filenames := [Filename.concat !lib "words.metaprl";
-                             Filename.concat !lib "words.linux";
-                            ];
+         words_filename := Filename.concat !lib "words";
          if check_dict () then
             make_dict ()
          else

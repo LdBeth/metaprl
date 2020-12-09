@@ -74,20 +74,7 @@ inference (only for spread) with Nuprl's understanding in mind.
 
 REFINER
 
-(4.1-4.6 - fixed)
-
-4.7) (nogin)
-In Ocaml, string is a mutable data structure. In MetaPRL, we use strings everywhere (variable
-names, opnames, etc) as if they were immutable. We need to
-a) Make sure that nobody can cheat the system by starting to mute strings.
-b) Let the compiler and GC know that we are not going to mute strings (which should allow
-them to be more efficient).
-
-4.8-4.10) (fixed)
-
-See also BUGS #4.4
-
-4.11) (fixed)
+(4.1-4.11 - fixed)
 
 PARSER & FILTER
 
