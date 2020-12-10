@@ -408,16 +408,9 @@ struct
     * Sentinal function is lazy.
     *)
    let get_theory name =
-      let rec search = function
-         thy :: t ->
-            if thy.thy_name = name then
-               thy
-            else
-               search t
-       | [] ->
+      try get_theory name with
+         Not_found ->
             raise (RefineError ("get_theory", StringStringError ("theory is not found", name)))
-      in
-         search (get_theories ())
 
    let null_sentinal =
       let xlazy () =

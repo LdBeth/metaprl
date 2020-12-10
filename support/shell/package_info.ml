@@ -215,7 +215,7 @@ let refresh pack_entry path =
                                      (LexStringSet.choose theories) thy.thy_group dsc thy.thy_name thy.thy_groupdesc));
                Hashtbl.replace pack.pack_groups thy.thy_group (dsc, LexStringSet.add theories thy.thy_name)
          in
-            List.iter add_theory (get_theories ()))
+            iter_theories add_theory)
 
 (*
  * Create the cache.

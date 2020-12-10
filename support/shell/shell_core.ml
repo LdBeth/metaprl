@@ -26,7 +26,6 @@
  *)
 open Lm_debug
 open Lm_rprintf
-open Lm_string_set
 
 open Opname
 open Term_sig
@@ -77,24 +76,16 @@ let loaded_packages () =
    List.filter shell_package (Package_info.loaded_packages packages)
 
 let all_theories () =
-   let names = LexStringSet.empty in
-   let names =
-      List.fold_left (fun names pkg ->
-            let name = Package_info.name pkg in
-               if shell_package_name name then
-                  LexStringSet.add names name
-               else
-                  names) names (Package_info.modified_packages packages)
-   in
-   let names =
-      List.fold_left (fun names thy ->
-            let name = thy.thy_name in
-               if shell_package_name name then
-                  LexStringSet.add names name
-               else
-                  names) names (get_theories ())
-   in
-      LexStringSet.to_list names
+   (* TODO: optimize merge and sort two list of strings *)
+   let cmp = String.compare in
+   let packages = List.filter_map (fun pkg ->
+                        let name = Package_info.name pkg in
+                           if shell_package_name name then
+                              Some name
+                           else None) (Package_info.modified_packages packages) in
+   let packages = List.sort cmp packages in
+   let theories = get_theory_names () in
+      List.merge cmp packages theories
 
 let default_mode_base = Mp_resource.theory_bookmark "shell_theory"
 let default_base = get_mode_base default_mode_base "prl" null_shortener
@@ -662,7 +653,8 @@ let mount_current_module modname parse_arg shell force_flag need_shell verbose =
                raise (Failure "Shell_core: module name should not be capitalized");
 
             (* See if the theory exists *)
-            let _ = Theory.get_theory modname in
+            if not (Theory.theory_exists modname) then
+               raise (Failure ("Shell_core: theory ``" ^ modname ^ "'' not found"));
             let pack = Package_info.load packages parse_arg modname in
                if need_shell && not (shell_package pack) then
                   failwith ("Module " ^ modname ^ " does not contain shell commands");

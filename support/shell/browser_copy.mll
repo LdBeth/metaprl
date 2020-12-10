@@ -358,17 +358,6 @@ let print_translated_file_to_channel out table name =
 (*
  * Execute a command and send it to a window.
  *)
-let brbuf =
-   (* This is a silly hack to get the browser to wake up *)
-   let s = Bytes.make 1024 ' ' in
-      s.[0] <- '<';
-      s.[1] <- 'b';
-      s.[2] <- 'r';
-      s.[3] <- '>';
-      s.[1022] <- '\r';
-      s.[1023] <- '\n';
-      Bytes.to_string s
-
 let html_escape_char info col c =
    match c with
       '<' ->
@@ -385,7 +374,7 @@ let html_escape_char info col c =
         succ col
     | '\r'
     | '\n' ->
-         info.info_add_string brbuf;
+         info.info_add_string "<br>";
          info.info_flush ();
          0
     | '\t' ->

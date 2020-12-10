@@ -47,7 +47,9 @@ type theory =
 val record_theory : theory -> unit
 
 (* Get back all the theories that have been recorded *)
-val get_theories : unit -> theory list
+val get_theory_names : unit -> string list
+val theory_exists : string -> bool
+val iter_theories : (theory -> unit) -> unit
 val get_theory : string -> theory
 
 (*

@@ -472,8 +472,8 @@ let rec cterm2multiterm t consts u var_hashtbl b_assoclist =
         oparity_n = op_n;
         oparity_a = op_a ;
         b_length  = 1;
-        opbinding = Array.init op_n (fun i -> Array.create op_a.(i) []);
-        renamings = Array.init op_n (fun i -> Array.create op_a.(i) (V null_var));
+        opbinding = Array.init op_n (fun i -> Array.make op_a.(i) []);
+        renamings = Array.init op_n (fun i -> Array.make op_a.(i) (V null_var));
         timestamp = -1
       }
    in
@@ -610,11 +610,11 @@ let rec terms2temp_multieq t0 t1 consts u var_hashtbl b_asslist0 b_asslist1 =
                     oparity_a = op_a0 ;
                     b_length = 2;
                     opbinding = (Array.init op_n0
-                                 (function i -> (Array.create op_a0.(i) [] )
+                                 (function i -> (Array.make op_a0.(i) [] )
                                  )
                                 );
                     renamings = (Array.init op_n0
-                                 (function i -> (Array.create op_a0.(i) (V null_var) )
+                                 (function i -> (Array.make op_a0.(i) (V null_var) )
                                  )
                                 );
                     timestamp = (-1)

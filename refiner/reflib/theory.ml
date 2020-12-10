@@ -32,6 +32,7 @@
  *)
 
 open Lm_debug
+open Lm_string_set
 
 open Refiner.Refiner.Refine
 
@@ -51,10 +52,12 @@ type theory =
      thy_refiner : refiner;
    }
 
+module ST = LexStringTable
+
 (*
- * Save all the theories on a list.
+ * Save all the theories on a set.
  *)
-let base = ref ([] : theory list)
+let base = ref (ST.empty : theory ST.t)
 
 (* unused
 let groups = Hashtbl.create 19
@@ -64,28 +67,31 @@ let groups = Hashtbl.create 19
  * Record a theory by pushing it onto the list.
  *)
 let record_theory thy =
-   Lm_ref_util.push thy base
+   base := ST.add !base thy.thy_name thy
 
 (*
- * Get all the theories.
+ * Get all the theory name.
  *)
-let get_theories () =
-   !base
+let get_theory_names () =
+   ST.keys !base
+
+(*
+ * Test is exists
+ *)
+let theory_exists name =
+   ST.mem !base name
+
+(*
+ * iterate on theories.
+ *)
+let iter_theories f =
+   ST.iter (fun _ t -> f t) !base
 
 (*
  * Get a theory by name.
  *)
 let get_theory name =
-   let rec search = function
-      thy :: t ->
-         if thy.thy_name = name then
-            thy
-         else
-            search t
-    | [] ->
-         raise (Failure ("Theory.get_theory: theory ``" ^ name ^ "'' not found"))
-   in
-      search !base
+   ST.find !base name
 
 (*
  * -*-

@@ -29,7 +29,6 @@ extends Top_tacticals
 
 open Lm_debug
 open Lm_printf
-open Lm_int_set
 open Lm_imp_dag
 
 open Term_sig
@@ -103,17 +102,19 @@ let forward_precs () =
  *)
 module type TermTableSig =
 sig
-(* unused
    type t
 
    val empty : t
    val add : t -> term -> t
    val mem : t -> term -> bool
- *)
-end;;
+end
 
-module TermTable =
+module TermTable : TermTableSig =
 struct
+   open Lm_int_set
+
+   type t = term IntMTable.t
+
    let empty = IntMTable.empty
 
    let add table t =
@@ -126,7 +127,7 @@ struct
       with
          Not_found ->
             false
-end;;
+end
 
 type fwd_state = {
    fwd_thin : int -> tactic;
