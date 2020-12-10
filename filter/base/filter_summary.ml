@@ -921,16 +921,12 @@ struct
 
    (*
     * Dform options.
-    *
-    * XXX HACK: the dform_internal_op is there only for backwards compativility with
-    * old files (ASCII formats v. <= 1.0.11)
     *)
    let dform_inherit_op     = mk_opname "inherit_df"
    let dform_prec_op        = mk_opname "prec_df"
    let dform_parens_op      = mk_opname "parens_df"
    let dform_mode_op        = mk_opname "mode_df"
    let dform_except_mode_op = mk_opname "except_mode_df"
-   let dform_internal_op    = mk_opname "internal_df" (* XXX: HACK: obsolete *)
 
    let dest_dform_opt tl =
       let modes = ref [] in
@@ -949,8 +945,6 @@ struct
                push modes (dest_string_param t)
             else if Opname.eq opname dform_except_mode_op && (!modes)=[] then
                push except (dest_string_param t)
-            else if Opname.eq opname dform_internal_op then (* XXX: HACK: obsolete *)
-               ()
             else
                raise (Invalid_argument "Dform option is not valid")
       in

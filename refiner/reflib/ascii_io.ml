@@ -160,14 +160,14 @@ struct
     | _ ->
          fail "add_context"
 
-   let find_concl = function (* XXX HACK: file format version <= 1.0.14 comatibility *)
+   (*
+   let find_concl = function
       [concl] -> concl (* This is the only possibility in formats >= 1.0.15 *)
     | concl :: _ -> concl
-    | [] -> "t4" (* XXX HACK squared - t4 is what xnil_term happens to be in mmc_core_cps.prla *)
+    | [] -> "t4" *)
 
    let add_seq r = function
-      (_, name, [[args];hyps;concls]) ->
-         let concl = find_concl concls in (* XXX HACK: file format version <= 1.0.14 comatibility; in >= 1.0.15 concls is a singleton list *)
+      (_, name, [[args];hyps;[concl]]) -> (* sequents have only one conclusion *)
          let args = Hashtbl.find r.io_terms args in
          let hyps = List.map (Hashtbl.find r.io_hyps) hyps in
          let concl = Hashtbl.find r.io_terms concl in
@@ -359,7 +359,7 @@ struct
       out_bterms = HashBTerm.create init_size;
     }
 
-   let init_data (inputs : io_item list ref) =
+   let init_data (inputs : io_table) =
       (*
        * First, we want to make sure that every value occurs at most once in the list.
        * Duplicate names for the same value (which could have only been introduced

@@ -417,7 +417,7 @@ struct
             { term_f = TTermCopy.revert;
               meta_term_f = (fun t -> TTermCopy.revert_meta (TSummary.meta_term_of_term t));
               proof_f = (fun name pf -> unmarshal_proof name (Convert.of_term arg) pf);
-              resource_f = TOCaml.resource_str_of_term resource_op;
+              resource_f = TOCaml.resource_str_of_term;
               ctyp_f = type_of_term;
               expr_f = expr_of_term;
               item_f = str_item_of_term
