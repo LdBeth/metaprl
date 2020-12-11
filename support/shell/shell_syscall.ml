@@ -66,8 +66,8 @@ let handle_syscall command =
                    -1)
        | SyscallOMake target ->
             perform_command (sprintf "omake %s" target)
-       | SyscallSVN (cwd, command) ->
-            perform_command (sprintf "cd %s && svn %s" cwd command)
+       | SyscallGit (cwd, command) ->
+            perform_command (sprintf "cd %s && git %s" cwd command)
        | SyscallEdit (root, target) ->
             perform_command (sprintf "%s %s" (Setup.editor ()) (Filename.concat root target))
        | SyscallShell s ->
@@ -183,19 +183,8 @@ let deref_restart () =
 (*
  * Subversion commands.
  *)
-let deref_svn () command =
-   match command with
-      "up"
-    | "update"
-    | "co"
-    | "commit"
-    | "status"
-    | "stat"
-    | "st" ->
-         exec (SyscallSVN (editname ".", command))
-    | _ ->
-         eprintf "CVS command '%s' not allowed@." command;
-         -1
+let deref_git () command =
+   exec (SyscallGit (editname ".", command))
 
 (*!
  * @docoff

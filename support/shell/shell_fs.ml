@@ -92,7 +92,7 @@ dform listing_df1 : listing_df{xcons{'e1; xcons{'e2; 'next}}} =
    'e1 hspace listing_df{xcons{'e2; 'next}}
 
 dform listing_df2 : listing_df{xcons{'e; xnil}} =
-   'e
+   'e hspace
 
 dform listing_df3 : listing_df{xnil} =
    `""
@@ -207,21 +207,15 @@ let add_shell_pattern buf s =
       Buffer.add_char buf '$'
 
 (*
- * These are the files that CVS ignores by default.
- * https://www.cvshome.org/docs/manual/cvs-1.11.16/cvs_18.html#IDX266
+ * These are the files ignored by default.
  *)
 let default_patterns =
-   ["RCS";
-    "SCCS";
-    "CVS";
-    "CVS.adm";
-    "RCSLOG";
-    "cvslog.*";
-    "tags";
+   ["tags";
     "TAGS";
     ".make.state";
     ".nse_depinfo";
     ".svn";
+    ".git";
     "*~";
     "#*";
     ".#*";
@@ -247,10 +241,10 @@ let default_patterns =
     "core.*"]
 
 (*
- * Load the ignore expression from .cvsignore.
+ * Load the ignore expression from .gitignore.
  *)
 let load_cvsignore dirname =
-   let filename = Filename.concat dirname ".cvsignore" in
+   let filename = Filename.concat dirname ".gitignore" in
 
    (* Get the patterns from the file *)
    let inx = open_in filename in
@@ -264,7 +258,7 @@ let load_cvsignore dirname =
 
    (* Concatenate them into a large regular expression *)
    let buf = Buffer.create 256 in
-      Buffer.add_string buf "^\\.cvsignore$";
+      Buffer.add_string buf "^\\.gitignore$";
       List.iter (add_shell_pattern buf) default_patterns;
       List.iter (add_shell_pattern buf) patterns;
       Str.regexp (Buffer.contents buf)

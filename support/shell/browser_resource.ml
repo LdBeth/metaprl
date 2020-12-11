@@ -517,7 +517,7 @@ let menubar_init =
    [<< menu["file", "File"] >>,                                            always_enabled;
     << menuitem["file", "Rebuild",    "Command('!omake')"] >>,             always_enabled;
     << menuitem["file", "Restart",    "Command('!restart')"] >>,           always_enabled;
-    << menuitem["file", "SVN Update", "Command('!svn \"update\"')"] >>,    always_enabled;
+    << menuitem["file", "Git Pull",   "Command('!git \"pull\"')"] >>,      always_enabled;
     << menuitem["file", "Save",       "Command('save ()')"] >>,            always_enabled;
     << menuitem["file", "Quit",       "Quit()"] >>,                        always_enabled;
     << menuitem["file", "-",          ""] >>,                              always_enabled;
