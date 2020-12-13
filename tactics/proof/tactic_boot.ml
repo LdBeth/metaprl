@@ -324,13 +324,13 @@ struct
     * set to the current goal when requested.
     *)
    let attribute_info_of_raw_attributes attributes =
-      { attr_terms      = Lm_list_util.some_map (function (name, RawTerm t)     -> Some (name, t) | _ -> None) attributes;
-        attr_term_lists = Lm_list_util.some_map (function (name, RawTermList t) -> Some (name, t) | _ -> None) attributes;
-        attr_types      = Lm_list_util.some_map (function (name, RawType t)     -> Some (name, t) | _ -> None) attributes;
-        attr_ints       = Lm_list_util.some_map (function (name, RawInt i)      -> Some (name, i) | _ -> None) attributes;
-        attr_bools      = Lm_list_util.some_map (function (name, RawBool b)     -> Some (name, b) | _ -> None) attributes;
-        attr_strings    = Lm_list_util.some_map (function (name, RawString s)   -> Some (name, s) | _ -> None) attributes;
-        attr_keys       = Lm_list_util.some_map (function (name, RawSentinal k) -> Some (name, k) | _ -> None) attributes;
+      { attr_terms      = List.filter_map (function (name, RawTerm t)     -> Some (name, t) | _ -> None) attributes;
+        attr_term_lists = List.filter_map (function (name, RawTermList t) -> Some (name, t) | _ -> None) attributes;
+        attr_types      = List.filter_map (function (name, RawType t)     -> Some (name, t) | _ -> None) attributes;
+        attr_ints       = List.filter_map (function (name, RawInt i)      -> Some (name, i) | _ -> None) attributes;
+        attr_bools      = List.filter_map (function (name, RawBool b)     -> Some (name, b) | _ -> None) attributes;
+        attr_strings    = List.filter_map (function (name, RawString s)   -> Some (name, s) | _ -> None) attributes;
+        attr_keys       = List.filter_map (function (name, RawSentinal k) -> Some (name, k) | _ -> None) attributes;
         attr_options    =
            List.fold_right (fun attr options ->
                  match attr with
@@ -343,7 +343,7 @@ struct
       { attrs with attr_keys = [] }
 
    let update_attributes attrs raws =
-      { attrs with attr_keys = Lm_list_util.some_map (function (name, RawSentinal k) -> Some (name, k) | _ -> None) raws }
+      { attrs with attr_keys = List.filter_map (function (name, RawSentinal k) -> Some (name, k) | _ -> None) raws }
 
    let main_loop () =
       ThreadRefiner.main_loop (get_remote_server ())

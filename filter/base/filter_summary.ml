@@ -1496,7 +1496,7 @@ struct
        (convert : (term, term, term, term, term, term, term,
                    'term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) convert)
        (terms : term list) =
-      let items = Lm_list_util.some_map (dest_term_loc convert) terms in
+      let items = List.filter_map (dest_term_loc convert) terms in
          ({ info_list = List.rev items } : ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) module_info)
 
    (**************

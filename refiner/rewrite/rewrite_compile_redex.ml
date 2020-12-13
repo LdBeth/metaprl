@@ -637,7 +637,7 @@ struct
          let stack, goal = compile_so_redex_term st stack goal in
          let () = List.iter check_stack stack in
          let bconts = stack_cvars 0 stack in
-         let extra_restricts = Lm_list_util.some_map (filter_restricts bconts) !(st.st_restricts) in
+         let extra_restricts = List.filter_map (filter_restricts bconts) !(st.st_restricts) in
          let args = if extra_restricts = [] then args' else List.map (map_restricts_term extra_restricts) args' in
             Array.of_list stack, goal :: args
 end

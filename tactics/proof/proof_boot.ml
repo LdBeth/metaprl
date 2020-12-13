@@ -818,7 +818,7 @@ struct
                let subgoals, extras = collect leaves subgoals in
                   subgoal :: subgoals, extras
           | [] ->
-               [], Lm_list_util.some_map filter_extra subgoals
+               [], List.filter_map filter_extra subgoals
       in
          (fun leaves subgoals extras ->
                collect leaves (filter_subgoals (subgoals @ extras)))
