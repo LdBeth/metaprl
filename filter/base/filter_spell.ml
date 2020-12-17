@@ -156,7 +156,7 @@ let init () =
       None ->
          lib := Setup.lib();
          dat_filename := Filename.concat !lib "english_dictionary.dat";
-         words_filename := Filename.concat !lib "words";
+         words_filename := Filename.concat !lib "words.dict";
          if check_dict () then
             make_dict ()
          else
@@ -179,7 +179,7 @@ let check s =
          if String.length s >= 2 then
             match s.[0] with
                'A'..'Z' ->
-                  Hashtbl.mem dict s || (Hashtbl.mem dict (String.lowercase s))
+                  Hashtbl.mem dict s || (Hashtbl.mem dict (String.lowercase_ascii s))
              | '0'..'9' when Lm_string_util.for_all is_num s ->
                   true
              | _ ->

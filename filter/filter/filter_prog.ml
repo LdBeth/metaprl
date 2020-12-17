@@ -303,7 +303,7 @@ let output_type name =
    "_$" ^ name ^ "_$$resource_output"
 
 let res_fqn path name =
-   (String.concat "!" (List.map String.capitalize path)) ^ "!" ^ name
+   (String.concat "!" (List.map String.capitalize_ascii path)) ^ "!" ^ name
 
 let refiner_id = "refiner"
 
@@ -421,7 +421,7 @@ let expr_of_label _loc = function
  *          Refine_exn.stderr_exn name exn
  *)
 let wrap_exn proc _loc name e =
-   let name = (String.capitalize proc.imp_name) ^ "." ^ name in
+   let name = (String.capitalize_ascii proc.imp_name) ^ "." ^ name in
    <:expr<
       do {
          (* Print a message before the execution *)
@@ -468,17 +468,17 @@ let dform_option_expr _loc = function
  *)
 let rec parent_path_expr _loc = function
    [h] ->
-      <:expr< $uid:String.capitalize h$ >>
+      <:expr< $uid:String.capitalize_ascii h$ >>
  | h::t ->
-      <:expr< $uid:String.capitalize h$ . $parent_path_expr _loc t$ >>
+      <:expr< $uid:String.capitalize_ascii h$ . $parent_path_expr _loc t$ >>
  | [] ->
       raise (Invalid_argument "parent_path")
 
 let rec parent_path_ctyp _loc = function
    [h] ->
-      <:ctyp< $uid:String.capitalize h$ >>
+      <:ctyp< $uid:String.capitalize_ascii h$ >>
  | h::t ->
-      <:ctyp< $uid:String.capitalize h$ . $parent_path_ctyp _loc t$ >>
+      <:ctyp< $uid:String.capitalize_ascii h$ . $parent_path_ctyp _loc t$ >>
  | [] ->
       raise (Invalid_argument "parent_path")
 
@@ -496,7 +496,7 @@ let toploop_item_expr _loc name ctyp =
    let str_lid s =
       match s with
          "unit" | "bool" |  "int" | "string" | "term" | "tactic" | "conv" | "address" | "addr_item" ->
-            String.capitalize s
+            String.capitalize_ascii s
        | _ ->
             raise_toploop_exn _loc
    in let rec collect index expr = function
@@ -1579,7 +1579,7 @@ let implem_prolog proc _loc name =
                                 $lid:global_num_var$) =
                             Ml_term.term_arrays_of_string $str:String.escaped marshalled_terms$>>]
    in
-      <:str_item< Lm_debug.show_loading $str: "Loading theory " ^ String.capitalize name ^ "%t"$ >>
+      <:str_item< Lm_debug.show_loading $str: "Loading theory " ^ String.capitalize_ascii name ^ "%t"$ >>
       :: <:str_item< value $lid:local_refiner_id$ = $refiner_expr _loc$ . null_refiner $str: name$ >>
       :: term_let
 
@@ -1600,7 +1600,7 @@ let implem_postlog proc _loc =
                   Theory.thy_groupdesc = $str:proc.imp_groupdesc$;
                   Theory.thy_refiner = $lid:refiner_id$
                }>>;
-            <:str_item< Lm_debug.show_loading $str: ("Finished loading " ^ String.capitalize proc.imp_name ^ "%t") $ >>]
+            <:str_item< Lm_debug.show_loading $str: ("Finished loading " ^ String.capitalize_ascii proc.imp_name ^ "%t") $ >>]
 
 (*
  * Now extract the program.

@@ -217,7 +217,7 @@ let declare_parent cache loc item =
          Failure _ ->
             Ploc.raise loc (EmptyModulePath "Filter_reflect.declare_parent")
    in
-   let name = reflect_prefix ^ String.uncapitalize name in
+   let name = reflect_prefix ^ String.uncapitalize_ascii name in
    let path = head @ [name] in
       declare_parent_path cache loc path
 
@@ -463,7 +463,7 @@ let define_parent info loc item =
          Failure _ ->
             Ploc.raise loc (EmptyModulePath "Filter_reflect.define_parent")
    in
-   let name = reflect_prefix ^ String.uncapitalize name in
+   let name = reflect_prefix ^ String.uncapitalize_ascii name in
    let path = head @ [name] in
       define_parent_path info loc path
 
