@@ -485,7 +485,7 @@ struct
                   [] ->
                      None
                 | { sig_summary = info; _ } :: t ->
-                     let modname' = String.capitalize (Base.name base info) in
+                     let modname' = String.capitalize_ascii (Base.name base info) in
                         if !debug_filter_path then
                            eprintf "Filter_cache.expand_path.head_search: %s vs. %s%t" modname' modname eflush;
                         if modname' = modname then
@@ -497,7 +497,7 @@ struct
                   [] ->
                      raise Not_found
                 | { sig_summary = info; _ } :: tl ->
-                     let modname' = String.capitalize (Base.name base info) in
+                     let modname' = String.capitalize_ascii (Base.name base info) in
                         try modname' :: (expand_in_summary path (SigMarshal.unmarshal (Base.info base info))) with
                            Not_found ->
                               mod_search tl
@@ -1204,7 +1204,7 @@ struct
    let resource_member name resources =
       let rec search = function
          (_, name', _) :: t ->
-            name = name' or search t
+            name = name' || search t
        | [] ->
             false
       in
@@ -1511,7 +1511,7 @@ struct
    let create_cache base name self_select =
       let dir = Filename.dirname name in
       let name = Filename.basename name in
-         { opprefix       = Opname.mk_opname (String.capitalize name) nil_opname;
+         { opprefix       = Opname.mk_opname (String.capitalize_ascii name) nil_opname;
            optable        = Optable.create ();
            summaries      = [];
            precs          = [];
@@ -1565,7 +1565,7 @@ struct
       in
       let info' = StrMarshal.unmarshal (Base.info base.lib info) in
       let cache =
-         { opprefix       = Opname.mk_opname (String.capitalize name) nil_opname;
+         { opprefix       = Opname.mk_opname (String.capitalize_ascii name) nil_opname;
            optable        = Optable.create ();
            summaries      = [];
            precs          = [];
@@ -1591,7 +1591,7 @@ struct
          end;
          if my_select = ImplementationType then
             load_sig_grammar cache barg InterfaceType;
-         inline_str_components barg cache [String.capitalize name] info (info_items info');
+         inline_str_components barg cache [String.capitalize_ascii name] info (info_items info');
          cache
 
    (*

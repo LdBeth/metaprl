@@ -661,7 +661,7 @@ let eq_goal
    let rec aux = function
       ({ assum_term = t; assum_hash = hash }::tl),
       ({ assum_term = t'; assum_hash = hash' }::tl') ->
-         if hash = hash' & alpha_equal t t' then
+         if hash = hash' && alpha_equal t t' then
             aux (tl, tl')
          else
             false
@@ -670,7 +670,7 @@ let eq_goal
     | _ ->
          false
    in
-      hash = hash' & alpha_equal t t' & aux (assums, assums')
+      hash = hash' && alpha_equal t t' && aux (assums, assums')
 
 (*
  * Determine if a world is a prefix of another.
@@ -701,7 +701,7 @@ let is_child_with_assumptions child assums parent =
                                  world_prev = prev;
                                  _
                } ->
-                  if hash = hash' & alpha_equal t t' then
+                  if hash = hash' && alpha_equal t t' then
                      aux prev tl
                   else
                      false
@@ -804,7 +804,7 @@ let fset_insts inf (i, _, insts) =
 
 let init_insts (rules : 'a info_table) ({ finfo_plates = plates; _ } as rl) =
    let len = List.length plates in
-   let entry = Array.create len [] in
+   let entry = Array.make len [] in
    let entries =
       try Hashtbl.find rules plates with
          Not_found ->
@@ -859,7 +859,7 @@ let set_goal { ext_base = { ext_terms = terms; _ }; _ } ({ goal_hash = hash; _ }
 let find_inf { ext_base = { ext_terms = terms; _ }; _ } world t hash =
    let test ({ inf_value = t'; _ } as inf) =
       let world' = world_of_inf inf in
-         alpha_equal t t' & is_child_of_parent world world'
+         alpha_equal t t' && is_child_of_parent world world'
    in
    let { entry_infs = infs; _ } = Hashtbl.find terms hash in
       List.find test infs
@@ -917,7 +917,7 @@ let find_inf_for_node
    let rec aux = function
       ({ inf_value = t'; _ } as inf)::tl ->
          let world' = world_of_inf inf in
-            if alpha_equal t t' & is_child_of_parent world world' then
+            if alpha_equal t t' && is_child_of_parent world world' then
                Some inf
             else
                aux tl
@@ -993,7 +993,7 @@ let find_world_extension { ext_base = { ext_worlds = worlds; _ }; _ } world t ha
                _
              } = world'
          in
-            if hash = hash' & alpha_equal t t' then
+            if hash = hash' && alpha_equal t t' then
                if prev == world then
                   FindNext next
                else if is_child_of_parent world prev then
@@ -2029,7 +2029,7 @@ let hyp_index { hyp_count = hcount; hyp_hyps = hyps } =
             let index = Lm_list_util.find_indexq t values in
             let rec search i = function
                ({ hyp_info = Root (j, info') } as hyp)::htl ->
-                  if info == info' & j = index then
+                  if info == info' && j = index then
                      begin
                         hyp.hyp_info <- Inf inf;
                         Some i

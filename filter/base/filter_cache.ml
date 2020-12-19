@@ -534,7 +534,7 @@ struct
       let inx = open_in filename in
       let magic, version =
          try
-            match List.map String.uppercase (Lm_string_util.parse_args (input_line inx)) with
+            match List.map String.uppercase_ascii (Lm_string_util.parse_args (input_line inx)) with
                "#PRL" :: "VERSION" :: code :: _ ->
                   let major, minor, rev =
                      match List.map int_of_string (Lm_string_util.split "." code) with

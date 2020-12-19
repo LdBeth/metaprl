@@ -102,7 +102,7 @@ struct
          [] ->
             raise (EmptyModulePath "Filter_summary_io.find")
        | name'::path ->
-            let info = find base arg (String.uncapitalize name') select suffix in
+            let info = find base arg (String.uncapitalize_ascii name') select suffix in
             let info' = Address.find_sub_module (FileBase.info base info) path in
                { info_root = info;
                  info_path = name;
@@ -137,7 +137,7 @@ struct
    let create_info base select dir file =
       let data = Address.create () in
          { info_root = FileBase.create_info base data select dir file;
-           info_path = [String.capitalize file];
+           info_path = [String.capitalize_ascii file];
            info_info = data
          }
 

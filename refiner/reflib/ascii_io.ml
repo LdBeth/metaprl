@@ -374,7 +374,7 @@ struct
                name'
       in let smap_rename = Lm_list_util.smap (Lm_list_util.smap rename) in
       let clean_inputs tail ((comment,name,record) as item) =
-         let c = Char.uppercase comment.[0] in
+         let c = Char.uppercase_ascii comment.[0] in
          let record' = match c, record with
             ('T' | 'O' | 'G' | 'S'), _ ->
                smap_rename record

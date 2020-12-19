@@ -138,7 +138,7 @@ let item_of_obj pack name
             Filter_type.rule_proof = proof;
             Filter_type.rule_resources = res
          }
-    | GRewrite (redex, contractum, _) when params = [] & assums = [] ->
+    | GRewrite (redex, contractum, _) when params = [] && assums = [] ->
          Filter_type.Rewrite {
             rw_name = name;
             rw_redex = redex;
