@@ -290,7 +290,7 @@ struct
 
    let create state =
       { info_state   = state;
-        info_opnames = Array.create !hash_index None
+        info_opnames = Array.make !hash_index None
       }
 
    let find_opname info (id, data) =

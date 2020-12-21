@@ -373,7 +373,7 @@ dform lines_xnil_df : lines{xnil} =
    `""
 
 dform lines_cons_df : lines{xcons{'e1; 'e2}} =
-   newline szone{'e1} lines{'e2}
+   szone{'e1} newline lines{'e2}
 
 dform interface_df : "interface"{'body} =
    szone pushm[0] lines{'body} popm ezone

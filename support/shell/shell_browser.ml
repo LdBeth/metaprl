@@ -1531,7 +1531,7 @@ struct
                         raise (Invalid_argument ("The password file \"" ^ passwd ^ "\" is empty"))
                in
                   close_in inx;
-                  Lm_string_util.trim password
+                  String.trim password
 
             end
          else

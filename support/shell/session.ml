@@ -199,7 +199,7 @@ let add_directory str =
    State.write shared_entry (fun shared ->
          (* Parse the filename *)
          let path =
-            match Lm_string_util.split "/" str with
+            match String.split_on_char '/' str with
                [""; ""] ->
                   []
              | "" :: path ->

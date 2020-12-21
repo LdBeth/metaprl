@@ -45,7 +45,7 @@ let _ =
  * string -> path commands
  *)
 let set_path doc var path =
-   let path' = Lm_string_util.split ":" path in
+   let path' = String.split_on_char ':' path in
       var := path'
 
 let set_path_arg doc var =

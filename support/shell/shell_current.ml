@@ -168,7 +168,7 @@ let strings_of_file_info queue =
 let file_info_of_strings strings =
    List.fold_left (fun table line ->
          let dir, point =
-            match Lm_string_util.split "#" line with
+            match String.split_on_char '#' line with
                dir :: point :: _ ->
                   let point =
                      try int_of_string point with

@@ -276,7 +276,7 @@ struct
        | Root,Root -> 0
 *)
    let compare (a,(i:int)) (b,j) =
-		Stdlib.compare i j
+		Int.compare i j
 
 end
 

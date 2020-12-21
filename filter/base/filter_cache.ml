@@ -537,7 +537,7 @@ struct
             match List.map String.uppercase_ascii (Lm_string_util.parse_args (input_line inx)) with
                "#PRL" :: "VERSION" :: code :: _ ->
                   let major, minor, rev =
-                     match List.map int_of_string (Lm_string_util.split "." code) with
+                     match List.map int_of_string (String.split_on_char '.' code) with
                         [] ->
                            raise (Failure "read_table")
                       | [major] ->

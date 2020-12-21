@@ -158,13 +158,13 @@ let split_var =
                   h, tl
          else begin
             match tl with
-               [] ->
-                  h, [] (* or internal bug - this should not happen *)
-             | tl1 :: tl ->
+               tl1 :: tl ->
                   aux ((h ^ "_" ^ tl1) :: tl)
+             | [] ->
+                  h, [] (* or internal bug - this should not happen *)
          end
    in
-      fun v -> aux (Lm_string_util.split "_" v)
+      fun v -> aux (String.split_on_char '_' v)
 
 let print_html_var format_term buf header_fun v =
    let h, tl = split_var v in
@@ -290,9 +290,7 @@ let format_seq_src format_term buf =
       if i <> len then
          let _ =
             if i <> 0 then
-               format_string buf ";"
-         in
-         let _ =
+               format_string buf ";";
             match SeqHyp.get hyps i with
                Hypothesis (v, a) ->
                   format_space buf;

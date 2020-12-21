@@ -180,7 +180,7 @@ struct
          else
             SymbolSet.empty
       in
-      let gstack = Array.create rw.rr_gstacksize StackVoid in
+      let gstack = Array.make rw.rr_gstacksize StackVoid in
          IFDEF VERBOSE_EXN THEN
             if !debug_rewrite then
                eprintf "Rewrite.apply_rewrite: match_redex on %a%t" debug_print goal eflush
@@ -332,11 +332,11 @@ struct
     * Match with a redex, and extract the forms to be bound.
     *)
    let test_redex_applicability { redex_stack = stack; redex_redex = redex } addrs term terms =
-      let gstack = Array.create (Array.length stack) StackVoid in
+      let gstack = Array.make (Array.length stack) StackVoid in
          match_redex addrs gstack SymbolSet.empty term terms redex
 
    let apply_redex { redex_stack = stack; redex_redex = redex } addrs term terms =
-      let gstack = Array.create (Array.length stack) StackVoid in
+      let gstack = Array.make (Array.length stack) StackVoid in
          match_redex addrs gstack SymbolSet.empty term terms redex;
          extract_redex_values gstack stack
 

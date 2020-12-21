@@ -155,11 +155,11 @@ let parse spec def errmsg =
  * Set debug flags from the environment.
  *)
 let set_possible_debug_flags _ _ flags =
-   List.iter (fun name -> set_possible_debug name true) (Lm_string_util.split ":" flags)
+   List.iter (fun name -> set_possible_debug name true) (String.split_on_char ':' flags)
 
 let set_debug_flags _ _ =
    let set flags =
-      let names = Lm_string_util.split ":" flags in
+      let names = String.split_on_char ':' flags in
       try List.iter (fun name -> set_debug name true) names with
          Failure _ ->
             usage [] "illegal option: valid options are:";

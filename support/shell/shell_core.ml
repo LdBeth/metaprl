@@ -76,16 +76,15 @@ let loaded_packages () =
    List.filter shell_package (Package_info.loaded_packages packages)
 
 let all_theories () =
-   (* TODO: optimize merge and sort two list of strings *)
-   let cmp = String.compare in
+   (* XXX: This assumes both modified_packages and theories are sorted *)
    let packages = List.filter_map (fun pkg ->
                         let name = Package_info.name pkg in
                            if shell_package_name name then
                               Some name
-                           else None) (Package_info.modified_packages packages) in
-   let packages = List.sort cmp packages in
+                           else None) (Package_info.modified_packages packages)
+   in
    let theories = get_theory_names () in
-      List.merge cmp packages theories
+      List.merge String.compare packages theories
 
 let default_mode_base = Mp_resource.theory_bookmark "shell_theory"
 let default_base = get_mode_base default_mode_base "prl" null_shortener
@@ -649,7 +648,7 @@ let mount_current_module modname parse_arg shell force_flag need_shell verbose =
       if force_flag || update then
          begin
             (* Make sure the module name is well-formed *)
-            if modname <> String.uncapitalize modname then
+            if modname <> String.uncapitalize_ascii modname then
                raise (Failure "Shell_core: module name should not be capitalized");
 
             (* See if the theory exists *)

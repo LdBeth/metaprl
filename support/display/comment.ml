@@ -157,7 +157,7 @@ dform docom_df2 : mode[tex] :: xcons{docon; 't} =
    izone slot["raw", "%\n\\fi\\textrue\\iftex%\n"] ezone 't
 
 dform docon_df3 : except_mode[tex] :: docon =
-   bf["docoff"]
+   bf["docon"]
 
 (*
  * TeX version.
@@ -478,7 +478,7 @@ doc docoff
 
 ml_dform hrefmodule_df : hrefmodule[name:s] format_term buf = fun _ ->
    format_term buf Dform.NOParens (**)
-      <:con<hrefmodule_internal[$String.capitalize (Dform.string_of_param name)$:s]>>
+      <:con<hrefmodule_internal[$String.capitalize_ascii (Dform.string_of_param name)$:s]>>
 
 dform hrefmodule_internal_df1 : mode[tex] :: hrefmodule_internal[name:s] =
    izone `"\\hreflabelmodule{" slot[name:s] `"}{" ezone slot[name:s] izone `"}" ezone

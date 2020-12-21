@@ -437,7 +437,7 @@ let header_line inx =
             if index < length then
                let tag = String.lowercase (String.sub line 0 index) in
                let field = String.sub line (succ index) (length - index - 1) in
-                  Some (tag, Lm_string_util.trim field)
+                  Some (tag, String.trim field)
             else
                None
       with
@@ -480,7 +480,7 @@ let string_header_line line i =
             let index = find_colon line i length in
             let tag = String.lowercase (String.sub line i (index - i)) in
             let field = String.sub line (succ index) (length - index - 1) in
-               StringEntry (tag, Lm_string_util.trim field, succ length)
+               StringEntry (tag, String.trim field, succ length)
          with
             Not_found ->
                StringOffset (succ length)
@@ -602,7 +602,7 @@ let parse_uri s =
       }
 
 let split_eq_val arg =
-   let arg = Lm_string_util.trim arg in
+   let arg = String.trim arg in
       try
          let index = String.index arg '=' in
          let length = String.length arg in
@@ -632,11 +632,11 @@ let parse_cookies body =
  * Content-type.
  *)
 let parse_content_type body =
-   let parts = Lm_string_util.split ";" body in
+   let parts = String.split_on_char ';' body in
       match parts with
          info :: params ->
             let main, sub =
-               match Lm_string_util.split "/" info with
+               match String.split_on_char '/' info with
                   main :: sub :: _ ->
                      main, sub
                 | [main] ->

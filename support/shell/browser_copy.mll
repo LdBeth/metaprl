@@ -25,7 +25,6 @@
 
 {
 open Lm_symbol
-open Lm_thread
 
 open Http_server_type
 open Http_simple
@@ -238,30 +237,13 @@ struct
 end
 
 (*
- * OCaml 3.07 allows lexer functions to have arguments.
- * In the meantime, code this imperatively (yuck).
+ * Threading the state into parsing functions.
  *)
 type lex_info =
    { mutable lex_buffer : info;
      mutable lex_table  : BrowserTable.t
    }
 
-let lex_entry =
-   let default =
-      { lex_buffer = buffer_info (Buffer.create 1);
-        lex_table = BrowserTable.empty
-      }
-   in
-   let fork lex =
-      { lex with lex_table = lex.lex_table }
-   in
-      State.private_val "Browser_copy.lex" default fork
-
-let with_buffer table buf f x =
-   State.write lex_entry (fun lex ->
-         lex.lex_buffer <- buf;
-         lex.lex_table <- table;
-         f x)
 }
 
 (*
@@ -273,31 +255,28 @@ let other = [^ '%']+
 (*
  * Lexer definition.
  *)
-rule main = parse
+rule main lex = parse
    "%%" name "%%"
    { let s = Lexing.lexeme lexbuf in
      let name = String.sub s 2 (String.length s - 4) in
      let v = Lm_symbol.add name in
-     let lex = State.get lex_entry in
      let () =
         try BrowserTable.append_to_buffer lex.lex_buffer lex.lex_table v with
            Not_found ->
               (* Ignore unbound symbols *)
               ()
      in
-        main lexbuf
+        main lex lexbuf
    }
  | other
    { let s = Lexing.lexeme lexbuf in
-     let lex = State.get lex_entry in
         lex.lex_buffer.info_add_string s;
-        main lexbuf
+        main lex lexbuf
    }
  | _
    { let s = Lexing.lexeme lexbuf in
-     let lex = State.get lex_entry in
         lex.lex_buffer.info_add_string s;
-        main lexbuf
+        main lex lexbuf
    }
  | eof
    { () }
@@ -307,8 +286,8 @@ rule main = parse
  * Main function.
  *)
 let parse table buf inx =
-   with_buffer table buf (fun inx ->
-      main (Lexing.from_channel inx)) inx
+   let lex = { lex_buffer = buf; lex_table = table } in
+      main lex (Lexing.from_channel inx)
 
 (*
  * Print the contents of a file, with replacement.

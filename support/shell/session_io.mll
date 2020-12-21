@@ -28,7 +28,6 @@
 {
 open Printf
 
-open Lm_thread
 open Lm_string_set
 
 open Session_sig
@@ -59,17 +58,6 @@ type state =
      mutable state_table : string StringMTable.t
    }
 
-let current_entry =
-   let default =
-      { state_name  = junk_sym;
-        state_table = StringMTable.empty
-      }
-   in
-   let fork state =
-      { state with state_name = state.state_name }
-   in
-      State.private_val "Browser_io.current_entry" default fork
-
 (*
  * Parse failures.
  *)
@@ -87,12 +75,12 @@ let line    = [^ '\n']+ '\n'
 (*
  * Lexer definition.
  *)
-rule main = parse
+rule main state = parse
    eol
  | comment
-   { main lexbuf }
+   { main state lexbuf }
  | name
-   { let name = Lm_string_util.trim (Lexing.lexeme lexbuf) in
+   { let name = String.trim (Lexing.lexeme lexbuf) in
      let length = String.length name in
      let name =
         if length > 2 then
@@ -100,15 +88,13 @@ rule main = parse
         else
            name
      in
-     let state = State.get current_entry in
         state.state_name <- name;
-     main lexbuf
+     main state lexbuf
    }
  | line
-   { let line = Lm_string_util.trim (Lexing.lexeme lexbuf) in
-     let state = State.get current_entry in
+   { let line = String.trim (Lexing.lexeme lexbuf) in
         state.state_table <- StringMTable.add state.state_table state.state_name line;
-        main lexbuf
+        main state lexbuf
    }
  | _
    { eprintf "Syntax error in session file%t" eflush;
@@ -125,18 +111,18 @@ let parse filename =
    let inx = open_in_bin filename in
    let lexbuf = Lexing.from_channel inx in
    let table =
-      State.write current_entry (fun state ->
-         state.state_name <- junk_sym;
-         state.state_table <- StringMTable.empty;
+      let state = { state_name = junk_sym;
+                    state_table = StringMTable.empty }
+      in
          try
-            main lexbuf;
+            main state lexbuf;
             let table = state.state_table in
                state.state_table <- StringMTable.empty;
                table
          with
             exn ->
                close_in inx;
-               raise exn)
+               raise exn
    in
       close_in inx;
       table

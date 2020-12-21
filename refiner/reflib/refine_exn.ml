@@ -173,7 +173,7 @@ let format_explanation buf s =
     | [s] -> format_string buf s
     | s :: ss -> format_string buf s; format_cbreak buf "" " "; fmt ss
    in
-      fmt (Lm_string_util.split " " s);
+      fmt (String.split_on_char ' ' s);
    format_ezone buf;
    format_popm buf;
    format_ezone buf

@@ -26,7 +26,6 @@
  *)
 extends Mptop
 
-open Lm_config
 open Lm_format
 
 open Shell_syscall_sig
@@ -161,10 +160,10 @@ let deref_edit () s =
 let deref_omake () =
    let target1 = Filename.basename Sys.argv.(0) in
    let target2 =
-      match Lm_config.code with
-         ByteCode ->
+      match Sys.backend_type with
+         Sys.Bytecode | Sys.Other _ ->
             "mp.top"
-       | NativeCode ->
+       | Sys.Native ->
             "mp.opt"
    in
       if target1 <> target2 then begin

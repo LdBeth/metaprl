@@ -429,7 +429,7 @@ let get = get_package
  * Package listings.
  *)
 let compare pack1 pack2 =
-   Stdlib.compare pack1.pack_name pack2.pack_name
+   String.compare pack1.pack_name pack2.pack_name
 
 let modified_packages pack =
    synchronize_pack pack (fun { pack_modified = modified; _ } ->
