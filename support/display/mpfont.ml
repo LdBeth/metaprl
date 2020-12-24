@@ -194,7 +194,7 @@ dform monospaced_end_df : mode[html] :: monospaced_end =
    html["</span>"]
 
 dform monospaced_begin_df : mode[prl] :: monospaced_begin =
-   pushfont["monospaced"]
+   pushfont["tt"]
 
 dform monospaced_end_df : mode[prl] :: monospaced_end =
    popfont
@@ -321,6 +321,10 @@ dform sup_begin_df : mode[prl] :: sup_begin =
 
 dform sup_end_df : mode[prl] :: sup_end =
    `""
+
+dform small_begin_prl : mode[prl] :: small_begin = pushfont["sm"]
+
+dform small_end_prl : mode[prl] :: small_end = popfont
 
 dform small_begin_df : mode[html] :: small_begin =
    html["<small>"]

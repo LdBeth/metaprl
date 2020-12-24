@@ -139,7 +139,8 @@ and dform_base = {
    df_mode : dform_mode;
    df_short : shortener;
    mutable df_table : delayed_dform_table;
-   mutable df_terms : term StringTable.t option
+   mutable df_terms : term StringTable.t option;
+   df_rend : Lm_sgr.rendition
 }
 
 and delayed_dform_table =
@@ -292,35 +293,35 @@ let popm df = format_popm df.dform_buffer
 
 let translate_font s =
    match s with
-      "bf" -> Lm_terminfo.enter_bold_mode
-    | "it" | "em" -> Lm_terminfo.enter_italics_mode
-    | "rm" -> Lm_terminfo.enter_normal_quality
-    | "sub" -> Lm_terminfo.enter_subscript_mode
-    | "sup" -> Lm_terminfo.enter_superscript_mode
-    | "ul" -> Lm_terminfo.enter_underline_mode
-    | _ -> Lm_terminfo.exit_attribute_mode
+      "bf" -> Lm_sgr.bf
+    | "sm" -> Lm_sgr.sm
+    | "it" -> Lm_sgr.it
+    | "em" -> Lm_sgr.em
+    | "rm" -> Lm_sgr.rm
+    | "ul" -> Lm_sgr.ul
+    | _ -> invalid_arg "Dform.translate_font"
 
-let changefont buf s =
-   match Lm_terminfo.tgetstr (translate_font s) with
-      Some s' ->
-         format_izone buf;
-         format_raw_string buf s';
-         format_ezone buf
-    | None ->
-         ()
+let put_escape buf = function
+   Some s ->
+      format_izone buf;
+      format_sgr_string buf s;
+      format_ezone buf
+ | None ->
+      ()
 
 let pushfont df =
-   let font, buf =
+   let font, buf, rend =
       match df with
-         { dform_items = [RewriteString font]; dform_buffer = buf; _ } ->
-            string_of_param font, buf
-       | { dform_buffer = buf; _ } ->
-            "rm", buf
+         { dform_items = [RewriteString font]; dform_buffer = buf;
+           dform_state = { df_rend = rend ; _ }; _ } ->
+            string_of_param font, buf, rend
+       | { dform_buffer = buf; dform_state = { df_rend = rend ; _ }; _ } ->
+            "rm", buf, rend
    in
-      changefont buf font
+      put_escape buf (Lm_sgr.push (translate_font font) rend)
 
-let popfont { dform_buffer = buf; _ } =
-   changefont buf "exit"
+let popfont { dform_buffer = buf; dform_state = { df_rend = rend ; _ }; _ } =
+   put_escape buf (Lm_sgr.pop rend)
 
 (************************************************************************
  * FORMATTERS                                                           *
@@ -715,7 +716,9 @@ let null_table =
    List.fold_left add_dform empty_table null_list
 
 let null_base =
-   { df_mode = "src"; df_table = DfTable null_table; df_short = null_shortener; df_terms = None }
+   { df_mode = "src"; df_table = DfTable null_table;
+     df_short = null_shortener; df_terms = None; df_rend = Lm_sgr.new_rend ()
+   }
 
 (*
  * The display form tables for different theories are managed as a resource.
@@ -755,13 +758,15 @@ let get_table base =
          let t =
              try find_dftable bk with
                Not_found ->
-                  raise (Failure("Dform.get_mode_base: can not find display forms for " ^ (String.capitalize (fst bk)) ^ "." ^ (snd bk)))
+                  raise (Failure("Dform.get_mode_base: can not find display forms for "
+                                 ^ (String.capitalize_ascii (fst bk)) ^ "." ^ (snd bk)))
          in
             base.df_table <- DfTable t;
             t
 
 let get_mode_base dfbase dfmode dfshort =
-   { df_mode = dfmode; df_table = DfBk dfbase; df_short = dfshort; df_terms = None }
+   { df_mode = dfmode; df_table = DfBk dfbase;
+     df_short = dfshort; df_terms = None; df_rend = Lm_sgr.new_rend () }
 
 (************************************************************************
  * PRINTING                                                             *
