@@ -304,11 +304,6 @@ if $(READLINE_ENABLED)
     OCAML_LINK_FLAGS += -cclib -lreadline
     export
 
-if $(NCURSES_ENABLED)
-    CFLAGS += -DNCURSES
-    OCAML_LINK_FLAGS += -cclib -lncurses
-    export
-
 if $(not $(defined MP_DEBUG))
     MP_DEBUG[] = $(split :, $(getenv MP_DEBUG, $(EMPTY)))
     export
@@ -354,7 +349,6 @@ $(MLDEBUG_PATH):
         else
             fprintln($@, $'DEBUGINCLUDES='$(quote $(deps)))
 
-########################################################################
 # Default clean command line
 #
 

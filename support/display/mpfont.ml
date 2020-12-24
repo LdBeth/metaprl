@@ -242,10 +242,10 @@ dform em_end_df : mode[html] :: em_end =
    html["</em>"]
 
 dform em_begin_df : mode[prl] :: em_begin =
-   `""
+   pushfont["em"]
 
 dform em_end_df : mode[prl] :: em_end =
-   `""
+   popfont
 
 dform em_df1 : em[text:s] =
    em_begin slot[text:s] em_end
@@ -263,10 +263,10 @@ dform tt_end_df : mode[html] :: tt_end =
    html["</tt>"]
 
 dform tt_begin_df : mode[prl] :: tt_begin =
-   `""
+   pushfont["tt"]
 
 dform tt_end_df : mode[prl] :: tt_end =
-   `""
+   popfont
 
 dform tt_df1 : tt[text:s] =
    tt_begin slot[text:s] tt_end

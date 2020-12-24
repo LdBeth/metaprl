@@ -435,7 +435,7 @@ let header_line inx =
          let index = String.index line colon in
          let length = String.length line in
             if index < length then
-               let tag = String.lowercase (String.sub line 0 index) in
+               let tag = String.lowercase_ascii (String.sub line 0 index) in
                let field = String.sub line (succ index) (length - index - 1) in
                   Some (tag, String.trim field)
             else
@@ -478,7 +478,7 @@ let string_header_line line i =
       let length = String.index_from line i '\n' in
          try
             let index = find_colon line i length in
-            let tag = String.lowercase (String.sub line i (index - i)) in
+            let tag = String.lowercase_ascii (String.sub line i (index - i)) in
             let field = String.sub line (succ index) (length - index - 1) in
                StringEntry (tag, String.trim field, succ length)
          with
@@ -527,7 +527,7 @@ let parse_if_match s =
          Some args
 
 let parse_request_cache_control field =
-   match Lm_string_util.parse_args (String.lowercase field) with
+   match Lm_string_util.parse_args (String.lowercase_ascii field) with
       ["no-cache"] ->
          CacheRequestNoCache
     | ["no-store"] ->
@@ -647,10 +647,10 @@ let parse_content_type body =
             let params =
                List.map (fun arg ->
                      let key, x = split_eq_val arg in
-                        String.lowercase key, x) params
+                        String.lowercase_ascii key, x) params
             in
-               { content_type_main   = String.lowercase main;
-                 content_type_sub    = String.lowercase sub;
+               { content_type_main   = String.lowercase_ascii main;
+                 content_type_sub    = String.lowercase_ascii sub;
                  content_type_params = params
                }
        | [] ->
@@ -669,9 +669,9 @@ let parse_content_disposition body =
             let params =
                List.map (fun arg ->
                      let key, x = split_eq_val arg in
-                        String.lowercase key, x) params
+                        String.lowercase_ascii key, x) params
             in
-               { content_disposition_type = String.lowercase info;
+               { content_disposition_type = String.lowercase_ascii info;
                  content_disposition_params = params
                }
        | [] ->
@@ -899,7 +899,7 @@ let handle server client connect info =
    let args =
       match parse_args line with
          command :: args ->
-            String.lowercase command :: args
+            String.lowercase_ascii command :: args
        | [] ->
             []
    in

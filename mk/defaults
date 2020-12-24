@@ -76,7 +76,6 @@ OCAMLFLAGS = -warn-error Aez-3-7-29-34-37-44-45-50-60-67 -w Aez-7-29-34-37-44-45
 # Configure
 #
 open configure/readline
-open configure/ncurses
 
 #
 # Spelling dictionaries
@@ -98,7 +97,6 @@ COMPILATION_MODE = mixed
 SSL_ENABLED = false
 THREADS_ENABLED = true
 READLINE_ENABLED = $(READLINE_AVAILABLE)
-NCURSES_ENABLED = $(NCURSES_AVAILABLE)
 SLOPPY_DEPENDENCIES = false
 NATIVE_PROFILING_ENABLED = false
 LATEX = latex

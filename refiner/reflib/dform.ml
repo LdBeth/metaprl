@@ -293,12 +293,12 @@ let popm df = format_popm df.dform_buffer
 
 let translate_font s =
    match s with
-      "bf" -> Lm_sgr.bf
+      "bf" -> Lm_sgr.bb
     | "sm" -> Lm_sgr.sm
-    | "it" -> Lm_sgr.it
-    | "em" -> Lm_sgr.em
+    | "it" | "em" -> Lm_sgr.it
     | "rm" -> Lm_sgr.rm
     | "ul" -> Lm_sgr.ul
+    | "tt" -> Lm_sgr.tt
     | _ -> invalid_arg "Dform.translate_font"
 
 let put_escape buf = function
