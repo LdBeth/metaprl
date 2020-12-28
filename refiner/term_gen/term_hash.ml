@@ -205,7 +205,7 @@ struct
    let list_compare = Lm_list_util.compare_cmp
 
    let compare_bterm_header { bvars_weak=bvars1; bterm_weak=bterm1 } { bvars_weak=bvars2; bterm_weak=bterm2 } =
-      list_compare Lm_symbol.eq bvars1 bvars2 & bterm1 == bterm2
+      list_compare Lm_symbol.eq bvars1 bvars2 && bterm1 == bterm2
 
    let compare_hyp_header hyp1 hyp2 =
       match hyp1, hyp2 with

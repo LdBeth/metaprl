@@ -152,16 +152,7 @@ let split_mfunction =
  * Opname printing.
  *)
 let string_of_opname_list =
-   let rec print_path path' = function
-      h::t ->
-         if path' = "" then
-            print_path h t
-         else
-            print_path (path' ^ "!" ^ h) t
-    | [] ->
-         path'
-   in
-      print_path ""
+   String.concat "!"
 
 (* unused
 let print_opname ofile name =
@@ -173,11 +164,7 @@ let print_opname ofile name =
  *)
 let translate_opname opname =
    let l = dest_opname opname in
-   let rec aux = function
-      [h] -> h
-    | h::t -> h ^ "_" ^ (aux t)
-    | [] -> ""   in
-      aux l
+   String.concat "_" l
 
 (************************************************************************
  * MODULE PATHS                                                         *
@@ -230,7 +217,6 @@ let make_groupdsc_opts () =
  * BINDINGS IN STR ITEMS                                                *
  ************************************************************************)
 
-(* TODO: LDB: fix dummy loc *)
 let add_binding, get_bindings =
    let _loc = dummy_loc in
    let decls = ref [] in

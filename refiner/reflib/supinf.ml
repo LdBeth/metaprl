@@ -416,7 +416,7 @@ struct
       BField.compare BField.plusInfinity (coef f constvar) =0
 
    let add f1 f2 =
-		if (isInfinite f1) or (isInfinite f2) then
+		if (isInfinite f1) || (isInfinite f2) then
 			if isInfinite f1 then
 				if isInfinite f2 then
 					if (isMinusInfinity f1) && (isMinusInfinity f2) then

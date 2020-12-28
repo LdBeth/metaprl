@@ -634,7 +634,7 @@ let find_bookmark mod_name item_name =
    try Mp_resource.find (mod_name, item_name) with
       Not_found ->
          eprintf "Warning: resources for %s.%s not found,\n\ttrying to use default resources for %s%t" (**)
-            (String.capitalize mod_name) item_name mod_name eflush;
+            (String.capitalize_ascii mod_name) item_name mod_name eflush;
          try Mp_resource.find (Mp_resource.theory_bookmark mod_name) with
             Not_found ->
                raise (RefineError("Package_info/new_proof", StringError("can not find any resources")))

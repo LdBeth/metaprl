@@ -190,7 +190,7 @@ let read_string stream =
          End_of_file ->
             Lm_string_util.sub "MathBus.read_string" (Bytes.to_string buf) 0 len
    in
-      read (String.create 100) 0 true
+      read (Bytes.create 100) 0 true
 
 (*
  * Read a 32bit integer from the stream.

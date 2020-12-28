@@ -175,7 +175,7 @@ let hostname_var = "browser_hostname"
 
 let gethostname, sethostname =
    let nm = "Setup.hostname" in
-   let hostname_env = environ_prefix ^ "_" ^ (String.uppercase hostname_var) in
+   let hostname_env = environ_prefix ^ "_" ^ (String.uppercase_ascii hostname_var) in
    let getter tbl =
       try Hashtbl.find tbl nm with
          Not_found ->

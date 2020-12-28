@@ -340,7 +340,7 @@ let handle server connect client =
    let args =
       match parse_args line with
          command :: args ->
-            String.lowercase command :: args
+            String.lowercase_ascii command :: args
        | [] ->
             []
    in

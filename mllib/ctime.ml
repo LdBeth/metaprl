@@ -50,7 +50,7 @@ let parse_int s =
 let parse_date_aux mday mon year hour min sec zone =
    let mday = parse_int mday in
    let mon =
-      match String.lowercase mon with
+      match String.lowercase_ascii mon with
          "jan" -> 0
        | "feb" -> 1
        | "mar" -> 2
@@ -78,7 +78,7 @@ let parse_date_aux mday mon year hour min sec zone =
    let min = parse_int min in
    let sec = parse_int sec in
    let zone =
-      match String.lowercase zone with
+      match String.lowercase_ascii zone with
          "ut" | "gmt" -> 0
        | "est" -> -5 * 60 * 60
        | "edt" -> -4 * 60 * 60

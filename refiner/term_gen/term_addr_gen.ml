@@ -62,8 +62,8 @@ struct
 
    type address = addr_item list
 
-   external make_address : address -> address = "%identity"
-   external dest_address : address -> address = "%identity"
+   let make_address a = a (* external make_address : address -> address = "%identity" *)
+   let dest_address a = a (* external dest_address : address -> address = "%identity" *)
 
    let null_address = []
 
