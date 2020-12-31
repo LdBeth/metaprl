@@ -319,7 +319,17 @@ value incorrect_number loc l1 l2 =
 
 value define eo x = do {
   match eo with
-  [ MvExpr [] e ->
+  [ MvExpr [] <:expr< NOTHING >> ->
+      EXTEND
+        expr: LEVEL "apply"
+          [ [ e = SELF; UIDENT $x$ -> e ] ]
+        ;
+        patt: LEVEL "simple"
+          [ [ p = SELF; UIDENT $x$ -> p
+            | UIDENT $x$; p = SELF -> p ] ]
+        ;
+      END
+  | MvExpr [] e ->
       EXTEND
         expr: LEVEL "simple"
           [ [ UIDENT $x$ -> may_eval (Reloc.expr (fun _ -> _loc) 0 e) ] ]
@@ -389,7 +399,12 @@ value undef x =
   try do {
     let eo = List.assoc x defined.val in
     match eo with
-    [ MvExpr [] _ -> do {
+    [ MvExpr [] <:expr< NOTHING >> -> do {
+        DELETE_RULE expr: UIDENT $x$ END;
+        DELETE_RULE patt: UIDENT $x$ END;
+        DELETE_RULE patt: UIDENT $x$; SELF END;
+      }
+    | MvExpr [] _ -> do {
         DELETE_RULE expr: UIDENT $x$ END;
         DELETE_RULE patt: UIDENT $x$ END;
       }

@@ -4,6 +4,13 @@
 MACROPPOPTS = -D $(REFINER)_EXN -D SEQ_SET_$(SEQ_SET)_linear_set -D TERMS_$(TERMS) -I $(dir refsig)
 
 #
+# Disable unused warnings when using SIMPLE refiner
+#
+if $(equal $(REFINER), SIMPLE)
+    OCAMLFLAGS += -w -26-32-33
+    export
+
+#
 # Include files from subdirectories
 #
 include refbase/Files

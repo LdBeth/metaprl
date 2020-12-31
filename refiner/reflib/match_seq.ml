@@ -53,7 +53,7 @@ let try_match_hyps relaxed eq big small =
    let big_length = SeqHyp.length big_hyp in
    let may_skip = big_length - small_length in
    if (not relaxed) && may_skip < 0 then raise cant_match_hyp;
-   let result = Array.create big_length None in
+   let result = Array.make big_length None in
    let all_hyps = if relaxed then
          let rec aux small_skip =
             small_skip = small_length || match SeqHyp.get small_hyp small_skip with

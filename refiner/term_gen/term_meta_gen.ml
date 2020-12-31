@@ -316,7 +316,7 @@ let () = ();;
        | MetaImplies (a1, b1), MetaImplies (a2, b2)
        | MetaFunction (_, a1, b1), MetaFunction (_, a2, b2)
        | MetaIff (a1, b1), MetaIff (a2, b2) ->
-            meta_alpha_equal a1 a2 & meta_alpha_equal b1 b2
+            meta_alpha_equal a1 a2 && meta_alpha_equal b1 b2
        | MetaLabeled (_, t), _ ->
             meta_alpha_equal t t2
        | _, MetaLabeled (_, t) ->
