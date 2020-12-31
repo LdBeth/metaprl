@@ -47,8 +47,8 @@ type t =
 (*
  * Create a new empty buffer.
  *)
-let create () =
-   { buf_str = Bytes.create 32;
+let create n =
+   { buf_str = Bytes.create n;
      buf_index = 0
    }
 

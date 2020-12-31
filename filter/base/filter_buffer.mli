@@ -33,7 +33,7 @@
 
 type t
 
-val create : unit -> t
+val create : int -> t
 val putc : t -> char -> unit
 val puts : t -> string -> unit
 val clear : t -> unit

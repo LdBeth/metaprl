@@ -142,7 +142,7 @@ let () =
  * Save the text in the input_buffers during each toplevel read.
  *)
 type info =
-   Buffered of (int * int * bytes) list
+   Buffered of (int * int * string) list
  | Filename of string
  | File of in_channel
 
@@ -151,7 +151,7 @@ type info =
  *)
 type input_buf =
    { mutable buf_index : int;
-     mutable buf_buffer : bytes
+     mutable buf_buffer : string
    }
 
 (*
@@ -530,7 +530,7 @@ let set_module name =
          let rsrc =
             try Mp_resource.find (Mp_resource.theory_bookmark name) with
                Not_found ->
-                  eprintf "Module %s: resources not found%t" (String.capitalize name) eflush;
+                  eprintf "Module %s: resources not found%t" (String.capitalize_ascii name) eflush;
                   Mp_resource.recompute_top ();
                   Mp_resource.find Mp_resource.top_bookmark
          in
@@ -598,14 +598,14 @@ let get_buffered_text start finish bufs =
             if start + count - pos > len then
                raise (Failure "collect")
             else
-               Lm_string_util.blit "Shell_state.get_buffered_text" buf (start - pos) s 0 count
+               String.blit buf (start - pos) s 0 count
          else if start + count > pos then
             let amount = start + count - pos in
                if amount > len then
                   raise (Failure "collect")
                else
                   begin
-                     Lm_string_util.blit "Shell_state.get_buffered_text" buf 0 s (pos - start) amount;
+                     String.blit buf 0 s (pos - start) amount;
                      collect (count - amount) t
                   end
          else
@@ -668,7 +668,7 @@ let get_text loc =
  * Create an empty buffer.
  *)
 let create_buffer () =
-   { buf_index = 0; buf_buffer = Bytes.empty }
+   { buf_index = 0; buf_buffer = "" }
 
 (*
  * Wrap the input channel so that we can recover input.
@@ -676,19 +676,18 @@ let create_buffer () =
  *)
 let stream_of_string str =
    synchronize_write (fun state ->
-         let str = Bytes.of_string str in
          let buf = { buf_index = 0; buf_buffer = str } in
          let read loc =
             let { buf_index = index; buf_buffer = buffer } = buf in
-               if index = Bytes.length buffer then
+               if index = String.length buffer then
                   None
                else
-                  let c = Bytes.get buffer index in
+                  let c = String.get buffer index in
                      buf.buf_index <- index + 1;
                      Some c
          in
             reset_input state;
-            push_buffer state 0 (Bytes.length str) str;
+            push_buffer state 0 (String.length str) str;
             Stream.from read)
 
 (*
@@ -699,14 +698,14 @@ let stream_of_channel inx =
    let buf = create_buffer () in
    let refill loc =
       let state = State.get state_entry in
-      let str = Bytes.of_string (unsynchronize input_line inx ^ "\n") in
+      let str = unsynchronize input_line inx ^ "\n" in
          buf.buf_index <- 0;
          buf.buf_buffer <- str;
-         push_buffer state loc (Bytes.length str) str
+         push_buffer state loc (String.length str) str
    in
    let rec read loc =
       let { buf_index = index; buf_buffer = buffer } = buf in
-         if index = Bytes.length buffer then
+         if index = String.length buffer then
             try
                refill loc;
                read loc
@@ -714,7 +713,7 @@ let stream_of_channel inx =
                End_of_file ->
                   None
          else
-            let c = Bytes.get buffer index in
+            let c = String.get buffer index in
                buf.buf_index <- index + 1;
                Some c
    in
@@ -748,24 +747,23 @@ let stdin_stream () =
       let str = unsynchronize Lm_readline.readline (if !batch_flag then "" else state.state_prompt1) in
       (* XXX HACK (nogin): append ";;" at the end of a line, unless it ends with a '\' *)
       let str =
-         Bytes.of_string
-         (if !batch_flag then
-             str ^ "\n"
-          else if str <> "" && str.[String.length str - 1] = '\\'  then
-             String.sub str 0 (String.length str - 1)
-          else if Str.string_match scscregexp str 0 then
-             str
-          else
-             str ^ ";;")
+         if !batch_flag then
+            str ^ "\n"
+         else if str <> "" && str.[String.length str - 1] = '\\'  then
+            String.sub str 0 (String.length str - 1)
+         else if Str.string_match scscregexp str 0 then
+            str
+         else
+            str ^ ";;"
       in
          state.state_prompt1 <- state.state_prompt2;
          buf.buf_index <- 0;
          buf.buf_buffer <- str;
-         push_buffer state loc (Bytes.length str) str
+         push_buffer state loc (String.length str) str
    in
    let rec read loc =
       let { buf_index = index; buf_buffer = buffer } = buf in
-         if index = Bytes.length buffer then
+         if index = String.length buffer then
             try
                refill loc;
                read loc
@@ -774,13 +772,13 @@ let stdin_stream () =
                   if not !batch_flag then save_readline_history ();
                   None
          else
-            let c = Bytes.get buffer index in
+            let c = String.get buffer index in
                buf.buf_index <- index + 1;
                Some c
    in
    let flush () =
       buf.buf_index <- 0;
-      buf.buf_buffer <- Bytes.empty
+      buf.buf_buffer <- ""
    in
       synchronize_write (fun state -> reset_input state);
       Stream.from read, flush
@@ -795,12 +793,12 @@ let wrap f lb =
       let state = State.get state_entry in
          lb.lex_buffer <- Bytes.copy lb.lex_buffer;
          unsynchronize refill lb;
-         push_buffer state lb.lex_abs_pos lb.lex_buffer_len lb.lex_buffer
+         push_buffer state lb.lex_abs_pos lb.lex_buffer_len (Bytes.to_string lb.lex_buffer)
    in
    let f' lb =
       let state = State.get state_entry in
          reset_input state;
-         push_buffer state lb.lex_abs_pos lb.lex_buffer_len lb.lex_buffer;
+         push_buffer state lb.lex_abs_pos lb.lex_buffer_len (Bytes.to_string lb.lex_buffer);
          let x = f lb in
             reset_input state;
             x
