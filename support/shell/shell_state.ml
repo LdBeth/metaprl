@@ -124,10 +124,9 @@ let rl_history_length =
       _ ->
          100
 
-let () = Lm_readline.initialize_readline ()
-
 let () =
    if not !batch_flag then begin
+      Lm_readline.initialize_readline ();
       try
          Lm_readline.read_history rl_history_file
       with
@@ -744,7 +743,9 @@ let stdin_stream () =
    let buf = create_buffer () in
    let refill loc =
       let state = State.get state_entry in
-      let str = unsynchronize Lm_readline.readline (if !batch_flag then "" else state.state_prompt1) in
+      let str = if !batch_flag
+                then unsynchronize Stdlib.read_line ()
+                else unsynchronize Lm_readline.readline state.state_prompt1 in
       (* XXX HACK (nogin): append ";;" at the end of a line, unless it ends with a '\' *)
       let str =
          if !batch_flag then
