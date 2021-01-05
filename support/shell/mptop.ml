@@ -119,7 +119,7 @@ type top_table = (string * top_expr * top_type) Table.t
  ************************************************************************)
 
 let add tbl (module_name,name,expr,typ) =
-   Table.add tbl name ((String.capitalize module_name),expr,typ)
+   Table.add tbl name ((String.capitalize_ascii module_name),expr,typ)
 
 let add_list = List.fold_left add
 

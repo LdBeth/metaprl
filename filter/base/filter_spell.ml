@@ -26,7 +26,7 @@
 (*
  * The dictionary is compiled from $MP_ROOT/filter/words
  * contain sorted words that are correctly spelled.
- * The dictionary is saved as a hashtable in /tmp/metaprl-spell.dat.
+ * The dictionary is saved in $MP_ROOT/lib/english_dictionary.dat
  *)
 let dat_magic = 0x2557f3ef
 
@@ -77,23 +77,6 @@ let check_dict () =
       true
 
 (*
- * Make the dictionary.
- *)
-let add_file table filename =
-   try
-      let inx = open_in filename in
-         try
-            while true do
-               Hashtbl.add table (input_line inx) ()
-            done
-         with
-            _ ->
-               close_in inx
-   with
-      _ ->
-         ()
-
-(*
  * Borrowing from the Filename library, using the "lib" directory instead of the tmp one
  *)
 let make_dict () =
@@ -111,13 +94,12 @@ let make_dict () =
       with Sys_error _ ->
          try_name (counter + 1)
    in
-   let table = Hashtbl.create 1037 in
-      add_file table !words_filename;
+   let table = Lm_spell.make_dict !words_filename in
       dict := Some table;
       let tmp, out = try_name 0 in
       let out = Stdlib.open_out_bin tmp in
          Stdlib.output_binary_int out dat_magic;
-         Marshal.to_channel out table [];
+         Lm_spell.to_channel out table;
          Stdlib.close_out out;
          try
             Unix.rename tmp dat_filename
@@ -137,7 +119,7 @@ let load_dict () =
             let magic = input_binary_int inx in
                if magic <> dat_magic then
                   raise Not_found;
-               let table = Marshal.from_channel inx in
+               let table = Lm_spell.from_channel inx in
                   close_in inx;
                   dict := Some table
          with
@@ -179,11 +161,11 @@ let check s =
          if String.length s >= 2 then
             match s.[0] with
                'A'..'Z' ->
-                  Hashtbl.mem dict s || (Hashtbl.mem dict (String.lowercase_ascii s))
+                  Lm_spell.check dict s || (Lm_spell.check dict (String.lowercase_ascii s))
              | '0'..'9' when Lm_string_util.for_all is_num s ->
                   true
              | _ ->
-                  Hashtbl.mem dict s
+                  Lm_spell.check dict s
          else
             true
     | None ->
@@ -195,7 +177,7 @@ let check s =
 let add word =
    match !dict with
       Some table ->
-         Hashtbl.add table word ()
+         Lm_spell.add_word table word
     | None ->
          ()
 
