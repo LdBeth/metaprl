@@ -1,5 +1,5 @@
 doc <:doc<
-   @spelling{ML prl tex}
+   @spelling{ML prl}
 
    @module[Summary]
 
@@ -197,6 +197,7 @@ declare "module"[name:s]{'info : Dform} : Dform
 declare "mlterm"{'term : Dform; 'cons : Dform; 'oexpr : Dform} : Dform
 declare "condition"{'term : Dform; 'cons : Dform; 'oexpr : Dform} : Dform
 declare "mlrewrite"[name:s]{'params : Dform; 'redex : Dform; 'body : Dform; 'resources : Dform} : Dform
+declare "mlaxiom"[name:s]{'params : Dform; 'redex : Dform; 'body : Dform; 'resources : Dform} : Dform
 
 doc <:doc<
    Display forms are represented using the @tt[dform] term.
@@ -573,6 +574,12 @@ dform condition_df : "condition"{'term; 'cons; 'oexpr} =
 dform mlrewrite_df1 : "mlrewrite"[name:s]{'params; 'redex; some{'body}; 'res} =
    szone pushm[4]
    info["ml_rewrite"] " " rewrite_name[name:s] resources{'res} df_concat{slot[" "];'params} keyword[":"] hspace
+   ensuremath{'redex} " " keyword["="] hspace slot{'body}
+   popm ezone
+
+dform mlaxiom_df1 : "mlaxiom"[name:s]{'params; 'redex; some{'body}; 'res} =
+   szone pushm[4]
+   info["ml_rule"] " " rewrite_name[name:s] resources{'res} df_concat{slot[" "];'params} keyword[":"] hspace
    ensuremath{'redex} " " keyword["="] hspace slot{'body}
    popm ezone
 
