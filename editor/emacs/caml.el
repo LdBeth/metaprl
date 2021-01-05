@@ -294,10 +294,11 @@ point is outside the region."
     (5  t   (alt dform condition) & (opt = &))
     (5  t   (alt prec infix lex_token production parser) &)
     (5  t   (opt &+) declare & (opt end))
-    (5  t   ml_rewrite & : & (opt == &))
+    (5  t   (alt ml_rw ml_rule ml_dform) & : & (opt = &))
     (5  t   (alt define rewrite axiom primrw rule) & : &)
     (4  t   (alt all exst) & : & \. &)
-    (5  t   (alt prim interactive ml_rule) & : & : & = &)
+    (5  t   (alt prim interactive) & (opt {| & |}) (opt &) : & = &)
+    (5  t   let resource & += &)
     (5  t   mlterm & = & | &)
 
     ;; Extra syntax for Camlp4
