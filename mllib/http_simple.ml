@@ -356,30 +356,27 @@ let unhex c1 c2 =
  *)
 let decode_hex uri =
    let len = String.length uri in
-   let buf = Bytes.create len in
-   let rec convert i j =
+   let buf = Buffer.create len in
+   let rec convert j =
       if j = len then
-         if i = len then
-            buf
-         else
-            Bytes.sub buf 0 i
+         Buffer.contents buf
       else if uri.[j] = '+' then
          begin
-            buf.[i] <- ' ';
-            convert (i + 1) (j + 1)
+            Buffer.add_char buf ' ';
+            convert (j + 1)
          end
       else if uri.[j] = '%' && j < len - 2 then
          begin
-            buf.[i] <- unhex uri.[j + 1] uri.[j + 2];
-            convert (i + 1) (j + 3)
+            Buffer.add_char buf (unhex uri.[j + 1] uri.[j + 2]);
+            convert (j + 3)
          end
       else
          begin
-            buf.[i] <- uri.[j];
-            convert (i + 1) (j + 1)
+            Buffer.add_char buf uri.[j];
+            convert (j + 1)
          end
    in
-      Bytes.to_string (convert 0 0)
+      convert 0
 
 (*
  * Encode a string into hex.
@@ -392,23 +389,23 @@ let hex code =
 
 let encode_hex uri =
    let len = String.length uri in
-   let buf = Bytes.create (3 * len) in
-   let rec convert i j =
+   let buf = Buffer.create (3 * len) in
+   let rec convert i =
       if i = len then
-         Bytes.sub buf 0 j
+         Buffer.contents buf
       else
          match uri.[i] with
             ('0'..'9' | 'A'..'Z' | 'a'..'z') as c ->
-               buf.[j] <- c;
-               convert (succ i) (succ j)
+               Buffer.add_char buf c;
+               convert (succ i)
           | c ->
                let code = Char.code c in
-                  buf.[j] <- '%';
-                  buf.[j + 1] <- hex ((code lsr 4) land 15);
-                  buf.[j + 2] <- hex (code land 15);
-                  convert (succ i) (j + 3)
+                  Buffer.add_char buf '%';
+                  Buffer.add_char buf (hex ((code lsr 4) land 15));
+                  Buffer.add_char buf (hex (code land 15));
+                  convert (succ i)
    in
-      Bytes.to_string (convert 0 0)
+      convert 0
 
 let decode_uri uri =
    Lm_filename_util.simplify_path (Lm_filename_util.split_path (decode_hex uri))

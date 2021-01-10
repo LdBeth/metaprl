@@ -39,14 +39,12 @@ open Opname
 let _ =
    show_loading "Loading Basic%t"
 
-let inteq i j = (i = j)
+let inteq (i:int) j = (i = j)
 let nullp l = l = []
-let chareq a b = (a = b)
-let stringeq a b = (a = b)
+let chareq (a:char) b = (a = b)
+let stringeq (a:string) b = (a = b)
 
-let listeq p a b =
-   (List.length a = List.length b)
-   && try for_all2 p a b with _ -> false
+let listeq p = Lm_list_util.for_all2 p
 
 let rec parmeq p q =
 

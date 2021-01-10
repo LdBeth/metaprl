@@ -34,7 +34,6 @@ open Basic
 open Refiner.Refiner.TermType
 
 open Tentfunctor
-open Hashtbl
 
 (* unused
 module type Oid =
@@ -49,7 +48,7 @@ module Oid =
  struct
   type t = object_id
   let equal = (fun x y -> (oideq x y))
-  let hash oid = hash (List.map parmhash oid)
+  let hash oid = Hashtbl.hash (List.map parmhash oid)
  end
 
 module OidTent = Tent (Oid)

@@ -48,14 +48,7 @@ let oref_val = function
  { ocontents = None} -> raise OrefNone
  | { ocontents = Some a } -> a
 
-
-let assoc_if f l =
-    let rec aux l =
-      match l with
-       [] -> None
-      | head :: tail -> if (f head) then (Some head) else (aux tail) in
-    aux l
-
+let assoc_if = List.find_opt
 
 let remove_if f l =
    let item = null_oref () in
@@ -100,15 +93,7 @@ let remove item l =
 			   else head :: (aux tail) in
      (aux l)
 
-let filter f l =
-    let rec aux l =
-      match l with
-       [] -> []
-      | head :: tail -> if (f head)
-			   then aux tail
-			   else head :: (aux tail) in
-     (aux l)
-
+let filter = List.filter
 
 let time_it f arg =
    let t1 = Unix.times () in

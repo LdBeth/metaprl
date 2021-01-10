@@ -27,7 +27,6 @@
 
 open Lm_debug
 
-open Lm_num
 open Char
 open List
 open Stream
@@ -71,20 +70,6 @@ let explode str =
   in
 
  aux 0
-
-(* chars are reversed *)
-let implode_rev chars =
- let l = (List.length chars) in
- let s = Bytes.create l in
-  let rest = ref chars in
-  let i = ref (l - 1) in
-
-  while not (nullp !rest)
-  do Bytes.set s !i (hd !rest);
-     i := !i - 1;
-     rest := tl !rest
-  done
- ; Bytes.to_string s
 
 let make_scanner escape white stream =
  (* print_string "make_scanner  "; *)
@@ -155,37 +140,22 @@ let rec scan_whitespace s =
 
 let scan_string s =
  (* print_string " sstr "; *)
- let acc = ref [] in
+ let acc = Buffer.create 47 in
  while not (scan_at_eof_p s) && not ((mem s.cchar s.escape) && (not s.escapep))
-  do acc := s.cchar :: !acc; scan_next s
+  do Buffer.add_char acc s.cchar; scan_next s
   done
 
- ; (let ss = implode_rev !acc
+ ; (let ss = Buffer.contents acc
     in
     (* print_string ss; print_newline(); *)
 	ss)
 
-(* arg digits are in reverse order *)
-let digits_to_num digits =
-  let num10 = num_of_int 10 in
-  let rec aux acc power digits =
-    if (nullp digits) then acc
-    else aux (add_num (mult_num (power_num num10 power)
-			        (num_of_string (Char.escaped (hd digits))))
-		       acc)
- 	     (succ power)
-	     (tl digits)
-
-    in aux zero_num 0 digits
-
 let scan_num s =
- let acc = ref [] in
-
- while (not (scan_at_eof_p s)) && (scan_at_digit_p s)
-  do acc := s.cchar :: !acc;  scan_next s
-  done
-
- ; digits_to_num !acc
+   let acc = Buffer.create 21 in
+      while (not (scan_at_eof_p s)) && (scan_at_digit_p s)
+      do Buffer.add_char acc s.cchar;  scan_next s
+      done;
+      Lm_num.num_of_string (Buffer.contents acc)
 
 let scan_char_delimited_list s itemf ld rd sep =
 
