@@ -421,6 +421,7 @@ let add_edit state info =
 let view_table =
    ['H', "",  "Show Term Handles",              "Hide Term Handles";
     'u', "",  "Show Only Unjustified Content",  "Show Default Items";
+    'I', "",  "Show Interface",                 "Show Implementation";
     'f', "",  "Show All Formal Content",        "Hide All Formal Content";
     'R', "-", "Show Rules",                     "Hide Rules";
     'r', "-", "Show Rewrites",                  "Hide Rewrites";
