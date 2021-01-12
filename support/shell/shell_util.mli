@@ -40,6 +40,10 @@ type ls_option =
  | LsDocumentation
 
    (*
+    * Show interface file
+    *)
+ | LsInterface
+   (*
     * File listings.
     *)
  | LsFileAll

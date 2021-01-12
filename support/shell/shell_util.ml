@@ -42,6 +42,11 @@ type ls_option =
  | LsDocumentation
 
    (*
+    * Show interface file
+    *)
+ | LsInterface
+
+   (*
     * File listings.
     *)
  | LsFileAll
@@ -106,6 +111,8 @@ let option_of_char c =
          LsHandles
     | 'E' ->
          LsExternalEditor
+    | 'I' ->
+         LsInterface
     | 'A' ->
          LsFileAll
     | 'F' ->
@@ -131,6 +138,7 @@ let char_of_option option =
     | LsDocumentation -> 'D'
     | LsHandles -> 'H'
     | LsExternalEditor -> 'E'
+    | LsInterface -> 'I'
     | LsFileAll -> 'A'
     | LsFileModifiers -> 'F'
     | LsLineNumbers -> 'L'
@@ -184,6 +192,7 @@ let ls_options_add options s =
              | LsParent ->
                   let options = LsOptionSet.remove options LsUnjustified in
                      LsOptionSet.add options option
+             | LsInterface
              | LsHandles
              | LsExternalEditor
              | LsFileModifiers
@@ -219,6 +228,7 @@ let ls_options_clear options s =
              | LsUnjustified ->
                   let options = LsOptionSet.add_list options ls_default_list in
                      LsOptionSet.remove options option
+             | LsInterface
              | LsHandles
              | LsExternalEditor
              | LsFileModifiers

@@ -130,6 +130,7 @@ declare declare_type{'shape : ShapeClass; 'term : Dform; 'ty: Dform} : Dform
 declare declare_type_rewrite{'ty1 : Dform; 'ty2 : Dform} : Dform
 declare declare_term{'shape : ShapeClass; 'term : Dform} : Dform
 declare define_term{'shape : ShapeClass; 'term : Dform; 'def : Dform} : Dform
+declare toploop_item{'term : Dform} : Dform
 declare "ty_term"{'term : Dform; 'opname : Dform; 'params : Dform; 'bterms : Dform; 'ty : Dform} : Dform
 declare "term_def"[name:s]{'def : Dform; 'res : Dform; 'flag : Dform} : Dform
 declare parent_kind[name:s] : Dform
@@ -538,6 +539,9 @@ dform define_term_df : "define_term"{'shape; 'info; term_def[name:s]{'contractum
          hspace ensuremath{slot{'contractum}}
       popm ezone
    popm ezone
+
+dform toploop_item_df : toploop_item{'item} =
+   keyword["top"] slot{'item}
 
 declare ty_constraint{'ty : Dform} : Dform
 

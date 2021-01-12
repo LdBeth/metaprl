@@ -61,9 +61,9 @@ let identity x       = x
 let term_of_expr     = term_of_expr []
 let term_of_str_item = term_of_str_item []
 
-(* unused
+
 let convert_intf =
-   let null_term    = mk_xstring_term "..." in
+   let null_term    = Refiner.Refiner.TermMan.mk_xstring_term "..." in
       { term_f      = identity;
         meta_term_f = term_of_meta_term;
         proof_f     = (fun _ _ -> null_term);
@@ -72,7 +72,6 @@ let convert_intf =
         expr_f      = term_of_expr;
         item_f      = term_of_sig_item
       }
-*)
 
 let convert_impl =
    let convert_proof _ = function
@@ -97,13 +96,11 @@ let convert_impl =
       }
 
 (*
- * Display the entire package.
+ * Display the package interface.
  *)
-(* unused
 let term_of_interface pack filter parse_arg =
    let tl = term_list convert_intf (Filter_summary.filter filter (Package_info.sig_info pack parse_arg)) in
       mk_interface_term tl
- *)
 
 (*
  * Display the entire package.
@@ -242,6 +239,39 @@ let mk_ls_filter options =
                   is_informal_item :: predicate
              | LsDocumentation ->
                   is_documentation :: predicate
+             | LsInterface
+             | LsFileAll
+             | LsFileModifiers
+             | LsHandles
+             | LsLineNumbers
+             | LsExternalEditor ->
+                  predicate) [] options
+   in
+      compile_ls_predicate predicate
+
+let mk_interface_filter options =
+   let predicate =
+      LsOptionSet.fold (fun predicate option ->
+            match option with
+               LsAll ->
+                  is_any_item :: predicate
+             | LsRewrites ->
+                   predicate
+             | LsRules ->
+                   is_rule_item :: predicate
+             | LsUnjustified ->
+                   predicate
+             | LsParent ->
+                   is_parent_item :: predicate
+             | LsFormal ->
+                   is_formal_item :: predicate
+             | LsDisplay ->
+                   is_display_item :: predicate
+             | LsInformal ->
+                   is_informal_item :: predicate
+             | LsDocumentation ->
+                   is_documentation :: predicate
+             | LsInterface
              | LsFileAll
              | LsFileModifiers
              | LsHandles
@@ -273,7 +303,13 @@ let edit_check_addr = function
 let rec edit pack_info parse_arg get_dfm =
    let edit_display addr options =
       edit_check_addr addr;
-      Proof_edit.display_term (get_dfm ()) (term_of_implementation pack_info (mk_ls_filter options) parse_arg)
+      if LsOptionSet.mem options LsInterface
+      then
+         Proof_edit.display_term (get_dfm ())
+         (term_of_interface pack_info (mk_interface_filter options) parse_arg)
+      else
+         Proof_edit.display_term (get_dfm ())
+         (term_of_implementation pack_info (mk_ls_filter options) parse_arg);
    in
    let edit_copy () =
       edit pack_info parse_arg get_dfm
