@@ -174,6 +174,7 @@ doc <:doc<
 declare "resource"[name:s]{'expr : Dform} : Dform
 declare "resource_defs"[name:s]{'flag : Dform; 'res : Dform} : Dform
 declare "resource"{'inp : Dform; 'outp : Dform; 'expr : Dform} : Dform
+declare "resource"{'inp : Dform; 'outp : Dform} : Dform
 declare "improve"[name:s]{'flag : Dform; 'expr : Dform} : Dform
 doc docoff
 declare flag{'flag: Dform} : Dform
@@ -541,7 +542,7 @@ dform define_term_df : "define_term"{'shape; 'info; term_def[name:s]{'contractum
    popm ezone
 
 dform toploop_item_df : toploop_item{'item} =
-   keyword["top"] slot{'item}
+   keyword["top"] 'item
 
 declare ty_constraint{'ty : Dform} : Dform
 
@@ -662,10 +663,13 @@ dform prec_rel_df : prec_rel[op, left, right] =
 dform id_df : "id"[n:n] =
    info["Id: "] slot[n:n]
 
-dform resource_df : "resource"[name]{"resource"{'inp; 'outp; 'expr}} =
+dform resource_df1 : "resource"[name]{"resource"{'inp; 'outp; 'expr}} =
    pushm[3] szone
    info["let"] " " info["resource"] `" (" 'inp `", " 'outp `") " resource_name[name:s] " " keyword ["="] hspace
    szone{'expr} ezone popm
+
+dform resource_df2 : "resource"[name]{"resource"{'inp; 'outp}} =
+   info["resource"] `" (" 'inp `", " 'outp `") " resource_name[name:s]
 
 dform public_df : flag{"public"} = `""
 dform private_df : flag{"private"} = info["private"] " "

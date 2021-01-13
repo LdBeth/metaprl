@@ -191,10 +191,10 @@ module Nuprl (Edit : ShellEditSig) = struct
    let ipair_term h t = mk_term ipair_op [(mk_bterm [] h); (mk_bterm [] t)]
 
    let list_of_ints length =
-      let rec ll len =
-         if len = 0 then []
-         else len::(ll (len - 1))
-      in List.rev (ll length)
+      let rec ll len l =
+         if len = 0 then l
+         else ll (len - 1) (len :: l)
+      in (ll length [])
 
    open List
    open Lm_list_util
@@ -202,7 +202,7 @@ module Nuprl (Edit : ShellEditSig) = struct
    let get_parents_all name =
       let rec f l1 l2 =
          if l1 = [] then l2
-         else let l3 = List.map String.uncapitalize (Edit.list_parents (hd l1)) in
+         else let l3 = List.map String.uncapitalize_ascii (Edit.list_parents (hd l1)) in
                  f (union l3 (tl l1)) (union l3 l2) in
          f [name] [name]
 

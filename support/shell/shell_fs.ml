@@ -330,24 +330,24 @@ let term_of_dir info options subdir dir_info =
          (fun modifier -> "")
    in
    let terms =
-      List.fold_left (fun terms (name, modifier) ->
+      List.filter_map (fun (name, modifier) ->
             if nametest name then
-               mk_direntry_term name (modname modifier) :: terms
+               Some (mk_direntry_term name (modname modifier))
             else
-               terms) [] entries
+               None) entries
    in
-      mk_dirlisting_term subdir (List.rev terms)
+      mk_dirlisting_term subdir terms
 
 (*
  * File lines.
  *)
 let term_of_file info options subdir lines =
-   let lines, _ =
-      List.fold_left (fun (lines, i) line ->
+   let _, lines =
+      Lm_list_util.fold_left (fun i line ->
             let line = mk_fileline_term (Lm_num.num_of_int i) line in
-               line :: lines, succ i) ([], 1) lines
+               succ i, line) 1 lines
    in
-      mk_filelisting_term subdir (List.rev lines)
+      mk_filelisting_term subdir lines
 
 (*
  * Display the listing.

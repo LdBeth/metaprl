@@ -622,12 +622,9 @@ struct
                state
           | None ->
                let sessions =
-                  List.fold_left (fun sessions pid ->
-                        let session =
-                           Lm_thread_shell.with_pid pid (fun () ->
-                                 pid, Top.pwd ()) ()
-                        in
-                           session :: sessions) [] (Lm_thread_shell.get_pids ())
+                  List.map (fun pid ->
+                        Lm_thread_shell.with_pid pid (fun () ->
+                              pid, Top.pwd ()) ()) (Lm_thread_shell.get_pids ())
                in
                let info =
                   { browser_directories = Session.get_directories ();
@@ -635,7 +632,7 @@ struct
                     browser_history     = Session.get_history ();
                     browser_options     = string_of_ls_options (Session.get_view_options ());
                     browser_id          = id;
-                    browser_sessions    = List.rev sessions
+                    browser_sessions    = sessions
                   }
                in
                   session.session_state <- Some info;

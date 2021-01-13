@@ -264,19 +264,12 @@ let find_sub_module summary path =
  * List all the parents.
  *)
 let parents { info_list = summary } =
-   let rec collect = function
-      (item, _) :: t ->
-         begin
-            match item with
-               Parent { parent_name = name; _ } ->
-                  name :: collect t
-             | _ ->
-                  collect t
-         end
-    | [] ->
-         []
+   let collect (item, _) =
+      match item with
+         Parent { parent_name = name; _ } -> Some name
+       | _ -> None
    in
-      collect summary
+      List.filter_map collect summary
 
 (*
  * Test for an axiom.
@@ -444,22 +437,16 @@ let get_infixes { info_list = summary } =
  * Get the proofs.
  *)
 let get_proofs { info_list = summary } =
-   let rec collect proofs = function
-      (h, _)::t ->
-         let proofs =
-            match h with
-               Rule { rule_name = name; rule_proof = pf; _ }
-             | Rewrite { rw_name = name; rw_proof = pf; _ }
-             | CondRewrite { crw_name = name; crw_proof = pf; _ } ->
-                  (name, pf) :: proofs
-             | _ ->
-                  proofs
-         in
-            collect proofs t
-    | [] ->
-         List.rev proofs
+   let collect (h, _) =
+      match h with
+         Rule { rule_name = name; rule_proof = pf; _ }
+       | Rewrite { rw_name = name; rw_proof = pf; _ }
+       | CondRewrite { crw_name = name; crw_proof = pf; _ } ->
+            Some (name, pf)
+       | _ ->
+            None
    in
-      collect [] summary
+      List.filter_map collect summary
 
 (*
  * Find any item, by name.
