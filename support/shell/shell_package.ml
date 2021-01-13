@@ -57,7 +57,7 @@ module FilterSummaryTerm = FilterSummaryTerm (Refiner.Refiner)
 open FilterOCaml
 open FilterSummaryTerm
 
-let identity x       = x
+let identity         = Fun.id
 let term_of_expr     = term_of_expr []
 let term_of_str_item = term_of_str_item []
 

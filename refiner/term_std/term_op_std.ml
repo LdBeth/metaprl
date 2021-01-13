@@ -1205,7 +1205,7 @@ struct
          { bvars = vars; bterm = map_down f t }
       in
       let bterms =
-         if (Opname.eq op.op_name var_opname or Opname.eq op.op_name context_opname) && bterms != [] then
+         if (Opname.eq op.op_name var_opname || Opname.eq op.op_name context_opname) && bterms != [] then
             let bterms, last = Lm_list_util.split_last bterms in
                (List.map apply bterms) @ [last]
          else
@@ -1218,7 +1218,7 @@ struct
          { bvars = vars; bterm = map_up f t }
       in
       let bterms =
-         if (Opname.eq op.op_name var_opname or Opname.eq op.op_name context_opname) && bterms != [] then
+         if (Opname.eq op.op_name var_opname || Opname.eq op.op_name context_opname) && bterms != [] then
             let bterms, last = Lm_list_util.split_last bterms in
                (List.map apply bterms) @ [last]
          else

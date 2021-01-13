@@ -920,15 +920,15 @@ struct
          in add_expr "bigarray_element" dest_bigarray_element_expr
       and expr_vrn_op =
          let dest_vrn_expr t =
-            let loc, s = dest_loc_string "dest_vrn_expr" t in
-               MLast.ExVrn (loc, Ploc.VaVal s)
+            let _loc, s = dest_loc_string "dest_vrn_expr" t in
+               <:expr< ` $s$ >>
          in add_expr "vrn" dest_vrn_expr
       and expr_olb_op =
          let dest_olb_expr t =
-            let loc = dest_loc "dest_olb_expr" t in
+            let _loc = dest_loc "dest_olb_expr" t in
             let p, t = dest_patt (one_subterm "dest_olb_expr" t) in
-            let eo = dest_expr_opt t in
-               MLast.ExOlb (loc, p, Ploc.VaVal eo)
+            let oe = dest_expr_opt t in
+               <:expr< ?{$p$ $opt:oe$} >>
          in add_expr "olb" dest_olb_expr
       and expr_lop_op =
          let dest_lop_expr t =

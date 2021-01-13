@@ -164,7 +164,7 @@ let term_of_meta_term = FSummary.term_of_meta_term
  * Raw versions to file marshal the Filter_summary.info directly to the
  * file, but terms are converted to term_io, since that seems pretty stable.
  *)
-let identity x = x
+let identity = Fun.id
 
 module MakeRawSigInfo (Convert : ConvertInternalSig) =
 struct
@@ -290,7 +290,7 @@ struct
     * Identity used for term normalization.
     *)
 (* unused
-   let identity x = x (* external identity : 'a -> 'a = "%identity" *)
+   let identity = Fun.id (* external identity : 'a -> 'a = "%identity" *)
 *)
 
    (*

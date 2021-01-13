@@ -160,25 +160,22 @@ let unhex c1 c2 =
  *)
 let decode_hex uri =
    let len = String.length uri in
-   let buf = Bytes.create len in
-   let rec convert i j =
+   let buf = Buffer.create len in
+   let rec convert j =
       if j = len then
-         if i = len then
-            buf
-         else
-            Bytes.sub buf 0 i
+         Buffer.contents buf
       else if uri.[j] = '%' && j < len - 2 then
          begin
-            buf.[i] <- unhex uri.[j + 1] uri.[j + 2];
-            convert (i + 1) (j + 3)
+            Buffer.add_char buf (unhex uri.[j + 1] uri.[j + 2]);
+            convert (j + 3)
          end
       else
          begin
-            buf.[i] <- uri.[j];
-            convert (i + 1) (j + 1)
+            Buffer.add_char buf uri.[j];
+            convert (j + 1)
          end
    in
-      Bytes.to_string (convert 0 0)
+      convert 0
 
 (*
  * Encode a string into hex.

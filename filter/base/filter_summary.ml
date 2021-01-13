@@ -105,14 +105,8 @@ and ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) summary_item_loc
 (*
  * Printing.
  *)
-let rec tab i =
-   if i = 0 then
-      ()
-   else
-      begin
-         output_char stderr ' ';
-         tab (i - 1)
-      end
+let tab i =
+   if i = 0 then () else output_string stderr (String.make i ' ')
 
 let print_ty_param out = function
    TyNumber ->

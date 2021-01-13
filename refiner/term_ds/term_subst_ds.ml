@@ -635,7 +635,7 @@ struct
                core_term(SOContext(v, t, conts, ts)), index
        | Sequent seq ->
             (*
-             * XXX: Uses fold_map function.
+             * LdBeth: Uses fold_map function.
              *)
             let arg, index = standardize_term index seq.sequent_args in
             let (subst, index), hyps =

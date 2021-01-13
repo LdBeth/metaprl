@@ -353,11 +353,11 @@ struct
                             sequent_concl = concl } ->
                      let sub_vars = subst_free_vars sub in
                      let all_vars = SymbolSet.union sub_vars (free_vars_set tt) in
-                     (* XXX: n8gray: I'd like to be able to fold directly here but there's no Seq_set.fold_left *)
-                     let sub', hyp_list = hyps_subst hyps (SeqHyp.length hyps) sub all_vars sub_vars [] 0 in
+                     (* LdBeth: use fold_map on Seq_set.t *)
+                     let sub', hyps' = hyps_subst hyps sub all_vars sub_vars in
                         Sequent {
                            sequent_args = do_term_subst sub args;
-                           sequent_hyps = SeqHyp.of_list (List.rev hyp_list);
+                           sequent_hyps = hyps';
                            sequent_concl = do_term_subst sub' concl;
                         }
                 | Subst _ | Hashed _ -> fail_core "get_core"
@@ -371,11 +371,9 @@ struct
        | core ->
             core
 
-   and hyps_subst hyps len sub all_vars sub_vars new_hyps i =
-      if i = len then
-         sub, new_hyps
-      else
-      match SeqHyp.get hyps i with
+	and hyps_subst hyps sub all_vars sub_vars =
+     let (sub, _, _), hyps =
+     SeqHyp.fold_map (fun (sub, all_vars, sub_vars) -> function
          Hypothesis (v, t) as hyp ->
             let t' = do_term_subst sub t in
             let sub = subst_remove v sub in
@@ -386,7 +384,7 @@ struct
                (* XXX: These would not be needed if new_name was guaranteed unique *)
                let sub_vars = SymbolSet.add sub_vars v' in
                let all_vars = SymbolSet.add all_vars v' in
-                  hyps_subst hyps len sub all_vars sub_vars (Hypothesis (v', t') :: new_hyps) (i + 1)
+                  (sub, all_vars, sub_vars), Hypothesis (v', t')
             else
                (*
                 * XXX: JYH: I added the line below to avoid capture (bug #432),
@@ -399,14 +397,15 @@ struct
                 *)
                let all_vars = SymbolSet.add all_vars v in
                let hyp = if t == t' then hyp else Hypothesis (v, t') in
-                  hyps_subst hyps len sub all_vars sub_vars (hyp :: new_hyps) (i + 1)
+                  (sub, all_vars, sub_vars), hyp
        | Context (v,conts,ts) as hyp ->
             if SymbolSet.mem sub_vars v then
                raise(Invalid_argument "Term_base_ds.get_core: free variable got captured by a context");
             let ts' = Lm_list_util.smap (do_term_subst sub) ts in
             let sub = subst_remove v sub in
             let hyp = if ts == ts' then hyp else Context (v, conts, ts') in
-               hyps_subst hyps len sub all_vars sub_vars (hyp :: new_hyps) (i + 1)
+               (sub, all_vars, sub_vars), hyp) (sub, all_vars, sub_vars) hyps
+    in sub, hyps
 
    let mk_op name params = { op_name = name; op_params = params }
 
