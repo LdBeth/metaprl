@@ -373,7 +373,7 @@ struct
           | name' :: _ ->
                name'
       in let smap_rename = Lm_list_util.smap (Lm_list_util.smap rename) in
-      let clean_inputs tail ((comment,name,record) as item) =
+      let clean_inputs ((comment,name,record) as item) =
          let c = Char.uppercase_ascii comment.[0] in
          let record' = match c, record with
             ('T' | 'O' | 'G' | 'S'), _ ->
@@ -401,12 +401,12 @@ struct
                let item' =
                   if record==record' then item else (comment,name,record')
                in
-                  item'::tail
+                  Some item'
           | name'::_, _ ->
                Hashtbl.add h_rename name name';
-               tail
+               None
       in
-      inputs := List.fold_left clean_inputs [] (List.rev !inputs);
+      inputs := List.filter_map clean_inputs !inputs;
       let r = new_record () in
       add_items r !inputs;
       let data = new_out_data () in

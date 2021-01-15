@@ -1546,19 +1546,19 @@ struct
                ext
 
    let make_wildcard_ext_args =
-      let fold (vars, conts, hyps) = function
+      let fold (vars, conts) = function
          Context (c, _, _) as hyp ->
-            (vars, c::conts, hyp::hyps)
+            (vars, c::conts), hyp
        | Hypothesis (v, _) as hyp ->
-            (mk_var_term v :: vars , conts, hyp::hyps)
+            (mk_var_term v :: vars , conts), hyp
       in
       let make_wildcard_ext_arg t =
          let v = Lm_symbol.new_symbol_string "ext_arg" in
             if is_sequent_term t then
                let eseq = explode_sequent t in
-               let vars, conts, hyps = List.fold_left fold ([],[],[]) (SeqHyp.to_list eseq.sequent_hyps) in
+               let (vars, conts), hyps = SeqHyp.fold_map fold ([],[]) eseq.sequent_hyps in
                let concl = mk_so_var_term v conts vars in
-                  mk_sequent_term { eseq with sequent_hyps = SeqHyp.of_list (List.rev hyps); sequent_concl = concl }
+                  mk_sequent_term { eseq with sequent_hyps = hyps; sequent_concl = concl }
             else mk_so_var_term v [] []
       in List.map make_wildcard_ext_arg
 

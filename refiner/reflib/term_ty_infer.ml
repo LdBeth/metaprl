@@ -759,13 +759,12 @@ let rec normalize_term info subst t =
    else if is_ty_hyp_cases_term t then
       let cases = dest_ty_hyp_cases_term t in
       let subst, cases =
-         List.fold_left (fun (subst, cases) (ty_var, ty_hyp) ->
+         Lm_list_util.fold_left_map (fun subst (ty_var, ty_hyp) ->
                let subst, ty_var = normalize_term info subst ty_var in
                let subst, ty_hyp = normalize_term info subst ty_hyp in
-               let cases = (ty_var, ty_hyp) :: cases in
-                  subst, cases) (subst, []) cases
+                  subst, (ty_var, ty_hyp)) subst cases
       in
-         subst, TypeHypCases (List.rev cases)
+         subst, TypeHypCases cases
    else
       subst, TypeTerm t
 

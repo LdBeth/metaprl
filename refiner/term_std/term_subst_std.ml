@@ -165,7 +165,7 @@ struct
                let vars = Lm_list_util.subtract vars bvars' in
                   vars <> [] && free_vars_term vars (bvars' @ bvars) term
             in
-               first or free_vars_bterms vars bvars t
+               first || free_vars_bterms vars bvars t
        | [] ->
             false
       in
@@ -216,12 +216,12 @@ struct
          },
          { term_op = { op_name = opname2; op_params = [Var v'] };
            term_terms = []
-         } when Opname.eq opname1 var_opname & Opname.eq opname2 var_opname ->
+         } when Opname.eq opname1 var_opname && Opname.eq opname2 var_opname ->
             Lm_list_util.check_assoc v v' vars
        | { term_op = op1; term_terms = bterms1 },
          { term_op = op2; term_terms = bterms2 } ->
             equal_operators op1 op2
-            & (equal_bterms vars bterms1 bterms2)
+            && (equal_bterms vars bterms1 bterms2)
 
    and equal_bterms vars bterms1 bterms2 =
       let equal_bterm = fun
@@ -286,7 +286,7 @@ struct
             f t' (List.assoc v sub)
        | { term_op = op1; term_terms = bterms1 },
          { term_op = op2; term_terms = bterms2 } ->
-            equal_operators op1 op2 & equal_fun_bterms bvars bterms1 bterms2
+            equal_operators op1 op2 && equal_fun_bterms bvars bterms1 bterms2
 
       and equal_fun_bterms bvars bterms1 bterms2 =
          let equal_fun_bterm = fun
@@ -426,7 +426,7 @@ struct
    let rec need_to_rename avoid = function
       [] -> false
     | v::vs ->
-         SymbolSet.mem avoid v or
+         SymbolSet.mem avoid v ||
          need_to_rename (SymbolSet.add avoid v) vs
 
    let rec compute_renames avoid avoid' = function
@@ -562,28 +562,26 @@ struct
     * Make all the vars different by giving them a unique numeric suffix.
     *)
    let rec standardize_bterm index { bvars = bvars; bterm = t } =
-      let bvars, subst, index =
-         List.fold_left (fun (bvars, subst, index) v ->
+      let (subst, index), bvars =
+         List.fold_left_map (fun (subst, index) v ->
             let v' = Lm_symbol.make (Lm_symbol.to_string v) index in
             let t = mk_var_term v' in
-            let bvars = v' :: bvars in
             let subst = (v, t) :: subst in
             let index = succ index in
-               bvars, subst, index) ([], [], index) bvars
+               (subst, index), v') ([], index) bvars
       in
-      let bvars = List.rev bvars in
       let t = apply_subst subst t in
       let t, index = standardize_term index t in
          { bvars = bvars; bterm = t }, index
 
    and standardize_term index t =
       let { term_op = op; term_terms = bterms } = t in
-         let bterms, index =
-            List.fold_left (fun (bterms, index) bterm ->
+         let index, bterms =
+            List.fold_left_map (fun index bterm ->
                let bterm, index = standardize_bterm index bterm in
-                  bterm :: bterms, index) ([], index) bterms
+                  index, bterm) index bterms
          in
-         let t = mk_term op (List.rev bterms) in
+         let t = mk_term op bterms in
             t, index
 
    let standardize t =

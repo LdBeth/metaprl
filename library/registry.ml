@@ -167,30 +167,22 @@ let registry_store_global id regtype v =
  * Read the next string from the registry.
  *)
 let read_string stream =
-   let rec read (buf :bytes) len skip =
+   let rec read buf skip =
       try
          match input_char stream with
             ' ' | '\r' | '\n' | '\t' ->
                if skip then
-                  read buf len skip
+                  read buf skip
                else
-                  Lm_string_util.sub "MathBus.read_string" (Bytes.to_string buf) 0 len
+                  Buffer.contents buf
           | c ->
-               let buf =
-                  if Bytes.length buf = len then
-                     let buf' = Lm_string_util.create "MathBus.read_string" (len * 2) in
-                        Lm_string_util.blit "MathBus.read_string" buf 0 buf' 0 len;
-                        buf'
-                  else
-                     buf
-               in
-                  Lm_string_util.set "MathBus.read_string" buf len c;
-                  read buf (len + 1) false
+               Buffer.add_char buf c;
+               read buf false
       with
          End_of_file ->
-            Lm_string_util.sub "MathBus.read_string" (Bytes.to_string buf) 0 len
+            Buffer.contents buf
    in
-      read (Bytes.create 100) 0 true
+      read (Buffer.create 100) true
 
 (*
  * Read a 32bit integer from the stream.

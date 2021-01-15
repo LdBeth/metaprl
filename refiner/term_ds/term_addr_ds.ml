@@ -66,8 +66,8 @@ struct
    let compose_address = compose_addr
    let string_of_address = string_of_addr
 
-   external make_address : address -> address = "%identity"
-   external dest_address : address -> address = "%identity"
+   let make_address = Fun.id (* external make_address : address -> address = "%identity" *)
+   let dest_address = Fun.id (* external dest_address : address -> address = "%identity" *)
 
    let split_clause_address = function
       ClauseAddr _ as addr :: rest ->

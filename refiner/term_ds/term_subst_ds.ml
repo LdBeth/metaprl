@@ -268,7 +268,7 @@ struct
             Lm_list_util.check_assoc v v' vars
        | Term { term_op = op1; term_terms = bterms1 },
          Term { term_op = op2; term_terms = bterms2 } ->
-            equal_operators op1 op2 & equal_bterms vars bterms1 bterms2
+            equal_operators op1 op2 && equal_bterms vars bterms1 bterms2
        | Sequent s1, Sequent s2 ->
             (SeqHyp.length s1.sequent_hyps = SeqHyp.length s2.sequent_hyps) &&
             (equal_term vars s1.sequent_args s2.sequent_args) &&
@@ -369,10 +369,10 @@ struct
          | SOContext(v', t, conts, ts) ->
               core_term (SOContext(v', var_subst t' fv v t, conts, List.map (var_subst t' fv v) ts))
          | Sequent e ->
-              let hyps, concl = var_subst_hyps e.sequent_hyps e.sequent_concl (SeqHyp.length e.sequent_hyps) 0 [] [] t' fv v in
+              let hyps, concl = var_subst_hyps e.sequent_hyps e.sequent_concl t' fv v in
                  core_term (Sequent {
                     sequent_args = var_subst t' fv v e.sequent_args;
-                    sequent_hyps = SeqHyp.of_list (List.rev hyps);
+                    sequent_hyps = hyps;
                     sequent_concl = concl })
          | Hashed _ | Subst _ -> fail_core "var_subst"
 
@@ -389,25 +389,20 @@ struct
       let term' = var_subst t' fv v bt.bterm in
          if bt.bterm == term' then bt else mk_bterm bt.bvars term'
 
-   and var_subst_hyps hyps concl len i hlist sub t' fv v =
-      if i = len then
-         hlist, var_subst t' fv v (apply_subst sub concl)
-      else
-         match SeqHyp.get hyps i with
+   and var_subst_hyps hyps concl t' fv v =
+      let sub, hyps = SeqHyp.fold_map (fun sub -> function
             Hypothesis(var, term) when SymbolSet.mem fv var ->
                let var' = new_name var (SymbolSet.mem fv) in
                let term = var_subst t' fv v (apply_subst sub term) in
                let sub = (var, mk_var_term var') :: sub in
-               let hlist = Hypothesis(var', term) :: hlist in
-                  var_subst_hyps hyps concl len (i+1) hlist sub t' fv v
+                  sub, Hypothesis(var', term)
           | Hypothesis(var, term) ->
                let term = var_subst t' fv v (apply_subst sub term) in
-               let hlist = Hypothesis(var, term) :: hlist in
-                  var_subst_hyps hyps concl len (i+1) hlist sub t' fv v
+                  sub, Hypothesis(var, term)
           | Context(v', conts, ts) ->
                let ts = List.map (fun term -> var_subst t' fv v (apply_subst sub term)) ts in
-               let hlist = Context(v', conts, ts) :: hlist in
-                  var_subst_hyps hyps concl len (i+1) hlist sub t' fv v
+                  sub, Context(v', conts, ts)) [] hyps in
+            hyps, var_subst t' fv v (apply_subst sub concl)
 
    let var_subst t t' v =
       var_subst t' (SymbolSet.add (free_vars_set t') v) v t
@@ -424,8 +419,9 @@ struct
       match get_core t, get_core t' with
          FOVar v, FOVar v' ->
             ( try Lm_list_util.try_check_assoc v v' bvars with Not_found ->
-               ( try f t' (List.assoc v sub) with Not_found ->
-                  Lm_symbol.eq v v'
+               ( match List.assoc_opt v sub with
+                    Some a -> f t' a
+                  | _ -> Lm_symbol.eq v v'
             ))
        | FOVar v,_ ->
             not (List.mem_assoc v bvars) &&
@@ -505,8 +501,10 @@ struct
 
    let rec match_terms subst bvars tm1 tm2 =
       match get_core tm1, get_core tm2 with
-         FOVar v, FOVar v' when List.mem_assoc v bvars ->
-            if v' = List.assoc v bvars then subst else RAISE_GENERIC_EXN
+         FOVar v, FOVar v' when (match List.assoc_opt v bvars with
+                                    Some t -> v' = t
+                                  | _ -> false) ->
+            subst
        | FOVar v, _ ->
             begin try
                let tm1 = List.assoc v subst in
@@ -577,32 +575,31 @@ struct
     * Make all the vars different by giving them a unique numeric suffix.
     *)
    let subst_var subst v =
-      try dest_var (List.assoc v subst) with
-         Not_found ->
-            v
+      match List.assoc_opt v subst with
+         Some v' -> dest_var v'
+       | None -> v
 
    let standardize_var index v =
       Lm_symbol.make (Lm_symbol.to_string v) index
 
    let rec standardize_bterm index { bvars = bvars; bterm = t } =
-      let bvars, subst, index =
-         List.fold_left (fun (bvars, subst, index) v ->
+      let (subst, index), bvars =
+         Lm_list_util.fold_left_map (fun (subst, index) v ->
                let v' = standardize_var index v in
-               let bvars = v' :: bvars in
                let subst = (v, mk_var_term v') :: subst in
                let index = succ index in
-                  bvars, subst, index) ([], [], index) bvars
+                  (subst, index), v') ([], index) bvars
       in
       let t, index = standardize_term index (apply_subst subst t) in
-         { bvars = List.rev bvars; bterm = t }, index
+         { bvars = bvars; bterm = t }, index
 
-   and standardize_bterms_step (bterms, index) bterm =
+   and standardize_bterms_step index bterm =
       let bterm, index = standardize_bterm index bterm in
-         bterm :: bterms, index
+         index, bterm
 
-   and standardize_terms_step (terms, index) term =
+   and standardize_terms_step index term =
       let term, index = standardize_term index term in
-         term :: terms, index
+         index, term
 
    and standardize_hyps_step (subst, index) hyp =
       match hyp with
@@ -614,23 +611,23 @@ struct
                (subst, index), hyps
        | Context (cv, vars, args) ->
              let vars = List.map (subst_var subst) vars in
-             let args = List.fold_left (fun args arg -> apply_subst subst arg :: args) [] args in
-             let args, index = List.fold_left standardize_terms_step ([], index) args in
-             let hyps = Context (cv, vars, List.rev args) in
+             let index, args = Lm_list_util.rev_fold_map (fun i a ->
+                                  standardize_terms_step i (apply_subst subst a)) index args in
+             let hyps = Context (cv, vars, args) in
                 (subst, index), hyps
 
    and standardize_term index t =
       match get_core t with
          Term { term_op = op; term_terms = bterms } ->
-            let bterms, index = List.fold_left standardize_bterms_step ([], index) bterms in
-               mk_term op (List.rev bterms), index
+            let index, bterms = Lm_list_util.fold_left_map standardize_bterms_step index bterms in
+               mk_term op bterms, index
        | FOVar _ ->
             t, index
        | SOVar(v, conts, ts) ->
-            let ts, index = List.fold_left standardize_terms_step ([], index) ts in
-               core_term(SOVar(v, conts, List.rev ts)), index
+            let index, ts = Lm_list_util.fold_left_map standardize_terms_step index ts in
+               core_term(SOVar(v, conts, ts)), index
        | SOContext(v, t, conts, ts) ->
-            let ts, index = List.fold_left standardize_terms_step ([], index) ts in
+            let index, ts = Lm_list_util.rev_fold_map standardize_terms_step index ts in
             let t, index = standardize_term index t in
                core_term(SOContext(v, t, conts, ts)), index
        | Sequent seq ->
