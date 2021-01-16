@@ -273,7 +273,9 @@ struct
 
    let hyp_apply_and_rename_subst sub = function
       Hypothesis (v, t) ->
-         let v' = if List.mem_assoc v sub then dest_var (List.assoc v sub) else v in
+         let v' = match List.assoc_opt v sub with
+                     Some a -> dest_var a
+                   | None -> v in
             Hypothesis (v', apply_subst sub t)
    | Context(v, conts, ts) ->
          Context (v, conts, Lm_list_util.smap (apply_subst sub) ts)

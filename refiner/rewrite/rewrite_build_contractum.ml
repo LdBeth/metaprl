@@ -149,7 +149,7 @@ struct
     * Append the var array.
     *)
    let append_vars bvars vars =
-      Array.append bvars (Array.of_list vars)
+      Lm_array_util.append_list bvars vars
 
    (*
     * Perform a substitution on a sequence of hyps.

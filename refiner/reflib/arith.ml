@@ -68,8 +68,6 @@ module SimpleHyps = struct
 end
 *)
 
-let num0 = zero_num
-
 module ArrayTools (Hyps: HypsSig) =
 struct
    open Hyps
@@ -127,7 +125,7 @@ struct
    let pos_dist d =
       match d with
          Disconnected -> false
-       | Int (i,_) -> (gt_num i num0)
+       | Int (i,_) -> is_pos i
 
    let add_dist cij n a b c =
        let d1=get cij (n,a,b) in

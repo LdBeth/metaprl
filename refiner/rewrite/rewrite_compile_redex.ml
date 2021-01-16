@@ -534,36 +534,36 @@ struct
     | RWSequent (t, hyps, concl) ->
          RWSequent (map_restricts_term restr t, List.map (map_restricts_hyp restr) hyps, map_restricts_term restr concl)
     | RWSOVar (i, ts) as t ->
-         if List.mem_assoc i restr then
-            RWSOFreeVarsVar(List.assoc i restr, [], i, ts)
-         else
-            t
+         begin match List.assoc_opt i restr with
+            Some r -> RWSOFreeVarsVar(r, [], i, ts)
+          | None -> t
+         end
     | RWSOFreeVarsVar (cts, vs, i, ts) as t ->
-         if List.mem_assoc i restr then
-            RWSOFreeVarsVar((List.assoc i restr) @ cts, vs, i, ts)
-         else
-            t
+         begin match List.assoc_opt i restr with
+            Some r -> RWSOFreeVarsVar(r @ cts, vs, i, ts)
+          | None -> t
+         end
     | RWSOInstance _ as t ->
          t (* No need to map the subterms since there can not be any patterns there *)
     | RWSOContext (i, j, t, il) ->
          let t = map_restricts_term restr t in
-            if List.mem_assoc j restr then
-               RWSOFreeVarsContext (List.assoc j restr, [], i, j, t, il)
-            else
-               RWSOContext (i, j, t, il)
+            begin match List.assoc_opt j restr with
+               Some r -> RWSOFreeVarsContext (r, [], i, j, t, il)
+             | None -> RWSOContext (i, j, t, il)
+            end
     | RWSOFreeVarsContext(rconts, rvars, i, j, t, il) ->
          let t = map_restricts_term restr t in
-            if List.mem_assoc j restr then
-               RWSOFreeVarsContext((List.assoc i restr) @ rconts, rvars, i, j, t, il)
-            else
-               RWSOFreeVarsContext(rconts, rvars, i, j, t, il)
+            begin match List.assoc_opt j restr with
+               Some r -> RWSOFreeVarsContext(r @ rconts, rvars, i, j, t, il)
+             | None -> RWSOFreeVarsContext(rconts, rvars, i, j, t, il)
+            end
     | RWCheckVar _ as t ->
          t
     | RWMatchFreeFOVar (i, conts, vars) as t ->
-         if List.mem_assoc i restr then
-            RWMatchFreeFOVar (i, (List.assoc i restr) @ conts, vars)
-         else
-            t
+         begin match List.assoc_opt i restr with
+            Some r -> RWMatchFreeFOVar (i, r @ conts, vars)
+          | None -> t
+         end
     | RWAvoidBindings(i, t) ->
          RWAvoidBindings(i, map_restricts_term restr t)
     | RWStackVar _
@@ -578,15 +578,15 @@ struct
       RWSeqHyp (v, t) ->
          RWSeqHyp (v, map_restricts_term restr t)
     | RWSeqContext (i, j, il) as t ->
-         if List.mem_assoc j restr then
-            RWSeqFreeVarsContext (List.assoc j restr, [], i, j, il)
-         else
-            t
+         begin match List.assoc_opt j restr with
+            Some r -> RWSeqFreeVarsContext (r, [], i, j, il)
+          | None -> t
+         end
     | RWSeqFreeVarsContext (rconts, rvars, i, j, il) as t ->
-         if List.mem_assoc j restr then
-            RWSeqFreeVarsContext ((List.assoc j restr) @ rconts, rvars, i, j, il)
-         else
-            t
+         begin match List.assoc_opt j restr with
+            Some r -> RWSeqFreeVarsContext (r @ rconts, rvars, i, j, il)
+          | None -> t
+         end
     | RWSeqContextInstance (i, ts) ->
          RWSeqContextInstance (i, List.map (map_restricts_term restr) ts)
 
