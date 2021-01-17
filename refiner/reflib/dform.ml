@@ -438,9 +438,9 @@ and format_sequent buf printer term =
                   printer a
              | Context (v, conts, values) ->
                   format_space buf;
-                  format_string buf "<";
+                  format_char buf '<';
                   printer (mk_so_var_term v conts values);
-                  format_string buf ">"
+                  format_char buf '>'
          in
             format_hyp hyps (succ i) len
    in
@@ -453,18 +453,18 @@ and format_sequent buf printer term =
       format_pushm buf 3;
       format_string buf "sequent";
       format_space buf;
-      format_string buf "[";
+      format_char buf '[';
       printer arg;
-      format_string buf "]";
+      format_char buf ']';
       format_space buf;
-      format_string buf "{";
+      format_char buf '{';
       format_hyp hyps 0 (SeqHyp.length hyps);
       format_string buf " >-";
       format_space buf;
       printer concl;
       format_popm buf;
       format_space buf;
-      format_string buf "}";
+      format_char buf '}';
       format_ezone buf
 
 (*

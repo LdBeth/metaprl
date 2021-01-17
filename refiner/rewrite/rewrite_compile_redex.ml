@@ -456,10 +456,9 @@ struct
                               REF_RAISE (RefineError ("compile_so_redex_sequent_inner", StringVarError("Last context of the sequent does not need to be passed in as an argument",v)))
                            else
                               i - len
-                        else if Array.mem v st.st_ints then
-                           Lm_array_util.index v st.st_ints
-                        else
-                           REF_RAISE (RefineError ("compile_so_redex_sequent_inner", RewriteMissingContextArg v))
+                        else match Lm_array_util.index_opt v st.st_ints with
+                                Some i -> i
+                              | None -> REF_RAISE (RefineError ("compile_so_redex_sequent_inner", RewriteMissingContextArg v))
                      in
                      (* All the vars should be free variables *)
                      let vars' = List.map (var_index st.st_bvars) terms in

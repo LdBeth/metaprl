@@ -165,7 +165,7 @@ TESTS_ENABLED = $(TESTS_ENABLED)
 REFINER = $(REFINER)
 
 #
-# Term module to use: ds or std
+# Term module to use: ds or std or both
 # See doc/htmlman/developer-guide/term_modules.html or
 # http://metaprl.org/developer-guide/term_modules.html
 # for more information.

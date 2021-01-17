@@ -121,14 +121,14 @@ let string_of_op_shape shape =
       [] ->
          ()
     | p ->
-         Buffer.add_string buf "[";
+         Buffer.add_char buf '[';
          string_of_list string_of_param p;
-         Buffer.add_string buf "]"
+         Buffer.add_char buf ']'
    in
    let string_of_arity i =
-      Buffer.add_string buf "<";
+      Buffer.add_char buf '<';
       Buffer.add_string buf (string_of_int i);
-      Buffer.add_string buf ">"
+      Buffer.add_char buf '>'
    in
    let { sh_name = name;
          sh_kind = kind;
@@ -138,9 +138,9 @@ let string_of_op_shape shape =
    in
       Buffer.add_string buf name;
       string_of_params params;
-      Buffer.add_string buf "{";
+      Buffer.add_char buf '{';
       string_of_list string_of_arity arities;
-      Buffer.add_string buf "}";
+      Buffer.add_char buf '}';
       (match kind with
           NormalKind ->
              ()

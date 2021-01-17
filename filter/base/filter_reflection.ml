@@ -788,23 +788,19 @@ let sweep_rulequote_term info socvars t =
          socvars, dest_xunquote_term t
       else
          let param = Reflect.mk_operator_term info (opparam_of_term t) in
-         let socvars, bterms = List.fold_left wrap_bterm (socvars, []) (dest_term t).term_terms in
-         let bterms = Reflect.mk_list_term info (List.rev bterms) in
+         let socvars, bterms = List.fold_left_map wrap_bterm socvars (dest_term t).term_terms in
+         let bterms = Reflect.mk_list_term info bterms in
             socvars, Reflect.mk_mk_term_term info param bterms
 
-   and wrap_bterm (socvars, bterms) bterm =
+   and wrap_bterm socvars bterm =
       let { bvars = vars; bterm = bterm } = dest_bterm bterm in
       let socvars, bterm = sweepdn socvars bterm in
       let bterm = List.fold_left (fun bterm v -> Reflect.mk_bind_term info v bterm) bterm (List.rev vars) in
-         socvars, bterm :: bterms
+         socvars, bterm
 
    and sweep_list socvars tl =
-      let socvars, tl =
-         List.fold_left (fun (socvars, tl) t ->
-               let socvars, t = sweepdn socvars t in
-                  socvars, t :: tl) (socvars, []) tl
-      in
-         socvars, List.rev tl
+      List.fold_left_map (fun socvars t ->
+            sweepdn socvars t) socvars tl
 
    and sweep_sovar_term socvars t =
       let x, cargs, args = dest_so_var t in
@@ -1009,12 +1005,8 @@ let sweep_min_rulequote_term info h_v socvars t =
          socvars, bterm
 
    and sweep_list socvars tl =
-      let socvars, tl =
-         List.fold_left (fun (socvars, tl) t ->
-               let socvars, t = sweepdn socvars t in
-                  socvars, t :: tl) (socvars, []) tl
-      in
-         socvars, List.rev tl
+      List.fold_left_map (fun socvars t ->
+            sweepdn socvars t) socvars tl
 
    and sweep_sovar_term socvars t =
       let x, cargs, args = dest_so_var t in
@@ -1038,19 +1030,18 @@ let sweep_min_rulequote_term info h_v socvars t =
       in
       let socvars, arg = sweepdn socvars arg in
       let socvars, hyps =
-         SeqHyp.fold (fun (socvars, hyps) _ h ->
+         SeqHyp.fold_map (fun socvars h ->
                match h with
                   Hypothesis (x, t) ->
                      let socvars, t = sweepdn socvars t in
                      let hyp = Hypothesis (x, t) in
-                        socvars, hyp :: hyps
+                        socvars, hyp
                 | Context (x, cargs, args) ->
                      let socvars, args = sweep_list socvars args in
                      let hyp = Context (x, cargs @ [h_v], args) in
                      let socvars = SymbolTable.add socvars x (true, cargs, List.length args) in
-                        socvars, hyp :: hyps) (socvars, []) hyps
+                        socvars, hyp) socvars hyps
       in
-      let hyps = SeqHyp.of_list (List.rev hyps) in
       let socvars, concl = sweepdn socvars concl in
       let t = Reflect.mk_bsequent_term info arg hyps concl in
          socvars, t
@@ -1075,13 +1066,12 @@ let mk_rule_term info t =
    (* Convert the terms in the rule *)
    let premises, goal = unzip_mfunction t in
    let socvars, premises =
-      List.fold_left (fun (socvars, premises) (_, _, t) ->
+      List.fold_left_map (fun socvars (_, _, t) ->
             let socvars, t = sweep_rulequote_term info socvars t in
-            let premises = t :: premises in
-               socvars, premises) (SymbolTable.empty, []) premises
+               socvars, t) SymbolTable.empty premises
    in
    let socvars, goal = sweep_rulequote_term info socvars goal in
-   let premises = Reflect.mk_list_term info (List.rev premises) in
+   let premises = Reflect.mk_list_term info premises in
 
    (* The inner term is an equality *)
    let t = Reflect.mk_proof_step_term info premises goal in
@@ -1983,9 +1973,8 @@ let mk_proof_check_premise info cinfo t =
 
    (* Convert the premises and the goal *)
    let socvars, premises =
-      List.fold_left (fun (socvars, premises) premise ->
-            let socvars, premise = sweep_rulequote_term info socvars premise in
-               socvars, premise :: premises) (socvars, []) (List.rev premises)
+      List.fold_left_map (fun socvars premise ->
+            sweep_rulequote_term info socvars premise) socvars premises
    in
    let premises = Reflect.mk_list_term info premises in
    let premises_clause = Hypothesis (w2_v, Reflect.mk_equal_term info t_premises premises ty_bterm_list) in
