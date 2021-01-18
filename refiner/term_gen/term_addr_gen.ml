@@ -62,8 +62,8 @@ struct
 
    type address = addr_item list
 
-   let make_address a = a (* external make_address : address -> address = "%identity" *)
-   let dest_address a = a (* external dest_address : address -> address = "%identity" *)
+   let make_address = Fun.id (* external make_address : address -> address = "%identity" *)
+   let dest_address = Fun.id (* external dest_address : address -> address = "%identity" *)
 
    let null_address = []
 
@@ -121,7 +121,7 @@ struct
              | Some i -> subterm_exists (dest_bterm (List.nth t.term_terms i)).bterm addr
             end
     | ArgAddr :: addr ->
-         is_sequent_term t && subterm_exists (snd (dest_sequent_outer_term t)) addr
+         is_sequent_term t && subterm_exists (args t) addr
     | ClauseAddr 0 :: addr ->
          is_sequent_term t && subterm_exists (concl t) addr
     | ClauseAddr i :: addr ->
@@ -167,7 +167,7 @@ struct
          let i = make_index ATERM i (List.length term'.term_terms) in
             term_subterm (dest_bterm (List.nth term'.term_terms i)).bterm addr
     | ArgAddr :: addr ->
-         term_subterm (snd (dest_sequent_outer_term term)) addr
+         term_subterm (args term) addr
     | ClauseAddr 0 :: addr ->
          term_subterm (concl term) addr
     | ClauseAddr i :: addr when i > 0 ->
@@ -380,6 +380,9 @@ struct
 
    let rec make_path_list i =
       if i = 0 then [] else [Subterm i] :: (make_path_list (pred i))
+   let rec make_hyppath_list i addr addrs =
+      if i = 0 then addrs else make_hyppath_list (pred i) addr ([addr; Subterm i] :: addrs)
+
    let subterm_addresses_name = "Term_addr_gen.subterm_addresses"
    let subterm_addresses t =
       if is_var_term t then []
@@ -393,8 +396,7 @@ struct
                   [ClauseAddr i] :: (aux (i + 1) (match_hyp subterm_addresses_name t bterms))
                else if Opname.eq opname context_opname then
                   let _, term, _, ts = dest_context term in
-                     let addrs = List.map (fun a -> ClauseAddr i :: a) (make_path_list (List.length ts)) in
-                        addrs @ (aux (i + 1) term)
+                     make_hyppath_list (List.length ts) (ClauseAddr i) (aux (i + 1) term)
                else if Opname.eq opname concl_opname then
                   match bterms with
                      [bt] when is_simple_bterm bt ->
