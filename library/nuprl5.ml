@@ -43,7 +43,8 @@ let bool_opname = mk_opname "bool" nil_opname
 
 let make_bool_parameter b =
   make_param (ParamList
-		[(make_param (Token bool_opname)); (make_param (Number (Lm_num.num_of_int (if b then 1 else 0))))])
+		[(make_param (Token bool_opname));
+     (make_param (Number (if b then Lm_num.one_num else Lm_num.zero_num)))])
 
 let make_time_parameter time =
   make_param (ParamList

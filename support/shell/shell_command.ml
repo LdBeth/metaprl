@@ -250,10 +250,10 @@ declare refiner_status[name:s] : Dform
 declare status_bf[s] : Dform
 
 dform refiner_status_df : except_mode[src] :: refiner_status[name:s] =
-   szone pushm[3] info["Refiner status:"] space bf[name] space
+   info["Refiner status:"] space bf[name] space
 
 dform refiner_status_df : mode[src] :: refiner_status[name:s] =
-   szone pushm[3] `"Refiner status: " slot[name] `" "
+   `"Refiner status: " slot[name] `" "
 
 dform status_df : except_mode[src] :: status_bf[s] =
    bf[s]
@@ -265,7 +265,9 @@ let check_all () =
    let check item db =
       let name, _, _, _ = item.edit_get_contents [] in
       let buf = new_buffer () in
-      let mofidied, status = item.edit_check () in
+      let modified, status = item.edit_check () in
+         format_szone buf;
+         format_pushm buf 3;
          Dform.format_term db buf <:con< refiner_status[$name$:s] >>;
          begin match status with
             RefPrimitive ->
@@ -286,7 +288,7 @@ let check_all () =
          format_ezone buf;
          format_newline buf;
          print_rbuffer buf;
-         mofidied
+         modified
    in
       apply_all check true dont_clean_item dont_clean_module
 

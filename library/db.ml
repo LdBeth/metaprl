@@ -194,7 +194,7 @@ let rec scan_item stype scanner =
 and scan_numeral_parameter scanner =
 
  (*error ["break"] [] []; *)
- let mp256 = num_of_int 256 and mp0 = num_of_int 0 and mp1 = num_of_int 1 in
+ let mp256 = num_of_int 256 and mp0 = zero_num and mp1 = one_num in
 
  let code = scan_cur_byte scanner.scanner in
  (*print_string " code = "; print_string (string_of_int code);*)

@@ -63,8 +63,8 @@ dform sig_exception_df2 : sig_exception[start:n, finish:n, name:s]{'tl} =
  *)
 dform sig_external_df1 : sig_external[name:s]{'t; 'sl} =
    szone push_indent "_external" space slot[name:s] space
-   ":" space slot{'t}
-   "=" space list_expr{'sl}
+   ":" space slot{'t} space
+   "=" space 'sl popm ezone
 
 dform sig_external_df2 : sig_external[start:n, finish:n, name:s]{'t; 'sl} =
    sig_external[name:s]{'t; 'sl}

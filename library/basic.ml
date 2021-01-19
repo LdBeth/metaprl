@@ -117,7 +117,7 @@ let ioid_term o = mk_term (ioid_op (make_param (ObId o))) []
 
 let inil_parameter =
 	make_param (ParamList [(make_param (token "bool"));
-			       (make_param (Number (Lm_num.num_of_int 1)))])
+			       (make_param (Number Lm_num.one_num))])
 
 let iterm_op = mk_nuprl5_op [make_param (token "!term")]
 

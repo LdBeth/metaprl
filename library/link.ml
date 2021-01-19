@@ -34,7 +34,7 @@ let idisconnect_term error_p =
   mk_term (mk_op nuprl5_opname
 	     [(make_param (token "!disconnect"));
 	       (make_param (ParamList [(make_param (token "bool"));
-					(make_param (Number (Lm_num.num_of_int (if error_p then 1 else 0))))]))]) []
+					(make_param (Number (if error_p then Lm_num.one_num else Lm_num.zero_num)))]))]) []
 
 let cautious_in = ref Unix.stderr
 let cautious_out = ref Unix.stderr
