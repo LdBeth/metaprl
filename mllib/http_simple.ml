@@ -660,7 +660,7 @@ let parse_content_type body =
  * Content-disposition.
  *)
 let parse_content_disposition body =
-   let parts = Lm_string_util.split ";" body in
+   let parts = String.split_on_char ';' body in
       match parts with
          info :: params ->
             let params =

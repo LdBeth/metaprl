@@ -84,7 +84,7 @@ struct
     * module names to the module info.
     *)
    type t =
-      { mutable io_table : (file_name, info list ref) Hashtbl.t;
+      { mutable io_table : (file_name, info list) Hashtbl.t;
         io_path : string list
       }
 
@@ -113,30 +113,19 @@ struct
    let add_info base info =
       let { io_table = table; _ } = base in
       let { info_file = name; _ } = info in
-         try
-            let bucket = Hashtbl.find table name in
-               bucket := info :: !bucket
-         with
-            Not_found ->
-               Hashtbl.add table name (ref [info])
+         Lm_hashtbl_util.update table name
+         (fun bucket -> info :: bucket) []
 
    (*
     * Remove the info (used when a file is reverted).
     *)
    let remove_info base info =
-      try
-         let bucket = Hashtbl.find base.io_table info.info_file in
-         let bucket' =
-            List.fold_left (fun bucket info' ->
-                  if info'.info_type = info.info_type then
-                     bucket
-                  else
-                     info' :: bucket) [] !bucket
-         in
-            bucket := bucket'
-      with
-         Not_found ->
-            ()
+      Lm_hashtbl_util.update_if base.io_table info.info_file
+      (List.fold_left (fun b info' ->
+                           if info'.info_type = info.info_type then
+                              b
+                           else
+                              info' :: b) [])
 
    (*
     * Filename for a spec.
@@ -272,7 +261,26 @@ struct
          search [] Info.info
 
    let find_spec select suffix =
-      List.hd (find_specs select suffix)
+       let rec search = function
+          io :: tl ->
+             let { info_select = select';
+                   info_suffix = suffix';
+                   info_disabled = disabled; _ } = io in
+                if select' = select && not !disabled then
+                   match suffix with
+                      AnySuffix ->
+                         io
+                    | OnlySuffixes suffixes ->
+                         if List.mem suffix' suffixes then
+                            io
+                         else
+                            search tl
+                else
+                   search tl
+       | [] ->
+            raise (Invalid_argument "File_base.find_spec");
+      in
+         search Info.info
 
    (*
     * Find a root module.
@@ -294,7 +302,7 @@ struct
           | [] ->
                raise Not_found
          in
-         let info = search !(Hashtbl.find base.io_table name) in
+         let info = search (Hashtbl.find base.io_table name) in
             if !debug_file_base then
                eprintf "File_base.find: %s: found %s%t" name info.info_file eflush;
             info
@@ -323,7 +331,7 @@ struct
        | [] ->
             raise Not_found
       in
-         try search !(Hashtbl.find base.io_table file) with
+         try search (Hashtbl.find base.io_table file) with
             Not_found ->
                load_file true base (find_specs select suffix) arg dir file
 
@@ -394,8 +402,7 @@ struct
                raise (Invalid_argument "File_base.save_as")
             else
                search tl
-       | [] ->
-            ()
+       | [] -> ()
       in
       let info =
          { info_info = data;
@@ -405,16 +412,12 @@ struct
            info_magic = 0;
            info_time = Unix.gettimeofday ()
          }
-      in
-      let _ =
-         try
-            let bucket = Hashtbl.find table file in
-               search !bucket;
-               bucket := info :: !bucket
-         with
-            Not_found ->
-               Hashtbl.add table file (ref [info])
-      in
+      in begin
+         match Hashtbl.find_opt table file with
+            Some bucket -> search bucket;
+                           Hashtbl.replace table file (info :: bucket)
+          | None -> Hashtbl.add table file [info]
+         end;
          info
 
    let save_as base arg data select dir file suffix =

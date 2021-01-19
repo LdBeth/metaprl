@@ -226,13 +226,8 @@ let extract entries =
    (* Insert a new entry into the table *)
    let insert_entry base info =
       let pattern = info.info_pattern in
-      let entries =
-         try Hashtbl.find base pattern with
-            Not_found -> []
-      in
-      let entries' = info::entries in
-         Hashtbl.remove base pattern;
-         Hashtbl.add base pattern entries'
+         Lm_hashtbl_util.update base pattern
+         (fun entries -> info :: entries) []
 
    (* Insert a generic item *)
    in let insert_item = function

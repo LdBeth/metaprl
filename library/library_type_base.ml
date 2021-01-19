@@ -19,32 +19,31 @@ let connection = null_oref()
 exception LibraryException of string
 
 let library_close () =
-  if oref_p library
-  then (leave (oref_val library);
-	disconnect (oref_val connection))
-  else raise (LibraryException "Close: No library open.")
+   if oref_p library
+   then (leave (oref_val library);
+         disconnect (oref_val connection))
+   else raise (LibraryException "Close: No library open.")
 
 open Lm_printf
 
 let library_open host localport remoteport =
-
-  eprintf "%s %d %d %t" host localport remoteport eflush;
-
-  if oref_p library then
-    raise (LibraryException "Open: Library already open.")
-  else
-    (let _ = oref_set library
-	(join (oref_set connection (connect "metaprl" host remoteport)) ["metaprl"]) in
-    at_exit library_close)   (* nogin: something is strange here *)
+   eprintf "%s %d %d %t" host localport remoteport eflush;
+   if oref_p library then
+      raise (LibraryException "Open: Library already open.")
+   else
+   begin
+      ignore (oref_set library
+              (join (oref_set connection (connect "metaprl" host remoteport))
+               ["metaprl"]));
+      at_exit library_close   (* nogin: something is strange here *)
+   end
 
 let maybe_lib_open () =
-  if not (oref_p library) then
-    let host = Sys.getenv "NUPRLLIB_HOST"
-    and port = int_of_string (Sys.getenv "NUPRLLIB_PORT")
-    in
-      library_open host port (port+2)
-  else ()
-
+   if not (oref_p library) then
+      let host = Sys.getenv "NUPRLLIB_HOST"
+      and port = int_of_string (Sys.getenv "NUPRLLIB_PORT")
+      in
+         library_open host port (port+2)
 
 let lib_get () =
    maybe_lib_open ();
@@ -59,25 +58,20 @@ let lib_get () =
  *)
 
 let library_set magics magic versions filename term =
-  let _ =
-    (with_transaction (lib_get())
+   ignore
+   (with_transaction (lib_get())
 
-       (function t ->
-         let root = (root t "Files") in
+    (fun t ->
+          let root = (root t "Files") in
 
-	  (* make filename dir if none *)
-	 let dir = try (descendent t root [filename])
-	 with _ -> (let ndir = make_directory t root filename in
-	 put_property t ndir "NAME" (itoken_term filename);
-	 ndir)
-	 in
-
-	    (* store term in filename at magic *)
-	 ninsert_leaf t dir (string_of_int (List.nth magics magic)) "TERM" term))
-
-  in ()
-
-
+          (* make filename dir if none *)
+          let dir = try (descendent t root [filename])
+                    with _ -> (let ndir = make_directory t root filename in
+                                  put_property t ndir "NAME" (itoken_term filename);
+                                  ndir)
+          in
+          (* store term in filename at magic *)
+             ninsert_leaf t dir (string_of_int (List.nth magics magic)) "TERM" term))
 
 (*
  * Get a term from the library.
@@ -87,13 +81,13 @@ let library_set magics magic versions filename term =
 
 let library_get magics versions filename =
 
-  with_transaction (lib_get())
+   with_transaction (lib_get())
 
-    (function t ->
-      let root = (root t "Files") in
-      let magic = List.hd magics in
-      let obid = (descendent t root [filename; (string_of_int magic)]) in
-      get_term t obid, magic)
+   (fun t ->
+         let root = (root t "Files") in
+         let magic = List.hd magics in
+         let obid = (descendent t root [filename; (string_of_int magic)]) in
+            get_term t obid, magic)
 
 (*
  * This "combo" is the module that defines how to fetch
