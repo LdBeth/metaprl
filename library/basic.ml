@@ -67,20 +67,9 @@ let opeq a b =
 	  op_params = bparms }
 	-> (aopname = bopname && listeq parmeq aparms bparms))
 
-open Hashtbl
-
-(*	TODO PERF
-	these maps are unfortunate as we will be consing at every lookup
+(* Relies on the generic hash function
  *)
-let rec parmhash p =
-
- match dest_param p with
-
-    Number pn	-> hash (string_of_num pn)
-  | ParamList pl	-> hash (map parmhash pl)
-  | ObId poid	-> hash (map parmhash poid)
-
-  | _ -> hash p
+let parmhash = Hashtbl.hash
 
 (*
  * common terms
@@ -167,9 +156,9 @@ let unconditional_error_handler body handler =
   try body ()
   with
     Nuprl5_Exception (s,t) -> handler t
-  | _ ->
-      ( (); (* TODO dump error to stdout *)
-       handler (itext_term "Unexpected Metaprl failure"))
+  | exn ->
+       Printf.printf "%s\n" (Printexc.to_string exn);
+       handler (itext_term "Unexpected Metaprl failure")
 
 let unwind_error body unwind =
   try body ()
@@ -303,13 +292,7 @@ type stamp = {term: term;
 	      }
 
 let print_stamp s =
-  print_string "STAMP{";
-  print_string s.process_id;
-  print_string ",";
-  print_int s.transaction_seq;
-  print_string ",";
-  print_int s.seq;
-  print_string "}"
+   Printf.printf "STAMP{%s,%d,%d}" s.process_id s.transaction_seq s.seq
 
 let dest_stamp stamp = stamp
 

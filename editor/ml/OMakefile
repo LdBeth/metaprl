@@ -188,7 +188,7 @@ run-cli: $(MP_PREREQS)
 
 .test-metaprl-startup: $(MP_PREREQS)
     echo | ./$(MP_SCRIPT) -batch
-    echo > $@
+    touch $@
 
 done: .test-metaprl-startup
     if $(not $(NATIVE_ENABLED))

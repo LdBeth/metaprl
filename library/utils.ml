@@ -99,10 +99,7 @@ let time_it f arg =
    let t1 = Unix.times () in
    let res = f arg in
    let t2 = Unix.times () in
-      print_string "User time: ";
-      print_float (t2.Unix.tms_utime -. t1.Unix.tms_utime);
-      print_string "\nSystem time: ";
-      print_float (t2.Unix.tms_stime -. t1.Unix.tms_stime);
-      print_string "\n\n";
-      flush stdout;
+      Printf.printf "User time: %f\nSystem time: %f\n\n%!"
+      (t2.Unix.tms_utime -. t1.Unix.tms_utime)
+      (t2.Unix.tms_stime -. t1.Unix.tms_stime);
       res
