@@ -58,13 +58,9 @@ let debug_http =
         debug_description = "HTTP server operations";
         debug_value = false
       }
-
-let _debug_lock =
-   create_debug (**)
-      { debug_name = "lock";
-        debug_description = "Show locking operations";
-        debug_value = false
-      }
+(*
+let debug_lock = load_debug "lock"
+*)
 
 (*
  * We may start this as a web service.
@@ -805,9 +801,9 @@ struct
    let print_history state session buf =
       let info = get_session_state state session in
          Printf.bprintf buf "\tvar command_history = new Array();\n";
-         ignore (List.fold_left (fun i s ->
-                       Printf.bprintf buf "\tcommand_history[%d] = '%s';\n" i (Lm_string_util.js_escaped s);
-                       succ i) 0 info.browser_history)
+         List.iteri (fun i s ->
+               Printf.bprintf buf "\tcommand_history[%d] = '%s';\n" i (Lm_string_util.js_escaped s))
+         info.browser_history
 
 
    (*
@@ -1284,15 +1280,9 @@ struct
       in
 
       (* Precedence *)
-      let command =
-         try Some (List.assoc "command" body) with
-            Not_found ->
-               None
+      let command = List.assoc_opt "command" body
       in
-      let content =
-         try Some (List.assoc "content" body) with
-            Not_found ->
-               None
+      let content = List.assoc_opt "content" body
       in
          match decode_uri state uri with
             FrameURI (pid, "rule") ->

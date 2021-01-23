@@ -719,13 +719,7 @@ let is_child_with_assumptions child assums parent =
  *)
 let bset_tbl_node tbl node =
    let { node_goal = { goal_hash = hash; _ }; _ } = node in
-   let nodes =
-      try Hashtbl.find tbl hash with
-         Not_found ->
-            []
-   in
-      Hashtbl.remove tbl hash;
-      Hashtbl.add tbl hash (node :: nodes)
+      Lm_hashtbl_util.update tbl hash (fun nodes -> node :: nodes) []
 
 let bset_node { ext_goals = tbl; _ } node =
    bset_tbl_node tbl node
@@ -737,15 +731,14 @@ let bget_nodes { ext_goals = tbl; _ } ({ goal_hash = hash; _ } as goal) =
             node :: collect tl
          else
             collect tl
-    | [] ->
-         []
+    | [] -> []
    in
-   let l =
-      try Hashtbl.find tbl hash with
+      try
+         let l = Hashtbl.find tbl hash in
+            collect l
+      with
          Not_found ->
             []
-   in
-      collect l
 
 (*
  * This gets just one node with the given world,
@@ -769,13 +762,7 @@ let bget_node extract world ({ goal_assums = assums; _ } as goal) =
  * is returned, and the insance list is updated.
  *)
 let fset_entry (ftable : 'a flookup_table) hash (entry : int * 'a fcache_info) =
-   let entries =
-      try Hashtbl.find ftable hash with
-         Not_found ->
-            []
-   in
-      Hashtbl.remove ftable hash;
-      Hashtbl.add ftable hash (entry :: entries)
+   Lm_hashtbl_util.update ftable hash (fun entries -> entry :: entries) []
 
 let fget_entry { ext_base = { ext_ftable = ftable; ext_rules = rules; _ }; _ } { inf_hash = hash; _ } =
    let aux (i, ({ finfo_plates = plates; _ } as rl)) =
@@ -805,13 +792,7 @@ let fset_insts inf (i, _, insts) =
 let init_insts (rules : 'a info_table) ({ finfo_plates = plates; _ } as rl) =
    let len = List.length plates in
    let entry = Array.make len [] in
-   let entries =
-      try Hashtbl.find rules plates with
-         Not_found ->
-            []
-   in
-      Hashtbl.remove rules plates;
-      Hashtbl.add rules plates ((rl, entry) :: entries)
+      Lm_hashtbl_util.update rules plates (fun entries -> (rl, entry) :: entries) []
 
 (*
  * Provide a rough
@@ -819,13 +800,7 @@ let init_insts (rules : 'a info_table) ({ finfo_plates = plates; _ } as rl) =
  * Not idempotent.
  *)
 let bset_entry (tbl : 'a blookup_table) ({ binfo_plate = hash; _ } as entry) =
-   let entries =
-      try Hashtbl.find tbl hash with
-         Not_found ->
-            []
-   in
-      Hashtbl.remove tbl hash;
-      Hashtbl.add tbl hash (entry::entries)
+   Lm_hashtbl_util.update tbl hash (fun entries -> entry :: entries) []
 
 let bget_entries { ext_base = { ext_btable = tbl; _ }; _ } { goal_hash = hash; _ } =
    Hashtbl.find tbl hash
@@ -835,22 +810,14 @@ let bget_entries { ext_base = { ext_btable = tbl; _ }; _ } { goal_hash = hash; _
  * Not idempotent.
  *)
 let set_inf { ext_base = { ext_terms = terms; _ }; _ } ({ inf_hash = hash; _ } as inf) =
-   let { entry_infs = infs; entry_goals = goals } =
-      try Hashtbl.find terms hash with
-         Not_found ->
-            { entry_infs = []; entry_goals = [] }
-   in
-      Hashtbl.remove terms hash;
-      Hashtbl.add terms hash { entry_infs = inf :: infs; entry_goals = goals }
+   Lm_hashtbl_util.update_opt terms hash (function
+      Some entry -> { entry with entry_infs = inf :: entry.entry_infs }
+    | None -> { entry_infs = [inf]; entry_goals = [] })
 
 let set_goal { ext_base = { ext_terms = terms; _ }; _ } ({ goal_hash = hash; _ } as goal) =
-   let { entry_infs = infs; entry_goals = goals } =
-      try Hashtbl.find terms hash with
-         Not_found ->
-            { entry_infs = []; entry_goals = [] }
-   in
-      Hashtbl.remove terms hash;
-      Hashtbl.add terms hash { entry_infs = infs; entry_goals = goal::goals }
+   Lm_hashtbl_util.update_opt terms hash (function
+      Some entry -> { entry with entry_goals = goal :: entry.entry_goals }
+    | None -> { entry_infs = []; entry_goals = [goal] })
 
 (*
  * Inferences are found by their term and their world must include

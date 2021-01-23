@@ -3164,8 +3164,8 @@ struct
 *)
       if !debug_jprover then
          begin
-            print_endline "";
-            print_endline ("Beta proof with number of closures = "^(string_of_int closures)^" let number of beta expansions = "^(string_of_int beta_exp));
+            printf "\nBeta proof with number of closures = %d@ " closures;
+            printf "let number of beta expansions = %d\n@." beta_exp;
 (*   print_endline "";
    print_endline "";
    print_beta_proof bproof;
@@ -3182,7 +3182,7 @@ struct
    print_pairlist min_connections;
    print_endline ".";
    print_flush(); *)
-            print_endline "";
+            (* print_endline ""; *)
          end;
       let (newroot_name,unsolved_list) =  build_unsolved ftree in
       let redord2 = (update newroot_name redord) in   (* otherwise we would have a deadlock *)
@@ -4206,14 +4206,8 @@ let rec try_multiplicity
             raise mult_limit_exn
        | _ ->
             let new_mult = mult+1 in
-            if !debug_jprover then begin
-               open_box 0;
-               force_newline ();
-               print_string "Multiplicity Fail: ";
-               print_string ("Try new multiplicity "^(string_of_int new_mult));
-               force_newline ();
-               print_flush ();
-            end;
+            if !debug_jprover then
+               printf "@[<v>@,Multiplicity Fail: Try new multiplicity %d@,@]@." new_mult;
             let new_ftree, new_ordering =
                add_multiplicity ftree new_mult calculus in
             if ftree_eq new_ftree ftree then
@@ -4376,70 +4370,36 @@ let do_prove mult_limit hyps concls calculus =
       let ftree, red_ordering, (sigmaQ,sigmaJ), ext_proof =
          prove consts mult_limit hyps concls calculus
       in
-      open_box 0;
-      force_newline ();
-      force_newline ();
-      print_string "Extension proof ready";
-      force_newline ();
-      force_newline ();
-      print_string ("Length of Extension proof: "^((string_of_int (List.length ext_proof)))^
-                           " Axioms");
-      force_newline ();
-      force_newline ();
-      print_endline "Extension proof:";
-      open_box 0;
-      (*print_pairlist ext_proof;*) (* print list of type (string * string) list *)
-      force_newline ();
-      force_newline ();
-      force_newline ();
-      print_flush ();
-      print_flush ();
-      open_box 0;
-      (*print_ordering red_ordering;*)
-      print_flush ();
-      open_box 0;
-      force_newline ();
+      print_string "\n\nExtension proof ready\n\n";
+      printf "Length of Extension proof: %d Axioms\n\n" (List.length ext_proof);
+      printf "Extension proof:@,@[%s@]\n\n@." (*print_pairlist ext_proof;*)
+      (* print list of type (string * string) list *) "";
+      (* open_box 0;
+      print_ordering red_ordering;
+      print_flush (); *)
 (* ----------------------------------------------- *)
-      open_box 0;
-      (*print_tunify sigmaJ;*)
-      print_flush ();
-      print_endline "";
-      print_endline "";
+      (* open_box 0; rint_tunify sigmaJ; print_flush ();*)
+      (* printf "\n\n"; *)
 (*      print_sigmaQ sigmaQ;*)
-      print_endline "";
-      print_endline "";
+      (* printf "\n\n"; *)
 (* --------------------------------------------------------- *)
-      print_string "Break ... ";
-      print_endline "";
-      print_endline "";
-      print_flush ();
+      printf "Break ... \n\n@.";
       let _ = input_char stdin in
       let red_ordering = PMap.fold (fun acc p s -> (p,s)::acc) [] red_ordering in
       let reconstr_proof =
       reconstruct ftree red_ordering sigmaQ ext_proof calculus consts
     in
       let _sequent_proof = make_test_interface consts reconstr_proof in
-      open_box 0;
-      force_newline ();
-      force_newline ();
-      print_string "Sequent proof ready";
-      force_newline ();
-      force_newline ();
-      print_flush ();
+       printf "@[<v>@,@,Sequent proof ready@,@,@]@.";
       (*let (ptree,count_ax) = bproof sequent_proof in*)
-      open_box 0;
-      (*print_string
-      * ("Length of sequent proof: "^((string_of_int count_ax))^" Axioms");
-      *)
+      (* open_box 0;
+       * print_string
+       * ("Length of sequent proof: "^((string_of_int count_ax))^" Axioms");
       force_newline ();
       force_newline ();
-      force_newline ();
-      force_newline ();
-      print_flush ();
-      (*tt ptree;*)
-      print_flush ();
-      print_endline "";
-      print_endline ""
+      print_flush (); *)
+      (*tt ptree;
+      print_flush (); *)
    end with exn -> begin
       print_endline "Jprover got an exception:";
       print_endline (Printexc.to_string exn)

@@ -94,12 +94,14 @@ open Top_options
 (*
  * Debugging.
  *)
-let _debug_conv =
+(*
+let debug_conv =
    create_debug (**)
       { debug_name = "conv";
         debug_description = "display conversion operation";
         debug_value = false
       }
+*)
 
 let debug_reduce =
    create_debug (**)
@@ -501,15 +503,14 @@ let rec wrap_addrs conv = function
 let cound_vars tbl t =
    if is_so_var_term t then
       let v, _, _ = dest_so_var t in
-         if Hashtbl.mem tbl v then
-            Hashtbl.replace tbl v ((Hashtbl.find tbl v) + 1)
-         else
-            Hashtbl.add tbl v 1
+         Lm_hashtbl_util.update tbl v succ 0
 
 let find_conds tbl t _ =
    is_so_var_term t &&
    let v, _, _ = dest_so_var t in
-      Hashtbl.mem tbl v && ((Hashtbl.find tbl v) > 1)
+      match Hashtbl.find_opt tbl v with
+         Some i -> i > 1
+       | _ -> false
 
 let process_reduce_resource_rw_annotation ?labels name redex contractum assums addrs args loc rw =
    let conv = rewrite_of_pre_rewrite rw empty_rw_args [] in

@@ -1885,6 +1885,8 @@ struct
              * not be included in .prlb/.prla
              * At some point we should be dropping all the stuff that can be recovered from
              * .ml[i] in here
+             * For now this function is shared by the listing function, so a different
+             * function that filters extra items should be made.
              *)
             match item with
                PRLGrammar _, _ ->

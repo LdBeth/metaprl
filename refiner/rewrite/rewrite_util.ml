@@ -51,12 +51,7 @@ let _debug_rewrite =
         debug_value = false
       }
 
-let _debug_subst =
-   create_debug (**)
-      { debug_name = "subst";
-        debug_description = "Substitution operations";
-        debug_value = false
-      }
+(* let debug_subst = load_debug "subst" *)
 
 module MakeRewriteUtil
    (TermType : TermSig)

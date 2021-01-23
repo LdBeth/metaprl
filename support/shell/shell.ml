@@ -149,21 +149,19 @@ struct
       let list_module name =
          synchronize (fun shell ->
                let shell = get_info shell name in
-               let (wnames : string list ref) = ref []
-               and (cnames : string list ref) = ref []
-               and (anames : string list ref) = ref []
-               and (rnames : string list ref) = ref []
-               in
-               let rec collect = function
-                  [] -> (!wnames, !cnames, !anames, !rnames)
+               let rec collect wnames cnames anames rnames = function
+                  [] -> (wnames, cnames, anames, rnames)
                 | (h, _) :: t ->
                      match h with
-                        Rewrite { rw_name = name; _ } -> wnames := name :: !wnames; collect t
-                      | CondRewrite { crw_name = name; _ } -> cnames := name :: !cnames; collect t
-                      | Rule { rule_name = name; _ } -> rnames := name :: !rnames; collect t
-                      | _ -> collect t
+                        Rewrite { rw_name = name; _ } ->
+                           collect (name :: wnames) cnames anames rnames t
+                      | CondRewrite { crw_name = name; _ } ->
+                           collect wnames (name :: cnames) anames rnames t
+                      | Rule { rule_name = name; _ } ->
+                           collect wnames cnames anames (name :: rnames) t
+                      | _ -> collect wnames cnames anames rnames t
                in
-                  collect (info_items shell))
+                  collect [] [] [] [] (info_items shell))
 
       let list_module_rw name =
          synchronize (fun shell ->

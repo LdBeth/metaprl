@@ -336,16 +336,9 @@ struct
                          Failure _ -> false
       IN
       IFDEF VERBOSE_EXN THEN
-         if !debug_alpha_equal then
-            try
-               let _ = equal_term (Lm_list_util.zip v v') t t' in
-               eprintf "alpha_equal_vars: true%t" eflush;
-               true
-            with Failure _ ->
-               eprintf "alpha_equal_vars: false%t" eflush;
-               false
-         else
-            body
+         let result = body in
+            if !debug_alpha_equal then eprintf "alpha_equal_vars: %B%t" result eflush;
+            result
       ELSE
          body
       END

@@ -802,8 +802,7 @@ and parse_inner_params mode buffer items buf =
                parse_error "illegal parameter" buf
 
 and flatten_params params =
-   List.map (fun l ->
-      List.fold_left (fun buf s -> buf ^ s) "" l) params
+   List.map (String.concat "") params
 
 (*
  * Arguments.

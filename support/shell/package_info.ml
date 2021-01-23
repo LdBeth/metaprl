@@ -205,15 +205,13 @@ type proof = Convert.cooked
 let refresh pack_entry path =
    State.write pack_entry (fun pack ->
          let add_theory thy =
-            let dsc, theories =
-               try Hashtbl.find pack.pack_groups thy.thy_group with
-                  Not_found ->
-                     thy.thy_groupdesc, LexStringSet.empty
-            in
-               if thy.thy_groupdesc <> dsc then
-                  raise (Failure (sprintf "Description mismatch:\n %s described %s as %s,\nbut %s describes it as %s" (**)
-                                     (LexStringSet.choose theories) thy.thy_group dsc thy.thy_name thy.thy_groupdesc));
-               Hashtbl.replace pack.pack_groups thy.thy_group (dsc, LexStringSet.add theories thy.thy_name)
+            Lm_hashtbl_util.update_opt pack.pack_groups thy.thy_group (function
+               Some (dsc, theories) ->
+                  if thy.thy_groupdesc <> dsc then
+                     raise (Failure (sprintf "Description mismatch:\n %s described %s as %s,\nbut %s describes it as %s" (**)
+                                        (LexStringSet.choose theories) thy.thy_group dsc thy.thy_name thy.thy_groupdesc));
+                  dsc, LexStringSet.add theories thy.thy_name
+             | None -> thy.thy_groupdesc, LexStringSet.singleton thy.thy_name)
          in
             iter_theories add_theory)
 

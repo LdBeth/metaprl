@@ -58,12 +58,7 @@ let debug_full_terms =
       debug_value = false;
    }
 
-let _debug_lock =
-   create_debug (**)
-      { debug_name = "lock";
-        debug_description = "Show locking operations";
-        debug_value = false
-      }
+(* let debug_lock = load_debug "lock" *)
 
 (*
  * We may start this as a web service.

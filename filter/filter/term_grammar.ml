@@ -1641,7 +1641,7 @@ struct
             | x = QUOTATION ->
                let name, s = dest_quot x in
                   parse_quotation _loc "term" name s
-            | x = ANTIQUOT ->
+            | x = ANTIQUOT -> (* XXX: LDB: is this used anywhere *)
                let name, s = dest_quot x in
                   parse_quotation _loc "term" name s
             | "("; t = aterm; ")" ->

@@ -544,43 +544,37 @@ let rec terms2temp_multieq t0 t1 consts u var_hashtbl b_asslist0 b_asslist1 =
       let x = dest_var t0 in
       if is_var_term t1 then
          let y = dest_var t1 in
-            if List.mem_assoc x b_asslist0 then
-               if List.mem_assoc y b_asslist1 then
-                  let vx = List.assoc x b_asslist0 in
-                  let vy = List.assoc y b_asslist1 in
-                  let multit0 = { fsymb=Bvar vx; args= [] } in
-                  let multit1 = { fsymb=Bvar vy; args= [] } in
-                     check_header_equality multit0 multit1 (-1);
-                     { m_t = [multit0]; s_t = Queue.create () }
-                else
-                  raise(Clash(ClashTerms("terms2temp_multieq:1", t0,t1)))
-            else begin
-               if (List.mem_assoc y b_asslist1) then raise(Clash(ClashTerms("terms2temp_multieq:2", t0,t1)));
-               let q = Queue.create () in
-               if SymbolSet.mem consts x then begin
-                  begin if SymbolSet.mem consts y then
-                     if x <> y then raise(Clash(ClashTerms("terms2temp_multieq:3", t0,t1))) else ()
-                  else
-                     Queue.add (get_variable y u var_hashtbl) q
-                  end;
-                  { m_t = [{ fsymb = Cnst (V x); args = [] }]; s_t = q }
-               end else begin
-                  Queue.add (get_variable x u var_hashtbl) q;
-                  if SymbolSet.mem consts y then
-                     { m_t = [{ fsymb = Cnst (V y); args = [] }]; s_t = q }
-                  else begin
-                    if x <> y then Queue.add (get_variable y u var_hashtbl) q;
-                    { m_t = []; s_t = q }
-                  end
-               end
-         end
+            match List.assoc_opt x b_asslist0, List.assoc_opt y b_asslist1 with
+               Some vx, Some vy -> let multit0 = { fsymb=Bvar vx; args= [] } in
+                                   let multit1 = { fsymb=Bvar vy; args= [] } in
+                                      check_header_equality multit0 multit1 (-1);
+                                      { m_t = [multit0]; s_t = Queue.create () }
+             | Some _, None -> raise(Clash(ClashTerms("terms2temp_multieq:1", t0,t1)))
+             | None, Some _ -> raise(Clash(ClashTerms("terms2temp_multieq:2", t0,t1)))
+             | None, None ->
+                  let q = Queue.create () in
+                     if SymbolSet.mem consts x then begin
+                        (if SymbolSet.mem consts y then
+                            if x <> y then raise(Clash(ClashTerms("terms2temp_multieq:3", t0,t1))) else ()
+                         else
+                            Queue.add (get_variable y u var_hashtbl) q);
+                        { m_t = [{ fsymb = Cnst (V x); args = [] }]; s_t = q }
+                     end
+                     else begin
+                        Queue.add (get_variable x u var_hashtbl) q;
+                        if SymbolSet.mem consts y then
+                           { m_t = [{ fsymb = Cnst (V y); args = [] }]; s_t = q }
+                        else
+                           (if x <> y then Queue.add (get_variable y u var_hashtbl) q;
+                            { m_t = []; s_t = q })
+                     end
       else begin
          if (List.mem_assoc x b_asslist0)||(SymbolSet.mem consts x)
-            then raise(Clash(ClashTerms("term2temp_multieq:4",t0,t1)));
+         then raise(Clash(ClashTerms("term2temp_multieq:4",t0,t1)));
          let q = Queue.create () in
-         Queue.add (get_variable x u var_hashtbl) q;
-         { m_t = [cterm2multiterm t1 consts u var_hashtbl b_asslist1];
-           s_t = q }
+            Queue.add (get_variable x u var_hashtbl) q;
+            { m_t = [cterm2multiterm t1 consts u var_hashtbl b_asslist1];
+              s_t = q }
       end
    else
       if is_var_term t1 then
