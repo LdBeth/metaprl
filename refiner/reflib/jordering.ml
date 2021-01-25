@@ -315,24 +315,18 @@ let set_string_to_pos set =
 
 let rec print_stringlist slist =
    match slist with
-      [] ->
-         print_string ""
-    | f::r ->
-         begin
-            let f = pos_to_string f in
-            print_string (f^".");
-            print_stringlist r
-         end
+      [] -> ()
+    | f::r -> printf "%s." (pos_to_string f);
+              print_stringlist r
 
 let print_ordering_item pos fset =
-   let pos = pos_to_string pos in
-   print_string (pos^": ");   (* first element = node which successors depend on *)
+   printf "%s: " (pos_to_string pos);   (* first element = node which successors depend on *)
    print_stringlist (Set.elements fset);
    force_newline ()
 
 let rec print_list_sets list_of_sets =
    match list_of_sets with
-      [] -> print_string ""
+      [] -> ()
     | (pos,fset)::r ->
          begin
             print_ordering_item pos fset;
@@ -416,7 +410,7 @@ struct
    let rec add_substJ calculus replace_vars replace_string ordering atom_set =
       match replace_vars, calculus with
          [],_ -> ordering
-       | ((NewVar _| NewVarQ _),_)::r, _ -> (* don't integrate new variables *)
+       | ((NewVar _ | NewVarQ _),_) ::r, _ -> (* don't integrate new variables *)
             add_substJ calculus r replace_string ordering atom_set
        | v::r, Intuit _ (* no reduction ordering at atoms *)
             when Set.mem atom_set v ->
@@ -450,25 +444,16 @@ struct
    let rec print_sigmaQ sigmaQ =
       match sigmaQ with
          [] ->
-            print_endline "."
-       | (v,term)::r ->
-            begin
-               open_box 0;
-               print_endline " ";
-               print_string (v^" = ");
-               print_term stdout term;
-               force_newline ();
-               print_flush ();
-               print_sigmaQ r
-            end
+            printf ".@,"
+       | (v,term)::r -> printf "@[@ %s = %a@]@," v print_term term;
+                        print_sigmaQ r
 
    let rec print_term_list tlist =
       match tlist with
-         [] -> print_string "."
+         [] -> printf "."
        | t::r ->
             begin
-               print_term stdout t;
-               print_string "   ";
+               printf "%a, " print_term t;
                print_term_list r
             end
 

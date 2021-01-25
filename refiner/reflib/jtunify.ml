@@ -64,54 +64,40 @@ let print_eq (atomnames,fs,ft,rt) =
 	let fs = list_to_string fs in
 	let ft = list_to_string ft in
 	let rt = list_to_string rt in
-	print_endline (fs^" = "^ft^" | "^rt)
+	printf "%s = %s | %s\n" fs ft rt
 
-let rec print_eqlist eqlist =
+let rec print_eqlist fmt eqlist =
    match eqlist with
       [] ->
-         print_endline ""
+         fprintf fmt "@,"
     | (atnames,f)::r ->
          let (s,t) = f in
          let ls = list_to_string s in
          let lt = list_to_string t in
          begin
-            print_endline ("Atom names: "^(list_to_string atnames));
-            print_endline (ls^" = "^lt);
-            print_eqlist r
+            fprintf fmt "Atom names: %s@,%s = %s@,"
+            (list_to_string atnames) ls lt;
+            print_eqlist fmt r
          end
 
 let print_equations eqlist =
-   begin
-      open_box 0;
-      force_newline ();
-      print_endline "Equations:";
-      print_eqlist eqlist;
-      force_newline ();
-		print_flush ();
-   end
+   printf "@[<v>@,Equations: %a@]@." print_eqlist eqlist
 
-let rec print_subst sigma =
+let rec print_subst fmt sigma =
    match sigma with
       [] ->
-         print_endline ""
+         fprintf fmt "@,"
     | f::r ->
          let (v,s) = f in
          let ls = list_to_string s in
          begin
-            print_endline ((pos_to_string v)^" = "^ls);
-            print_subst r
+            fprintf fmt "%s = %s" (pos_to_string v) ls;
+            print_subst fmt r
          end
 
 let print_tunify sigma =
    let (n,subst) = sigma in
-   begin
-      print_endline " ";
-      print_endline ("MaxVar = "^(string_of_int (n-1)));
-      print_endline " ";
-      print_endline "Substitution:";
-      print_subst subst;
-      print_endline " "
-   end
+      printf "@[<v>@,MaxVar = %i@,Substitution: %a@]@." (n-1) print_subst subst
 
  (*****************************************************)
 
@@ -263,8 +249,8 @@ let compose (n,subst) ((ov,oslist) as one_subst) =
    let trans_vars,com = combine ov oslist subst in
 (* begin
    print_endline "!!!!!!!!!test print!!!!!!!!!!";
-   print_subst [one_subst];
-   print_subst subst;
+   print_subst stdout [one_subst];
+   print_subst stdout subst;
    print_endline "!!!!!!!!! END test print!!!!!!!!!!";
 *)
    if List.mem one_subst subst then

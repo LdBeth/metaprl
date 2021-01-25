@@ -496,13 +496,21 @@ let make_progressT goals tac tacelse =
          else
             tac (ShapeMTable.add goals shape goal))
 (*
- * XXX: TODO: this is suboptimal. See http://bugzilla.metaprl.org/show_bug.cgi?id=549
- *)
+ * XXX: the original ifthenelseT relies on alpha equal of goal.
+ *
 let ifthenelseT tac1 tac2 tac3 =
    let thenelseT = argfunT (fun t p ->
       if alpha_equal (goal p) t then tac3 else tac2)
    in
       funT (fun p -> tryT tac1 thenT thenelseT (goal p))
+*)
+
+let ifthenelseT tac1 tac2 tac3 =
+   let success = ref false in
+   let thenelseT = funT (fun _ -> if !success then tac2 else tac3) in
+   let tac = tac1 thenT (funT (fun _ -> success := true; idT))
+   in
+      tryT tac thenT thenelseT
 
 let extract tactics =
    let tactics =

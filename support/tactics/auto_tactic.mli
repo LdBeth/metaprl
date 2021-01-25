@@ -148,7 +148,6 @@ topval byDefsT: conv list -> tactic
 topval repeatWithRwsT : conv list -> tactic -> tactic
 
 topval ifthenelseT : tactic -> tactic -> tactic -> tactic
-(* XXX BUG: See bug # 549 *)
 
 (*
  * -*-
