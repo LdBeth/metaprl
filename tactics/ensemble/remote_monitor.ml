@@ -121,7 +121,7 @@ struct
             ()
       in
       let info = queue.remote_info in
-      let length = Array.length info in
+      (* let length = Array.length info in *)
       let rec print i =
          match info.(i) with
             [] ->
@@ -144,7 +144,7 @@ struct
     * Create a new empty queue.
     *)
    let create () =
-      { remote_info = Array.create 128 [];
+      { remote_info = Array.make 128 [];
         remote_index = 0;
         remote_count = 0;
         remote_remote = Remote.create ()
@@ -154,7 +154,7 @@ struct
     * Add an event.
     *)
    let push_event queue index event =
-      let { remote_info = info; remote_count = count } = queue in
+      let { remote_info = info; remote_count = count; _ } = queue in
          info.(index) <- (count, event) :: info.(index);
          queue.remote_count <- succ count;
          print_events queue
@@ -165,12 +165,12 @@ struct
    let submit queue arg =
       let { remote_info = info;
             remote_index = index;
-            remote_remote = remote
+            remote_remote = remote; _
           } = queue
       in
-      let info =
+      let _info =
          if index = Array.length info then
-            let info' = Array.create (2 * index) [] in
+            let info' = Array.make (2 * index) [] in
                Array.blit info 0 info' 0 index;
                queue.remote_info <- info';
                info'

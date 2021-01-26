@@ -36,7 +36,7 @@ open Lm_printf
 
 open Lm_thread_util
 
-open Remote_queue_sig
+(* open Remote_queue_sig *)
 
 let debug_queue =
    create_debug (**)
@@ -164,7 +164,7 @@ struct
    (*
     * Get the value associated with a handle.
     *)
-   let arg_of_handle { hand_hand = hand } =
+   let arg_of_handle { hand_hand = hand; _ } =
       Queue.arg_of_handle hand
 
    (*
@@ -186,8 +186,7 @@ struct
          queue.queue_pending <- Lm_list_util.removeq hand queue.queue_pending;
          Queue.delete queue.queue_queue hand.hand_hand
       with
-         Failure "removeq" ->
-            ()
+         Not_found -> ()
 
    (*
     * When polled, the request event will try to pop a pending
@@ -327,7 +326,7 @@ struct
     * Collect the system events and block on them if no polls
     * are successful.
     *)
-   let rec select queue events =
+   let select queue events =
       let rec poll block_events = function
          event :: events ->
             begin

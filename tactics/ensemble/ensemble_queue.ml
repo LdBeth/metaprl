@@ -52,12 +52,14 @@ let debug_share =
         debug_value = false
       }
 
+(*
 let debug_marshal =
    create_debug (**)
       { debug_name = "ensemble";
         debug_description = "Display MP Ensemble Application actions";
         debug_value = false
       }
+*)
 
 let debug_message =
    create_debug (**)
@@ -221,19 +223,19 @@ struct
     * Printing.
     *)
    let print_entry_list out entries =
-      let print { entry_id = { id_id = id; id_number = number } } =
+      let print { entry_id = { id_id = id; id_number = number }; _ } =
          fprintf out " %s:%d" (Appl_outboard_client.string_of_id id) number
       in
          List.iter print entries
 
    let print_remote_list out entries =
-      let print { remote_entry = { entry_id = { id_id = id; id_number = number } } } =
+      let print { remote_entry = { entry_id = { id_id = id; id_number = number; _ }; _ }; _ } =
          fprintf out " %s:%d" (Appl_outboard_client.string_of_id id) number
       in
          List.iter print entries
 
    let print_share_list out values =
-      let print { keyv_id = id; keyv_index = number } =
+      let print { keyv_id = id; keyv_index = number; _ } =
          fprintf out " %s:%d" (Appl_outboard_client.string_of_id id) number
       in
          List.iter print values
@@ -280,7 +282,7 @@ struct
          false
 
    let rec mem_share id number = function
-      { keyv_id = id'; keyv_index = number' } :: t ->
+      { keyv_id = id'; keyv_index = number'; _ } :: t ->
          (id' = id && number' = number) || mem_share id number t
     | [] ->
          false
@@ -595,7 +597,7 @@ struct
     *)
    let unlock_remote info id =
       try
-         let { remote_entry = entry }, remotes = remove_remote id info.mp_remote in
+         let { remote_entry = entry; _ }, remotes = remove_remote id info.mp_remote in
             info.mp_remote <- remotes;
             info.mp_unlocked <- entry :: info.mp_unlocked;
             true
@@ -629,7 +631,7 @@ struct
     *)
    let remote_result_notify info id =
       try
-         let { remote_entry = entry }, remotes = remove_remote id info.mp_remote in
+         let { remote_entry = entry; _ }, remotes = remove_remote id info.mp_remote in
             info.mp_remote <- remotes;
             if entry.entry_id.id_id = Appl_outboard_client.endpt info.mp_ensemble then
                begin
@@ -657,7 +659,7 @@ struct
    let local_result_notify info id =
       begin
          if !debug_ensemble then
-            let print_entry { entry_id = { id_id = id; id_number = number } } =
+            let print_entry { entry_id = { id_id = id; id_number = number; _ }; _ } =
                eprintf "(%s, %d)" (Appl_outboard_client.string_of_id id) number
             in
                lock_printer ();
@@ -702,7 +704,7 @@ struct
     *)
    let remote_result info id x =
       try
-         let { remote_entry = entry }, remotes = remove_remote id info.mp_remote in
+         let { remote_entry = entry; _ }, remotes = remove_remote id info.mp_remote in
             if !debug_ensemble then
                begin
                   lock_printer ();
@@ -842,7 +844,7 @@ struct
     * Share management.
     *)
    let rec share_exists id number = function
-      { keyv_id = id'; keyv_index = number' } :: t ->
+      { keyv_id = id'; keyv_index = number'; _ } :: t ->
          if id' = id && number' = number then
             true
          else
@@ -875,7 +877,7 @@ struct
             unlock_printer ()
          end;
       let rec remove = function
-         { keyv_id = id; keyv_index = number' } as h :: t ->
+         { keyv_id = id; keyv_index = number'; _ } as h :: t ->
             if id = srcid && number' = number then
                t
             else
@@ -927,7 +929,7 @@ struct
                if List.mem remote.remote_lock view then
                   remote :: prune remotes
                else
-                  let { remote_entry = entry } = remote in
+                  let { remote_entry = entry; _ } = remote in
                      info.mp_unlocked <- entry :: info.mp_unlocked;
                      prune remotes
             else
@@ -974,7 +976,7 @@ struct
 
    (*
     * Delete the pending lock if the owner fails.
-    *)
+    *
    let prune_lock info view =
       match info.mp_pending_lock with
          Some entry ->
@@ -982,13 +984,14 @@ struct
                info.mp_pending_lock <- None
        | None ->
             ()
+    *)
 
    (*
     * Prune the shared info.
     *)
    let prune_shares info view =
       let rec prune = function
-         { keyv_id = id } as h :: t ->
+         { keyv_id = id; _ } as h :: t ->
             if List.mem id view then
                h :: prune t
             else
@@ -1047,7 +1050,7 @@ struct
     * Don't send local values of shares.
     *)
    let strip_share values =
-      let strip { keyv_id = id; keyv_index = index; keyv_value = x } =
+      let strip { keyv_id = id; keyv_index = index; keyv_value = x; _ } =
          { keyi_id = id;
            keyi_index = index;
            keyi_value = x
@@ -1064,7 +1067,7 @@ struct
             mp_local = local;
             mp_remote = remote;
             mp_values = values;
-            mp_ensemble = ensemble
+            mp_ensemble = ensemble; _
           } = info
       in
       let coord_id = List.hd (Appl_outboard_client.view ensemble) in
@@ -1086,7 +1089,7 @@ struct
                mp_local = local;
                mp_remote = remote;
                mp_values = values;
-               mp_ensemble = ensemble
+               mp_ensemble = ensemble; _
              } = info
          in
             if !debug_message then
@@ -1173,7 +1176,7 @@ struct
             begin
                info.mp_new_view <- true;
                if rank = 0 then
-                  let flags = Array.create length false in
+                  let flags = Array.make length false in
                      flags.(0) <- true;
                      info.mp_rank_flags <- flags;
                      []
@@ -1334,13 +1337,14 @@ struct
          end;
       []
 
+   (* unused
    let disable info () =
       if !debug_ensemble then
          begin
             lock_printer ();
             eprintf "Mpapp.disable%t" eflush;
             unlock_printer ()
-         end
+         end *)
 
    let make_handlers info =
       { Appl_outboard_client.block     = block info;
@@ -1522,12 +1526,12 @@ struct
       lock_queue info;
       begin
          let { mp_pending_lock = pending;
-               mp_unlocked = unlocked
+               mp_unlocked = unlocked; _
              } = info
          in
             if !debug_ensemble then
                begin
-                  let print_entry { entry_id = { id_id = id; id_number = number } } =
+                  let print_entry { entry_id = { id_id = id; id_number = number; _ }; _ } =
                      eprintf " (%s, %d)" (Appl_outboard_client.string_of_id id) number
                   in
                      lock_printer ();
@@ -1641,7 +1645,7 @@ struct
             find_key id number (succ i)
       in
       let rec search = function
-         { keyv_id = id; keyv_index = number; keyv_value = x' } :: t ->
+         { keyv_id = id; keyv_index = number; keyv_value = x'; _ } :: t ->
             if x' == x then
                find_key id number 0
             else
@@ -1660,7 +1664,7 @@ struct
       let weak = info.mp_keys in
       let length = Weak.length weak in
       let rec remove number = function
-         { keyv_id = id'; keyv_index =  number' } as h :: t ->
+         { keyv_id = id'; keyv_index = number'; _ } as h :: t ->
             if id' = id && number' = number then
                begin
                   send_message info "delete_share" (Appl_outboard_client.Cast (CastDeleteShare number));
@@ -1694,11 +1698,11 @@ struct
    let append_share info key =
       let length = Weak.length info.mp_keys in
       let weak' = Weak.create (succ length) in
-      let numbers' = Array.create (succ length) 0 in
+      let numbers' = Array.make (succ length) 0 in
          Weak.blit info.mp_keys 0 weak' 0 length;
          Weak.set weak' length (Some key);
          Array.blit info.mp_key_numbers 0 numbers' 0 length;
-         numbers'.(length) = key.key_index;
+         numbers'.(length) <- key.key_index;
          info.mp_keys <- weak';
          info.mp_key_numbers <- numbers'
 
@@ -1748,7 +1752,7 @@ struct
     *)
    let share_local info { key_id = id; key_index = number } x =
       let rec search = function
-         { keyv_id = id'; keyv_index = number' } as keyv :: t ->
+         { keyv_id = id'; keyv_index = number'; _ } as keyv :: t ->
             if id' = id && number' = number then
                keyv.keyv_local <- x
             else
@@ -1763,7 +1767,7 @@ struct
     *)
    let arg_of_key info { key_id = id; key_index = number } =
       let rec search = function
-         { keyv_id = id'; keyv_index = number'; keyv_local = x } :: t ->
+         { keyv_id = id'; keyv_index = number'; keyv_local = x; _ } :: t ->
             if id' = id && number' = number then
                x
             else

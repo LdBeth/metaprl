@@ -35,9 +35,9 @@ open Lm_printf
 
 open Refiner.Refiner.RefineError
 
-open Remote_sig
+(* open Remote_sig *)
 open Lm_thread_util
-open Thread_refiner_sig
+(* open Thread_refiner_sig *)
 
 let debug_strategy =
    create_debug (**)
@@ -67,8 +67,6 @@ let debug_remote =
         debug_value = false
       }
 
-external yield : unit -> unit = "caml_thread_yield"
-
 (*
  * This functions are lifted out for speed, and so that
  * the marshaler does not get extra suprious values in
@@ -79,23 +77,51 @@ struct
    (*
     * These are the values that a tactic returns.
     *)
-   type ('term, 'extract) t =
-      Value of 'term list * 'extract
-    | All1 of ('term, 'extract) tactic * ('term, 'extract) tactic * 'term
-    | All2 of ('term, 'extract) tactic * ('term, 'extract) tactic list * 'term
-    | AllF of ('term, 'extract) tactic * ('term list -> ('term, 'extract) t list) * 'term
-    | First of ('term, 'extract) tactic list * 'term
+   type ('arg, 'extract) extract =
+      Leaf of 'extract
+    | Node of ('arg, 'extract) extract * ('arg, 'extract) extract list
+    | Wrap of 'arg * ('arg, 'extract) extract
 
-   and ('term, 'extract) tactic = 'term -> ('term, 'extract) t
+   type ('term, 'arg, 'extract) t =
+      Value of 'term list * ('arg, 'extract) extract
+    | All1 of ('term, 'arg, 'extract) tactic * ('term, 'arg, 'extract) tactic * 'term
+    | All2 of ('term, 'arg, 'extract) tactic * ('term, 'arg, 'extract) tactic list * 'term
+    | AllF of ('term, 'arg, 'extract) tactic * ('term list -> ('term, 'arg, 'extract) t list) * 'term
+    | First of ('term, 'arg, 'extract) tactic list * 'term
+    | Post of 'arg * ('term, 'arg, 'extract) tactic * 'term
+    | ForceFail of string * ('term, 'arg, 'extract) tactic * 'term
+    | PostProc of ('term -> 'term) * ('term, 'arg, 'extract) tactic * 'term
+	  | PostChck of ('term list -> unit) * ('term, 'arg, 'extract) tactic * 'term
+
+   and ('term, 'arg, 'extract) tactic = 'term -> ('term, 'arg, 'extract) t
+
+   let extract compose wrap =
+      let rec aux = function
+         Leaf ext ->
+            ext
+       | Node (ext, extl) ->
+            compose (aux ext) (List.map aux extl)
+       | Wrap (arg, ext) ->
+            wrap arg (aux ext)
+      in aux
 
    (*
     * Constructors.
     *)
    let create_value args ext =
-      Value (args, ext)
+      Value (args, Leaf ext)
 
    let first tacs arg =
       First (tacs, arg)
+
+   let wrap wrap_arg tac arg =
+      Post (wrap_arg, tac, arg)
+
+   let wrap_terms f tac arg =
+      PostProc (f, tac, arg)
+
+   let check_terms check_fn tac arg =
+      PostChck (check_fn, tac, arg)
 
    let compose1 tac1 tac2 arg =
       All1 (tac1, tac2, arg)
@@ -105,9 +131,13 @@ struct
 
    let composef tac1 tacf arg =
       AllF (tac1, tacf, arg)
+
+   let force debug tac arg =
+      ForceFail (debug, tac, arg)
+
 end
 
-module MakeThreadRefiner (Arg : ThreadRefinerArgSig) =
+module ThreadRefiner =
 struct
    module Remote = (* Remote_monitor.MakeMonitor *) (Remote_ensemble.Remote)
 
@@ -115,9 +145,9 @@ struct
     * TYPES                                                                *
     ************************************************************************)
 
-   type extract = Arg.extract
-   type 'term t = ('term, extract) ThreadRefinerTacticals.t
-   type 'term tactic = ('term, extract) ThreadRefinerTacticals.tactic
+   (* type extract = Arg.extract *)
+   type ('term, 'arg, 'extract) t = ('term, 'arg, 'extract) ThreadRefinerTacticals.t
+   type ('term, 'arg, 'extract) tactic = ('term, 'arg, 'extract) ThreadRefinerTacticals.tactic
 
    (*
     * Shared memory keys.
@@ -127,23 +157,23 @@ struct
    (*
     * We keep a stack of goals.
     *)
-   type 'term entry =
-      AndEntryThen1 of 'term tactic * 'term tactic * 'term
-    | AndEntryThen2 of 'term tactic * 'term tactic list * 'term
-    | AndEntryThenF of 'term tactic * ('term list -> 'term t list) * 'term
-    | AndEntry1 of 'term tactic * 'term list * extract * ('term list * extract) list
-    | AndEntry2 of 'term tactic list * 'term list * extract * ('term list * extract) list
-    | AndEntryF of 'term t list * extract * ('term list * extract) list
-    | OrEntry of 'term tactic list * 'term
-    | ValueEntry of 'term list * extract
+   type ('term, 'arg, 'extract) entry =
+      AndEntryThen1 of ('term, 'arg, 'extract) tactic * ('term, 'arg, 'extract) tactic * 'term
+    | AndEntryThen2 of ('term, 'arg, 'extract) tactic * ('term, 'arg, 'extract) tactic list * 'term
+    | AndEntryThenF of ('term, 'arg, 'extract) tactic * ('term list -> ('term, 'arg, 'extract) t list) * 'term
+    | AndEntry1 of ('term, 'arg, 'extract) tactic * 'term list * ('arg, 'extract) ThreadRefinerTacticals.extract * ('term list * ('arg, 'extract) ThreadRefinerTacticals.extract) list
+    | AndEntry2 of ('term, 'arg, 'extract) tactic list * 'term list * ('arg, 'extract) ThreadRefinerTacticals.extract * ('term list * ('arg, 'extract) ThreadRefinerTacticals.extract) list
+    | AndEntryF of ('term, 'arg, 'extract) t list * ('arg, 'extract) ThreadRefinerTacticals.extract * ('term list * ('arg, 'extract) ThreadRefinerTacticals.extract) list
+    | OrEntry of ('term, 'arg, 'extract) tactic list * 'term
+    | ValueEntry of 'term list * ('arg, 'extract) ThreadRefinerTacticals.extract
 
    (*
     * Entries in or-queues are one of three values.
     *)
    type exn_error = string * refine_error
 
-   type 'term or_result =
-      OrSuccess of 'term list * extract
+   type ('term, 'arg, 'extract) or_result =
+      OrSuccess of 'term list * ('arg, 'extract) ThreadRefinerTacticals.extract
     | OrFailure of exn_error
     | OrPending
 
@@ -155,24 +185,24 @@ struct
     | SchedStack
     | SchedCancel
 
-   type 'term sched_message =
-      SchedTacticArg of 'term tactic * 'term
-    | SchedThread of 'term t
+   type ('term, 'arg, 'extract) sched_message =
+      SchedTacticArg of ('term, 'arg, 'extract) tactic * 'term
+    | SchedThread of ('term, 'arg, 'extract) t
 
    (*
     * Messages from the thread to the scheduler.
     *)
-   type 'term proc_message =
-      ProcSuccess of 'term list * extract
+   type ('term, 'arg, 'extract) proc_message =
+      ProcSuccess of 'term list * ('arg, 'extract) ThreadRefinerTacticals.extract
     | ProcFailure of exn_error
-    | ProcStack of 'term entry
+    | ProcStack of ('term, 'arg, 'extract) entry
     | ProcCanceled
 
    (*
     * This is the message returned to a client.
     *)
-   type 'term job_message =
-      JobSuccess of 'term list * extract
+   type ('term, 'arg, 'extract) job_message =
+      JobSuccess of 'term list * ('arg, 'extract) ThreadRefinerTacticals.extract
     | JobFailure of exn_error
 
    (*
@@ -185,110 +215,110 @@ struct
     * This is the message sent as a submission.
     * The channel is used to send the response.
     *)
-   type 'term submit_message =
-      { submit_goal : 'term t;
+   type ('term, 'arg, 'extract) submit_message =
+      { submit_goal : ('term, 'arg, 'extract) t;
         submit_request : 'term client_message Lm_thread_event.channel;
-        submit_response : 'term job_message Lm_thread_event.channel
+        submit_response : ('term, 'arg, 'extract) job_message Lm_thread_event.channel
       }
 
    (*
     * A union type for getting messages from lots of places.
     *)
-   type 'term any_message =
-      ProcMessage of 'term proc_entry * 'term proc_message
-    | SubmitMessage of 'term submit_message
-    | ClientMessage of 'term root_entry * 'term client_message
-    | RemoteMessage of 'term remote_entry * 'term job_message
-    | CancelMessage of 'term local_entry
-    | RequestMessage of ('term sched_message, 'term job_message) Remote.local
+   type ('term, 'arg, 'extract) any_message =
+      ProcMessage of ('term, 'arg, 'extract) proc_entry * ('term, 'arg, 'extract) proc_message
+    | SubmitMessage of ('term, 'arg, 'extract) submit_message
+    | ClientMessage of ('term, 'arg, 'extract) root_entry * 'term client_message
+    | RemoteMessage of ('term, 'arg, 'extract) remote_entry * ('term, 'arg, 'extract) job_message
+    | CancelMessage of ('term, 'arg, 'extract) local_entry
+    | RequestMessage of (('term, 'arg, 'extract) sched_message, ('term, 'arg, 'extract) job_message) Remote.local
 
    (*
     * The scheduler saves a doubly-linked tree of entries.
     *)
-   and 'term tree =
-      SProcess of 'term proc_entry
-    | SRemote of 'term remote_entry
-    | SPending of 'term pending_entry
-    | SAndEntryThen1 of 'term and_then_entry1
-    | SAndEntryThen2 of 'term and_then_entry2
-    | SAndEntryThenF of 'term and_then_entryf
-    | SAndEntry of 'term and_entry
-    | SAndEntryF of 'term and_entryf
-    | SOrEntry of 'term or_entry
-    | SRoot of 'term root_entry
-    | SLocal of 'term local_entry
+   and ('term, 'arg, 'extract) tree =
+      SProcess of ('term, 'arg, 'extract) proc_entry
+    | SRemote of ('term, 'arg, 'extract) remote_entry
+    | SPending of ('term, 'arg, 'extract) pending_entry
+    | SAndEntryThen1 of ('term, 'arg, 'extract) and_then_entry1
+    | SAndEntryThen2 of ('term, 'arg, 'extract) and_then_entry2
+    | SAndEntryThenF of ('term, 'arg, 'extract) and_then_entryf
+    | SAndEntry of ('term, 'arg, 'extract) and_entry
+    | SAndEntryF of ('term, 'arg, 'extract) and_entryf
+    | SOrEntry of ('term, 'arg, 'extract) or_entry
+    | SRoot of ('term, 'arg, 'extract) root_entry
+    | SLocal of ('term, 'arg, 'extract) local_entry
 
-   and 'term proc_entry =
-      { proc_arg : 'term sched_message;
-        proc_process : 'term process;
-        mutable proc_parent : 'term tree
+   and ('term, 'arg, 'extract) proc_entry =
+      { proc_arg : ('term, 'arg, 'extract) sched_message;
+        proc_process : ('term, 'arg, 'extract) process;
+        mutable proc_parent : ('term, 'arg, 'extract) tree
       }
 
-   and 'term remote_entry =
-      { remote_arg : 'term sched_message;
+   and ('term, 'arg, 'extract) remote_entry =
+      { remote_arg : ('term, 'arg, 'extract) sched_message;
         remote_id : int;
-        remote_hand : ('term sched_message, 'term job_message) Remote.handle;
-        mutable remote_parent : 'term tree
+        remote_hand : (('term, 'arg, 'extract) sched_message, ('term, 'arg, 'extract) job_message) Remote.handle;
+        mutable remote_parent : ('term, 'arg, 'extract) tree
       }
 
-   and 'term pending_entry =
-      { pending_arg : 'term sched_message;
-        pending_parent : 'term tree
+   and ('term, 'arg, 'extract) pending_entry =
+      { pending_arg : ('term, 'arg, 'extract) sched_message;
+        pending_parent : ('term, 'arg, 'extract) tree
       }
 
-   and 'term root_entry =
+   and ('term, 'arg, 'extract) root_entry =
       { root_request : 'term client_message Lm_thread_event.channel;
-        root_response : 'term job_message Lm_thread_event.channel;
-        mutable root_child : 'term tree
+        root_response : ('term, 'arg, 'extract) job_message Lm_thread_event.channel;
+        mutable root_child : ('term, 'arg, 'extract) tree
       }
 
-   and 'term local_entry =
-      { local_local : ('term sched_message, 'term job_message) Remote.local;
-        mutable local_child : 'term tree
+   and ('term, 'arg, 'extract) local_entry =
+      { local_local : (('term, 'arg, 'extract) sched_message, ('term, 'arg, 'extract) job_message) Remote.local;
+        mutable local_child : ('term, 'arg, 'extract) tree
       }
 
-   and 'term and_then_entry1 =
-      { and_then1_tac1 : 'term tactic;
-        and_then1_tac2 : 'term tactic;
+   and ('term, 'arg, 'extract) and_then_entry1 =
+      { and_then1_tac1 : ('term, 'arg, 'extract) tactic;
+        and_then1_tac2 : ('term, 'arg, 'extract) tactic;
         and_then1_arg : 'term;
-        mutable and_then1_parent : 'term tree;
-        mutable and_then1_child : 'term tree
+        mutable and_then1_parent : ('term, 'arg, 'extract) tree;
+        mutable and_then1_child : ('term, 'arg, 'extract) tree
       }
 
-   and 'term and_then_entry2 =
-      { and_then2_tac1 : 'term tactic;
-        and_then2_tacs2 : 'term tactic list;
+   and ('term, 'arg, 'extract) and_then_entry2 =
+      { and_then2_tac1 : ('term, 'arg, 'extract) tactic;
+        and_then2_tacs2 : ('term, 'arg, 'extract) tactic list;
         and_then2_arg : 'term;
-        mutable and_then2_parent : 'term tree;
-        mutable and_then2_child : 'term tree
+        mutable and_then2_parent : ('term, 'arg, 'extract) tree;
+        mutable and_then2_child : ('term, 'arg, 'extract) tree
       }
 
-   and 'term and_then_entryf =
-      { and_thenf_tac1 : 'term tactic;
-        and_thenf_tacf : 'term list -> 'term t list;
+   and ('term, 'arg, 'extract) and_then_entryf =
+      { and_thenf_tac1 : ('term, 'arg, 'extract) tactic;
+        and_thenf_tacf : 'term list -> ('term, 'arg, 'extract) t list;
         and_thenf_arg : 'term;
-        mutable and_thenf_parent : 'term tree;
-        mutable and_thenf_child : 'term tree
+        mutable and_thenf_parent : ('term, 'arg, 'extract) tree;
+        mutable and_thenf_child : ('term, 'arg, 'extract) tree
       }
 
-   and 'term and_entry =
-      { and_extract : extract;
-        mutable and_parent : 'term tree;
-        mutable and_children : (int * 'term tree) list;
-        and_results : ('term list * extract) option array
+   and ('term, 'arg, 'extract) and_entry =
+      { and_extract : ('arg, 'extract) ThreadRefinerTacticals.extract;
+        mutable and_parent : ('term, 'arg, 'extract) tree;
+        mutable and_children : (int * ('term, 'arg, 'extract) tree) list;
+        and_results : ('term list * ('arg, 'extract) ThreadRefinerTacticals.extract) option array
       }
 
-   and 'term and_entryf =
-      { andf_extract : extract;
-        mutable andf_children : (int * 'term tree) list;
-        mutable andf_parent : 'term tree;
-        andf_results : ('term list * extract) option array
+   and ('term, 'arg, 'extract) and_entryf =
+      { andf_extract : ('arg, 'extract) ThreadRefinerTacticals.extract;
+        mutable andf_children : (int * ('term, 'arg, 'extract) tree) list;
+        mutable andf_parent : ('term, 'arg, 'extract) tree;
+        andf_results : ('term list * ('arg, 'extract) ThreadRefinerTacticals.extract) option array
       }
 
-   and 'term or_entry =
-      { mutable or_parent : 'term tree;
-        mutable or_children : (int * 'term tree) list;
-        or_results : 'term or_result array
+   and ('term, 'arg, 'extract) or_entry =
+      { mutable or_parent : ('term, 'arg, 'extract) tree;
+        mutable or_children : (int * ('term, 'arg, 'extract) tree) list;
+        or_results : ('term, 'arg, 'extract) or_result array
       }
 
    (*
@@ -296,14 +326,14 @@ struct
     * and it also has a flag for interrupts from the scheduler.
     * The status is managed by the scheduler, not the process.
     *)
-   and 'term process =
+   and ('term, 'arg, 'extract) process =
       { mutable proc_wakeup : bool;
         mutable proc_interrupt : sched_interrupt;
         mutable proc_status : proc_status;
         proc_pid : int;
         proc_printer : out_channel -> 'term -> unit;
-        proc_result : 'term proc_message Lm_thread_event.channel;
-        proc_request : 'term sched_message Lm_thread_event.channel
+        proc_result : ('term, 'arg, 'extract) proc_message Lm_thread_event.channel;
+        proc_request : ('term, 'arg, 'extract) sched_message Lm_thread_event.channel
       }
 
    and proc_status =
@@ -330,24 +360,28 @@ struct
     *    submit: the channel used to submit new jobs to
     *       the scheduler.
     *)
-   type ('term, 'share) scheduler =
+   type ('term, 'share, 'arg, 'extract) scheduler =
       { sched_nomarshal : unit -> unit;
         sched_printer : out_channel -> 'term -> unit;
-        sched_remote : ('term sched_message, 'term job_message, 'share) Remote.t;
-        mutable sched_idle : 'term process list;
-        mutable sched_waiting : 'term proc_entry list;
-        mutable sched_running : 'term proc_entry list;
-        mutable sched_remotes : 'term remote_entry list;
-        mutable sched_pending : 'term pending_entry list;
-        mutable sched_roots   : 'term root_entry list;
-        mutable sched_locals  : 'term local_entry list;
-        sched_submit : 'term submit_message Lm_thread_event.channel
+        sched_remote : (('term, 'arg, 'extract) sched_message, ('term, 'arg, 'extract) job_message, 'share) Remote.t;
+        mutable sched_idle : ('term, 'arg, 'extract) process list;
+        mutable sched_waiting : ('term, 'arg, 'extract) proc_entry list;
+        mutable sched_running : ('term, 'arg, 'extract) proc_entry list;
+        mutable sched_remotes : ('term, 'arg, 'extract) remote_entry list;
+        mutable sched_pending : ('term, 'arg, 'extract) pending_entry list;
+        mutable sched_roots   : ('term, 'arg, 'extract) root_entry list;
+        mutable sched_locals  : ('term, 'arg, 'extract) local_entry list;
+        sched_submit : ('term, 'arg, 'extract) submit_message Lm_thread_event.channel
       }
 
    (*
-    * A server is just a scheduler.
+    * A server is scheduler with extract.
     *)
-   type ('term, 'share) server = ('term, 'share) scheduler
+   type ('term, 'share, 'arg, 'extract) server =
+      { sched : ('term, 'share, 'arg, 'extract) scheduler;
+        compose : 'extract -> 'extract list -> 'extract;
+        wrap : 'arg -> 'extract -> 'extract
+      }
 
    (*
     * This is the number of threads we fork.
@@ -424,42 +458,40 @@ struct
     *)
    let tab level =
       output_char stderr '\n';
-      for i = 0 to level do
-         output_string stderr "  "
-      done
+      output_string stderr (String.make level ' ')
 
    let rec print_sched_stack_aux debug_print level entry =
       tab level;
       let children =
          match entry with
-            SRoot { root_child = child } ->
+            SRoot { root_child = child; _ } ->
                output_string stderr "(Root";
                [child]
-          | SLocal { local_child = child } ->
+          | SLocal { local_child = child; _ } ->
                output_string stderr "(Local";
                [child]
-          | SOrEntry { or_children = children } ->
+          | SOrEntry { or_children = children; _ } ->
                output_string stderr "(Or";
                List.map snd children
-          | SAndEntry { and_children = children } ->
+          | SAndEntry { and_children = children; _ } ->
                output_string stderr "(And";
                List.map snd children
-          | SAndEntryF { andf_children = children } ->
+          | SAndEntryF { andf_children = children; _ } ->
                output_string stderr "(AndF";
                List.map snd children
-          | SAndEntryThen1 { and_then1_child = child } ->
+          | SAndEntryThen1 { and_then1_child = child; _ } ->
                output_string stderr "(AndThen1";
                [child]
-          | SAndEntryThen2 { and_then2_child = child } ->
+          | SAndEntryThen2 { and_then2_child = child; _ } ->
                output_string stderr "(AndThen2";
                [child]
-          | SAndEntryThenF { and_thenf_child = child } ->
+          | SAndEntryThenF { and_thenf_child = child; _ } ->
                output_string stderr "(AndThenF";
                [child]
-          | SProcess { proc_process = { proc_pid = pid } } ->
+          | SProcess { proc_process = { proc_pid = pid; _ }; _ } ->
                eprintf "(Process %d" pid;
                []
-          | SRemote { remote_id = id } ->
+          | SRemote { remote_id = id; _ } ->
                eprintf "(Remote %d" id;
                []
           | SPending _ ->
@@ -481,52 +513,52 @@ struct
     *)
    let rec check_parent parent entry =
       match entry with
-         SRoot { root_child = child } ->
+         SRoot { root_child = child; _ } ->
             raise (Failure "check_parent: SRoot")
-       | SLocal { local_child = child } ->
+       | SLocal { local_child = child; _ } ->
             raise (Failure "check_parent: SLocal")
-       | SOrEntry { or_parent = parent'; or_children = children } ->
+       | SOrEntry { or_parent = parent'; or_children = children; _ } ->
             assert(parent' == parent);
             List.iter (fun (_, child) -> check_parent entry child) children
-       | SAndEntry { and_parent = parent'; and_children = children } ->
+       | SAndEntry { and_parent = parent'; and_children = children; _ } ->
             assert(parent' == parent);
             List.iter (fun (_, child) -> check_parent entry child) children
-       | SAndEntryF { andf_parent = parent'; andf_children = children } ->
+       | SAndEntryF { andf_parent = parent'; andf_children = children; _ } ->
             assert(parent' == parent);
             List.iter (fun (_, child) -> check_parent entry child) children
-       | SAndEntryThen1 { and_then1_parent = parent'; and_then1_child = child } ->
+       | SAndEntryThen1 { and_then1_parent = parent'; and_then1_child = child; _ } ->
             assert(parent' == parent);
             check_parent entry child
-       | SAndEntryThen2 { and_then2_parent = parent'; and_then2_child = child } ->
+       | SAndEntryThen2 { and_then2_parent = parent'; and_then2_child = child; _ } ->
             assert(parent' == parent);
             check_parent entry child
-       | SAndEntryThenF { and_thenf_parent = parent'; and_thenf_child = child } ->
+       | SAndEntryThenF { and_thenf_parent = parent'; and_thenf_child = child; _ } ->
             assert(parent' == parent);
             check_parent entry child
-       | SProcess { proc_parent = parent' } ->
+       | SProcess { proc_parent = parent'; _ } ->
             assert(parent' == parent)
-       | SRemote { remote_parent = parent' } ->
+       | SRemote { remote_parent = parent'; _ } ->
             assert(parent' == parent)
-       | SPending { pending_parent = parent' } ->
+       | SPending { pending_parent = parent'; _ } ->
             assert(parent' == parent)
 
-   let rec check_sched_stack entry =
+   let check_sched_stack entry =
       match entry with
-         SRoot { root_child = child } ->
+         SRoot { root_child = child; _ } ->
             check_parent entry child
-       | SLocal { local_child = child } ->
+       | SLocal { local_child = child; _ } ->
             check_parent entry child
-       | SOrEntry { or_children = children } ->
+       | SOrEntry { or_children = children; _ } ->
             List.iter (fun (_, child) -> check_parent entry child) children
-       | SAndEntry { and_children = children } ->
+       | SAndEntry { and_children = children; _ } ->
             List.iter (fun (_, child) -> check_parent entry child) children
-       | SAndEntryF { andf_children = children } ->
+       | SAndEntryF { andf_children = children; _ } ->
             List.iter (fun (_, child) -> check_parent entry child) children
-       | SAndEntryThen1 { and_then1_child = child } ->
+       | SAndEntryThen1 { and_then1_child = child; _ } ->
             check_parent entry child
-       | SAndEntryThen2 { and_then2_child = child } ->
+       | SAndEntryThen2 { and_then2_child = child; _ } ->
             check_parent entry child
-       | SAndEntryThenF { and_thenf_child = child } ->
+       | SAndEntryThenF { and_thenf_child = child; _ } ->
             check_parent entry child
        | SProcess _
        | SRemote _
@@ -577,7 +609,7 @@ struct
 
    let rec pop_flatten ext subgoals stack =
       let argsl, extl = flatten [] [] subgoals in
-         pop_success argsl (Arg.compose ext extl) stack
+         pop_success argsl (ThreadRefinerTacticals.Node (ext, extl)) stack
 
    and pop_success args ext = function
       entry :: stack ->
@@ -639,6 +671,8 @@ struct
             AndEntryThen2 (tac1, tacs2, arg) :: stack
        | ThreadRefinerTacticals.AllF (tac1, tacf, arg) ->
             AndEntryThenF (tac1, tacf, arg) :: stack
+       | ThreadRefinerTacticals.Post (_, _, _) | _ ->
+            raise (Failure "not implemented wrap") (* TODO *)
 
    (*
     * Evaluate the stack.
@@ -778,7 +812,7 @@ struct
             [ValueEntry (args, ext)] ->
                ProcSuccess (args, ext)
           | entry :: stack ->
-               yield ();
+               Thread.yield ();
                eval_stack proc (eval_entry entry stack)
           | [] ->
                raise (Invalid_argument "eval_stack")
@@ -850,7 +884,7 @@ struct
                   eprintf "Thread_refiner.create_procs: %d%t" count eflush;
                   unlock_printer ()
                end;
-            Thread.create process_main proc;
+            ignore (Thread.create process_main proc);
             proc :: create_procs printer (pred count)
 
    (************************************************************************
@@ -1160,7 +1194,7 @@ struct
     * The list is reversed.
     *)
    let spread_results args_length res_length results =
-      let res_array = Array.create (args_length + res_length) None in
+      let res_array = Array.make (args_length + res_length) None in
       let rec spread i = function
          result :: results ->
             res_array.(i) <- Some result;
@@ -1255,21 +1289,21 @@ struct
     * it is done by the calling function.
     *)
    let rec cancel_children sched = function
-      SOrEntry { or_children = children } ->
+      SOrEntry { or_children = children; _ } ->
          iter_snd (cancel_children sched) children
-    | SAndEntry { and_children = children } ->
+    | SAndEntry { and_children = children; _ } ->
          iter_snd (cancel_children sched) children
-    | SAndEntryF { andf_children = children } ->
+    | SAndEntryF { andf_children = children; _ } ->
          iter_snd (cancel_children sched) children
-    | SAndEntryThen1 { and_then1_child = child } ->
+    | SAndEntryThen1 { and_then1_child = child; _ } ->
          cancel_children sched child
-    | SAndEntryThen2 { and_then2_child = child } ->
+    | SAndEntryThen2 { and_then2_child = child; _ } ->
          cancel_children sched child
-    | SAndEntryThenF { and_thenf_child = child } ->
+    | SAndEntryThenF { and_thenf_child = child; _ } ->
          cancel_children sched child
-    | SRoot { root_child = child } ->
+    | SRoot { root_child = child; _ } ->
          cancel_children sched child
-    | SLocal { local_child = child } ->
+    | SLocal { local_child = child; _ } ->
          cancel_children sched child
     | SProcess entry ->
          begin
@@ -1378,9 +1412,9 @@ struct
           | None ->
                raise (Invalid_argument "sched_flatten")
 
-   let rec sched_pop_flatten sched child parent ext results =
+   let rec sched_pop_flatten sched child parent (ext : ('a, 'b) ThreadRefinerTacticals.extract) results =
       let argsl, extl = sched_flatten [] [] (pred (Array.length results)) results in
-         sched_pop_success sched child parent argsl (Arg.compose ext extl)
+         sched_pop_success sched child parent argsl (ThreadRefinerTacticals.Node(ext, extl))
 
    (*
     * Pop and and-success.
@@ -1422,7 +1456,7 @@ struct
             { and_extract = ext;
               and_parent = parent;
               and_children = [];
-              and_results = Array.create (List.length args) None
+              and_results = Array.make (List.length args) None
             }
          in
          let new_entry = SAndEntry and_entry in
@@ -1446,7 +1480,7 @@ struct
             { and_extract = ext;
               and_parent = parent;
               and_children = [];
-              and_results = Array.create (List.length args) None
+              and_results = Array.make (List.length args) None
             }
          in
          let new_entry = SAndEntry and_entry in
@@ -1464,7 +1498,7 @@ struct
                   { andf_extract = ext;
                     andf_parent = parent;
                     andf_children = [];
-                    andf_results = Array.create (List.length goals) None
+                    andf_results = Array.make (List.length goals) None
                   }
                in
                let new_entry = SAndEntryF andf_entry in
@@ -1534,15 +1568,15 @@ struct
     *)
    and sched_pop_failure sched child this exn =
       match this with
-         SAndEntry ({ and_children = children; and_parent = parent } as entry) ->
+         SAndEntry ({ and_children = children; and_parent = parent; _ }) ->
             sched_pop_failure sched this parent exn
-       | SAndEntryF ({ andf_children = children; andf_parent = parent } as entry) ->
+       | SAndEntryF ({ andf_children = children; andf_parent = parent; _ }) ->
             sched_pop_failure sched this parent exn
-       | SAndEntryThen1 { and_then1_parent = parent } ->
+       | SAndEntryThen1 { and_then1_parent = parent; _ } ->
             sched_pop_failure sched this parent exn
-       | SAndEntryThen2 { and_then2_parent = parent } ->
+       | SAndEntryThen2 { and_then2_parent = parent; _ } ->
             sched_pop_failure sched this parent exn
-       | SAndEntryThenF { and_thenf_parent = parent } ->
+       | SAndEntryThenF { and_thenf_parent = parent; _ } ->
             sched_pop_failure sched this parent exn
        | SOrEntry entry ->
             sched_pop_or_failure sched child this entry exn
@@ -1701,7 +1735,7 @@ struct
                let this =
                   { or_parent = parent;
                     or_children = [];
-                    or_results = Array.create (List.length tacs) OrPending
+                    or_results = Array.make (List.length tacs) OrPending
                   }
                in
                let this_entry = SOrEntry this in
@@ -1736,7 +1770,7 @@ struct
       let proc = entry.proc_process in
          if proc.proc_status = StatusCanceled then
             begin
-               proc.proc_interrupt = SchedCancel;
+               proc.proc_interrupt <- SchedCancel; (* FIXME *)
                proc.proc_wakeup <- true
             end
          else
@@ -1948,19 +1982,19 @@ struct
     * If all jobs are idle, and there are pending remote jobs,
     * also request a job from the remote server.
     *)
-   let process_event ({ proc_process = proc } as event) =
+   let process_event ({ proc_process = proc; _ } as event) =
       Lm_thread_event.wrap (Lm_thread_event.receive proc.proc_result) (fun msg -> ProcMessage (event, msg))
 
-   let stack_event ({ root_request = request } as root) =
+   let stack_event ({ root_request = request; _ } as root) =
       Lm_thread_event.wrap (Lm_thread_event.receive request) (fun msg -> ClientMessage (root, msg))
 
    let submit_event sched =
       Lm_thread_event.wrap (Lm_thread_event.receive sched.sched_submit) (fun msg -> SubmitMessage msg)
 
-   let remote_event sched ({ remote_hand = hand } as remote) =
+   let remote_event sched ({ remote_hand = hand; _ } as remote) =
       Remote.wrap (Remote.event_of_handle sched.sched_remote hand) (fun msg -> (RemoteMessage (remote, msg)))
 
-   let local_event sched ({ local_local = hand } as local) =
+   let local_event sched ({ local_local = hand; _ } as local) =
       Remote.wrap (Remote.event_of_local sched.sched_remote hand) (fun () -> (CancelMessage local))
 
    let remote_request_event sched =
@@ -1989,7 +2023,7 @@ struct
    (*
     * Start a process working on a particular job.
     *)
-   let start_process sched proc ({ pending_arg = msg; pending_parent = parent } as pending) =
+   let start_process sched proc ({ pending_arg = msg; pending_parent = parent; _ } as pending) =
       let entry =
          { proc_arg = msg;
            proc_process = proc;
@@ -2028,7 +2062,7 @@ struct
     *)
    let max_remote_id remotes =
       let rec search i = function
-         { remote_id = j } :: remotes ->
+         { remote_id = j; _ } :: remotes ->
             search (max i j) remotes
        | [] ->
             succ i
@@ -2073,7 +2107,7 @@ struct
             sched_pending = pending;
             sched_running = running;
             sched_remotes = remotes
-          } = sched
+         ; _ } = sched
       in
          match pending with
             pending :: pendings ->
@@ -2166,10 +2200,10 @@ struct
    (*
     * Create a refiner.
     *)
-   external identity : unit -> unit = "%identity"
+   let identity = Fun.id (* external identity : unit -> unit = "%identity" *)
 
-   let create printer =
-      let printer = (fun out _ -> output_string out "#") in
+   let create printer compose wrap =
+      (* let printer = (fun out _ -> output_string out "#") in *)
       let sched =
          { sched_nomarshal = identity;
            sched_printer = printer;
@@ -2184,7 +2218,7 @@ struct
            sched_submit = Lm_thread_event.new_channel ()
          }
       in
-         sched
+         { sched = sched; compose = compose; wrap = wrap }
 
    (************************************************************************
     * IMPLEMENTATION                                                       *
@@ -2194,6 +2228,9 @@ struct
     * Constructors.
     *)
    let create_value = ThreadRefinerTacticals.create_value
+
+   let wrap = ThreadRefinerTacticals.wrap
+   let force = ThreadRefinerTacticals.force
    let first = ThreadRefinerTacticals.first
    let compose1 = ThreadRefinerTacticals.compose1
    let compose2 = ThreadRefinerTacticals.compose2
@@ -2205,7 +2242,7 @@ struct
     *)
    let eval_lock = Mutex.create ()
 
-   let eval sched goal =
+   let eval { sched = sched; compose = compose; wrap = wrap } goal =
       if !debug_schedule then
          begin
             lock_printer ();
@@ -2234,7 +2271,7 @@ struct
                unlock_printer ()
             end;
          let result = Lm_thread_event.sync (-1) (Lm_thread_event.receive msg.submit_response) in
-            if !debug_sync or true then
+            if !debug_sync || true then
                begin
                   lock_printer ();
                   eprintf "Thread_refiner.eval: job complete%t" eflush;
@@ -2243,17 +2280,17 @@ struct
             Mutex.unlock eval_lock;
             match result with
                JobSuccess (args, ext) ->
-                  args, ext
+                  args, ThreadRefinerTacticals.extract compose wrap ext
              | JobFailure (name, exn) ->
                   raise (RefineError (name, exn))
 
    (*
     * Shared memory.
     *)
-   let share sched x =
+   let share { sched = sched; _ } x =
       Remote.share sched.sched_remote x
 
-   let arg_of_key sched key =
+   let arg_of_key { sched = sched; _ } key =
       Remote.arg_of_key sched.sched_remote key
 
    (*
@@ -2261,10 +2298,11 @@ struct
     *)
    let args = Remote.args
 
-   let main_loop sched =
+   let main_loop { sched = sched; _ } =
       sched.sched_idle <- create_procs sched.sched_printer thread_count;
-      Thread.create sched_main_loop sched;
+      ignore (Thread.create sched_main_loop sched);
       Remote.main_loop sched.sched_remote
+
 end
 
 (*

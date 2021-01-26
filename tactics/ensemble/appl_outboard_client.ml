@@ -140,11 +140,11 @@ let handle_event info appl_handlers code id msg =
  *)
 let try_recv info appl_handlers =
    let raw_read buf off len =
-      Marshal.from_string buf off
+      Marshal.from_bytes buf off
    in
       match Lm_mmap_pipe.read info.ens_pipe raw_read with
          Some (code, id, data) ->
-            handle_event info appl_handlers code id data
+            handle_event info appl_handlers code (Bytes.to_string id) data
        | None ->
             ()
 
@@ -210,7 +210,7 @@ let create endpt_name appl_name create_handlers =
    let pipe = Lm_mmap_pipe.create_client shared_dir in
    let rec sync () =
       let raw_read buf off len =
-         Marshal.from_string buf off
+         Marshal.from_bytes buf off
       in
          if !debug_outboard then
             begin
@@ -223,6 +223,7 @@ let create endpt_name appl_name create_handlers =
             Some (code, id, view) ->
                if code = start_code then
                   begin
+                  let id = Bytes.to_string id in
                      if !debug_outboard then
                         begin
                            lock_printer ();
@@ -267,7 +268,7 @@ let create endpt_name appl_name create_handlers =
  *)
 let send info message =
    Mutex.lock info.ens_lock;
-   let { ens_queue = queue; ens_pipe = pipe } = info in
+   let { ens_queue = queue; ens_pipe = pipe; _ } = info in
       info.ens_queue <- queue @ [message];
       Mutex.unlock info.ens_lock;
       try_send info
@@ -275,13 +276,13 @@ let send info message =
 (*
  * Get info about the current view.
  *)
-let endpt { ens_endpt = id } =
+let endpt { ens_endpt = id; _ } =
    id
 
 (*
  * Get the view.
  *)
-let view { ens_view = view } =
+let view { ens_view = view; _ } =
    view
 
 (*

@@ -7,6 +7,8 @@ mprun
 mpkonsole
 mpkonsole-large
 mpshell
+mpserver
+mpgossip
 mptop
 mpopt
 mpxterm

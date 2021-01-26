@@ -161,7 +161,7 @@ struct
    (*
     * Get the value associated with a handle.
     *)
-   let arg_of_handle { hand_arg = x } =
+   let arg_of_handle { hand_arg = x; _ } =
       x
 
    (*
