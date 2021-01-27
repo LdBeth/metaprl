@@ -39,8 +39,12 @@
  *)
 module type ThreadRefinerTacticalsSig =
 sig
+   type ('arg, 'extract) extract
    type ('term, 'arg, 'extract) t
    type ('term, 'arg, 'extract) tactic = 'term -> ('term, 'arg, 'extract) t
+
+   val extract : ('extract -> 'extract list -> 'extract) -> ('arg -> 'extract -> 'extract)
+      -> ('arg, 'extract) extract -> 'extract
 
    (* Fold a value *)
    val create_value : 'term list -> 'extract -> ('term, 'arg, 'extract) t

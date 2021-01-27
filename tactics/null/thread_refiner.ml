@@ -40,6 +40,16 @@ struct
    type ('term, 'arg, 'extract) t = 'term list * ('arg, 'extract) extract
    type ('term, 'arg, 'extract) tactic = 'term -> ('term, 'arg, 'extract) t
 
+   let extract compose wrap =
+      let rec aux = function
+         Leaf ext ->
+            ext
+       | Node (ext, extl) ->
+            compose (aux ext) (List.map aux extl)
+       | Wrap (arg, ext) ->
+            wrap arg (aux ext)
+      in aux
+
    (*
     * Constructors.
     *)
@@ -170,15 +180,7 @@ struct
     * Evaluation just composes the extract
     *)
    let eval { compose = compose; wrap = wrap } (arg, ext) =
-      let rec compose' = function
-         ThreadRefinerTacticals.Leaf ext ->
-            ext
-       | ThreadRefinerTacticals.Node (ext, extl) ->
-            compose (compose' ext) (List.map compose' extl)
-       | ThreadRefinerTacticals.Wrap (arg, ext) ->
-            wrap arg (compose' ext)
-      in
-         arg, compose' ext
+      arg, ThreadRefinerTacticals.extract compose wrap ext
 
    (*
     * Shared memory.
