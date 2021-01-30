@@ -145,7 +145,7 @@ struct
     * TYPES                                                                *
     ************************************************************************)
 
-   (* type extract = Arg.extract *)
+   type ('arg, 'extract) extract = ('arg, 'extract) ThreadRefinerTacticals.extract
    type ('term, 'arg, 'extract) t = ('term, 'arg, 'extract) ThreadRefinerTacticals.t
    type ('term, 'arg, 'extract) tactic = ('term, 'arg, 'extract) ThreadRefinerTacticals.tactic
 
@@ -161,11 +161,11 @@ struct
       AndEntryThen1 of ('term, 'arg, 'extract) tactic * ('term, 'arg, 'extract) tactic * 'term
     | AndEntryThen2 of ('term, 'arg, 'extract) tactic * ('term, 'arg, 'extract) tactic list * 'term
     | AndEntryThenF of ('term, 'arg, 'extract) tactic * ('term list -> ('term, 'arg, 'extract) t list) * 'term
-    | AndEntry1 of ('term, 'arg, 'extract) tactic * 'term list * ('arg, 'extract) ThreadRefinerTacticals.extract * ('term list * ('arg, 'extract) ThreadRefinerTacticals.extract) list
-    | AndEntry2 of ('term, 'arg, 'extract) tactic list * 'term list * ('arg, 'extract) ThreadRefinerTacticals.extract * ('term list * ('arg, 'extract) ThreadRefinerTacticals.extract) list
-    | AndEntryF of ('term, 'arg, 'extract) t list * ('arg, 'extract) ThreadRefinerTacticals.extract * ('term list * ('arg, 'extract) ThreadRefinerTacticals.extract) list
+    | AndEntry1 of ('term, 'arg, 'extract) tactic * 'term list * ('arg, 'extract) extract * ('term list * ('arg, 'extract) extract) list
+    | AndEntry2 of ('term, 'arg, 'extract) tactic list * 'term list * ('arg, 'extract) extract * ('term list * ('arg, 'extract) extract) list
+    | AndEntryF of ('term, 'arg, 'extract) t list * ('arg, 'extract) extract * ('term list * ('arg, 'extract) extract) list
     | OrEntry of ('term, 'arg, 'extract) tactic list * 'term
-    | ValueEntry of 'term list * ('arg, 'extract) ThreadRefinerTacticals.extract
+    | ValueEntry of 'term list * ('arg, 'extract) extract
 
    (*
     * Entries in or-queues are one of three values.
@@ -173,7 +173,7 @@ struct
    type exn_error = string * refine_error
 
    type ('term, 'arg, 'extract) or_result =
-      OrSuccess of 'term list * ('arg, 'extract) ThreadRefinerTacticals.extract
+      OrSuccess of 'term list * ('arg, 'extract) extract
     | OrFailure of exn_error
     | OrPending
 
@@ -193,7 +193,7 @@ struct
     * Messages from the thread to the scheduler.
     *)
    type ('term, 'arg, 'extract) proc_message =
-      ProcSuccess of 'term list * ('arg, 'extract) ThreadRefinerTacticals.extract
+      ProcSuccess of 'term list * ('arg, 'extract) extract
     | ProcFailure of exn_error
     | ProcStack of ('term, 'arg, 'extract) entry
     | ProcCanceled
@@ -202,7 +202,7 @@ struct
     * This is the message returned to a client.
     *)
    type ('term, 'arg, 'extract) job_message =
-      JobSuccess of 'term list * ('arg, 'extract) ThreadRefinerTacticals.extract
+      JobSuccess of 'term list * ('arg, 'extract) extract
     | JobFailure of exn_error
 
    (*
@@ -302,17 +302,17 @@ struct
       }
 
    and ('term, 'arg, 'extract) and_entry =
-      { and_extract : ('arg, 'extract) ThreadRefinerTacticals.extract;
+      { and_extract : ('arg, 'extract) extract;
         mutable and_parent : ('term, 'arg, 'extract) tree;
         mutable and_children : (int * ('term, 'arg, 'extract) tree) list;
-        and_results : ('term list * ('arg, 'extract) ThreadRefinerTacticals.extract) option array
+        and_results : ('term list * ('arg, 'extract) extract) option array
       }
 
    and ('term, 'arg, 'extract) and_entryf =
-      { andf_extract : ('arg, 'extract) ThreadRefinerTacticals.extract;
+      { andf_extract : ('arg, 'extract) extract;
         mutable andf_children : (int * ('term, 'arg, 'extract) tree) list;
         mutable andf_parent : ('term, 'arg, 'extract) tree;
-        andf_results : ('term list * ('arg, 'extract) ThreadRefinerTacticals.extract) option array
+        andf_results : ('term list * ('arg, 'extract) extract) option array
       }
 
    and ('term, 'arg, 'extract) or_entry =
@@ -1412,7 +1412,7 @@ struct
           | None ->
                raise (Invalid_argument "sched_flatten")
 
-   let rec sched_pop_flatten sched child parent (ext : ('a, 'b) ThreadRefinerTacticals.extract) results =
+   let rec sched_pop_flatten sched child parent (ext : ('a, 'b) extract) results =
       let argsl, extl = sched_flatten [] [] (pred (Array.length results)) results in
          sched_pop_success sched child parent argsl (ThreadRefinerTacticals.Node(ext, extl))
 
@@ -2223,18 +2223,6 @@ struct
    (************************************************************************
     * IMPLEMENTATION                                                       *
     ************************************************************************)
-
-   (*
-    * Constructors.
-    *)
-   let create_value = ThreadRefinerTacticals.create_value
-
-   let wrap = ThreadRefinerTacticals.wrap
-   let force = ThreadRefinerTacticals.force
-   let first = ThreadRefinerTacticals.first
-   let compose1 = ThreadRefinerTacticals.compose1
-   let compose2 = ThreadRefinerTacticals.compose2
-   let composef = ThreadRefinerTacticals.composef
 
    (*
     * Submit a job to the scheduler.

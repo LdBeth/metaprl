@@ -90,23 +90,6 @@ sig
       ('arg -> 'extract -> 'extract) ->                 (* post-processor *)
       ('term, 'share, 'arg, 'extract) server
 
-   (* Fold a value *)
-   val create_value : 'term list -> 'extract -> ('term, 'arg, 'extract) t
-
-   (* Force the tactic application *)
-   val force : string -> ('term, 'arg, 'extract) tactic -> ('term, 'arg, 'extract) tactic
-
-   (* Post-process the extract *)
-   val wrap : 'arg -> ('term, 'arg, 'extract) tactic -> ('term, 'arg, 'extract) tactic
-
-   (* First operation that succeeds *)
-   val first : ('term, 'arg, 'extract) tactic list -> ('term, 'arg, 'extract) tactic
-
-   (* All operations should succeed *)
-   val compose1 : ('term, 'arg, 'extract) tactic -> ('term, 'arg, 'extract) tactic -> ('term, 'arg, 'extract) tactic
-   val compose2 : ('term, 'arg, 'extract) tactic -> ('term, 'arg, 'extract) tactic list -> ('term, 'arg, 'extract) tactic
-   val composef : ('term, 'arg, 'extract) tactic -> ('term list -> ('term, 'arg, 'extract) t list) -> ('term, 'arg, 'extract) tactic
-
    (* Fully evaluate the thread *)
    val eval : ('term, 'share, 'arg, 'extract) server -> ('term, 'arg, 'extract) t -> 'term list * 'extract
 

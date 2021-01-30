@@ -165,18 +165,6 @@ struct
       }
 
    (*
-    * Tacticals.
-    *)
-   let create_value = ThreadRefinerTacticals.create_value
-
-   let wrap = ThreadRefinerTacticals.wrap
-   let first = ThreadRefinerTacticals.first
-   let force = ThreadRefinerTacticals.force
-   let compose1 = ThreadRefinerTacticals.compose1
-   let compose2 = ThreadRefinerTacticals.compose2
-   let composef = ThreadRefinerTacticals.composef
-
-   (*
     * Evaluation just composes the extract
     *)
    let eval { compose = compose; wrap = wrap } (arg, ext) =

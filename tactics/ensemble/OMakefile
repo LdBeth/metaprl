@@ -26,7 +26,7 @@ LMFILES[] =
     remote_null
     remote_ensemble
     remote_monitor
-    # thread_refiner
+    thread_refiner
 
 OCAML_CLIBS[] =
     $(LIB)/trefiner
@@ -81,8 +81,18 @@ OPT_ENS_LIB = $(LIBNAME).cmxa
 RENS_LIB = $(LIB)/$(ENS_LIB)
 ROPT_ENS_LIB = $(LIB)/$(OPT_ENS_LIB) $(LIB)/$(LIBNAME)$(EXT_LIB)
 
-# see https://github.com/LdBeth/metaprl/blob/ab77bd0ea01301f92797452b2d33f0d4f936aa7f/tactics/ensemble/Makefile
-OCamlProgram($(MPSERVER), $(LMFILES))
+section
+    OCAMLINCLUDES += $(ENSROOT)/lib
+    OCAML_CLIBS = $(ENSROOT)/libsock
+    OCAML_LIBS[] =
+        $(ENSROOT)/socket
+        $(ENSROOT)/libenscore
+        $(ENSROOT)/libensmin
+
+    OCAML_OTHER_LIBS = unix
+
+    # see https://github.com/LdBeth/metaprl/blob/ab77bd0ea01301f92797452b2d33f0d4f936aa7f/tactics/ensemble/Makefile
+    OCamlProgram($(MPSERVER), $(MSFILES))
 
 OCamlLibraryInstall($(MPINSTALL), $(LIB), $(LIBNAME), $(LMFILES))
 
