@@ -34,7 +34,7 @@ sig
    type 'a t
 
    val create      : unit -> 'a t
-   val clone       : 'a t -> ('a -> 'b) -> 'b t
+   val clone       : 'a t -> ('a -> 'a) -> 'a t
    val add         : 'a t -> 'a -> unit
    val iter        : ('a -> unit) -> 'a t -> unit
    val fold        : ('a -> 'b -> 'a) -> 'a -> 'b t -> 'a
@@ -46,7 +46,8 @@ end
 module LineBuffer : LineBufferSig =
 struct
    type 'a t =
-      { mutable lines  : 'a option array;
+      { mutable lines  : 'a array;
+        alength : int;
         mutable first  : int;
         mutable length : int
       }
@@ -54,39 +55,53 @@ struct
    let max_queue_length = 100
 
    let create () =
-      { lines = Array.make max_queue_length None;
+      { lines = [||]; (* initially empty *)
+        alength = max_queue_length;
         first = 0;
         length = 0
       }
 
-   let clone queue f =
-      { queue with lines = Array.map (fun x ->
-                                 match x with
-                                    Some x ->
-                                       Some (f x)
-                                  | None ->
-                                       None) queue.lines
-      }
+   let clone ({ lines = lines;
+                alength = alength;
+                first = first;
+                length = length } as queue) f =
+      if length = 0 then queue else begin
+         let new_lines = Array.make alength (f (Array.get lines first)) in
+            for i = first + 1 to first + length - 1 do
+               let j = i mod alength in
+                  Array.set new_lines j (f (Array.get lines j))
+            done;
+            { queue with lines = new_lines }
+      end
 
    let length queue =
       queue.length
 
    let add queue buf =
       let { lines = lines;
+            alength = alength;
             first = first;
             length = length
           } = queue
       in
-      let alength = Array.length lines in
-      let last = (first + length) mod alength in
-         lines.(last) <- Some buf;
-         if length = alength then
-            queue.first <- (succ first) mod alength
-         else
-            queue.length <- succ length
+         if length = 0 then (* initialize *)
+         begin
+            queue.lines <- Array.make alength buf;
+            queue.first <- 1;
+            queue.length <- 1
+         end
+         else begin
+            let last = (first + length) mod alength in
+               lines.(last) <- buf;
+               if length = alength then
+                  queue.first <- (succ first) mod alength
+               else
+                  queue.length <- succ length
+         end
 
    let last queue =
       let { lines = lines;
+            alength = alength;
             first = first;
             length = length
           } = queue
@@ -94,9 +109,8 @@ struct
          if length = 0 then
             None
          else
-            let alength = Array.length lines in
             let last = (first + length - 1) mod alength in
-               lines.(last)
+               Some lines.(last)
 
    let remove_last queue =
       let { length = length; _ } = queue in
@@ -105,36 +119,30 @@ struct
 
    let iter f queue =
       let { lines = lines;
+            alength = alength;
             first = first;
             length = length
           } = queue
       in
-      let alength = Array.length lines in
          for i = 0 to pred length do
             let j = (first + i) mod alength in
-               match lines.(j) with
-                  Some x -> f x
-                | None -> ()
+               f lines.(j)
          done
 
    let fold f x queue =
       let { lines  = lines;
+            alength = alength;
             first  = first;
             length = length
           } = queue
       in
-      let alength = Array.length lines in
       let rec collect x i =
          if i = length then
             x
          else
             let j = (first + i) mod alength in
             let x =
-               match lines.(j) with
-                  Some y ->
-                     f x y
-                | None ->
-                     x
+               f x lines.(j)
             in
                collect x (succ i)
       in
@@ -161,7 +169,7 @@ struct
    (*
     * The float is the time the entry was added.
     *)
-   type 'a t = (float * 'a) StringTable.t
+   type 'a t = 'a StringTable.t * string Lm_fqueue.t
 
    (*
     * Length is hardcoded for now.
@@ -171,64 +179,49 @@ struct
    (*
     * Empty queue.
     *)
-   let empty = StringTable.empty
+   let empty = StringTable.empty, Lm_fqueue.empty
 
    (*
     * Remove the oldest element.
     *)
-   let remove_oldest table =
-      let key =
-         StringTable.fold (fun oldest key (time, _) ->
-               match oldest with
-                  Some (time', _) ->
-                     if time < time' then
-                        Some (time, key)
-                     else
-                        oldest
-                | None ->
-                     Some (time, key)) None table
+   let remove_oldest table queue =
+      let key, queue = Lm_fqueue.take queue
       in
-         match key with
-            Some (_, key) ->
-               StringTable.remove table key
-          | None ->
-               table
+         StringTable.remove table key, queue
 
    (*
     * Test for membership.
     *)
-   let mem = StringTable.mem
+   let mem (table, _) key = StringTable.mem table key
 
    (*
     * Add an element to the table.
     *)
-   let add table key x =
-      let time = Unix.gettimeofday () in
-      let table = StringTable.add table key (time, x) in
+   let add (table, queue) key x =
+      let table = StringTable.add table key x in
+      let queue = Lm_fqueue.add key queue in
          if StringTable.cardinal table > max_queue_length then
-            remove_oldest table
+            remove_oldest table queue
          else
-            table
+            table, queue
 
    (*
     * Get an element from the table.
     *)
-   let find table key =
-      snd (StringTable.find table key)
+   let find (table, _) key =
+      StringTable.find table key
 
    (*
     * Iterate over the queue.
     *)
-   let iter f table =
-      StringTable.iter (fun key (_, x) ->
-            f key x) table
+   let iter f (table, _) =
+      StringTable.iter f table
 
    (*
     * Fold over the queue.
     *)
-   let fold f x table =
-      StringTable.fold (fun x key (_, y) ->
-            f x key y) x table
+   let fold f x (table, _) =
+      StringTable.fold f x table
 end
 
 (*!
