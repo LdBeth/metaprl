@@ -236,13 +236,9 @@ struct
       IN
       IFDEF VERBOSE_EXN THEN
          if !debug_alpha_equal then
-            try
-               let result = equal_term [] t1 t2 in
-               eprintf "alpha_equal: %b:\n%a\n%a%t" result debug_print t1 debug_print t2 eflush;
+            let result = body
+            in eprintf "alpha_equal: %b:\n%a\n%a%t" result debug_print t1 debug_print t2 eflush;
                result
-            with Failure _ ->
-               eprintf "alpha_equal: false:\n%a\n%a%t" debug_print t1 debug_print t2 eflush;
-               false
          else body
       ELSE
          body
@@ -253,13 +249,9 @@ struct
       IN
       IFDEF VERBOSE_EXN THEN
          if !debug_alpha_equal then
-            try
-               let _ = equal_term (Lm_list_util.zip v v') t t' in
-               eprintf "alpha_equal_vars: true%t" eflush;
-               true
-            with Failure _ ->
-               eprintf "alpha_equal_vars: false%t" eflush;
-               false
+            let result = body in
+               eprintf "alpha_equal_vars: %b%t" result eflush;
+               result
          else body
       ELSE
          body
