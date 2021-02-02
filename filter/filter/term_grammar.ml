@@ -104,8 +104,12 @@ let raise_spelling_error () =
          (h, (loc : Ploc.t)) :: t ->
             if word = h then
                eprintf "; "
-            else
+            else begin
                eprintf "\n\t%s: " (Lm_ctype.quote h);
+               let correct = Filter_spell.do_you_mean h in
+                  if correct <> word then
+                     eprintf "Do you mean:%s? " correct
+            end;
             let pos_lnum = Ploc.line_nb loc in
             if pos_lnum >= 0 then
                let pos_bol = Ploc.bol_pos loc in

@@ -171,6 +171,11 @@ let check s =
     | None ->
          true
 
+let do_you_mean s =
+   match !dict with
+      Some dict -> Lm_spell.anagram dict s false
+    | None -> ""
+
 (*
  * Add a word to the table.
  *)

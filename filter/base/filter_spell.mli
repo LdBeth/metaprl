@@ -34,6 +34,7 @@ val init : unit -> unit
  * we know it.
  *)
 val check : string -> bool
+val do_you_mean : string -> string
 
 (*
  * Add a word to the dictionary.
