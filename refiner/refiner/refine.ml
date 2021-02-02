@@ -1823,7 +1823,7 @@ struct
    let mk_rewrite_hack =
       let cH = Lm_symbol.add "H" in
       let hack_arg = mk_simple_term (make_opname ["sequent_arg";"Base_rewrite"]) [] in
-      let hack_hyps = SeqHyp.of_list [Context(cH,[],[])] in
+      let hack_hyps = SeqHyp.singleton (Context(cH,[],[])) in
       let cmap conts = if List.mem cH conts then conts else cH :: conts in
       let map t =
          if is_so_var_term t then

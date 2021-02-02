@@ -1157,8 +1157,6 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          let h1, h2 = split_hyp h in
             merge_SeqHyp "SeqHyp.make" (SeqHyp1.make i h1) (SeqHyp2.make i h2)
 
-      let create = make
-
       let get (t1, t2) i =
          merge_hyp "SeqHyp.get" (SeqHyp1.get t1 i) (SeqHyp2.get t2 i)
 
@@ -1186,6 +1184,9 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
             (merge_SeqHyp "SeqHyp.split - 1" l1 l2),
             (merge_hyp "SeqHyp.split - 2" h1 h2),
             (merge_SeqHyp "SeqHyp.split - 3" r1 r2)
+
+      let drop i (t1, t2) =
+	       merge_SeqHyp "SeqHyp.drop" (SeqHyp1.drop i t1) (SeqHyp2.drop i t2)
 
       let init i f =
          merge_SeqHyp "SeqHyp.init" (SeqHyp1.init i (fun i -> fst (split_hyp (f i)))) (SeqHyp2.init i (fun i -> snd (split_hyp (f i))))
