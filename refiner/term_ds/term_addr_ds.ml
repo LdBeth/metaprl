@@ -372,7 +372,7 @@ struct
           mk_bterm bt.bvars t :: bterms, arg),
       path_var_replace_bterm)
 
-   DEFINE VARS_RUN_HYPS = fun hyps bvars sub ->
+   let rec var_run_hyps hyps bvars sub =
       function
          [] ->
             List.rev hyps, bvars, sub
@@ -388,6 +388,21 @@ struct
                var_run_hyps (Hypothesis(v, t) :: hyps) (SymbolSet.add bvars v) sub rest
        | Context(v, cts, ts) :: rest ->
             var_run_hyps (Context(v, cts, List.map (apply_subst sub) ts) :: hyps) (SymbolSet.add bvars v) sub rest
+
+   (* XXX: duplicated version for fold_map *)
+   let fold_var_run_hyps (bvars, sub) = function
+         Hypothesis(v, t) ->
+            let t = apply_subst sub t in
+            let v, sub =
+               if SymbolSet.mem bvars v then
+                  let v' = new_name v (SymbolSet.mem bvars) in
+                     v', (v, mk_var_term v') :: sub
+               else
+                  v, sub
+            in
+               (SymbolSet.add bvars v, sub), Hypothesis(v, t)
+       | Context(v, cts, ts) ->
+            (SymbolSet.add bvars v, sub), Context(v, cts, List.map (apply_subst sub) ts)
 
    DEFINE VARS_APPLY_FUN_HYPS = fun FAIL f hyps bvars sub i ->
       function
@@ -423,13 +438,13 @@ struct
                   var_apply_fun_hyps FAIL f (hyp::hyps) (SymbolSet.add bvars v) sub (i-1) rest
 
    DEFINE VARS_CONCL_CASE =
-      let hyps, bvars, sub = var_run_hyps [] bvars [] (SeqHyp.to_list s.sequent_hyps) in
+      let (bvars, sub), hyps = SeqHyp.fold_map fold_var_run_hyps (bvars, []) s.sequent_hyps in
          if sub = [] then
             let term, arg = f bvars s.sequent_concl in
                mk_sequent_term {s with sequent_concl = term}, arg
          else
             let term, arg = f bvars (apply_subst sub s.sequent_concl) in
-               mk_sequent_term {s with sequent_concl = term; sequent_hyps = SeqHyp.of_list hyps}, arg
+               mk_sequent_term {s with sequent_concl = term; sequent_hyps = hyps}, arg
 
    DEFINE VARS_HYP_CASE =
       let i = make_index FAIL i (SeqHyp.length s.sequent_hyps) in
@@ -445,12 +460,12 @@ struct
                mk_sequent_term s, arg
 
    IFDEF VERBOSE_EXN THEN
+
       let rec apply_var_fun_at_addr_aux =
          APPLY_FUN_AUX(apply_var_fun_at_addr_aux, path_var_replace_terms, path_var_replace_bterm, bvars,
             SymbolSet.add bvars v, VARS_CONCL_CASE, VARS_HYP_CASE)
 
       and var_apply_fun_hyps = VARS_APPLY_FUN_HYPS
-      and var_run_hyps = VARS_RUN_HYPS
 
       let apply_var_fun_arg_at_addr =
          fun f addr bvars term ->
@@ -462,7 +477,6 @@ struct
             SymbolSet.add bvars v, VARS_CONCL_CASE, VARS_HYP_CASE)
 
       and var_apply_fun_hyps = VARS_APPLY_FUN_HYPS
-      and var_run_hyps = VARS_RUN_HYPS
 
    END
 
