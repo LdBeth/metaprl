@@ -183,6 +183,7 @@ type was_modified = bool
 type edit_object =
    { (* Display the object to the screen *)
      edit_display      : string list -> LsOptionSet.t -> unit;
+     edit_get_names    : string list -> LsOptionSet.t -> string list;
      edit_get_contents : string list -> obj_contents;
      edit_get_terms    : unit -> term list;
      edit_info         : string list -> edit_info;

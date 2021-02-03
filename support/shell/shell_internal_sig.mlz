@@ -99,6 +99,7 @@ type shell_commands =
      mutable abandon : unit -> unit;
      mutable abandon_all : unit -> unit;
      mutable view : LsOptionSet.t -> unit;
+     mutable items : LsOptionSet.t -> string list;
      mutable expand : unit -> unit;
      mutable expand_all : unit -> unit;
      mutable apply_all : item_fun -> bool -> clean_item_fun -> clean_module_fun -> unit;

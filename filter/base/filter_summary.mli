@@ -109,6 +109,9 @@ val get_infixes : ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) mo
 val get_proofs : ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) module_info ->
    (string * 'proof) list
 
+val get_names : ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) module_info ->
+   string list
+
 val find : ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) module_info ->
    string ->
    ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) summary_item_loc

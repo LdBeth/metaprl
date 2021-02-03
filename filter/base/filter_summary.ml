@@ -257,7 +257,7 @@ let find_sub_module summary path =
       walk summary path
 
 (************************************************************************
- * ACCESS								*
+ * ACCESS                                                               *
  ************************************************************************)
 
 (*
@@ -443,6 +443,25 @@ let get_proofs { info_list = summary } =
        | Rewrite { rw_name = name; rw_proof = pf; _ }
        | CondRewrite { crw_name = name; crw_proof = pf; _ } ->
             Some (name, pf)
+       | _ ->
+            None
+   in
+      List.filter_map collect summary
+
+(*
+ * Get the names.
+ *)
+let get_names { info_list = summary } =
+   let collect (item, _) =
+      match item with
+         Rule { rule_name = n; _ }
+       | Rewrite { rw_name = n; _ }
+       | CondRewrite { crw_name = n; _ }
+       | MLRewrite { mlterm_name = n; _ }
+       | InputForm { iform_name = n ; _}
+       | MLAxiom { mlterm_name = n; _ }
+       | DForm { dform_name = n; _ }
+       | Prec n -> Some n
        | _ ->
             None
    in

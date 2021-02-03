@@ -338,6 +338,27 @@ let term_of_dir info options subdir dir_info =
    in
       mk_dirlisting_term subdir terms
 
+let names_of_dir info options dir_info =
+   let { dir_entries = entries;
+         dir_ignore = ignore
+       } = dir_info
+   in
+   let nametest =
+      match ignore with
+         Some ignore ->
+            if LsOptionSet.mem options LsFileAll then
+               (fun _ -> true)
+            else
+               (fun name -> not (Str.string_match ignore name 0))
+       | None ->
+            (fun _ -> true)
+   in
+      List.filter_map (fun (name, _) ->
+            if nametest name then
+               Some name
+            else
+               None) entries
+
 (*
  * File lines.
  *)
@@ -387,6 +408,18 @@ let rec edit get_dfm info =
       edit_check_addr addr;
       edit_display get_dfm info options
    in
+   let edit_get_names addr options =
+      edit_check_addr addr;
+      let { info_root    = root;
+            info_subdir  = subdir;
+            info_data    = data
+          } = info
+      in match data with
+            Directory dir_info ->
+                  names_of_dir info options dir_info
+          | File _ ->
+               raise_edit_error "cannot get items from a file"
+   in
    let edit_copy () =
       edit get_dfm { info with info_root = info.info_root }
    in
@@ -431,6 +464,7 @@ let rec edit get_dfm info =
    in
       { edit_display = edit_display;
         edit_get_contents = edit_get_contents;
+        edit_get_names = edit_get_names;
         edit_get_terms = not_a_rule;
         edit_copy = edit_copy;
         edit_set_goal = not_a_rule;

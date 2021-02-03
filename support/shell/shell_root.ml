@@ -103,6 +103,15 @@ let rec edit pack get_dfm =
        | _ ->
             raise (Invalid_argument "Shell_root.edit_display: internal error")
    in
+   let edit_get_names addr _ =
+      match addr with
+         [] -> List.map fst (Package_info.groups pack) @ ["fs"]
+       | [ name ] ->
+            let _, packs = Package_info.group_packages pack name in
+               packs
+       | _ ->
+            raise (Invalid_argument "Shell_root.edit_get_names: internal error")
+   in
    let edit_copy () =
       edit pack get_dfm
    in
@@ -148,6 +157,7 @@ let rec edit pack get_dfm =
    in
       { edit_display = edit_display;
         edit_get_contents = edit_get_contents;
+        edit_get_names = edit_get_names;
         edit_get_terms = not_a_rule;
         edit_copy = edit_copy;
         edit_set_goal = not_a_rule;

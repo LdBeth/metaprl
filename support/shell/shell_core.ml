@@ -320,6 +320,12 @@ let filename parse_arg shell =
          None
 
 (*
+ * Return a list of avaliable items in the package.
+ *)
+let items info options =
+  info.shell_proof.edit_get_names info.shell_subdir options
+
+(*
  * Display the current proof.
  *)
 let display_proof info options =

@@ -281,6 +281,8 @@ let rec edit pack parse_arg name window (obj : Info.info) =
          List.fold_right (fun x y -> MetaImplies (MetaTheorem x, y)) obj.Info.rule_assums goal,
          obj.Info.rule_params
    in
+   let edit_get_names addr _ = [] (* TODO: list subgoals *)
+   in
    let get_ped () =
       match obj.Info.rule_ped with
          Primitive _ ->
@@ -325,6 +327,7 @@ let rec edit pack parse_arg name window (obj : Info.info) =
    in
       { edit_display = edit_display;
         edit_get_contents = edit_get_contents;
+        edit_get_names = edit_get_names;
         edit_get_terms = edit_get_terms;
         edit_copy = edit_copy;
         edit_set_goal = edit_set_goal;

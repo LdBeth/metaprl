@@ -70,6 +70,7 @@ val set_view_options : shell -> string -> unit
 val clear_view_options : shell -> string -> unit
 
 val view : parse_arg -> shell -> LsOptionSet.t -> unit
+val items : shell -> LsOptionSet.t -> string list
 val chdir : parse_arg -> shell -> bool -> bool -> shell_dir -> unit
 val cd : parse_arg -> shell -> string -> string
 val root : parse_arg -> shell -> string

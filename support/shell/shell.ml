@@ -551,6 +551,7 @@ struct
                commands.abandon             <- abandon;
                commands.abandon_all         <- abandon_all;
                commands.view                <- wrap_arg view;
+               commands.items               <- wrap items;
                commands.check               <- wrap_unit check;
                commands.expand              <- wrap_unit expand;
                commands.expand_all          <- wrap_unit_arg expand_all;

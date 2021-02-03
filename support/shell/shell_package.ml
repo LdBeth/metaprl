@@ -102,12 +102,18 @@ let term_of_interface pack filter parse_arg =
    let tl = term_list convert_intf (Filter_summary.filter filter (Package_info.sig_info pack parse_arg)) in
       mk_interface_term tl
 
+let items_of_interface pack filter parse_arg =
+   get_names (Filter_summary.filter filter (Package_info.sig_info pack parse_arg))
+
 (*
  * Display the entire package.
  *)
 let term_of_implementation pack filter parse_arg =
    let tl = term_list convert_impl (Filter_summary.filter filter (Package_info.info pack parse_arg)) in
       mk_implementation_term tl
+
+let items_of_implementation pack filter parse_arg =
+   get_names (Filter_summary.filter filter (Package_info.info pack parse_arg))
 
 (*
  * Filter the entries for ls.
@@ -311,6 +317,14 @@ let rec edit pack_info parse_arg get_dfm =
          Proof_edit.display_term (get_dfm ())
          (term_of_implementation pack_info (mk_ls_filter options) parse_arg);
    in
+   let edit_get_names addr options =
+      edit_check_addr addr;
+      if LsOptionSet.mem options LsInterface
+      then
+         items_of_interface pack_info (mk_interface_filter options) parse_arg
+      else
+         items_of_implementation pack_info (mk_ls_filter options) parse_arg
+   in
    let edit_copy () =
       edit pack_info parse_arg get_dfm
    in
@@ -338,6 +352,7 @@ let rec edit pack_info parse_arg get_dfm =
    in
       { edit_display = edit_display;
         edit_get_contents = raise_edit_error_fun "can only retrieve contents of an individual item, not of a package";
+        edit_get_names = edit_get_names;
         edit_get_terms = not_a_rule;
         edit_copy = edit_copy;
         edit_set_goal = not_a_rule;
