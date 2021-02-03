@@ -92,7 +92,7 @@ struct
     *)
    let flush shell =
       let options = Session.get_view_options () in
-         view parse_arg shell options
+         view shell options
 
    (************************************************************************
     * NUPRL5 INTERFACE                                                     *
@@ -550,7 +550,7 @@ struct
                commands.revert_all          <- revert_all;
                commands.abandon             <- abandon;
                commands.abandon_all         <- abandon_all;
-               commands.view                <- wrap_arg view;
+               commands.view                <- wrap view;
                commands.items               <- wrap items;
                commands.check               <- wrap_unit check;
                commands.expand              <- wrap_unit expand;

@@ -815,7 +815,7 @@ let clear_view_options shell s =
 (*
  * General purpose displayer.
  *)
-let view parse_arg shell options =
+let view shell options =
    display_proof shell options
 
 (************************************************************************
@@ -937,7 +937,7 @@ let print_theory parse_arg shell name =
       shell.shell_df_method <- { dfm with df_type = DisplayTex; df_width = 60; df_mode = "tex" };
       chdir parse_arg shell false true (module_dir name);
       expand_all parse_arg shell;
-      view parse_arg shell (LsOptionSet.singleton LsAll);
+      view shell (LsOptionSet.singleton LsAll);
       shell.shell_df_method <- dfm;
       chdir parse_arg shell false false dir
 
@@ -985,7 +985,7 @@ let create_pkg parse_arg shell name =
       DirModule (_, modname), [] ->
          (* Top level *)
          let _ = Package_info.create_package packages parse_arg modname in
-            view parse_arg shell LsOptionSet.empty
+            view shell LsOptionSet.empty
     | DirRoot, _ ->
          raise (Failure "Shell.create_package: can't create root package")
     | DirFS, _ ->
