@@ -1904,15 +1904,21 @@ struct
              * not be included in .prlb/.prla
              * At some point we should be dropping all the stuff that can be recovered from
              * .ml[i] in here
-             * For now this function is shared by the listing function, so a different
-             * function that filters extra items should be made.
              *)
-            match item with
-               PRLGrammar _, _ ->
-                  (* Don't include the grammar *)
+            match (fst item) with
+               PRLGrammar _ (* Don't include the grammar *)
+             | Comment _
+             | SummaryItem _
+             | ToploopItem _ ->
                   terms
              | _ ->
                   term_list_loc convert item :: terms) [] info
+
+    (* This is the same as term_list except no filtering is performed *)
+    and convert_list (convert : ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item,
+                             term, term, term, term, term, term, term) convert)
+       ({ info_list = info } : ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) module_info) =
+      List.rev_map (term_list_loc convert) info
 
    (************************************************************************
     * SUBTYPING                                                            *

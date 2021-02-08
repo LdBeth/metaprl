@@ -99,7 +99,7 @@ let convert_impl =
  * Display the package interface.
  *)
 let term_of_interface pack filter parse_arg =
-   let tl = term_list convert_intf (Filter_summary.filter filter (Package_info.sig_info pack parse_arg)) in
+   let tl = convert_list convert_intf (Filter_summary.filter filter (Package_info.sig_info pack parse_arg)) in
       mk_interface_term tl
 
 let items_of_interface pack filter parse_arg =
@@ -109,7 +109,7 @@ let items_of_interface pack filter parse_arg =
  * Display the entire package.
  *)
 let term_of_implementation pack filter parse_arg =
-   let tl = term_list convert_impl (Filter_summary.filter filter (Package_info.info pack parse_arg)) in
+   let tl = convert_list convert_impl (Filter_summary.filter filter (Package_info.info pack parse_arg)) in
       mk_implementation_term tl
 
 let items_of_implementation pack filter parse_arg =

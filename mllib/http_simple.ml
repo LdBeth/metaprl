@@ -381,11 +381,7 @@ let decode_hex uri =
 (*
  * Encode a string into hex.
  *)
-let hex code =
-   if code < 10 then
-      Char.chr (code + (Char.code '0'))
-   else
-      Char.chr (code - 10 + (Char.code 'a'))
+let hex = Lm_string_util.hex_char
 
 let encode_hex uri =
    let len = String.length uri in

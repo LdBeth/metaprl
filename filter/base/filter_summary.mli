@@ -197,6 +197,11 @@ sig
       (term, term, term, term, term, term, term, 'term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) convert ->
       term list ->
       ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) module_info
+   val convert_list :
+      ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item,
+       term, term, term, term, term, term, term) convert ->
+      ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) module_info ->
+      term list
 
    (*
     * Interface checking.

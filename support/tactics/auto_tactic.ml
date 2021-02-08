@@ -419,7 +419,7 @@ let process_nth_hyp_resource_annotation ?labels name args term_args statement lo
             (*
              * XXX: nogin (2006/03/25): Strictly speaking this needs to go into a special section of nthHypT
              * so that autoT would use this only in its "Normal" stage, as it generates subgoals and is not
-             * appropriate for the trivialT. But for now, this seems to be a sufficiently minot violation of
+             * appropriate for the trivialT. But for now, this seems to be a sufficiently minor violation of
              * the trivialT policies.
              *)
             let tac i =

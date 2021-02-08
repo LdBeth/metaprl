@@ -84,7 +84,7 @@ struct
     * module names to the module info.
     *)
    type t =
-      { mutable io_table : (file_name, info list) Hashtbl.t;
+      { io_table : (file_name, info list) Hashtbl.t;
         io_path : string list
       }
 
@@ -101,7 +101,7 @@ struct
       }
 
    let clear base =
-      base.io_table <- Hashtbl.create 97
+      Hashtbl.clear base.io_table
 
    (************************************************************************
     * LOAD/STORE                                                           *

@@ -231,14 +231,14 @@ struct
            | _ ->
                 Buffer.add_char buf '[';
                 List.iter (print_param buf) params;
-                Buffer.add_string buf "]");
+                Buffer.add_char buf ']');
          (match arities with
              [] ->
                 ()
            | _ ->
-                Buffer.add_string buf "{";
+                Buffer.add_char buf '{';
                 print_arity buf arities;
-                Buffer.add_string buf "}");
+                Buffer.add_char buf '}');
          Buffer.contents buf
 
    let print_shape out shape =

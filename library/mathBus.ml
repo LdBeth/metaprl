@@ -428,7 +428,7 @@ let mb_string s =
 let string_value_with_unicode node =
   match (mbnode_subtermq node 1) with
     Mbint b -> let (x, y) = dest_lint32 b in
-    let str = if y < 0 then failwith "string_value" else Lm_string_util.create "MathBus.string_value" y in
+    let str = if y < 0 then failwith "string_value" else Bytes.create y in
     let rec loop i j =
       if (i >= y) || (j > (mbnode_nSubterms node)) then str else
       (match node.(j) with
@@ -446,7 +446,7 @@ let string_value node =
   if !use_unicode then string_value_with_unicode node
   else match (mbnode_subtermq node 1) with
     Mbint b -> let (x, y) = dest_lint32 b in
-    let str = if y < 0 then failwith "string_value" else Lm_string_util.create "MathBus.string_value" y in
+    let str = if y < 0 then failwith "string_value" else Bytes.create y in
     let rec loop i j =
       if (i >= y) || (j > (mbnode_nSubterms node)) then str else
       (match node.(j) with
