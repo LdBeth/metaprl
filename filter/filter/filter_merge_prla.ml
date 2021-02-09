@@ -231,7 +231,7 @@ let merge_prla (inp1, inp2, outp) =
        | None ->
             Some t
    in
-   let t1 = Lm_list_util.some_map process1 t1 in
+   let t1 = List.filter_map process1 t1 in
    let process2 t =
       match extract_proof t with
          Some (name, pf) ->
@@ -252,7 +252,7 @@ let merge_prla (inp1, inp2, outp) =
        | None ->
             Some t
    in
-   let t2 = Lm_list_util.some_map process2 t2 in
+   let t2 = List.filter_map process2 t2 in
    let t = mk_xlist_term (t1 @ t2) in
    let output_term out_chan =
       let major, minor, rev = File_type_base.unpack_version (List.hd Filter_magic.ascii_versions) in Printf.fprintf out_chan "#PRL version %d.%d.%d ASCII term\n#Warning: this file was created by using the merge_prla binary\n#\tThis means that it might not actually have the above version and should not be ever committed to SVN\n" major minor rev;

@@ -1836,8 +1836,8 @@ struct
    (*
     * Convert the items to a term.
     *)
-   let rec term_list_aux (convert : ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item, term,
-                                 term, term, term, term, term, term) convert) = function
+   let term_list_aux (convert : ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item, term,
+                                 term, term, term, term, term, term) convert) to_terms = function
       SummaryItem item ->
          term_of_item convert item
     | ToploopItem item ->
@@ -1867,7 +1867,7 @@ struct
     | Parent par ->
          term_of_parent convert par
     | Module (name, info) ->
-         mk_string_dep0_term module_op name (mk_xlist_term (term_list convert info))
+         mk_string_dep0_term module_op name (mk_xlist_term (to_terms convert info))
     | DForm df ->
          term_of_dform convert df
     | Prec p ->
@@ -1891,10 +1891,10 @@ struct
     | PRLGrammar _ ->
          raise (Invalid_argument "Filter_summary.term_list_aux")
 
-   and term_list_loc convert (t, loc) =
-      mk_loc loc (term_list_aux convert t)
+   let term_list_loc convert to_terms (t, loc) =
+      mk_loc loc (term_list_aux convert to_terms t)
 
-   and term_list (convert : ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item,
+   let rec term_list (convert : ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item,
                              term, term, term, term, term, term, term) convert)
        ({ info_list = info } : ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) module_info) =
       List.fold_left (fun terms item ->
@@ -1912,13 +1912,13 @@ struct
              | ToploopItem _ ->
                   terms
              | _ ->
-                  term_list_loc convert item :: terms) [] info
+                  term_list_loc convert term_list item :: terms) [] info
 
     (* This is the same as term_list except no filtering is performed *)
-    and convert_list (convert : ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item,
+    let rec convert_list (convert : ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item,
                              term, term, term, term, term, term, term) convert)
        ({ info_list = info } : ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) module_info) =
-      List.rev_map (term_list_loc convert) info
+      List.rev_map (term_list_loc convert convert_list) info
 
    (************************************************************************
     * SUBTYPING                                                            *
