@@ -27,6 +27,9 @@ FILES[] =
     line_buffer
 
 # MACROPPOPTS = -D DEBUG_WEAK_MEMO
+if $(LZ4_ENABLED)
+    MACROPPOPTS = -D LZ4_ENABLED
+    export
 
 OCamlLibraryInstall($(MPINSTALL) lib, $(LIB), util, $(FILES))
 

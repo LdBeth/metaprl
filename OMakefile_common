@@ -295,8 +295,12 @@ if $(SSL_ENABLED)
     else
         OCAML_LINK_FLAGS += -cclib -lcrypto -cclib -lssl
         CFLAGS += -DSSL_ENABLED
-        INCLUDES += /usr/kerberos/include
         export
+    export
+
+if $(LZ4_ENABLED)
+    CFLAGS += -DLZ4_ENABLED
+    OCAML_LINK_FLAGS += -cclib -llz4
     export
 
 if $(READLINE_ENABLED)

@@ -118,6 +118,12 @@ BROWSER_COMMAND = $(BROWSER_COMMAND)
 SSL_ENABLED = $(SSL_ENABLED)
 
 #
+# The LZ4 compression library (true/false)
+# Used for compressing compiled theory files.
+#
+LZ4_ENABLED = $(LZ4_ENABLED)
+
+#
 # Do you want to use threads (true/false)?
 # Highly recommended for the browser interface.
 #

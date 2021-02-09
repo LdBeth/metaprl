@@ -151,7 +151,11 @@ module MakeSingletonCombo (Info : FileTypeInfoSig) :
                try
                   output_binary_int outx (List.nth magics magic);
                   output_binary_int outx (List.hd versions);
-                  output_value outx (info : t);
+                  IFDEF LZ4_ENABLED THEN
+                  Lm_compress.to_channel outx (info : t) []
+                  ELSE
+                  output_value outx (info : t)
+                  END;
                   close_out outx
                with
                   exn ->
@@ -165,7 +169,12 @@ module MakeSingletonCombo (Info : FileTypeInfoSig) :
                   let version = input_binary_int inx in
                   if not (List.mem version versions) then
                      raise (Bad_version(filename, versions, version));
-                  let out = (input_value inx : t) in
+                  let out = IFDEF LZ4_ENABLED THEN
+                            (Lm_compress.from_channel inx : t)
+                            ELSE
+                            (input_value inx : t)
+                            END
+                  in
                      close_in inx;
                      out, magic
                with
