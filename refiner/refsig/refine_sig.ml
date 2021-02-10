@@ -373,7 +373,7 @@ sig
       term list ->                 (* params *)
       meta_term ->                 (* rule definition *)
       unit ->                      (* placeholder *)
-      extract ->                   (* derived justification *)
+      tactic ->                    (* derived justification *)
       unit
    val delayed_rule : build ->
       string ->                    (* name *)
@@ -415,7 +415,7 @@ sig
       string ->            (* name *)
       term ->              (* redex *)
       term ->              (* contractum *)
-      extract ->           (* proof *)
+      tactic ->            (* proof *)
       unit
    val delayed_rewrite : build ->
       string ->            (* name *)
@@ -448,7 +448,7 @@ sig
       term list ->         (* subgoals *)
       term ->              (* redex *)
       term ->              (* contractum *)
-      extract ->           (* proof *)
+      tactic ->            (* proof *)
       unit
    val delayed_cond_rewrite : build ->
       string ->            (* name *)

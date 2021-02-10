@@ -1586,6 +1586,7 @@ struct
       } in
          justify_rule build name addrs params goal subgoals (PDerived dp)
 
+   (* XXX: BUG: LDB: this is apparently wrong *)
    let derived_rule build name addrs params mterm _ ext =
       delayed_rule build name addrs params mterm () (fun _ -> ext)
 

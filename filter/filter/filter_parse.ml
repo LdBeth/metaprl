@@ -70,7 +70,7 @@ open Filter_summary_type
 open Filter_summary_util
 open Filter_prog
 open Filter_magic
-open Proof_boot
+(* open Proof_boot *)
 open Proof_convert
 open Simple_print
 
@@ -1003,13 +1003,8 @@ let define_rule proc loc name
 let define_prim proc loc name params mterm extract res =
    define_rule proc loc name params mterm (Primitive extract) res
 
-let define_thm proc loc name params mterm s res =
-   let assums, goal = unzip_mfunction mterm in
-   let assums = List.map (fun (_, _, assum) -> assum) assums in
-   let mseq = mk_msequent goal assums in
-   let proof = Proof.create_io_rulebox mseq s in
-   let proof = Convert.of_raw () s proof in
-      define_rule proc loc name params mterm (Interactive proof) res
+let define_thm proc loc name params mterm tac res =
+   define_rule proc loc name params mterm (Derived tac) res
 
 let define_int_thm proc loc name params mterm res =
    define_rule proc loc name params mterm Incomplete res
@@ -1786,7 +1781,7 @@ EXTEND
            in
               handle_exn f ("derived_rw " ^ name) _loc;
               empty_str_item _loc
-        | "thm_rw"; name = LIDENT; res = optresources; args = optarglist; ":"; t = mterm; "="; body = expr ->
+        | "thm_rw"; name = LIDENT; res = optresources; args = optarglist; ":"; t = mterm; "BY"; body = expr ->
            let f () =
               let proc = StrFilter.get_proc _loc in
               let t, args, res = parse_rewrite _loc name t args res in
@@ -1812,7 +1807,7 @@ EXTEND
            in
               handle_exn f ("prim " ^ name) _loc;
               empty_str_item _loc
-        | "thm"; name = LIDENT; res = optresources; params = optarglist; ":"; mt = bmterm; "="; tac = STRING ->
+        | "thm"; name = LIDENT; res = optresources; params = optarglist; ":"; mt = bmterm; "="; tac = expr ->
            let f () =
               let proc = StrFilter.get_proc _loc in
               let _, mt, params, res = parse_rule _loc name mt params res in
