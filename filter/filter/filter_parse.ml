@@ -1786,7 +1786,7 @@ EXTEND
            in
               handle_exn f ("derived_rw " ^ name) _loc;
               empty_str_item _loc
-        | "thm_rw"; name = LIDENT; res = optresources; args = optarglist; ":"; t = mterm; "="; body = expr ->
+        | "thm_rw"; "("; name = LIDENT; res = optresources; args = optarglist; ":"; t = mterm; ")"; "="; body = expr ->
            let f () =
               let proc = StrFilter.get_proc _loc in
               let t, args, res = parse_rewrite _loc name t args res in
