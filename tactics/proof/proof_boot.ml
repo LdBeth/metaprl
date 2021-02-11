@@ -1440,6 +1440,11 @@ struct
             in
                find_subgoal_aux p addr node (goal_ext (List.hd l))
 
+   let find_all_subgoals p addr =
+      let node = index p addr in
+         List.map (fun l -> find_subgoal_aux p addr node (goal_ext (List.hd l)))
+         ([node] :: (info_ext true node).step_subgoals)
+
    (************************************************************************
     * UPDATES                                                              *
     ************************************************************************)

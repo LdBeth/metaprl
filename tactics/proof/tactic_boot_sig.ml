@@ -665,6 +665,7 @@ sig
     * list (step_subgoals is used for consistency with ls "")
     *)
    val find_subgoal : proof -> address -> int -> address
+   val find_all_subgoals : proof -> address -> address list
 
    (********************************
     * EXPANSION
