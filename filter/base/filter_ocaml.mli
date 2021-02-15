@@ -84,20 +84,20 @@ sig
    (*
     * Specific values useful for writing
     * term interpreters.
-    *)
+    *
    val some_op : opname
    val none_op : opname
    val true_op : opname
-   val false_op : opname
+   val false_op : opname *)
 
    (*
     * Common destructors.
-    *)
+    *
    val dest_loc : term -> MLast.loc
    val dest_loc_string : term -> MLast.loc * string
    val dest_loc_int : term -> MLast.loc * string
    val dest_opt : (term -> 'a) -> term -> 'a option
-   val dest_string : term -> string
+   val dest_string : term -> string *)
 
    (*
     * Special functions for resources

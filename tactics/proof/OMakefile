@@ -7,7 +7,7 @@ OCAMLFLAGS += -rectypes
 #
 # Basic camlp4 preprocessing
 #
-OCAMLPPFLAGS = -pp $(quote-argv camlp5o$(EXE) -I $(CAMLP5LIB) q_MLast.cmo $(LOC))
+OCAMLPPFLAGS = -pp $(quote-argv camlp5o$(EXE) -I $(CAMLP5LIB) q_MLast.cmo)
 
 #
 # Library files

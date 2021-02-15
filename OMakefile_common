@@ -178,12 +178,6 @@ section
     VersionCheck($(CAMLP5R_VERSION),    $(CAMLP5R), ?opt = $"-v")
     VersionCheck($(CAMLP5O_VERSION),    $(CAMLP5O), ?opt = $"-v")
 
-#
-# XXX: This is here to make sure that Camlp5 3.08 acts the same way as 3.09
-# (in 3.08 the default value is loc, but in 3.09 it's _loc).
-#
-LOC = -loc _loc
-
 %.cmo %.cmi: $(OCAMLC_VERSION)
 %.cmx: $(OCAMLOPT_VERSION)
 

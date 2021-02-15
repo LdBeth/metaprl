@@ -49,7 +49,7 @@ sig
    (*
     * Open all the obvious modules.
     *)
-   val eval_opens : string list list -> unit
+   val eval_opens : MLast.module_expr list -> unit
 
    (*
     * Main loop.

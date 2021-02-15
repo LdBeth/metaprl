@@ -1,7 +1,7 @@
 #
 # Generic camlp5 preprocessing
 #
-OCAMLPPFLAGS = -pp $(quote-argv $(CAMLP5O) -I $(CAMLP5LIB) q_MLast.cmo pa_extend.cmo $(LOC))
+OCAMLPPFLAGS = -pp $(quote-argv $(CAMLP5O) -I $(CAMLP5LIB) q_MLast.cmo pa_extend.cmo)
 
 %.cmx %.o: $(CAMLP5O_VERSION)
 %.cmo: $(CAMLP5O_VERSION)

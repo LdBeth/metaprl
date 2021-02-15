@@ -148,27 +148,22 @@ let resource (item, item list -> top_table) toploop =
 let not_supported loc str =
    Ploc.raise loc (RefineError ("mptop", StringStringError ("operation is not implemented", str)))
 
-let rec mk_proj_expr loc top_expr =
-   let rec collect names top_expr =
-      match top_expr with
-         (<:expr< $uid: name$ . $e2$ >>) ->
-            collect (name :: names) e2
-       | (<:expr< $lid: v$ >>) ->
-            VarProjExpr (names, v)
-       | (<:expr< $lid: v$ . val >>) ->
-            let f = loc, VarExpr ("deref_" ^ v) in
-            let x = loc, UnitExpr () in
-               ApplyExpr (f, x)
-       | _ ->
-            not_supported loc "expr projection"
-   in
-      collect [] top_expr
+let string_list_of_longident li =
+  let rec lirec = function
+    <:longident< $uid:uid$ >> -> [uid]
+  | <:longident< $longid:li$ . $uid:uid$ >> -> (lirec li) @ [uid]
+  | <:extended_longident< $longid:_$ ( $longid:_$ ) >> ->
+    failwith "string_list_of_longident: LiApp not allowed here"
+  | _ ->
+    failwith "[internal error] string_list_of_longident: called with invalid longid"
+  in
+  lirec li
 
 (*
  * A tuple of expressions.
  * We only support unit for now.
  *)
-and mk_tuple_expr loc = function
+let rec mk_tuple_expr loc = function
    [] ->
       UnitExpr ()
  | _ ->
@@ -188,8 +183,13 @@ and mk_expr top_expr =
    let loc = loc_of_expr top_expr in
    let expr =
       match top_expr with
-         (<:expr< $e1$ . $e2$ >> as top_expr) ->
-            mk_proj_expr loc top_expr
+         (<:expr< $longid:li$ . $v$ >>) ->
+            let names = string_list_of_longident li in
+               VarProjExpr (names, v)
+       | (<:expr< $lid: v$ . val >>) ->
+            let f = loc, VarExpr ("deref_" ^ v) in
+            let x = loc, UnitExpr () in
+               ApplyExpr (f, x)
        | (<:expr< $e1$ $e2$ >>) as app_expr ->
             (match unapplist app_expr with
                 (<:expr< $lid:"-"$ >>) , [e] ->
@@ -234,7 +234,7 @@ and mk_expr top_expr =
             not_supported loc "local module"
        | (<:expr< match $e$ with [ $list:pwel$ ] >>) ->
             not_supported loc "match"
-       | (<:expr< new $list:_$ >>) ->
+       | (<:expr< new $lilongid:_$ >>) ->
             not_supported loc "new"
        | (<:expr< {< $list:_$ >} >>) ->
             not_supported loc "stream"
@@ -268,35 +268,7 @@ and mk_expr top_expr =
             not_supported loc "ExLab"
        | MLast.ExCoe _ ->
             not_supported loc "ExCoe"
-       | MLast.ExArr (_, Ploc.VaAnt _)
-       | MLast.ExChr (_, Ploc.VaAnt _)
-       | MLast.ExFlo (_, Ploc.VaAnt _)
-       | MLast.ExFor (_, _, _, _, _, Ploc.VaAnt _)
-       | MLast.ExFor (_, _, _, _, Ploc.VaAnt _, _)
-       | MLast.ExFor (_, Ploc.VaAnt _, _, _, _, _)
-       | MLast.ExFun (_, Ploc.VaAnt _)
-       | MLast.ExInt (_, _, _)
-       | MLast.ExLet (_, _, Ploc.VaAnt _, _)
-       | MLast.ExLet (_, Ploc.VaAnt _, _, _)
-       | MLast.ExLid (_, Ploc.VaAnt _)
-       | MLast.ExUid (_, Ploc.VaAnt _)
-       | MLast.ExMat (_, _, Ploc.VaAnt _)
-       | MLast.ExNew (_, Ploc.VaAnt _)
-       | MLast.ExOvr (_, Ploc.VaAnt _)
-       | MLast.ExSeq (_, Ploc.VaAnt _)
-       | MLast.ExSnd (_, _, Ploc.VaAnt _)
-       | MLast.ExStr (_, Ploc.VaAnt _)
-       | MLast.ExTry (_, _, Ploc.VaAnt _)
-       | MLast.ExTup (_, Ploc.VaAnt _)
-       | MLast.ExWhi (_, _, Ploc.VaAnt _)
-       | MLast.ExBae (_, _, _)
-       | ExJdf (_, _, _)
-       | ExLop (_, _, _)
-       | ExPar (_, _, _)
-       | ExPck (_, _, _)
-       | ExRpl (_, _, _)
-       | ExSpw (_, _)
-       | ExXtr (_, _, _) ->
+       | _ ->
             not_supported loc "antiquotations"
 
    in
@@ -552,18 +524,7 @@ let rec mk_str_item si =
             not_supported loc "StExc"
        | StUse _ ->
             not_supported loc "str module use"
-       | StDcl (_, Ploc.VaAnt _)
-       | StExt (_, _, _, Ploc.VaAnt _)
-       | StExt (_, Ploc.VaAnt _, _, _)
-       | StMod _
-       | StMty (_, Ploc.VaAnt _, _)
-       | StOpn (_, Ploc.VaAnt _)
-       | StTyp (_, Ploc.VaAnt _, _)
-       | StTyp (_, _, Ploc.VaAnt _)
-       | StVal (_, _, Ploc.VaAnt _)
-       | StVal (_, Ploc.VaAnt _, _)
-       | StDef (_, _)
-       | StXtr (_, _, _) ->
+       | _ ->
             not_supported loc "antiquotations"
 
 (************************************************************************

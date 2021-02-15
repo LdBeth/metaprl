@@ -53,7 +53,7 @@ let hash_max x =
 (*
  * We will relocate everything to 0
  *)
-let _loc = dummy_loc
+let loc = dummy_loc
 let reloc = fun _ -> dummy_loc
 
 (*

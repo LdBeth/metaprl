@@ -27,7 +27,7 @@ clean:
 OCAML_LIBS += $(CAMLP5LIB)/odyl $(CAMLP5LIB)/camlp5
 OCAMLINCLUDES += $(CAMLP5LIB)
 OCAML_LINK_FLAGS += -linkall
-OCAMLFLAGS += -pp $(quote-argv $(CAMLP5R) -I $(CAMLP5LIB) -nolib $(LOC))
+OCAMLFLAGS += -pp $(quote-argv $(CAMLP5R) -I $(CAMLP5LIB) -nolib)
 
 %.cmx %$(EXT_OBJ): $(CAMLP5R_VERSION)
 %.cmo: $(CAMLP5R_VERSION)

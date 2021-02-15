@@ -2070,7 +2070,7 @@ struct
     * Kreitz the tree into a single node.
     * This only work on the outermost rule boxes.
     *)
-   let _loc = Ploc.dummy
+   let loc = Ploc.dummy
 
    let rec kreitz_ext =
       let rec concat_text = function

@@ -125,7 +125,7 @@ value defined_version loc =
 
 value is_defined i = List.mem_assoc i defined.val;
 
-value _loc = Ploc.dummy;
+value loc = Ploc.dummy;
 
 value rec no_nothing =
   fun
@@ -162,9 +162,9 @@ value print_defined () = do {
 value subst mloc env =
   let rec loop =
     fun
-    [ <:expr< let $opt:rf$ $list:pel$ in $e$ >> ->
-        let pel = List.map (fun (p, e) -> (p, loop e)) pel in
-        <:expr< let $opt:rf$ $list:pel$ in $loop e$ >>
+    [ <:expr< let $flag:rf$ $list:pel$ in $e$ >> ->
+        let pel = List.map (fun (p, e, attrs) -> (p, loop e, attrs)) pel in
+        <:expr< let $flag:rf$ $list:pel$ in $loop e$ >>
     | <:expr< if $e1$ then $e2$ else $e3$ >> ->
         <:expr< if $loop e1$ then $loop e2$ else $loop e3$ >>
     | <:expr< fun $args$ -> $e$ >> ->
@@ -253,7 +253,7 @@ value substt mloc env =
     [ <:ctyp< $t1$ -> $t2$ >> -> <:ctyp< $loop t1$ -> $loop t2$ >>
     | <:ctyp< $t1$ $t2$ >> -> <:ctyp< $loop t1$ $loop t2$ >>
     | <:ctyp< ($list:tl$) >> -> <:ctyp< ($list:List.map loop tl$) >>
-    | <:ctyp< $lid:x$ >> | <:ctyp< $uid:x$ >> as t ->
+    | <:ctyp< $lid:x$ >> as t ->
         try List.assoc x env with [ Not_found -> t ]
     | t -> t ]
 ;
@@ -332,12 +332,12 @@ value define eo x = do {
   | MvExpr [] e ->
       EXTEND
         expr: LEVEL "simple"
-          [ [ UIDENT $x$ -> may_eval (Reloc.expr (fun _ -> _loc) 0 e) ] ]
+          [ [ UIDENT $x$ -> may_eval (Reloc.expr (fun _ -> loc) 0 e) ] ]
         ;
         patt: LEVEL "simple"
           [ [ UIDENT $x$ ->
-                let p = substp _loc [] e in
-                Reloc.patt (fun _ -> _loc) 0 p ] ]
+                let p = substp loc [] e in
+                Reloc.patt (fun _ -> loc) 0 p ] ]
         ;
       END
   | MvExpr sl e ->
@@ -351,10 +351,10 @@ value define eo x = do {
                 in
                 if List.length el = List.length sl then
                   let env = List.combine sl el in
-                  let e = subst _loc env e in
-                  may_eval (Reloc.expr (fun _ -> _loc) 0 e)
+                  let e = subst loc env e in
+                  may_eval (Reloc.expr (fun _ -> loc) 0 e)
                 else
-                  incorrect_number _loc el sl ] ]
+                  incorrect_number loc el sl ] ]
         ;
         patt: LEVEL "simple"
           [ [ UIDENT $x$; param = SELF ->
@@ -364,12 +364,12 @@ value define eo x = do {
                   | p -> [p] ]
                 in
                 if List.length pl = List.length sl then
-                  let e = may_eval (Reloc.expr (fun _ -> _loc) 0 e) in
+                  let e = may_eval (Reloc.expr (fun _ -> loc) 0 e) in
                   let env = List.combine sl pl in
-                  let p = substp _loc env e in
-                  Reloc.patt (fun _ -> _loc) 0 p
+                  let p = substp loc env e in
+                  Reloc.patt (fun _ -> loc) 0 p
                 else
-                  incorrect_number _loc pl sl ] ]
+                  incorrect_number loc pl sl ] ]
         ;
       END
   | MvType [] t ->
@@ -385,10 +385,10 @@ value define eo x = do {
                 let tl = [param] in
                 if List.length tl = List.length sl then
                   let env = List.combine sl tl in
-                  let t = substt _loc env t in
+                  let t = substt loc env t in
                   t
                 else
-                  incorrect_number _loc tl sl ] ]
+                  incorrect_number loc tl sl ] ]
         ;
       END
   | MvNone -> () ];
@@ -621,7 +621,7 @@ EXTEND
       | "IFNDEF"; e = dexpr; "THEN"; e1 = SELF; e2 = else_expr; "END" ->
           if not e then e1 else e2
      | "DEFINE"; i = LIDENT; "="; def = expr; "IN"; body = expr ->
-          subst _loc [(i, def)] body ] ]
+          subst loc [(i, def)] body ] ]
   ;
   else_expr:
     [ [ "ELSIFDEF"; e = dexpr; "THEN"; e1 = expr; e2 = else_expr ->
@@ -632,10 +632,10 @@ EXTEND
       | -> <:expr< () >> ] ]
   ;
   expr: LEVEL "simple"
-    [ [ LIDENT "__FILE__" -> <:expr< $str:Ploc.file_name _loc$ >>
+    [ [ LIDENT "__FILE__" -> <:expr< $str:Ploc.file_name loc$ >>
       | LIDENT "__LOCATION__" ->
-          let bp = string_of_int (Ploc.first_pos _loc) in
-          let ep = string_of_int (Ploc.last_pos _loc) in
+          let bp = string_of_int (Ploc.first_pos loc) in
+          let ep = string_of_int (Ploc.last_pos loc) in
           <:expr< ($int:bp$, $int:ep$) >> ] ]
   ;
   patt:
@@ -696,7 +696,7 @@ EXTEND
   dexpr:
     [ [ x = SELF; "OR"; y = SELF -> x || y ]
     | [ x = SELF; "AND"; y = SELF -> x && y ]
-    (* | [ "OCAML_VERSION"; f = op; y = uident -> f (defined_version _loc) y ] *)
+    (* | [ "OCAML_VERSION"; f = op; y = uident -> f (defined_version loc) y ] *)
     | [ "NOT"; x = SELF -> not x ]
     | [ i = uident -> is_defined i
       | "("; x = SELF; ")" -> x ] ]

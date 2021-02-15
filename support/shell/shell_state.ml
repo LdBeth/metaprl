@@ -176,7 +176,7 @@ let mk_var_contexts_null loc v i =
       Ploc.raise loc (Failure "No context known for SO variables (need to specify contexts explicitly when not inside a rule")
 
 let default_saved_tactic =
-   let _loc = dummy_loc in
+   let loc = dummy_loc in
       ("\"no saved tactic\"", <:expr< $str: "no saved tactic"$ >>)
 
 (*
@@ -268,7 +268,11 @@ module TermGrammar = MakeTermGrammar
    (*
     * Term grammar.
     *)
-   let gram = Pcaml.gram
+   let osrs = !Plexer.simplest_raw_strings
+   let () = Plexer.simplest_raw_strings := false
+   let gram = Grammar.gcreate (Plexer.gmake ())
+   let () = Plexer.simplest_raw_strings := osrs
+
    let opname = Grammar.Entry.create gram "opname"
    let opname_name = Grammar.Entry.create gram "opname_name"
    let term_eoi = Grammar.Entry.create gram "term"
@@ -284,13 +288,13 @@ module TermGrammar = MakeTermGrammar
    let parsed_bound_term = Grammar.Entry.create gram "parsed_bound_term"
    let xdform = Grammar.Entry.create gram "xdform"
    let term_con_eoi = Grammar.Entry.create gram "term_con_eoi"
-end);;
+end)
 
 (*
  * Extend the grammar.
  *)
 let save_term state t =
-   let _loc = dummy_loc in
+   let loc = dummy_loc in
    let v = state.state_inline_var in
       state.state_inline_var <- succ v;
       state.state_inline_terms <- (v, t) :: state.state_inline_terms;
