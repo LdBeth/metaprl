@@ -413,11 +413,11 @@ let check_rule info loc mt terms =
 (*
  * Add an ML open command.
  *)
-let add_open info _loc name =
+let add_open info loc name =
    let cache = info.info_cache in
-   (* XXX: LDB: TODO: this should be changed for CamlP5 8.00 *)
-   let item = <:str_item< open $list:[name]$ >> in
-      StrFilterCache.add_command cache (SummaryItem (bind_item item), _loc)
+   let me = <:module_expr< $uid:name$ >> in
+   let item = <:str_item< open $me$ >> in
+      StrFilterCache.add_command cache (SummaryItem (bind_item item), loc)
 
 (*
  * Adding to the cache.
