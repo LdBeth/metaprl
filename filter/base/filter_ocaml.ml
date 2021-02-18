@@ -393,7 +393,10 @@ struct
       let bterm = mk_bterm [s] t in
          mk_term op [bterm]
 
-   let class_type_infos_op = mk_ocaml_op "class_type_infos"
+   let class_type_infos_op = mk_ocaml_op "class_type_infos" *)
+(*
+   let mk_expr vars = function
+      <:expr< *)
 
    (*
     * Expressions.
@@ -405,7 +408,7 @@ struct
 
    (*
     * Default functions.
-    *)
+    *
    let dest_loc = dest_loc "external"
    let dest_loc_string = dest_loc_string "external"
    let dest_loc_int = dest_loc_int "external"

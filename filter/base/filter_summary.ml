@@ -1899,20 +1899,19 @@ struct
        ({ info_list = info } : ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) module_info) =
       List.fold_left (fun terms item ->
             (*
-             * XXX: TODO:
+             * XXX:
              * This is the place where we drop things that are part of .cmoz, but should
              * not be included in .prlb/.prla
-             * At some point we should be dropping all the stuff that can be recovered from
-             * .ml[i] in here
              *)
             match (fst item) with
-               PRLGrammar _ (* Don't include the grammar *)
-             | Comment _
-             | SummaryItem _
-             | ToploopItem _ ->
-                  terms
-             | _ ->
-                  term_list_loc convert term_list item :: terms) [] info
+               Rewrite _
+             | CondRewrite _
+             | Rule _
+             | Parent _
+             | Module _
+             | Id _ (* include id so the file version can be compared *) ->
+                  term_list_loc convert term_list item :: terms
+             | _ -> terms) [] info
 
     (* This is the same as term_list except no filtering is performed *)
     let rec convert_list (convert : ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item,

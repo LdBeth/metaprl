@@ -320,6 +320,7 @@ struct
         group           : string; (* e.g. "itt" *)
         groupdsc        : string; (* e.g. "Constructive Type Theory" *)
         mutable names   : StringSet.t;
+        mutable quots   : StringSet.t; (* added quotations *)
         mutable parents : StrLSet.t;
         mutable infixes : Infix.Set.t;
       }
@@ -368,10 +369,13 @@ struct
    let add_start name shape =
      Quotation.add name (Quotation.ExAst (input_exp shape name, input_patt shape name))
 
-   (* XXX: LDB: since CamlP5 8.00 duplicated quotation is reported as error,
-    * However I don't see why this thing is needed, so I just disable it to
-    * muffle the error *)
-   (* let add_starts starts = StringTable.iter add_start starts *)
+   (* XXX: LDB: since CamlP5 8.00 duplicated quotation is reported as error *)
+   let add_starts quots starts =
+      StringTable.fold (fun quots name shape ->
+       if StringSet.mem quots name
+       then quots
+       else (add_start name shape;
+             StringSet.add quots name)) quots starts
 
    (*
     * Our version of add_command - make sure there are no name clashes.
@@ -443,18 +447,18 @@ struct
       proc.parents <- StrLSet.add proc.parents path;
 
       (* Lots of errors can occur here *)
-      let () =
+      begin
          try FilterCache.inline_module proc.cache () path with
             exn ->
                Ploc.raise loc exn
-      in
+      end;
 
       (* Add infixes *)
-      let () =
+      begin
          let infixes = FilterCache.sig_infixes proc.cache path in
             Infix.Set.iter Infix.add (Infix.Set.diff infixes proc.infixes);
             proc.infixes <- Infix.Set.union infixes proc.infixes
-      in
+      end;
 
       (* Add resources and grammar start symbols *)
       let info =
@@ -462,7 +466,7 @@ struct
            parent_resources = FilterCache.sig_resources proc.cache path;
          }
       in
-         (* add_starts (FilterCache.get_start proc.cache); *)
+         proc.quots <- add_starts proc.quots (FilterCache.get_start proc.cache);
          add_command proc (Parent info, loc)
 
    (*
@@ -818,13 +822,14 @@ struct
                  group    = theory_group ();
                  groupdsc = theory_groupdsc ();
                  names    = StringSet.empty;
+                 quots    = StringSet.empty;
                  parents  = StrLSet.empty;
                  infixes  = Infix.Set.empty;
                }
             in
                if select = ImplementationType then
                   FilterCache.load_sig_grammar info () InterfaceType;
-               (* add_starts (FilterCache.get_start info); *)
+               (* add_starts (FilterCache.get_start info); XXX: this is not needed *)
                parsing_state := Some (FilterCache.get_parsing_state info);
                proc_ref := Some proc;
                proc
@@ -911,6 +916,7 @@ struct
       let shape = shape_of_term t in
       let name = fst (dst_opname (opname_of_term t)) in
          FilterCache.add_start proc.cache name t lexer_id;
+         proc.quots <- StringSet.add proc.quots name;
          add_start name shape
 
    let add_iform proc loc redex contractum =
