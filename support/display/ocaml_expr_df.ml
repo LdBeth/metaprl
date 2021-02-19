@@ -141,6 +141,9 @@ dform uid_df2 : "uid"[start:n, finish:n]{'v} =
 dform uid_df3 : "uid"[v:s] =
    slot[v:s]
 
+dform ident_df : "identifier"[v:s] =
+   slot[v:s]
+
 (*
  * Projection.
  *)
@@ -159,16 +162,10 @@ declare apply_cons_list_parse{'reversed_parsed : TyOCaml; 'tail : TyOCaml} : TyO
 dform apply_df1 : parens :: "prec"[prec_apply] :: "apply"{'e1; 'e2} =
    pushm[0] slot{'e1} hspace slot{'e2} popm
 
-dform apply_df2 : "apply"[start:n, finish:n]{'e1; 'e2} =
-   "apply"{'e1; 'e2}
-
 dform apply_df3 : "apply"{"apply"{lid{lid[name:s]}; 'e1}; 'e2} =
    szone{"apply"[name:s]{'e1; 'e2}}
 
-dform apply_df4 : "apply"{."apply"[start1:n, finish1:n]{.lid[start2:n, finish2:n]{lid[name:s]}; 'e1}; 'e2} =
-   "apply"{."apply"{lid{lid[name:s]}; 'e1}; 'e2}
-
-dform apply_df4 : "apply"{."apply"[start1:n, finish1:n]{.uid[start2:n, finish2:n]{uid[name:s]}; 'e1}; 'e2} =
+dform apply_df4 : "apply"{"apply"{uid{uid[name:s]}; 'e1}; 'e2} =
    "apply"{."apply"{lid{lid[name:s]}; 'e1}; 'e2}
 
 dform apply_any_df : "apply"[name:s]{'e1; 'e2} =
@@ -213,10 +210,10 @@ dform apply_gt_df : "apply"[">"]{'e1; 'e2} =
 dform apply_cons_df : "apply"["::"]{'e1; 'e2} =
    apply_cons_list_parse{ocons{df_term{szone{'e1}}; onil}; 'e2}
 
-dform apply_cons_parse_df1 : apply_cons_list_parse{'list;."apply"[start:n,finish:n]{."apply"[start1:n, finish1:n]{.uid[start2:n, finish2:n]{uid["::"]}; 'e1}; 'e2}} =
+dform apply_cons_parse_df1 : apply_cons_list_parse{'list;."apply"{."apply"{.uid{uid["::"]}; 'e1}; 'e2}} =
    apply_cons_list_parse{ocons{df_term{szone{'e1}}; 'list}; 'e2}
 
-dform apply_cons_parse_df2 : apply_cons_list_parse{'e1; uid[start1:n, finish1:n]{uid["[]"]}} =
+dform apply_cons_parse_df2 : apply_cons_list_parse{'e1; uid{uid["[]"]}} =
    `"[" pushm[0] df_rev_concat{xcons{keyword[";"]; hspace}; 'e1} popm `"]"
 
 dform apply_cons_parse_df3 : parens :: apply_cons_list_parse{'e1; 'e2} =

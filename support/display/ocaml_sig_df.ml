@@ -91,10 +91,7 @@ dform sig_module_type_df2 : sig_module_type[start:n, finish:n, name:s]{'mt} =
  * Open a module in scope.
  *)
 dform sig_open_df1 : sig_open{'sl} =
-   "_open" space ident_expr{'sl}
-
-dform sig_open_df2 : sig_open[start:n, finish:n]{'sl} =
-   sig_open{'sl}
+   "_open" space 'sl
 
 (*
  * Type definition.

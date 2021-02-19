@@ -40,7 +40,7 @@ open MLast
 open Lm_printf
 
 open Opname
-(* open Term_sig *)
+open Term_sig
 open Refiner_sig
 open Filter_type
 open Filter_util
@@ -110,40 +110,6 @@ struct
    let raise_format_error str t =
       raise (FormatError (str, TermCopy2.revert t))
 
-   (*
-    * OCaml operators.
-    *)
-   let mk_ocaml_op =
-      let tbl = Hashtbl.create 19 in
-      let ocaml_op = mk_opname "Ocaml" nil_opname in
-         (fun s ->
-            if Hashtbl.mem tbl s then invalid_arg ("Filter_ocaml.mk_ocaml_op: " ^ s ^ " already exists");
-            Hashtbl.add tbl s ();
-            mk_opname s ocaml_op)
-
-   let one_subterm s t =
-      if false then
-         begin
-            eprintf "one_subterm: %s: begin: %s%t" s (SimplePrint.string_of_term t) eflush;
-            let t = one_subterm t in
-               eprintf "one_subterm: done%t" eflush;
-               t
-         end
-      else
-         one_subterm t
-
-   let dest_dep1_term t =
-      match dest_term t with
-         { term_terms = [bterm]; _ } ->
-            begin
-               match dest_bterm bterm with
-                  { bvars = [v]; bterm = t } ->
-                     v, t
-                | _ ->
-                     raise (RefineError ("Filter_ocaml.dest_dep1_term", TermMatchError (t, "bad arity")))
-            end
-       | _ ->
-            raise (RefineError ("Filter_ocaml.dest_dep1_term", TermMatchError (t,"bad arity")))
 
    (************************************************************************
     * OCaml lists.
@@ -152,11 +118,6 @@ struct
    (*
     * Lists.
     *)
-   let onil_opname = mk_ocaml_op "onil"
-   let onil_term = mk_term (mk_op onil_opname []) []
-
-   let ocons_opname = mk_ocaml_op "ocons"
-
    let dest_olist t =
       let rec aux trm =
          match dest_term trm with
@@ -177,14 +138,6 @@ struct
                raise (RefineError ("dest_olist", TermMatchError (t, "not a list")))
       in
          aux t
-
-   let ocons_op = mk_op ocons_opname []
-
-   let rec mk_olist_term = function
-      h::t ->
-         mk_term ocons_op [mk_simple_bterm h; mk_simple_bterm (mk_olist_term t)]
-    | [] ->
-         onil_term
 
    (************************************************************************
     * TERM DESTRUCTORS                                                     *
@@ -364,7 +317,7 @@ struct
     *)
    let mk_bool flag =
       ToTerm.Term.mk_simple_term (if flag then true_op else false_op) []
-
+*)
    (*
     * Variables are enclosed in terms that mark
     * the variable type.
@@ -372,7 +325,7 @@ struct
     * If the var is bound, then we produce a real var,
     * Otherwise, we produce a string to lookup from the environment.
     *)
-   let mk_var_aux opname vars loc s l =
+   let mk_var_aux opname vars s l =
       let v =
          (* XXX HACK: internal "_$" vars are always vars *)
          if List.mem s vars || (s.[0] = '_' && s.[1] = '$') then
@@ -380,23 +333,136 @@ struct
          else
             mk_string_term opname s
       in
-         mk_any_term (mk_op_loc opname loc) (v :: l)
+         mk_any_term (mk_op opname []) (v :: l)
 
-   let mk_var opname vars loc s =
-      mk_var_aux opname vars loc s []
+   let mk_var opname vars s =
+      mk_var_aux opname vars s []
 
+(*
    let mk_var_term opname vars loc s t =
       mk_var_aux opname vars loc s [t]
 
    let mk_patt_var opname loc s t =
       let op = mk_op_loc opname loc in
       let bterm = mk_bterm [s] t in
-         mk_term op [bterm]
+         mk_term op [bterm] *)
 
-   let class_type_infos_op = mk_ocaml_op "class_type_infos" *)
+   (* let class_type_infos_op = mk_ocaml_op "class_type_infos" *)
+
+   let mk_simple_named_term opname name subterms =
+      mk_any_term (mk_op opname [make_param (String name)]) subterms
+
+   let stub_opname = mk_opname "Ocaml_stub" nil_opname
+   let sig_opname = mk_opname "Ocaml_stub_sig" nil_opname
+   let str_opname = mk_opname "Ocaml_stub_str" nil_opname
+   let ctyp_opname = mk_opname "Ocaml_stub_ctyp" nil_opname
+   let mk_stub_term opname = mk_any_term (mk_op opname []) []
+   let stub_term = mk_stub_term stub_opname
+
+   let mk_caml_op =
+      let tbl = Hashtbl.create 31 in
+      let ocaml_op = mk_opname "Ocaml" nil_opname in
+         (fun s ->
+               if Hashtbl.mem tbl s then invalid_arg ("Filter_ocaml.mk_ocaml_op: " ^ s ^ " already exists");
+               Hashtbl.add tbl s ();
+               mk_opname s ocaml_op)
+
+   let onil_opname = mk_caml_op "onil"
+   let onil_term = mk_term (mk_op onil_opname []) []
+
+   let ocons_opname = mk_caml_op "ocons"
+   let ocons_op = mk_op ocons_opname []
+
+   let rec mk_olist_term f = function
+      h::t ->
+         mk_term ocons_op [mk_simple_bterm (f h); mk_simple_bterm (mk_olist_term f t)]
+    | [] ->
+         onil_term
+
+   let ident_op = mk_caml_op "identifier"
+   let mk_ident_term = mk_string_term ident_op
+
+   let mk_longid_term longid =
+      let rec aux () = function
+         (<:extended_longident:< $longid:x$ . $uid:uid$ >>) ->
+            Printf.sprintf "%a.%s" aux x uid
+       | (<:extended_longident:< $longid:x1$ ( $longid:x2$ ) >>) ->
+            Printf.sprintf "%a.%a" aux x1 aux x2
+       | (<:extended_longident< $uid:s$ >>) ->
+            s
+       | _ -> invalid_arg "Filter_ocaml.mk_longid_term"
+      in mk_ident_term (aux () longid)
+
 (*
-   let mk_expr vars = function
-      <:expr< *)
+   let mk_lab_expr =
+      let rec make = function
+         [lpe] ->
+            mk_simple_term patt_if_op *)
+
+   let rec mk_expr =
+      let expr_apply_op = mk_caml_op "apply" in
+      let expr_array_op = mk_caml_op "array" in
+      let expr_lid_op = mk_caml_op "lid" in
+      let expr_uid_op = mk_caml_op "uid"
+      in fun vars -> function
+         (<:expr< $e1$ $e2$ >>) ->
+            mk_simple_term expr_apply_op [mk_expr vars e1; mk_expr vars e2]
+       | (<:expr< [| $list:el$ |] >>) ->
+            mk_simple_term expr_array_op [mk_olist_term (mk_expr vars) el]
+  (*   | (<:expr< ~{$list:lpe$} >>) -> *)
+
+       | (<:expr< $lid:s$ >>) ->
+            mk_var expr_lid_op vars s
+       | (<:expr< $uid:s$ >>) ->
+            mk_var expr_uid_op vars s
+       | (<:expr< $longid:x$ >>) ->
+            mk_longid_term x
+       | _ -> stub_term
+
+   let rec mk_type =
+      let type_apply_op = mk_caml_op "type_apply" in
+      let type_fun_op = mk_caml_op "type_fun" in
+      let type_equal_op = mk_caml_op "type_equal" in
+      let type_prod_op = mk_caml_op "type_prod" in
+      let type_olb_op = mk_caml_op "type_olb" in
+      let type_lab_op = mk_caml_op "type_lab"
+      in function
+         (<:ctyp< $lid:s$ >>) ->
+            mk_ident_term s
+       | (<:ctyp< $longid:_$ . $lid:s$ >>) ->
+            mk_ident_term s
+       | (<:ctyp< $t1$ $t2$ >>) ->
+            mk_simple_term type_apply_op [mk_type t1; mk_type t2]
+       | (<:ctyp< $t1$ -> $t2$ >>) ->
+            mk_simple_term type_fun_op [mk_type t1; mk_type t2]
+       | (<:ctyp< $t1$ == $priv:_$ $t2$ >>) ->
+            mk_simple_term type_equal_op [mk_type t1; mk_type t2]
+       | (<:ctyp< ( $list:tl$ ) >>) ->
+            mk_simple_term type_prod_op [mk_olist_term mk_type tl]
+       | (<:ctyp< ?$s$: $t$ >>) ->
+            mk_simple_named_term type_olb_op s [mk_type t]
+       | (<:ctyp< ~$s$: $t$ >>) ->
+            mk_simple_named_term type_lab_op s [mk_type t]
+       | _ -> mk_stub_term ctyp_opname
+
+   let rec mk_sig_item =
+      let sig_subsig_op = mk_caml_op "sig_subsig" in
+      let sig_open_op = mk_caml_op "sig_open" in
+      let sig_value_op = mk_caml_op "sig_value"
+      in function
+         (<:sig_item< declare $list:lsi$ end >>) ->
+            mk_simple_term sig_subsig_op (List.map mk_sig_item lsi)
+       | (<:sig_item< open $longid:id$ $itemattrs:_$>>) ->
+            mk_simple_term sig_open_op [mk_longid_term id]
+       | (<:sig_item< value $s$ : $t$ >>) ->
+            mk_simple_named_term sig_value_op s [mk_type t]
+       | _ -> mk_stub_term sig_opname
+
+(*
+   let rec mk_str_item =
+      let str_let_op = mk_caml_op "str_let"
+      in function
+         (<:str_item< value $list:lpex$ >) -> *)
 
    (*
     * Expressions.
@@ -419,9 +485,7 @@ struct
    let loc = dummy_loc
    let def_str_item = StDcl (loc, Ploc.VaVal [])
 
-   let stub_opname = mk_opname "Ocaml_stub" nil_opname
-   let stub_term = mk_any_term (mk_op stub_opname []) []
-
+   (* TODO: these are going to be removed *)
    let dest_expr (_ : ToTerm.TermType.term) = <:expr< $lid: "stub"$ >>
    let dest_patt (a : ToTerm.TermType.term) = <:patt< $lid: "stub"$ >>, a
    let dest_type (_ : ToTerm.TermType.term) = <:ctyp< $lid: "stub"$ >>
@@ -430,11 +494,9 @@ struct
    let dest_mt   (_ : ToTerm.TermType.term) = raise (Failure "mt")
    let dest_me   (_ : ToTerm.TermType.term) = raise (Failure "me")
 
-   let mk_expr _ _ = stub_term
    let mk_patt _ _ _ = stub_term
-   let mk_type _ = stub_term
-   let mk_sig_item _ = stub_term
-   let mk_str_item _ _ = stub_term
+   (* let mk_sig_item _ = mk_stub_term sig_opname *)
+   let mk_str_item _ _ = mk_stub_term str_opname
    let mk_module_type _ = stub_term
    let mk_module_expr _ _ = stub_term
 
