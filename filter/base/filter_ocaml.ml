@@ -35,8 +35,7 @@
 open Lm_debug
 (* open Lm_symbol *)
 
-open MLast
-
+(* open MLast *)
 open Lm_printf
 
 open Opname
@@ -79,7 +78,7 @@ module FilterOCaml (ToTerm : RefinerSig) =
 struct
    open ToTerm.Term
    open ToTerm.TermOp
-   (* open ToTerm.RefineError *)
+   open ToTerm.RefineError
 
    module SimplePrint = Simple_print.MakeSimplePrint (ToTerm)
    module TermCopy2 = Term_copy2_weak.TermCopy2Weak (Refiner.Refiner) (ToTerm)
@@ -87,6 +86,14 @@ struct
    (************************************************************************
     * BASIC TERM OPERATIONS                                                *
     ************************************************************************)
+
+   let mk_caml_op =
+      let tbl = Hashtbl.create 31 in
+      let ocaml_op = mk_opname "Ocaml" nil_opname in
+         (fun s ->
+               if Hashtbl.mem tbl s then invalid_arg ("Filter_ocaml.mk_ocaml_op: " ^ s ^ " already exists");
+               Hashtbl.add tbl s ();
+               mk_opname s ocaml_op)
 (*
 
    (*
@@ -138,6 +145,7 @@ struct
                raise (RefineError ("dest_olist", TermMatchError (t, "not a list")))
       in
          aux t
+*)
 
    (************************************************************************
     * TERM DESTRUCTORS                                                     *
@@ -146,8 +154,10 @@ struct
    (*
     * Standard term ops.
     *)
-   let some_op           = mk_ocaml_op "some"
-   let none_op           = mk_ocaml_op "none"
+   let some_op           = mk_caml_op "some"
+   let none_op           = mk_caml_op "none"
+
+(*
    let pattern_op        = mk_ocaml_op "pattern"
    let no_pattern_op     = mk_ocaml_op "no_pattern"
    let true_op           = mk_ocaml_op "true"
@@ -163,64 +173,6 @@ struct
    let patt_if_op        = mk_ocaml_op "patt_if"
    let patt_ifelse_op    = mk_ocaml_op "patt_ifelse"
    let patt_fail_op      = mk_ocaml_op "patt_fail"
-
-   (*
-    * Loc has two integer describing character offsets.
-    * Ignore remaining params.
-    * XXX: TODO: This converts the modern location data into the old-style one.
-    * Ideally, we should be able to embed location data as comments (bug 256).
-    *)
-   let dest_loc_params name t =
-      if !debug_ocaml then
-         eprintf "Filter_ocaml.%s: %a%t" name SimplePrint.print_simple_term_fp t eflush;
-      let { term_op = op; _ } = dest_term t in
-         match dest_params (dest_op op).op_params with
-            (Number start) :: (Number finish) :: params
-               when (Lm_num.is_integer_num start && Lm_num.is_integer_num finish) ->
-               (mk_proper_loc start finish), params
-          | _ ->
-               raise_format_error "dest_loc: needs two numbers" t
-
-   let dest_loc name t =
-      fst (dest_loc_params name t)
-
-   let dest_loc_term name t =
-      dest_loc name t, one_subterm "dest_loc_term" t
-
-   (*
-    * Location and string take exactly three params.
-    *)
-   let dest_loc_string name t =
-      if !debug_ocaml then
-         eprintf "Filter_ocaml.%s: %a%t" name SimplePrint.print_simple_term_fp t eflush;
-         match dest_loc_params name t with
-            loc, [String s] ->
-               loc, s
-          | _ ->
-               raise_format_error (Lm_printf.sprintf "dest_loc_string: %s: needs two numbers and a string" name) t
-
-   let dest_loc_string_term name t =
-      let loc, s = dest_loc_string name t in
-         loc, s, one_subterm "dest_loc_string_term" t
-
-   (*
-    * Optional argument.
-    *)
-   let dest_opt f =
-      let dest t =
-         let op = opname_of_term t in
-            if Opname.eq op none_op then
-               None
-            else
-               Some (f (one_subterm "dest_opt" t))
-      in
-         dest
-
-   (*
-    * Strings.
-    *)
-   let dest_string =
-      dest_string_param
 
    (************************************************************************
     * MLAST -> TERM                                                        *
@@ -255,7 +207,7 @@ struct
     * This term also contains a name.
     *)
    let mk_simple_named_term opname loc name subterms =
-      mk_any_term (mk_op_loc_name opname loc name) subterms
+      mk_any_term (mk_op_loc_name opname loc name) subterms *)
 
    (*
     * Optional term.
@@ -265,6 +217,7 @@ struct
          ToTerm.Term.mk_simple_term none_op []
     | Some t ->
          ToTerm.Term.mk_simple_term some_op [f t]
+(*
 
    (*
     * String without location.
@@ -280,19 +233,18 @@ struct
       mk_loc_string_aux opname loc s []
 
    let mk_loc_string_term opname loc s t =
-      mk_loc_string_aux opname loc s [t]
+      mk_loc_string_aux opname loc s [t] *)
 
    let mk_string opname s =
       let p1 = make_param (String s) in
       let op = mk_op opname [p1] in
          mk_term op []
 
-   let mk_string_opt op =
-      mk_opt (mk_string op)
+ (*  let mk_string_opt op =
+      mk_opt (mk_string op) *)
 
-   let mk_simple_string =
-      mk_string expr_string_op
 
+(*
    let mk_string_list sl =
       mk_olist_term (List.map mk_simple_string sl)
 
@@ -359,14 +311,6 @@ struct
    let mk_stub_term opname = mk_any_term (mk_op opname []) []
    let stub_term = mk_stub_term stub_opname
 
-   let mk_caml_op =
-      let tbl = Hashtbl.create 31 in
-      let ocaml_op = mk_opname "Ocaml" nil_opname in
-         (fun s ->
-               if Hashtbl.mem tbl s then invalid_arg ("Filter_ocaml.mk_ocaml_op: " ^ s ^ " already exists");
-               Hashtbl.add tbl s ();
-               mk_opname s ocaml_op)
-
    let onil_opname = mk_caml_op "onil"
    let onil_term = mk_term (mk_op onil_opname []) []
 
@@ -379,7 +323,11 @@ struct
     | [] ->
          onil_term
 
-   let ident_op = mk_caml_op "identifier"
+   let expr_string_op = mk_caml_op "string"
+   let mk_simple_string =
+      mk_string expr_string_op
+
+   let ident_op = mk_caml_op "ident"
    let mk_ident_term = mk_string_term ident_op
 
    let mk_longid_term longid =
@@ -387,36 +335,51 @@ struct
          (<:extended_longident:< $longid:x$ . $uid:uid$ >>) ->
             Printf.sprintf "%a.%s" aux x uid
        | (<:extended_longident:< $longid:x1$ ( $longid:x2$ ) >>) ->
-            Printf.sprintf "%a.%a" aux x1 aux x2
+            Printf.sprintf "%a(%a)" aux x1 aux x2
        | (<:extended_longident< $uid:s$ >>) ->
             s
        | _ -> invalid_arg "Filter_ocaml.mk_longid_term"
       in mk_ident_term (aux () longid)
 
-(*
-   let mk_lab_expr =
-      let rec make = function
-         [lpe] ->
-            mk_simple_term patt_if_op *)
+  (* let mk_patt = function
+      (<:patt< $lid:s$ >>) ->
+         mk_ident_term s
+    | _ -> stub_term *)
 
-   let rec mk_expr =
+   let rec mk_lab_expr =
+      let poe_op = mk_caml_op "poe"
+      in fun vars ->
+         let make_poe = function
+            (<:patt< $lid:s$ >>, <:vala< oe >>) ->
+               mk_simple_named_term poe_op s [mk_expr_opt vars oe]
+          | _ ->
+               raise (RefineError ("mk_lab_expr", StringError "antiquotations are not supported"))
+         in mk_olist_term make_poe
+
+   and mk_expr_opt vars x = mk_opt (mk_expr vars) x
+
+   and mk_expr =
       let expr_apply_op = mk_caml_op "apply" in
       let expr_array_op = mk_caml_op "array" in
+      let expr_lab_op = mk_caml_op "lab" in
       let expr_lid_op = mk_caml_op "lid" in
-      let expr_uid_op = mk_caml_op "uid"
+      let expr_uid_op = mk_caml_op "uid" in
+      let expr_tuple_op = mk_caml_op "tuple"
       in fun vars -> function
          (<:expr< $e1$ $e2$ >>) ->
             mk_simple_term expr_apply_op [mk_expr vars e1; mk_expr vars e2]
        | (<:expr< [| $list:el$ |] >>) ->
             mk_simple_term expr_array_op [mk_olist_term (mk_expr vars) el]
-  (*   | (<:expr< ~{$list:lpe$} >>) -> *)
-
+       | (<:expr< ~{$list:lpe$} >>) ->
+            mk_simple_term expr_lab_op [mk_lab_expr vars lpe]
        | (<:expr< $lid:s$ >>) ->
             mk_var expr_lid_op vars s
        | (<:expr< $uid:s$ >>) ->
             mk_var expr_uid_op vars s
        | (<:expr< $longid:x$ >>) ->
             mk_longid_term x
+       | (<:expr< ( $list:el$ ) >>) ->
+            mk_simple_term expr_tuple_op [mk_olist_term (mk_expr vars) el]
        | _ -> stub_term
 
    let rec mk_type =
@@ -459,10 +422,24 @@ struct
        | _ -> mk_stub_term sig_opname
 
 (*
-   let rec mk_str_item =
-      let str_let_op = mk_caml_op "str_let"
-      in function
-         (<:str_item< value $list:lpex$ >) -> *)
+   let mk_me_item me =
+      let rec aux () = function
+         (<:module_expr< $me1$ . $me2$ >>) ->
+            Printf.sprintf "%a.%a" aux me1 aux me2
+       | (<:module_expr< $me1$ $me2$ >>) ->
+            Printf.sprintf "%a(%a)" aux me1 aux me2
+       | (<:module_expr< $uid:s$ >>) ->
+            s
+       | _ -> "#< UNKNOWN >"
+      in mk_ident_term (aux () me)
+*)
+   let mk_str_item =
+      let str_external_op = mk_caml_op "str_ext"
+      in fun vars -> function
+         (<:str_item< external $s$ : $t$ = $list:ls$ $itemattrs:_$ >>) ->
+            mk_simple_named_term str_external_op s (mk_type t :: List.map mk_simple_string ls)
+       | _ -> mk_stub_term str_opname
+
 
    (*
     * Expressions.
@@ -483,20 +460,19 @@ struct
     * Some default terms to return on error.
     *)
    let loc = dummy_loc
-   let def_str_item = StDcl (loc, Ploc.VaVal [])
+   let def_str_item = <:str_item< declare $list:[]$ end >>
 
    (* TODO: these are going to be removed *)
    let dest_expr (_ : ToTerm.TermType.term) = <:expr< $lid: "stub"$ >>
-   let dest_patt (a : ToTerm.TermType.term) = <:patt< $lid: "stub"$ >>, a
+   (* let dest_patt (a : ToTerm.TermType.term) = <:patt< $lid: "stub"$ >>, a *)
    let dest_type (_ : ToTerm.TermType.term) = <:ctyp< $lid: "stub"$ >>
    let dest_sig  (_ : ToTerm.TermType.term) = raise (Failure "sig")
    let dest_str  (_ : ToTerm.TermType.term) = raise (Failure "str")
    let dest_mt   (_ : ToTerm.TermType.term) = raise (Failure "mt")
    let dest_me   (_ : ToTerm.TermType.term) = raise (Failure "me")
 
-   let mk_patt _ _ _ = stub_term
    (* let mk_sig_item _ = mk_stub_term sig_opname *)
-   let mk_str_item _ _ = mk_stub_term str_opname
+   (* let mk_str_item _ _ = mk_stub_term str_opname *)
    let mk_module_type _ = stub_term
    let mk_module_expr _ _ = stub_term
 
@@ -521,7 +497,7 @@ struct
             def
 
    let expr_of_term             = wrap_error "expr_of_term" dest_expr
-   let patt_of_term             = wrap_error "patt_of_term" dest_patt
+   (* let patt_of_term             = wrap_error "patt_of_term" dest_patt *)
    let type_of_term             = wrap_error "type_of_term" dest_type
    let sig_item_of_term         = wrap_error "sig_item_of_term" dest_sig
    let str_item_of_term         = wrap_error "str_item_of_term" dest_str
@@ -534,7 +510,7 @@ struct
     * MLast to term.
     *)
    let term_of_expr = mk_expr
-   let term_of_patt = mk_patt
+   (* let term_of_patt = mk_patt *)
    let term_of_type = mk_type
    let term_of_sig_item = mk_sig_item
    let term_of_str_item = mk_str_item

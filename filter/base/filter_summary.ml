@@ -282,9 +282,7 @@ let test_proof name = function
  | _ -> false
 
 let find_proof { info_list = summary } name =
-   try Some (List.find (test_proof name) summary) with
-      Not_found ->
-         None
+   List.find_opt (test_proof name) summary
 
 (*
  * Find a rewrite in the summary.
@@ -298,9 +296,7 @@ let test_rewrite name (item, _) =
          false
 
 let find_rewrite { info_list = summary } name =
-   try Some (List.find (test_rewrite name) summary) with
-      Not_found ->
-         None
+   List.find_opt (test_rewrite name) summary
 
 (*
  * Find a input form rewrite in the summary.
@@ -314,9 +310,7 @@ let test_iform name (item, _) =
 
 (* unused
 let find_iform { info_list = summary } name =
-   try Some (List.find (test_iform name) summary) with
-      Not_found ->
-         None
+   List.find_opt (test_iform name) summary
 *)
 
 (*
@@ -329,9 +323,7 @@ let test_mlrewrite name = function
       false
 
 let find_mlrewrite { info_list = summary } name =
-   try Some (List.find (test_mlrewrite name) summary) with
-      Not_found ->
-         None
+   List.find_opt (test_mlrewrite name) summary
 
 let test_mlaxiom name = function
    MLAxiom { mlterm_name = name'; _ }, _ ->
@@ -340,9 +332,7 @@ let test_mlaxiom name = function
       false
 
 let find_mlaxiom { info_list = summary } name =
-   try Some (List.find (test_mlaxiom name) summary) with
-      Not_found ->
-         None
+   List.find_opt (test_mlaxiom name) summary
 
 (*
  * Find a module.
@@ -355,9 +345,7 @@ let test_module name (item, _) =
          false
 
 let find_module { info_list = summary } name =
-   try Some (List.find (test_module name) summary) with
-      Not_found ->
-         None
+   List.find_opt (test_module name) summary
 
 (*
  * Find a display form.
@@ -370,8 +358,7 @@ let test_dform name (item, _) =
          false
 
 let find_dform { info_list = summary } name =
-   try Some (List.find (test_dform name) summary) with
-      _ -> None
+   List.find_opt (test_dform name) summary
 
 (*
  * Find a precedence.
@@ -384,9 +371,7 @@ let test_prec name (item, _) =
          false
 
 let find_prec { info_list = summary } name =
-   try Some (List.find (test_prec name) summary) with
-      Not_found ->
-         None
+   List.find_opt (test_prec name) summary
 
 (*
  * Find the identifier.

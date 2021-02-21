@@ -61,7 +61,8 @@ declare "lid"{'v : TyOCaml} : TyOCaml
 declare "lid"[s:s] : TyOCaml
 declare "uid"{'v : TyOCaml} : TyOCaml
 declare "uid"[s:s] : TyOCaml
-declare "identifier"[s:s] : TyOCaml
+declare "ident"[s:s] : TyOCaml
+declare "poe"[s:s]{'e : TyOCaml} : TyOCaml
 
 (*
  * Primitive operations on numbers.

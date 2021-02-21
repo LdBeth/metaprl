@@ -58,7 +58,7 @@ sig
     * Parsing of terms.
     *)
    val expr_of_term : term -> expr
-   val patt_of_term : term -> patt * term
+   (* val patt_of_term : term -> patt * term *)
    val type_of_term : term -> ctyp
    val sig_item_of_term : term -> sig_item
    val str_item_of_term : term -> str_item
@@ -74,7 +74,7 @@ sig
     * MLast to term.
     *)
    val term_of_expr : string list -> expr -> term
-   val term_of_patt : string list -> patt -> (string list -> term) -> term
+   (* val term_of_patt : string list -> patt -> (string list -> term) -> term *)
    val term_of_type : ctyp -> term
    val term_of_sig_item : sig_item -> term
    val term_of_str_item : string list -> str_item -> term

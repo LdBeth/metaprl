@@ -80,7 +80,7 @@ dform df_concat_onil2 : mode[src] :: mode[html] :: mode[prl] :: mode[tex] :: df_
    `""
 
 dform df_rev_concat_cons : mode[src] :: mode[html] :: mode[prl] :: mode[tex] :: df_rev_concat{'sep; ocons{'hd; 'tl}} =
-   slot{'hd} 'sep df_rev_concat{'sep;'tl}
+   df_rev_concat{'sep;'tl} 'sep slot{'hd}
 
 dform df_rev_concat_onil : mode[src] :: mode[html] :: mode[prl] :: mode[tex] :: df_rev_concat{'sep; ocons{'hd; onil}} =
    slot{'hd}
@@ -102,32 +102,17 @@ dform df_term_df : df_term{'t} =
 dform char_df1 : "char"[c:s] =
    "'" slot[c:s] "'"
 
-dform char_df2 : "char"[start:n, finish:n, c:s] =
-   "char"[c:s]
-
 dform int_df1 : "int"[i:n] =
    slot[i:n]
-
-dform int_df2 : "int"[start:n, finish:n, i:n] =
-   "int"[i:n]
 
 dform string_df1 : Ocaml!"string"[s:s] =
    "\"" slot[s:s] "\""
 
-dform string_df2 : Ocaml!"string"[start:n, finish:n, s:s] =
-   Ocaml!"string"[s:s]
-
 dform float_df1 : "float"[f:s] =
    slot[f:s]
 
-dform float_df2 : "float"[start:n, finish:n, f:s] =
-   "float"[f:s]
-
 dform lid_df1 : "lid"{'v} =
    slot{'v}
-
-dform lid_df2 : "lid"[start:n, finish:n]{'v} =
-   "lid"{'v}
 
 dform lid_df3 : "lid"[v:s] =
    slot[v:s]
@@ -135,13 +120,10 @@ dform lid_df3 : "lid"[v:s] =
 dform uid_df1 : "uid"{'v} =
    slot{'v}
 
-dform uid_df2 : "uid"[start:n, finish:n]{'v} =
-   "uid"{'v}
-
 dform uid_df3 : "uid"[v:s] =
    slot[v:s]
 
-dform ident_df : "identifier"[v:s] =
+dform ident_df : "ident"[v:s] =
    slot[v:s]
 
 (*
@@ -210,7 +192,7 @@ dform apply_gt_df : "apply"[">"]{'e1; 'e2} =
 dform apply_cons_df : "apply"["::"]{'e1; 'e2} =
    apply_cons_list_parse{ocons{df_term{szone{'e1}}; onil}; 'e2}
 
-dform apply_cons_parse_df1 : apply_cons_list_parse{'list;."apply"{."apply"{.uid{uid["::"]}; 'e1}; 'e2}} =
+dform apply_cons_parse_df1 : apply_cons_list_parse{'list;"apply"{"apply"{uid{uid["::"]}; 'e1}; 'e2}} =
    apply_cons_list_parse{ocons{df_term{szone{'e1}}; 'list}; 'e2}
 
 dform apply_cons_parse_df2 : apply_cons_list_parse{'e1; uid{uid["[]"]}} =
@@ -223,11 +205,14 @@ dform apply_cons_parse_df3 : parens :: apply_cons_list_parse{'e1; 'e2} =
  * Label.
  *)
 
-dform lab_df1 : "lab"{'poel} =
-   szone "~" patt_format{'poel; onil} ezone
+dform lab_df1 : "lab"{'lpe} =
+   szone df_concat{hspace; 'lpe} ezone
 
-dform lab_df2 : "lab"[start:n, finish:n]{'e1} =
-   lab{'e1}
+dform poe_df1 : "poe"[label:s]{some{'e1}} =
+   "~" 'label ":" slot{'e1}
+
+dform poe_df2 : "poe"[label:s]{none} =
+   "~" 'label
 
 (*
  * Subscripting.
@@ -249,9 +234,6 @@ dform string_subscript_df2 : "string_subscript"[start:n, finish:n]{'e1; 'e2} =
  *)
 dform sequence_df1 : "sequence"{'e1} =
    szone pushm[0] list_expr{'e1} popm ezone
-
-dform sequence_df2 : "sequence"[start:n, finish:n]{'e1} =
-   sequence{'e1}
 
 (*
  * Lists, arrays, streams, records.
