@@ -41,6 +41,8 @@ sig
    val last        : 'a t -> 'a option
    val remove_last : 'a t -> unit
    val length      : 'a t -> int
+
+   val version     : string
 end
 
 module LineBuffer : LineBufferSig =
@@ -147,6 +149,10 @@ struct
                collect x (succ i)
       in
          collect x 0
+
+   (* Change this string when the representaion changes *)
+   let version = "2.0"
+
 end
 
 (************************************************************************

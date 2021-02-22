@@ -83,7 +83,8 @@ let strings_of_linebuffer_buffers queue =
       List.rev (LineBuffer.fold (fun buffers buf ->
                       buf :: buffers) [] queue)
    in
-   let s = Lm_rformat.marshal_buffers buffers in
+   let s = Lm_rformat.marshal_buffers LineBuffer.version
+           buffers in
    let len = String.length s in
    let rec collect strings off =
       let amount = min (len - off) 32 in
@@ -118,7 +119,8 @@ let add_linebuffer_buffers queue strings =
                Buffer.add_string buf (Lm_string_util.unhexify s)) strings;
          Buffer.contents buf
    in
-      try add_linebuffer_elements queue (Lm_rformat.unmarshal_buffers s) with
+      try add_linebuffer_elements queue
+          (Lm_rformat.unmarshal_buffers LineBuffer.version s) with
          Failure _
        | Invalid_argument _ ->
             ()
