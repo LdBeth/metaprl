@@ -45,6 +45,8 @@ declare typeclass TyOCaml -> Dform
 declare "onil" : TyOCaml
 declare "ocons"{'hd : TyOCaml; 'tl : TyOCaml} : TyOCaml
 
+declare "loc"[f:s, l:n] : TyOCaml
+
 (*
  * Constants.
  *)
@@ -514,7 +516,8 @@ declare str_type{'tdl : TyOCaml} : TyOCaml
  *)
 declare str_let{'p : TyOCaml; 'e : TyOCaml} : TyOCaml
 declare str_let{'e : TyOCaml} : TyOCaml
-declare str_fix{'p : TyOCaml} : TyOCaml
+declare str_fix{'b : TyOCaml; 'l : TyOCaml} : TyOCaml
+declare str_def{'n : TyOCaml; 'l : TyOCaml} : TyOCaml
 
 (*
  * Type declaration.

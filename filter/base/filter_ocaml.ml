@@ -159,10 +159,10 @@ struct
 
 (*
    let pattern_op        = mk_ocaml_op "pattern"
-   let no_pattern_op     = mk_ocaml_op "no_pattern"
-   let true_op           = mk_ocaml_op "true"
-   let false_op          = mk_ocaml_op "false"
-
+   let no_pattern_op     = mk_ocaml_op "no_pattern" *)
+   let true_op           = mk_caml_op "true"
+   let false_op          = mk_caml_op "false"
+(*
    let row_field_tag_op  = mk_ocaml_op "row_field_tag"
    let row_field_inh_op  = mk_ocaml_op "row_field_inh"
 
@@ -262,14 +262,14 @@ struct
       mk_loc_int_aux opname loc i []
 
    let mk_loc_int_term opname loc i t =
-      mk_loc_int_aux opname loc i [t]
+      mk_loc_int_aux opname loc i [t] *)
 
    (*
     * Other utilities
     *)
    let mk_bool flag =
       ToTerm.Term.mk_simple_term (if flag then true_op else false_op) []
-*)
+
    (*
     * Variables are enclosed in terms that mark
     * the variable type.
@@ -376,6 +376,8 @@ struct
             mk_var expr_lid_op vars s
        | (<:expr< $uid:s$ >>) ->
             mk_var expr_uid_op vars s
+       | (<:expr< $longid:li$ . ( $e$ ) >>) ->
+            mk_expr vars e
        | (<:expr< $longid:x$ >>) ->
             mk_longid_term x
        | (<:expr< ( $list:el$ ) >>) ->
@@ -433,11 +435,40 @@ struct
        | _ -> "#< UNKNOWN >"
       in mk_ident_term (aux () me)
 *)
+
+   let loc_op = mk_caml_op "loc"
+   let mk_loc_term file line =
+      let p1 = make_param (String file) in
+      let p2 = make_param (Number line) in
+         mk_term (mk_op loc_op [p1;p2]) []
+
+   let loc_of_expr e =
+      let loc = MLast.loc_of_expr e in
+         mk_loc_term (Ploc.file_name loc) (Lm_num.num_of_int (Ploc.line_nb loc))
+
+   let value_names =
+      let patt_tuple_op = mk_caml_op "patt_tuple" in
+      let str_def_op = mk_caml_op "str_def" in
+      let rec name_term = function
+         (<:patt< $lid:s$ >>) ->
+            mk_ident_term s
+       | (<:patt< $p1$ $_$ >>) ->
+            name_term p1
+       | (<:patt< ($p$ : $_$) >>) ->
+            name_term p
+       | (<:patt< ($list:lp$) >>) ->
+            mk_simple_term patt_tuple_op [mk_olist_term name_term lp]
+       | _ -> invalid_arg "Filter_ocaml.value_names"
+      in fun (p,e,_) -> mk_simple_term str_def_op [name_term p; loc_of_expr e]
+
    let mk_str_item =
-      let str_external_op = mk_caml_op "str_ext"
+      let str_external_op = mk_caml_op "str_ext" in
+      let str_fix_op = mk_caml_op "str_fix"
       in fun vars -> function
          (<:str_item< external $s$ : $t$ = $list:ls$ $itemattrs:_$ >>) ->
             mk_simple_named_term str_external_op s (mk_type t :: List.map mk_simple_string ls)
+       | (<:str_item< value $flag:b$ $list:lpex$ >>) ->
+            mk_simple_term str_fix_op [mk_bool b; mk_olist_term value_names lpex]
        | _ -> mk_stub_term str_opname
 
 

@@ -118,8 +118,9 @@ let items_of_implementation pack filter parse_arg =
 (*
  * Filter the entries for ls.
  *)
-let is_any_item _ =
-   true
+let is_any_item = function
+   PRLGrammar _ -> false
+ | _ -> true
 
 let is_rewrite_item = function
    Rewrite _

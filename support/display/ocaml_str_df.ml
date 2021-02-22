@@ -58,8 +58,6 @@ dform str_external_df2 : str_external[start:n, finish:n, name:s]{'t; 'sl} =
 dform str_expr_df1 : str_expr{'e} =
    szone push_indent "_let" space "_" space "=" space slot{'e} popm ezone
 
-dform str_expr_df2 : str_expr[start:n, finish:n]{'e} =
-   str_expr{'e}
 
 (*
  * Module definition.
@@ -85,8 +83,6 @@ dform str_module_type_df2 : str_module_type[start:n, finish:n, name:s]{'mt} =
 dform str_open_df1 : str_open{'sl} =
    sig_open{'sl}
 
-dform str_open_df2 : str_open[start:n, finish:n]{'sl} =
-   str_open{'sl}
 
 (*
  * Type definition.
@@ -99,7 +95,7 @@ dform str_type_df2 : str_type[start:n, finish:n]{'tdl} =
 
 (*
  * Value definition.
-*)
+*
 declare and_let{'pel : TyOCaml} : TyOCaml
 declare str_let{'e : TyOCaml} : TyOCaml
 
@@ -129,15 +125,25 @@ dform and_let_df1 : and_let{ocons{str_let[s:n, f:n]{'p; 'e}; 'pel}} =
 
 dform and_let_df2 : and_let{onil} =
    `""
-
+*)
 (*
  * Fix definition.
  *)
-dform str_fix_df1 : str_fix{'p} =
-   szone pushm[0] "_letrec" `" " patt_format{'p; onil} popm ezone
+dform str_fix_df1 : str_fix{"true"; ocons{'def; onil}} =
+   szone pushm[0] "_letrec" `" " 'def popm ezone
 
-dform str_fix_df2 : str_fix[start:n, finish:n]{'p} =
-   str_fix{'p}
+dform str_fix_df2 : str_fix{"false"; ocons{'def; onil}} =
+   szone pushm[0] "_let" `" " 'def popm ezone
+
+dform str_def_df : str_def{'name; 'loc} =
+   'name `" " "=" hspace 'loc
+
+dform loc_df : loc[file:s, line:n] =
+   szone `"#< line: " 'line `" >"  ezone
+
+(*
+dform str_fix_df3 : str_fix{'rec; 'names} =
+   szone pushm[0] "_mutual" `" " 'name popm ezone *)
 
 (*
  * -*-
