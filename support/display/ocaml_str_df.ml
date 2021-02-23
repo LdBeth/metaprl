@@ -40,8 +40,6 @@ extends Ocaml_sig_df
 dform str_exception_df1 : str_exception[name:s]{'tl} =
    sig_exception[name:s]{'tl}
 
-dform str_exception_df2 : str_exception[start:n, finish:n, name:s]{'tl} =
-   str_exception[name:s]{'tl}
 
 (*
  * External function declaration.
@@ -49,8 +47,6 @@ dform str_exception_df2 : str_exception[start:n, finish:n, name:s]{'tl} =
 dform str_external_df1 : str_external[name:s]{'t; 'sl} =
    sig_external[name:s]{'t; 'sl}
 
-dform str_external_df2 : str_external[start:n, finish:n, name:s]{'t; 'sl} =
-   str_external[name:s]{'t; 'sl}
 
 (*
  * Unnamed value.
@@ -65,17 +61,11 @@ dform str_expr_df1 : str_expr{'e} =
 dform str_module_df1 : str_module[name:s]{'me} =
    szone push_indent "_module" space cd_begin[name] slot[name] cd_end space "=" space slot{'me}
 
-dform str_module_df2 : str_module[name:s, start:n, finish:n]{'me} =
-   str_module[name:s]{'me}
-
 (*
  * Module type definition.
  *)
 dform str_module_type_df1 : str_module_type[name:s]{'mt} =
    sig_module_type[name:s]{'mt}
-
-dform str_module_type_df2 : str_module_type[start:n, finish:n, name:s]{'mt} =
-   str_module_type[name:s]{'mt}
 
 (*
  * Open a module in scope.
@@ -90,8 +80,6 @@ dform str_open_df1 : str_open{'sl} =
 dform str_type_df1 : str_type{'tdl} =
    sig_type{'tdl}
 
-dform str_type_df2 : str_type[start:n, finish:n]{'tdl} =
-   str_type{'tdl}
 
 (*
  * Value definition.

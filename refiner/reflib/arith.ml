@@ -40,9 +40,10 @@ module type HypsSig = sig
     type 'a cmp (*= var * var * num*)
     type 'a hyps
     type addr
- 	 val dest_cmp : 'a cmp -> var * var * num
-    val compare : var -> var -> bool
+ 	  val dest_cmp : 'a cmp -> var * var * num
+    val equal : var -> var -> bool
     val iter : 'a hyps -> (addr -> 'a cmp -> unit) -> unit
+    val vars_of_hyps : 'a hyps -> var array
     val print_hyps : out_channel -> 'a hyps -> unit
     val print_addr : out_channel -> addr -> unit
     val print_var : out_channel -> var -> unit
@@ -56,11 +57,11 @@ module SimpleHyps = struct
     type addr = int
 
     let get_cmp h a = Array.get h a
-	 let dest_cmp c = c
+    let dest_cmp c = c
     let get_v1 h a = let (v,_,_)=get_cmp h a in v
     let get_v2 h a = let (_,v,_)=get_cmp h a in v
     let get_const h a = let (_,_,c)=get_cmp h a in c
-    let compare = (=)
+    let equal = (=)
     let iter h f = Array.iteri f h
     let print_hyps _ _ = ()
     let print_addr _ _ = ()
@@ -82,7 +83,7 @@ struct
       let len = Array.length a in
       let rec aux i =
          if i==len then raise Not_found;
-         if compare (Array.get a i) e then i else aux (i+1)
+         if equal (Array.get a i) e then i else aux (i+1)
       in aux 0
 end
 
@@ -138,7 +139,7 @@ struct
                 Int (add_num i1 i2, a1 @ a2)
         | _  -> Disconnected
 
-  	let print_dist dst =
+    let print_dist dst =
        match dst with
           Disconnected -> eprintf "Disconnected\n%t" eflush
         | Int(d, al) ->
@@ -152,20 +153,20 @@ struct
           print_dist dst
 
    let init_c n h va =
-		let cij = Array.make (n*n) Disconnected in
-		let f a acmp =
-			let (v1,v2,const) = dest_cmp acmp in
-			let i=find va v1 in
-			let j=find va v2 in
-			let coord=(n,i,j) in
-			set cij coord (maxd (Int(const,[a])) (get cij coord))
-		in
-		begin
-			iter h f;
-			if !debug_graph_arith3 then
-				Array.iteri (print_i_dist n) cij;
-			cij
-		end
+    let cij = Array.make (n*n) Disconnected in
+    let f a acmp =
+      let (v1,v2,const) = dest_cmp acmp in
+      let i=find va v1 in
+      let j=find va v2 in
+      let coord=(n,i,j) in
+      set cij coord (maxd (Int(const,[a])) (get cij coord))
+    in
+    begin
+      iter h f;
+      if !debug_graph_arith3 then
+        Array.iteri (print_i_dist n) cij;
+      cij
+    end
 
    exception Positive of dist
 
@@ -188,40 +189,25 @@ struct
          with
             Positive d -> d, cij
 
-	let print_i_var oc i v =
-		fprintf oc "%i-> " i;
-		print_var oc v;
-  		fprintf oc "\n";
-		flush oc
-
-   let vars_of_hyps h =
-   	let putv v l =
-      	if List.exists (compare v) l then l
-         else v::l
-		in
-		let putc acmp l = let (v1,v2,_)=dest_cmp acmp in putv v1 (putv v2 l) in
-		let l = ref [] in
-		let put a c = l:=(putc c !l) in
-		begin
-			iter h put;
-			let result= Array.of_list !l in
-			if !debug_graph_arith3 then
-           	Array.iteri (print_i_var stderr) result;
-         result
-		end
+  let print_i_var oc i v =
+     fprintf oc "%i-> " i;
+     print_var oc v;
+     fprintf oc "\n";
+     flush oc
 
    let solve h =
-	   	if !debug_graph_arith1 then
+      if !debug_graph_arith1 then
          print_hyps stderr h;
-	   	let d, dar =compute h (vars_of_hyps h) in
-	   	begin
-			   if !debug_graph_arith2 then
+      let vars = vars_of_hyps h in
+      let () = if !debug_graph_arith3 then
+                  Array.iteri (print_i_var stderr) vars in
+      let d, dar = compute h vars in
+         if !debug_graph_arith2 then
          begin
-						print_dist d;
-						Array.iter print_dist dar
+            print_dist d;
+            Array.iter print_dist dar
          end;
          d
-      end
 
 end
 
@@ -240,19 +226,29 @@ struct
     type 'a hyps = 'a inequality array
     type addr = int
 
-	 let dest_cmp (t1,t2,n,tac) = (t1,t2,n)
+    let dest_cmp (t1,t2,n,tac) = (t1,t2,n)
     let iter h f =
        Array.iteri f h
 
-    let compare = alpha_equal
+    let equal = alpha_equal
+
+    let vars_of_hyps h =
+       let putv v l =
+          if List.exists (equal v) l then l else v :: l in
+       let putc l acmp =
+          let v1,v2,_ = dest_cmp acmp
+          in if equal v1 v2 then putv v1 l else putv v1 (putv v2 l)
+       in
+       let l = Array.fold_left putc [] h in
+          Array.of_list l
 
     let print_hyps oc h =
-    	let pr (t1,t2,c,tac) =
-    		Lm_printf.fprintf oc "%a>=%a+%s\n" print_term t1 print_term t2 (string_of_num c)
-    	in
-	    	Lm_printf.fprintf oc "hyps:\n";
-   	 	Array.iter pr h;
-    		flush oc
+       let pr (t1,t2,c,tac) =
+          Lm_printf.fprintf oc "%a>=%a+%s\n" print_term t1 print_term t2 (string_of_num c)
+       in
+          Lm_printf.fprintf oc "hyps:\n";
+          Array.iter pr h;
+          flush oc
 
     let print_addr oc a = fprintf oc "%i" a
 

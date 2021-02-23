@@ -47,7 +47,7 @@ open Filter_util
 (*
  * Show the file loading.
  *)
-let _ =
+let () =
    show_loading "Loading Filter_ocaml%t"
 
 let _debug_ocaml =
@@ -91,9 +91,12 @@ struct
       let tbl = Hashtbl.create 31 in
       let ocaml_op = mk_opname "Ocaml" nil_opname in
          (fun s ->
-               if Hashtbl.mem tbl s then invalid_arg ("Filter_ocaml.mk_ocaml_op: " ^ s ^ " already exists");
-               Hashtbl.add tbl s ();
-               mk_opname s ocaml_op)
+               match Hashtbl.find_opt tbl s with
+                  Some op -> op
+                | None -> let op = mk_opname s ocaml_op in
+                             Hashtbl.add tbl s op;
+                             op)
+
 (*
 
    (*
@@ -173,41 +176,11 @@ struct
    let patt_if_op        = mk_ocaml_op "patt_if"
    let patt_ifelse_op    = mk_ocaml_op "patt_ifelse"
    let patt_fail_op      = mk_ocaml_op "patt_fail"
+*)
 
    (************************************************************************
     * MLAST -> TERM                                                        *
     ************************************************************************)
-
-   (*
-    * Make an operator that contains the location.
-    *    opname[start:int; finish:int]
-    *)
-   let mk_op_loc opname (start, finish) =
-      let p1 = make_param (Number start) in
-      let p2 = make_param (Number finish) in
-         mk_op opname [p1; p2]
-
-   (*
-    * Also include a string name.
-    *)
-   let mk_op_loc_name opname (start, finish) name =
-      let p1 = make_param (Number start) in
-      let p2 = make_param (Number finish) in
-      let p3 = make_param (String name) in
-         mk_op opname [p1; p2; p3]
-
-   (*
-    * Make term with opname and location.
-    *   opname[start:int; finish:int]{subterms}
-    *)
-   let mk_simple_term opname loc subterms =
-      mk_any_term (mk_op_loc opname loc) subterms
-
-   (*
-    * This term also contains a name.
-    *)
-   let mk_simple_named_term opname loc name subterms =
-      mk_any_term (mk_op_loc_name opname loc name) subterms *)
 
    (*
     * Optional term.
@@ -217,52 +190,21 @@ struct
          ToTerm.Term.mk_simple_term none_op []
     | Some t ->
          ToTerm.Term.mk_simple_term some_op [f t]
-(*
 
    (*
     * String without location.
     *)
-   let mk_loc_string_aux opname (start, finish) s tl =
-      let p1 = make_param (Number start) in
-      let p2 = make_param (Number finish) in
-      let p3 = make_param (String s) in
-      let op = mk_op opname [p1; p2; p3] in
-         mk_term op (List.map (mk_bterm []) tl)
-
-   let mk_loc_string opname loc s =
-      mk_loc_string_aux opname loc s []
-
-   let mk_loc_string_term opname loc s t =
-      mk_loc_string_aux opname loc s [t] *)
-
    let mk_string opname s =
       let p1 = make_param (String s) in
       let op = mk_op opname [p1] in
          mk_term op []
 
- (*  let mk_string_opt op =
-      mk_opt (mk_string op) *)
-
-
 (*
+   let mk_string_opt op =
+      mk_opt (mk_string op)
+
    let mk_string_list sl =
-      mk_olist_term (List.map mk_simple_string sl)
-
-   (*
-    * Number with location.
-    *)
-   let mk_loc_int_aux opname (start, finish) i tl =
-      let p1 = make_param (Number start) in
-      let p2 = make_param (Number finish) in
-      let p3 = make_param (Number (Lm_num.num_of_string i)) in
-      let op = mk_op opname [p1; p2; p3] in
-         mk_term op (List.map (mk_bterm []) tl)
-
-   let mk_loc_int opname loc i =
-      mk_loc_int_aux opname loc i []
-
-   let mk_loc_int_term opname loc i t =
-      mk_loc_int_aux opname loc i [t] *)
+      mk_olist_term (List.map mk_simple_string sl) *)
 
    (*
     * Other utilities
@@ -297,9 +239,9 @@ struct
    let mk_patt_var opname loc s t =
       let op = mk_op_loc opname loc in
       let bterm = mk_bterm [s] t in
-         mk_term op [bterm] *)
+         mk_term op [bterm]
 
-   (* let class_type_infos_op = mk_ocaml_op "class_type_infos" *)
+   let class_type_infos_op = mk_ocaml_op "class_type_infos" *)
 
    let mk_simple_named_term opname name subterms =
       mk_any_term (mk_op opname [make_param (String name)]) subterms
@@ -359,12 +301,12 @@ struct
    and mk_expr_opt vars x = mk_opt (mk_expr vars) x
 
    and mk_expr =
-      let expr_apply_op = mk_caml_op "apply" in
-      let expr_array_op = mk_caml_op "array" in
-      let expr_lab_op = mk_caml_op "lab" in
-      let expr_lid_op = mk_caml_op "lid" in
-      let expr_uid_op = mk_caml_op "uid" in
-      let expr_tuple_op = mk_caml_op "tuple"
+      let expr_apply_op = mk_caml_op "apply"
+      and expr_array_op = mk_caml_op "array"
+      and expr_lab_op = mk_caml_op "lab"
+      and expr_lid_op = mk_caml_op "lid"
+      and expr_uid_op = mk_caml_op "uid"
+      and expr_tuple_op = mk_caml_op "tuple"
       in fun vars -> function
          (<:expr< $e1$ $e2$ >>) ->
             mk_simple_term expr_apply_op [mk_expr vars e1; mk_expr vars e2]
@@ -385,12 +327,12 @@ struct
        | _ -> stub_term
 
    let rec mk_type =
-      let type_apply_op = mk_caml_op "type_apply" in
-      let type_fun_op = mk_caml_op "type_fun" in
-      let type_equal_op = mk_caml_op "type_equal" in
-      let type_prod_op = mk_caml_op "type_prod" in
-      let type_olb_op = mk_caml_op "type_olb" in
-      let type_lab_op = mk_caml_op "type_lab"
+      let type_apply_op = mk_caml_op "type_apply"
+      and type_fun_op = mk_caml_op "type_fun"
+      and type_equal_op = mk_caml_op "type_equal"
+      and type_prod_op = mk_caml_op "type_prod"
+      and type_olb_op = mk_caml_op "type_olb"
+      and type_lab_op = mk_caml_op "type_lab"
       in function
          (<:ctyp< $lid:s$ >>) ->
             mk_ident_term s
@@ -411,9 +353,9 @@ struct
        | _ -> mk_stub_term ctyp_opname
 
    let rec mk_sig_item =
-      let sig_subsig_op = mk_caml_op "sig_subsig" in
-      let sig_open_op = mk_caml_op "sig_open" in
-      let sig_value_op = mk_caml_op "sig_value"
+      let sig_subsig_op = mk_caml_op "sig_subsig"
+      and sig_open_op = mk_caml_op "sig_open"
+      and sig_value_op = mk_caml_op "sig_value"
       in function
          (<:sig_item< declare $list:lsi$ end >>) ->
             mk_simple_term sig_subsig_op (List.map mk_sig_item lsi)
@@ -423,32 +365,19 @@ struct
             mk_simple_named_term sig_value_op s [mk_type t]
        | _ -> mk_stub_term sig_opname
 
-(*
-   let mk_me_item me =
-      let rec aux () = function
-         (<:module_expr< $me1$ . $me2$ >>) ->
-            Printf.sprintf "%a.%a" aux me1 aux me2
-       | (<:module_expr< $me1$ $me2$ >>) ->
-            Printf.sprintf "%a(%a)" aux me1 aux me2
-       | (<:module_expr< $uid:s$ >>) ->
-            s
-       | _ -> "#< UNKNOWN >"
-      in mk_ident_term (aux () me)
-*)
-
    let loc_op = mk_caml_op "loc"
    let mk_loc_term file line =
-      let p1 = make_param (String file) in
-      let p2 = make_param (Number line) in
-         mk_term (mk_op loc_op [p1;p2]) []
+      let p1 = make_param (String file)
+      and p2 = make_param (Number line)
+      in mk_term (mk_op loc_op [p1;p2]) []
 
    let loc_of_expr e =
       let loc = MLast.loc_of_expr e in
          mk_loc_term (Ploc.file_name loc) (Lm_num.num_of_int (Ploc.line_nb loc))
 
    let value_names =
-      let patt_tuple_op = mk_caml_op "patt_tuple" in
-      let str_def_op = mk_caml_op "str_def" in
+      let patt_tuple_op = mk_caml_op "tuple"
+      and str_def_op = mk_caml_op "str_def" in
       let rec name_term = function
          (<:patt< $lid:s$ >>) ->
             mk_ident_term s
@@ -461,14 +390,31 @@ struct
        | _ -> invalid_arg "Filter_ocaml.value_names"
       in fun (p,e,_) -> mk_simple_term str_def_op [name_term p; loc_of_expr e]
 
+   let mk_me_item me =
+      let rec aux () = function
+         (<:module_expr< $me1$ . $me2$ >>) ->
+            Printf.sprintf "%a.%a" aux me1 aux me2
+       | (<:module_expr< $me1$ $me2$ >>) ->
+            Printf.sprintf "%a(%a)" aux me1 aux me2
+       | (<:module_expr< $uid:s$ >>) ->
+            s
+       | _ -> "#< UNKNOWN >"
+      in mk_ident_term (aux () me)
+
    let mk_str_item =
-      let str_external_op = mk_caml_op "str_ext" in
-      let str_fix_op = mk_caml_op "str_fix"
+      let str_external_op = mk_caml_op "str_ext"
+   (* and str_type_op = mk_caml_op "str_type" *)
+      and str_fix_op = mk_caml_op "str_fix"
+      and str_open_op = mk_caml_op "str_open"
       in fun vars -> function
          (<:str_item< external $s$ : $t$ = $list:ls$ $itemattrs:_$ >>) ->
             mk_simple_named_term str_external_op s (mk_type t :: List.map mk_simple_string ls)
+   (*  | (<:str_item< type $flag:b$ $list:tdl$ >>) ->
+            mk_simple_term str_type_op [mk_olist_term mk_tdl tdl] *)
        | (<:str_item< value $flag:b$ $list:lpex$ >>) ->
             mk_simple_term str_fix_op [mk_bool b; mk_olist_term value_names lpex]
+       | (<:str_item< open $!:b$ $me$ $itemattrs:_$ >>) ->
+            mk_simple_term str_open_op [mk_me_item me]
        | _ -> mk_stub_term str_opname
 
 

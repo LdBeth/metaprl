@@ -55,9 +55,6 @@ declare sig_slt : TyOCaml
 dform sig_exception_df : sig_exception[name:s]{'tl} =
    szone push_indent "_exception" space stl{.Ocaml!"string"[name:s]; 'tl} popm ezone
 
-dform sig_exception_df2 : sig_exception[start:n, finish:n, name:s]{'tl} =
-   sig_exception[name:s]{'tl}
-
 (*
  * External function declaration.
  *)
@@ -66,26 +63,17 @@ dform sig_external_df1 : sig_external[name:s]{'t; 'sl} =
    ":" space slot{'t} space
    "=" space 'sl popm ezone
 
-dform sig_external_df2 : sig_external[start:n, finish:n, name:s]{'t; 'sl} =
-   sig_external[name:s]{'t; 'sl}
-
 (*
  * Module declaration.
  *)
 dform sig_module_df1 : sig_module[name:s]{'mt} =
    "_module" space slot[name] space ":" space slot{'mt}
 
-dform sig_module_df2 : sig_module[start:n, finish:n, name:s]{'mt} =
-   sig_module[name:s]{'mt}
-
 (*
  * Module type declaration.
  *)
 dform sig_module_type_df1 : sig_module_type[name:s]{'mt} =
    szone push_indent "_moduletype" space slot[name] space "=" space slot{'mt} popm ezone
-
-dform sig_module_type_df2 : sig_module_type[start:n, finish:n, name:s]{'mt} =
-   sig_module_type[name:s]{'mt}
 
 (*
  * Open a module in scope.
@@ -110,21 +98,6 @@ dform sig_type_aux_df : sig_type_aux{ocons{'tdl; 'tdls}} =
 dform sig_type_aux_df : sig_type_aux{onil} =
    `""
 
-dform sig_type_df2 : sig_type[start:n, finish:n]{'tdl} =
-   sig_type{'tdl}
-
-dform tdl_df1 : tdl{tdl[start:n, finish:n, name:s]; onil; 't; onil} =
-   slot[name:s] `" =" hspace slot{'t}
-
-dform tdl_df2 : tdl{tdl[start:n, finish:n, name:s]; 'sl; 't; onil} =
-   "(" type_arg{'sl} ")" `" " slot[name:s] `" =" hspace slot{'t}
-
-dform tdl_df3 : tdl{tdl[start:n, finish:n, name:s]; onil; 't; 'tc} =
-   slot[name:s] `" =" hspace slot{'t} hspace type_constraint{'tc}
-
-dform tdl_df4 : tdl{tdl[start:n, finish:n, name:s]; 'sl; 't; 'tc} =
-   "(" type_arg{'sl} ")" `" " slot[name:s] `" =" hspace slot{'t} hspace type_constraint{'tc}
-
 dform tc_df1 : type_constraint{ocons{ tc{'t1;'t2}; onil}} =
    `"constraint' " slot{'t1} `" = " slot{'t2}
 
@@ -143,8 +116,6 @@ dform type_arg_cons_df2 : type_arg{ocons{.Ocaml!"string"[name:s]; 'sl}} =
 dform sig_value_df1 : sig_value[name:s]{'t} =
    szone push_indent "_val" `" " slot[name:s] `" : " slot{'t} popm ezone
 
-dform sig_value_df2 : sig_value[start:n, finish:n, name:s]{'t} =
-   sig_value[name:s]{'t}
 
 (*
  * -*-

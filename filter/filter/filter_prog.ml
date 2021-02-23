@@ -333,11 +333,10 @@ let expr_of_loc loc =
 (*
  * Each rule gets a refiner associated with it, with the following name.
  *)
+(* TODO: switch to mnemonic names after OCaml 4.12 *)
 let refiner_let loc =
-   <:str_item< value $lid: refiner_id$ = $refiner_expr loc$ .refiner_of_build $lid: local_refiner_id$ >>
-
-let refiner_ignore loc =
-   <:str_item< value _ = $lid: refiner_id$ >>
+   <:str_item< value $lid: refiner_id$ =
+      $refiner_expr loc$ .refiner_of_build $lid: local_refiner_id$ [@@ warning "-32" ;] >>
 
 let empty_rw_args loc =
    <:expr< Refiner.Refiner.Rewrite.empty_rw_args >>
@@ -365,20 +364,18 @@ let args_spec_expr loc ivars avars =
             Rewrite_sig.spec_addrs = [| $list: List.map var_expr avars$ |]
          } >>
 
-let rec apply_annotation_processor loc e args =
-   match args with
-      [] ->
-         e
-    | arg :: args ->
+let apply_annotation_processor loc e = function
+   [] -> e
+ | args ->
+      let rec aux = function
          (* Label the arg if it isn't already labeled *)
-         let arg =
-            match arg with
-               MLast.ExLab _ ->
-                  arg
-             | _ ->
-                  <:expr< ~{ $lid:"options"$ = $arg$ } >>
-         in
-            apply_annotation_processor loc <:expr< $e$ $arg$ >> args
+         <:expr< ~{ $list:lpe$ } >> :: args ->
+            lpe @ aux args
+       | arg :: args ->
+            (<:patt< options >>, <:vala< Some arg >>) :: aux args
+       | [] -> []
+      in
+         <:expr< $e$ ~{ $list:aux args$ } >>
 
 (*
  * Variable names.
@@ -976,7 +973,6 @@ let define_rewrite want_checkpoint force_private code proc loc rw expr =
        checkpoint_resources want_checkpoint loc name [
           <:str_item< value $lid:name$ = $wrap_exn proc loc name create_rw$ >>;
           refiner_let loc;
-          refiner_ignore loc;
           toploop_rewrite proc loc name (if force_private then Private else Public) []
        ]
 
@@ -1042,7 +1038,6 @@ let define_cond_rewrite want_checkpoint code proc loc crw expr =
           <:str_item< value $rw_id_patt$ = $wrap_exn proc loc name create_expr $ >>;
           <:str_item< value $lid:name$ = $rw_fun_expr$ >>;
           refiner_let loc;
-          refiner_ignore loc;
           toploop_rewrite proc loc name Public crw.crw_params
        ]
 
@@ -1150,8 +1145,7 @@ let define_ml_rewrite proc loc mlrw rewrite_expr =
       [
          <:str_item< value $name_patt$ =
             $rewrite_of_pre_rewrite_expr loc$ ($wrap_exn proc loc name body $) $addrs_val$ $list_expr loc lid_expr tparam_ids$ >>;
-         refiner_let loc;
-         refiner_ignore loc
+         refiner_let loc
       ]
 
 (************************************************************************
@@ -1218,7 +1212,6 @@ let define_rule prim_rule deffun proc loc
         [<:str_item< value $lid:name_rule_id$ = $wrap_exn proc loc name rule_expr$ >>;
          <:str_item< value $lid:name$ = $name_value$ >>;
          refiner_let loc;
-         refiner_ignore loc;
          toploop_rule proc loc name params]
 
 let prim_rule proc loc ax extract =
@@ -1281,8 +1274,7 @@ let define_ml_rule want_checkpoint proc loc
       checkpoint_resources want_checkpoint loc name (**)
          [<:str_item< value $lid:name_rule_id$ = $wrap_exn proc loc name body$ >>;
           <:str_item< value $name_patt$ = $bindings_let proc loc code rule_fun_expr$ >>;
-          refiner_let loc;
-          refiner_ignore loc]
+          refiner_let loc]
 
 let create_dform_expr loc name modes options term expr =
    let string_expr s = <:expr< $str:s$ >> in
@@ -1460,8 +1452,7 @@ let define_parent proc loc
          [name] -> [
             <:str_item< Mp_resource.extends_theory $str:name$ >>;
             <:str_item< $exp:refiner_expr loc$ . join_refiner $lid: local_refiner_id$ $longid:parent_path$ . $lid: refiner_id$ >>;
-            refiner_let loc;
-            refiner_ignore loc;
+            refiner_let loc
          ]
        | _ ->
             Ploc.raise loc (Invalid_argument "Including sub-theories not implemented")

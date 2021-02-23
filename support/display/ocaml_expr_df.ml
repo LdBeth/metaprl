@@ -132,9 +132,6 @@ dform ident_df : "ident"[v:s] =
 dform proj_df1 : parens :: "prec"[prec_proj] :: "proj"{'A; 'B} =
    pushm[0] slot{'A} "." slot{'B} popm
 
-dform proj_df2 : "proj"[start:n, finish:n]{'A; 'B} =
-   "proj"{'A; 'B}
-
 (*
  * Application.
  *)
@@ -220,14 +217,9 @@ dform poe_df2 : "poe"[label:s]{none} =
 dform array_subscript_df1 : parens :: "prec"[prec_proj] :: "array_subscript"{'e1; 'e2} =
    slot{'e1} `"array_subscript(" pushm[0] slot{'e2} popm ")"
 
-dform array_subscript_df2 : "array_subscript"[start:n, finish:n]{'e1; 'e2} =
-   "array_subscript"{'e1; 'e2}
 
 dform string_subscript_df1 : parens :: "prec"[prec_proj] :: "string_subscript"{'e1; 'e2} =
    slot{'e1} `"string_subscript(" pushm[0] slot{'e2} popm ")"
-
-dform string_subscript_df2 : "string_subscript"[start:n, finish:n]{'e1; 'e2} =
-   "string_subscript"{'e1; 'e2}
 
 (*
  * Sequencing.
@@ -256,18 +248,6 @@ dform record_df2 : "record"{'e1; some{'e2}} =
 
 dform tuple_df1 : "tuple"{'e1} =
    "(" pushm[0] e_list{'e1} popm ")"
-
-dform array_df2 : "array"[start:n, finish:n]{'e1} =
-   "array"{'e1}
-
-dform stream_df2 : "stream"[start:n, finish:n]{'e1} =
-   "stream"{'e1}
-
-dform record_df : "record"[start:n, finish:n]{'e1; 'e2} =
-   "record"{'e1; 'e2}
-
-dform tuple_df2 : "tuple"[start:n, finish:n]{'e1} =
-   "tuple"{'e1}
 
 (*
  * Lists & arrays.
@@ -325,8 +305,6 @@ dform ee_list2_onil_df2 : ee_list'{ocons{ee{'e1; 'e2}; 'e3}} =
 dform assign_df1 : parens :: "prec"[prec_assign] :: assign{'e1; 'e2} =
    szone push_indent slot{'e1} hspace `"= " slot{'e2} popm ezone
 
-dform assign_df2 : assign[start:n, finish:n]{'e1; 'e2} =
-   assign{'e1; 'e2}
 
 (*
  * Conditional.
@@ -335,9 +313,6 @@ dform ifthenelse_df : parens :: "prec"[prec_if] :: ifthenelse{'e1; 'e2; 'e3} =
    pushm[0] szone push_indent "_if" `" " szone{'e1} `" " "_then" hspace
    szone{'e2} popm hspace
    push_indent "_else" hspace szone{'e3} popm ezone popm
-
-dform ifthenelse_df2 : ifthenelse[start:n, finish:n]{'e1; 'e2; 'e3} =
-   ifthenelse{'e1; 'e2; 'e3}
 
 (*
  * Loops.
@@ -348,25 +323,16 @@ dform for_upto_df1 : for_upto{'e1; 'e2; x. 'e3} =
       slot{'e3} popm hspace
       "_done" popm
 
-dform for_upto_df2 : for_upto[start:n, finish:n]{'e1; 'e2; x. 'e3} =
-   for_upto{'e1; 'e2; x. 'e3}
-
 dform for_downto_df1 : for_downto{'e1; 'e2; x. 'e3} =
    pushm[0] push_indent
    "_for" hspace slot{'x} hspace `"= " slot{'e2} hspace "_downto" slot{'e3} hspace "_do" hspace
       slot{'e3} popm hspace
       "_done" popm
 
-dform for_downto_df2 : for_downto[start:n, finish:n]{'e1; 'e2; x. 'e3} =
-   for_downto{'e1; 'e2; x. 'e3}
-
 dform while_df1 : "while"{'e1; 'e2} =
    szone pushm[0] push_indent "_while" hspace slot{'e1} hspace "_do" hspace
    slot{'e2} popm hspace
    "_done" popm ezone
-
-dform while_df2 : "while"[start:n, finish:n]{'e1; 'e2} =
-   "while"{'e1; 'e2}
 
 (*
  * Type casting.
@@ -374,17 +340,12 @@ dform while_df2 : "while"[start:n, finish:n]{'e1; 'e2} =
 dform cast_df1 : cast{'e; 't} =
    "(" slot{'e} hspace ":" hspace slot{'t} ")"
 
-dform cast_df2 : cast[start:n, finish:n]{'e; 't} =
-   cast{'e; 't}
-
 (*
  * Class coercion.
  *)
 dform class_coerce_df1 : parens :: "prec"[prec_rel] :: class_coerce{'e1; 'e2} =
    push_indent slot{'e1} hspace `"Ocaml!class_coerce" slot{'e2} popm
 
-dform class_coerce_df2 : class_coerce[start:n, finish:n]{'e1; 'e2} =
-   class_coerce{'e1; 'e2}
 
 (*
  * New object.
@@ -400,24 +361,16 @@ dform new_df1 : parens :: "prec"[prec_not] :: "new"{'e1} =
 dform fun_df1 : parens :: "prec"[prec_fun] :: "fun"{'pwel} =
    szone "_fun" `" " patt_format{'pwel; onil} ezone
 
-dform fun_df2 : "fun"[start:n, finish:n]{'pwel} =
-   "fun"{'pwel}
 
 dform match_df1 : parens :: "prec"[prec_fun] :: "match"{'pwel; 'e} =
    szone push_indent "_match" hspace 'e hspace "_with" hspace
    patt_format{'pwel; onil}
    popm ezone
 
-dform match_df2 : "match"[start:n, finish:n]{'e; 'pwel} =
-   "match"{'e; 'pwel}
-
 dform try_df1 : parens :: "prec"[prec_fun] :: "try"{'pwel; 'e} =
    szone push_indent "_try" hspace slot{'e} hspace "_with" hspace
    patt_format{'pwel; onil}
    popm ezone
-
-dform try_df2 : "try"[start:n, finish:n]{'e; 'pwel} =
-   "try"{'e; 'pwel}
 
 (*
  * "Let" forms.  The real work is performed in the patterns.
@@ -425,14 +378,9 @@ dform try_df2 : "try"[start:n, finish:n]{'e; 'pwel} =
 dform let_df1 : parens :: "prec"[prec_let] :: "let"{'p; 'e} =
    szone pushm[0] "_let" `" " patt_format{'p; 'e} popm ezone
 
-dform let_df2 : "let"[start:n, finish:n]{'p; 'e} =
-   "let"{'p; 'e}
 
 dform fix_df1 : parens :: "prec"[prec_let] :: "fix"{'p} =
    szone pushm[0] keyword["_letrec"] hspace patt_format{'p; onil} popm ezone
-
-dform fix_df2 : "fix"[start:n, finish:n]{'p} =
-   "fix"{'p}
 
 (*
  * -*-

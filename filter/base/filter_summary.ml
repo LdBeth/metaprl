@@ -209,10 +209,8 @@ let eprint_entry print_info = function
  * Non-recursive print.
  *)
 let eprint_command command =
-   let print_info info =
-      ()
-   in
-      eprint_entry print_info command
+   let print_info info = ()
+   in eprint_entry print_info command
 
 (*
  * Recursive printing.
@@ -1101,8 +1099,8 @@ struct
     * Collect a rewrite.
     *)
    let dest_rewrite convert t =
-      let name = dest_string_param t in
-      let redex, contractum, proof, res = four_subterms t in
+      let name = dest_string_param t
+      and redex, contractum, proof, res = four_subterms t in
          { rw_name = name;
            rw_redex = convert.term_f redex;
            rw_contractum = convert.term_f contractum;
@@ -1116,8 +1114,8 @@ struct
     * (ASCII IO format <= 1.0.18)
     *)
    let dest_iform convert t =
-      let name = dest_string_param t in
-      let redex, contractum =
+      let name = dest_string_param t
+      and redex, contractum =
          if is_two_subterm input_form_op t then
             two_subterms t
          else

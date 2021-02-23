@@ -34,10 +34,10 @@ extends Perv
 extends Ocaml
 extends Ocaml_base_df
 extends Ocaml_expr_df
-extends Ocaml_patt_df
+(* extends Ocaml_patt_df *)
 extends Ocaml_type_df
-extends Ocaml_mt_df
-extends Ocaml_me_df
+(* extends Ocaml_mt_df *)
+(* extends Ocaml_me_df *)
 extends Ocaml_sig_df
 extends Ocaml_str_df
 

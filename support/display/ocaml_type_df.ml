@@ -50,17 +50,11 @@ prec prec_star
 dform type_proj_df1 : parens :: "prec"[prec_proj] :: type_proj{'t1; 't2} =
    slot{'t1} "." slot{'t2}
 
-dform type_proj_df2 : type_proj[start:n, finish:n]{'t1; 't2} =
-   type_proj{'t1; 't2}
-
 (*
  * "As" type.
  *)
 dform type_as_df1 : parens :: "prec"[prec_as] :: type_as{'t1; 't2} =
    slot{'t1} space "_as" space slot{'t2}
-
-dform type_as_df2 : type_as[start:n, finish:n]{'t1; 't2} =
-   type_as{'t1; 't2}
 
 (*
  * Wildcard type.
@@ -68,8 +62,6 @@ dform type_as_df2 : type_as[start:n, finish:n]{'t1; 't2} =
 dform type_wildcard_df1 : type_wildcard =
    "_"
 
-dform type_wildcard_df2 : type_wildcard[start:n, finish:n] =
-   type_wildcard
 
 (*
  * Application.
@@ -81,14 +73,8 @@ declare type_apply_aux{'t1 : TyOCaml} : TyOCaml
 dform type_apply_df1 : parens :: "prec"[prec_apply] :: type_apply{'t1; 't2} =
    type_apply_aux{'t1; ocons{'t2; onil}}
 
-dform type_apply_df2 : type_apply[start:n, finish:n]{'t1; 't2} =
-   type_apply{'t1; 't2}
-
 dform type_apply_df3a : type_apply_aux{type_apply{'t1; 't2}; 't3} =
    type_apply_aux{'t1; ocons{'t2; 't3}}
-
-dform type_apply_df3b : type_apply_aux{type_apply[start:n, finish:n]{'t1; 't2}; 't3} =
-   type_apply_aux{type_apply{'t1; 't2}; 't3}
 
 dform type_apply_df4 : type_apply_aux{'t1; 't2} =
    "(" type_apply_aux{'t2} ")" `" " slot{'t1}
@@ -108,8 +94,6 @@ dform type_apply_df7 : type_apply_list{ocons{'t1; 't2}} =
 dform type_fun_df1 : parens :: "prec"[prec_arrow] :: type_fun{'t1; 't2} =
    slot{'t1} space "->" space slot{'t2}
 
-dform type_fun_df2 : type_fun[start:n, finish:n]{'t1; 't2} =
-   type_fun{'t1; 't2}
 
 (*
  * Class identifier.
@@ -117,8 +101,6 @@ dform type_fun_df2 : type_fun[start:n, finish:n]{'t1; 't2} =
 dform type_class_id_df1 : parens :: "prec"[prec_not] :: type_class_id{'t1} =
    "#" space slot{'t1}
 
-dform type_class_id_df2 : type_class_id[start:n, finish:n]{'t1} =
-   type_class_id{'t1}
 
 (*
  * Identifiers.
@@ -129,17 +111,11 @@ dform type_lid_df1 : type_lid[v:s] =
 dform type_lid_df2 : type_lid{'v} =
    slot{'v}
 
-dform type_lid_df3 : type_lid[start:n, finish:n]{'v} =
-   type_lid{'v}
-
 dform type_uid_df1 : type_uid[v:s] =
    slot[v:s]
 
 dform type_uid_df2 : type_uid{'v} =
    slot{'v}
-
-dform type_uid_df3 : type_uid[start:n, finish:n]{'v} =
-   type_uid{'v}
 
 (*
  * Type parameter.
@@ -147,17 +123,12 @@ dform type_uid_df3 : type_uid[start:n, finish:n]{'v} =
 dform type_param_df1 : type_param[s:s] =
    `"'" slot[s:s]
 
-dform type_param_df2 : type_param[start:n, finish:n, s:s] =
-   type_param[s:s]
-
 (*
  * Type equivalence.
  *)
 dform type_equal_df1 : parens :: "prec"[prec_equal] :: type_equal{'t1; 't2} =
    slot{'t1} space "==" space slot{'t2}
 
-dform type_equal_df2 : type_equal[start:n, finish:n]{'t1; 't2} =
-   type_equal{'t1; 't2}
 
 (*
  * Record type.
@@ -181,9 +152,6 @@ dform sbt_df1 : sbt{.Ocaml!"string"[name:s]; .Ocaml!"false"; 't} =
 dform sbt_df1 : sbt{.Ocaml!"string"[name:s]; .Ocaml!"true"; 't} =
    szone pushm[3] `"mutable " slot[name] `" =" hspace slot{'t} popm ezone
 
-dform type_record_df2 : type_record[start:n, finish:n]{'t} =
-   type_record{'t}
-
 (*
  * Product types.
  *)
@@ -198,9 +166,6 @@ dform type_prod_onil_df1 : type_prod_aux{onil} =
 dform type_prod_cons_df1 : type_prod_aux{ocons{'t; 'tl}} =
    `" " "*" `" " slot{'t} type_prod_aux{'tl}
 
-dform type_prod_df2 : type_prod[start:n, finish:n]{'tl} =
-   type_prod{'tl}
-
 (*
  * Disjoint unions.
  *)
@@ -209,9 +174,6 @@ declare type_list_aux{'stll : TyOCaml}
 
 dform type_list_df1 : type_list{ocons{'stl; 'stll}} =
    szone{'stl} type_list_aux{'stll}
-
-dform type_list_df2 : type_list[start:n, finish:n]{'stl} =
-   type_list{'stl}
 
 dform type_list_onil_df1 : type_list_aux{onil} =
    `""

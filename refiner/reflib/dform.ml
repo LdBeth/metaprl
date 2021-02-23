@@ -334,7 +334,7 @@ let base_opname   = mk_opname "Base_dform"     nil_opname
 let dsovar_opname = mk_opname "df_so_var"      base_opname
 let dvar_opname   = mk_opname "df_var"         base_opname
 let dfvar_opname  = mk_opname "df_free_fo_var" base_opname
-let dcont_opname =  mk_opname "df_context"     base_opname
+let dcont_opname  = mk_opname "df_context"     base_opname
 let dcontv_opname = mk_opname "df_context_var" base_opname
 
 let make_cont v = mk_term (mk_op dcontv_opname [make_param (String (dstring_of_var v))]) []
@@ -871,7 +871,7 @@ let format_term base =
             cprec, false
       in
          if parenflag then
-            format_string buf "(";
+            format_char buf '(';
 
          begin
             try
@@ -905,7 +905,7 @@ let format_term base =
          end;
 
          if parenflag then
-            format_string buf ")"
+            format_char buf ')'
 
    (* If there is no template, use the standard printer *)
    and print_term pprec buf eq t =
