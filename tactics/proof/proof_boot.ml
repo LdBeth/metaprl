@@ -1262,9 +1262,9 @@ struct
          collect_opname (fun x -> x) (dest_opname opname)
 
    let describe_args (opname, ints, addrs, params) =
-      let ints = Array.of_list (List.map (fun addr -> IntArg addr) ints) in
-      let addrs = Array.of_list (List.map (fun addr -> AddrArg addr) addrs) in
-      let params = Array.of_list (List.map (fun t -> TermArg t) params) in
+      let ints = Lm_array_util.of_list_map (fun addr -> IntArg addr) ints in
+      let addrs = Lm_array_util.of_list_map (fun addr -> AddrArg addr) addrs in
+      let params = Lm_array_util.of_list_map (fun t -> TermArg t) params in
       let name = [|StringArg (string_of_opname opname)|] in
          Array.concat [name; ints; addrs; params]
 

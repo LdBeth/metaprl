@@ -37,7 +37,7 @@ open Term_io
 (*
  * Header.
  *)
-let magic = "MP-OCaml terms:"
+let magic = "MP-ML_terms:"
 let magic_len = String.length magic
 
 let check_magic s =
@@ -49,10 +49,10 @@ let check_magic s =
  *)
 let string_of_term_lists ts mts opnames nums =
    let terms =
-      List.map denormalize_term ts,
-      List.map denormalize_meta_term mts,
-      opnames,
-      nums
+      Lm_array_util.of_list_map denormalize_term ts,
+      Lm_array_util.of_list_map denormalize_meta_term mts,
+      Array.of_list opnames,
+      Array.of_list nums
    in
       magic ^ Marshal.to_string terms []
 
@@ -62,11 +62,11 @@ let string_of_term_lists ts mts opnames nums =
 let term_arrays_of_string s =
    check_magic s;
    let ts, mts, opnames, nums =
-      (Marshal.from_string s magic_len : Refiner_io.TermType.term list * Refiner_io.TermType.meta_term list * opname list * Lm_num.num list) in
-      Array.of_list (List.map normalize_term ts),
-      Array.of_list (List.map normalize_meta_term mts),
-      Array.of_list (List.map normalize_opname opnames),
-      Array.of_list nums
+      (Marshal.from_string s magic_len : Refiner_io.TermType.term array * Refiner_io.TermType.meta_term array * opname array * Lm_num.num array) in
+      Array.map normalize_term ts,
+      Array.map normalize_meta_term mts,
+      Array.map normalize_opname opnames,
+      nums
 
 (*
  * -*-

@@ -375,7 +375,12 @@ struct
       let loc = MLast.loc_of_expr e in
          mk_loc_term (Ploc.file_name loc) (Lm_num.num_of_int (Ploc.line_nb loc))
 
-   let value_names =
+   let type_name tdl =
+      match tdl.MLast.tdNam with
+         (<:vala< _, <:vala< name >> >>) -> mk_ident_term name
+       | _ -> invalid_arg "Filter_ocaml.type_name"
+
+   let value_name =
       let patt_tuple_op = mk_caml_op "tuple"
       and str_def_op = mk_caml_op "str_def" in
       let rec name_term = function
@@ -387,7 +392,7 @@ struct
             name_term p
        | (<:patt< ($list:lp$) >>) ->
             mk_simple_term patt_tuple_op [mk_olist_term name_term lp]
-       | _ -> invalid_arg "Filter_ocaml.value_names"
+       | _ -> invalid_arg "Filter_ocaml.value_name"
       in fun (p,e,_) -> mk_simple_term str_def_op [name_term p; loc_of_expr e]
 
    let mk_me_item me =
@@ -403,16 +408,16 @@ struct
 
    let mk_str_item =
       let str_external_op = mk_caml_op "str_ext"
-   (* and str_type_op = mk_caml_op "str_type" *)
+      and str_type_op = mk_caml_op "str_type"
       and str_fix_op = mk_caml_op "str_fix"
       and str_open_op = mk_caml_op "str_open"
       in fun vars -> function
          (<:str_item< external $s$ : $t$ = $list:ls$ $itemattrs:_$ >>) ->
             mk_simple_named_term str_external_op s (mk_type t :: List.map mk_simple_string ls)
-   (*  | (<:str_item< type $flag:b$ $list:tdl$ >>) ->
-            mk_simple_term str_type_op [mk_olist_term mk_tdl tdl] *)
+       | (<:str_item< type $flag:b$ $list:tdl$ >>) ->
+            mk_simple_term str_type_op [mk_bool b; mk_olist_term type_name tdl]
        | (<:str_item< value $flag:b$ $list:lpex$ >>) ->
-            mk_simple_term str_fix_op [mk_bool b; mk_olist_term value_names lpex]
+            mk_simple_term str_fix_op [mk_bool b; mk_olist_term value_name lpex]
        | (<:str_item< open $!:b$ $me$ $itemattrs:_$ >>) ->
             mk_simple_term str_open_op [mk_me_item me]
        | _ -> mk_stub_term str_opname

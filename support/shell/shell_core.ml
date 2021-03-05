@@ -46,12 +46,7 @@ open Shell_internal_sig
 
 let debug_refine = load_debug "refine"
 
-let debug_shell =
-   create_debug (**)
-      { debug_name = "shell";
-        debug_description = "Display shell operations";
-        debug_value = false
-      }
+let debug_shell = load_debug "shell"
 
 (*
  * We should skip the packages that do not have basic shell commands in them.

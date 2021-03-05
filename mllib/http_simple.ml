@@ -550,48 +550,49 @@ type uri_state =
 
 let colon = ':'
 
+let split_at i str =
+   let len = String.length str in
+   let si = succ i in
+      String.sub str 0 i, String.sub str si (len - si)
+
 let parse_uri s =
-   let len = String.length s in
-   let proto = Buffer.create 7 in
-   let host = Buffer.create 64 in
-   let port = Buffer.create 6 in
-   let file = Buffer.create 128 in
-   let rec search state j =
-      if j <> len then
-         let c = s.[j] in
-         let j' = succ j in
-            match state with
-               StateProto ->
-                  if c = colon then
-                     search StateHost j'
-                  else
-                     (Buffer.add_char proto c; search StateProto j')
-             | StateHost ->
-                  if c = colon then
-                     search StatePort j'
-                  else if c = '/' then
-                     search StateFile j'
-                  else
-                     (Buffer.add_char host c; search StateHost j')
-             | StatePort ->
-                  if c = '/' then
-                     search StateFile j'
-                  else
-                     (Buffer.add_char port c; search StatePort j')
-             | StateFile ->
-                  Buffer.add_char file c;
-                  search StateFile j'
+   let proto = ref "" in
+   let host = ref "" in
+   let port = ref "" in
+   let file = ref "" in
+   let rec search state s =
+      match state with
+         StateProto ->
+            (match String.index_opt s colon with
+                Some i -> let p, h = split_at i s in
+                             proto := p; search StateHost h
+              | None -> proto := s)
+       | StateHost ->
+            (match String.index_opt s colon with
+                Some i -> let h, p = split_at i s in
+                             host := h; search StatePort p
+              | None -> (match String.index_opt s '/' with
+                            Some i -> let h, f = split_at i s in
+                                         host := h; search StateFile f
+                          | None -> host := s))
+       | StatePort ->
+            (match String.index_opt s '/' with
+                Some i -> let p, f = split_at i s in
+                             port := p; search StateFile f
+              | None -> port := s)
+       | StateFile ->
+            file := s
    in
-   let _ = search StateProto 0 in
-      { uri_proto = Buffer.contents proto;
-        uri_host = Buffer.contents host;
+   let () = search StateProto s in
+      { uri_proto = !proto;
+        uri_host = !host;
         uri_port =
-           (let i = parse_int (Buffer.contents port) in
+           (let i = parse_int !port in
                if i = 0 then
                   None
                else
                   Some i);
-        uri_path = Buffer.contents file
+        uri_path = !file
       }
 
 let split_eq_val arg =

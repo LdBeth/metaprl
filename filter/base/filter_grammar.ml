@@ -108,26 +108,6 @@ module Lexer = MakeLexer (Lm_channel.LexerInput) (Action);;
 (*
  * Boolean lexer is for parsing comments and quotations.
  *)
-(* unused
-module BoolCompare =
-struct
-   type t = bool
-
-   let compare b1 b2 =
-      if b1 then
-         if b2 then
-            0
-         else
-            1
-      else if b2 then
-         -1
-      else
-         0
-end
-
-module BoolSet = Lm_set.LmMake (BoolCompare);;
-*)
-
 module BoolAction =
 struct
    type action = bool
@@ -140,13 +120,7 @@ struct
       else
          0x5ffa1124
 
-   let compare a b =
-      if a = b then
-         0
-      else if a then
-         1
-      else
-         -1
+   let compare = Bool.compare
 
    let choose = max
 end;;

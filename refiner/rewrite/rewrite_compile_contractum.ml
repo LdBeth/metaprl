@@ -55,8 +55,8 @@ open Rewrite_types
 (*
  * Show the file loading.
  *)
-let _ =
-   show_loading "Loading Rewrite_compile_contractum%t"
+let () =
+   show_loading "Loading Rewrite_compile_contractum"
 
 let debug_rewrite = load_debug "rewrite"
 

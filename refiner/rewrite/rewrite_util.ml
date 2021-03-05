@@ -41,8 +41,8 @@ open Refine_error_sig
 (*
  * Show the file loading.
  *)
-let _ =
-   show_loading "Loading Rewrite_util%t"
+let () =
+   show_loading "Loading Rewrite_util"
 
 let _debug_rewrite =
    create_debug (**)

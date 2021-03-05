@@ -39,7 +39,7 @@ open Term
 open TermType
 open TermSubst
 
-let _ = show_loading "Loading Term_subst_ds%t"
+let () = show_loading "Loading Term_subst_ds"
 
 let cant_match_hyp = RefineError ("Match_seq.match_hyp", StringError "sequents do not match")
 let fail_match _ = raise cant_match_hyp

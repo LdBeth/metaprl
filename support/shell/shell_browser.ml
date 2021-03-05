@@ -49,8 +49,8 @@ open Shell_sig
 open Shell_util
 open Shell_syscall_sig
 
-let _ =
-   show_loading "Loading Shell Browser%t"
+let () =
+   show_loading "Loading Shell Browser"
 
 let debug_http =
    create_debug (**)

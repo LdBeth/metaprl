@@ -1016,15 +1016,9 @@ struct
 
    (*
     * Get the parameter list.
-    * XXX HACK: the try wrapper is only there for backwards compativility with
-    * old files (ASCII formats <= 1.0.15)
     *)
    let dest_rule_params convert t =
-      try
-         List.map (dest_rule_param convert) (dest_xlist t)
-      with
-         Failure _ ->
-            []
+      List.map (dest_rule_param convert) (dest_xlist t)
 
    (*
     * Get the list of resource updates

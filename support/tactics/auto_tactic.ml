@@ -472,10 +472,6 @@ let debugT auto_tac =
 let map_progressT tac =
    { tac with auto_tac = progressT tac.auto_tac }
 
-let trivialP  tac = (tac.auto_type == AutoTrivial)
-let normalP   tac = (tac.auto_type == AutoNormal)
-let completeP tac = (tac.auto_type == AutoComplete)
-
 (*
  * Build an auto tactic from all of the tactics given.
  * A list of tactics to try is constructed.
@@ -513,46 +509,33 @@ let ifthenelseT tac1 tac2 tac3 =
       tryT tac thenT thenelseT
 
 let extract tactics =
-   let tactics =
-      if !debug_auto then List.map debugT tactics
-      else List.map map_progressT tactics
+   let mapT =
+      if !debug_auto then debugT else map_progressT
    in
-   let trivial = sort_nodes (List.filter trivialP tactics) in
-   let normal = sort_nodes (List.filter normalP tactics) in
-   let complete = sort_nodes (List.filter completeP tactics) in
+   let trivial, normal, complete =
+      List.fold_left (fun (t, n, c) tac ->
+            let tac = mapT tac in
+               match tac.auto_type with
+                  AutoTrivial -> tac::t, n, c
+                | AutoNormal -> t, tac::n, c
+                | AutoComplete -> t, n, tac::c
+      ) ([],[],[]) tactics in
+	 let trivial = sort_nodes trivial
+   and normal = sort_nodes normal
+   and complete = sort_nodes complete in
    if !debug_auto then begin
       let names tacs = String.concat "; " (List.map (fun t -> t.auto_name) tacs) in
       eprintf "Auto tactics:\n\tTrivial: %s\n\tNormal: %s\n\tComplete: %s%t"
          (names trivial) (names normal) (names complete) eflush;
    end;
-   let make_progress_first reset next tacloop =
-      let rec prog_first tacs goals =
-         match tacs with
-            [] ->
-               next goals
-          | tac :: tacs ->
-               ifthenelseT tac.auto_tac (make_progressT goals prog_reset tacloop) (prog_first tacs goals)
-      and prog_reset goals = prog_first reset goals
-      in
-         prog_first
-   in
-   let next_idT _ = idT in
-   let next_failT _ = failT in
-   let trivT = make_progress_first trivial next_idT idT trivial ShapeMTable.empty in
-   let normal_tacs = trivial @ normal in
-   let all_tacs = trivial @ normal @ complete in
-   let try_complete goals = tryT (make_progress_first all_tacs next_failT failT complete goals) in
-   let autoT = make_progress_first normal_tacs try_complete idT normal_tacs ShapeMTable.empty in
-   let strongAutoT = make_progress_first all_tacs next_idT idT all_tacs ShapeMTable.empty in
-   let caT = make_progress_first all_tacs next_failT failT all_tacs ShapeMTable.empty in
-      (trivT, autoT, strongAutoT, caT)
+   trivial, normal, complete
 
 let improve_resource data info = info::data
 
 (*
  * Resource.
  *)
-let resource (auto_info, tactic * tactic * tactic * tactic) auto =
+let resource (auto_info, auto_info list * auto_info list * auto_info list) auto =
    Functional {
       fp_empty = [];
       fp_add = improve_resource;
@@ -585,17 +568,40 @@ let rec check_progress goal = function
 (*
  * Actual tactics.
  *)
+let make_progress_first reset next tacloop =
+   let rec prog_first tacs goals =
+      match tacs with
+         [] ->
+            next goals
+       | tac :: tacs ->
+            ifthenelseT tac.auto_tac (make_progressT goals prog_reset tacloop) (prog_first tacs goals)
+   and prog_reset goals = prog_first reset goals
+   in
+      prog_first
+
+let next_idT _ = idT
+let next_failT _ = failT
+
 let trivialT =
-   funT (fun p -> let trivT, _, _, _ = get_resource_arg p get_auto_resource in trivT)
+   funT (fun p -> let trivial, _, _ = get_resource_arg p get_auto_resource in
+                     make_progress_first trivial next_idT idT trivial ShapeMTable.empty)
 
 let autoT =
-   funT (fun p -> let _, autoT, _, _ = get_resource_arg p get_auto_resource in autoT)
+   funT (fun p -> let trivial, normal, complete = get_resource_arg p get_auto_resource in
+                  let normal_tacs = trivial @ normal in
+                  let all_tacs = normal_tacs @ complete in
+                  let try_complete goals = tryT (make_progress_first all_tacs next_failT failT complete goals) in
+                     make_progress_first normal_tacs try_complete idT normal_tacs ShapeMTable.empty)
 
 let strongAutoT =
-   funT (fun p -> let _, _, sAutoT, _ = get_resource_arg p get_auto_resource in sAutoT)
+   funT (fun p -> let trivial, normal, complete = get_resource_arg p get_auto_resource in
+                  let all_tacs = trivial @ normal @ complete in
+                     make_progress_first all_tacs next_idT idT all_tacs ShapeMTable.empty)
 
 let completeAutoT =
-   funT (fun p -> let _, _, _, tca = get_resource_arg p get_auto_resource in tca)
+   funT (fun p -> let trivial, normal, complete = get_resource_arg p get_auto_resource in
+                  let all_tacs = trivial @ normal @ complete in
+                     make_progress_first all_tacs next_failT failT all_tacs ShapeMTable.empty)
 
 let tcaT = tryT completeAutoT
 

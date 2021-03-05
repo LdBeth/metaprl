@@ -28,14 +28,9 @@
  * @end[license]
  *)
 {
-module StringCompare =
-struct
-   type t = string
-   let compare = Stdlib.compare
-end;;
 
-module StringSet = Set.Make (StringCompare);;
-module StringTable = Map.Make (StringCompare);;
+module StringSet = Set.Make (String)
+module StringTable = Map.Make (String)
 
 type summary =
    { summ_basename        : string;
@@ -536,7 +531,7 @@ let summ_reflect summ =
    (* The theories will be extending Basic_tactics *)
    let free_structures =
       if is_impl then
-         List.fold_left (fun set name -> StringSet.add name set) StringSet.empty reflect_modules
+         StringSet.of_list reflect_modules
       else
          StringSet.empty
    in

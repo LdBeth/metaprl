@@ -53,8 +53,8 @@ open Rewrite_types
 (*
  * Show the file loading.
  *)
-let _ =
-   show_loading "Loading Rewrite_match_redex%t"
+let () =
+   show_loading "Loading Rewrite_match_redex"
 
 let debug_rewrite = load_debug "rewrite"
 

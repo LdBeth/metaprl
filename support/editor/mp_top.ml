@@ -32,18 +32,18 @@
 open Lm_debug
 open Lm_printf
 
-let _ =
-   show_loading "Loading Mp_top%t"
+let () =
+   show_loading "Loading Mp_top"
 
 module Shell = Shell.Shell (Shell_mp.ShellP4)
 
-let _ =
-   show_loading "Loaded Shell%t"
+let () =
+   show_loading "Loaded Shell"
 
 module ShellBrowser = Shell_browser.ShellBrowser (Shell.Top)
 
-let _ =
-   show_loading "Starting main loop%t"
+let () =
+   show_loading "Starting main loop"
 
 (*
  * The first active shell will take everything.

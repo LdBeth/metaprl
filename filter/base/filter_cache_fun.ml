@@ -126,9 +126,7 @@ let string_of_op_shape shape =
          Buffer.add_char buf ']'
    in
    let string_of_arity i =
-      Buffer.add_char buf '<';
-      Buffer.add_string buf (string_of_int i);
-      Buffer.add_char buf '>'
+      Printf.bprintf buf "<%i>" i
    in
    let { sh_name = name;
          sh_kind = kind;

@@ -59,7 +59,7 @@ open Proof_convert
  * Show the file loading.
  *)
 let _ =
-   show_loading "Loading Filter_prog%t"
+   show_loading "Loading Filter_prog"
 
 let debug_filter_prog =
    create_debug (**)
@@ -412,7 +412,7 @@ let expr_of_label loc = function
 
 (*
  * Print a message on loading, and catch errors.
- *    Lm_debug.show_loading "Loading name%t";
+ *    Lm_debug.show_loading "Loading name";
  *    try e with
  *       exn ->
  *          Refine_exn.stderr_exn name exn
@@ -422,7 +422,7 @@ let wrap_exn proc loc name e =
    <:expr<
       do {
          (* Print a message before the execution *)
-         Lm_debug.show_loading $str: "Loading " ^ name ^ "%t"$;
+         Lm_debug.show_loading $str: "Loading " ^ name$;
          (* Wrap the body to catch exceptions *)
          try $e$ with
          $lid: exn_id$ ->
@@ -1404,7 +1404,7 @@ let define_resource proc loc name res =
       [<:str_item< type $inp_name$ = $res.res_input$ >>;
        <:str_item< type $outp_name$ = $res.res_output$ >>;
        <:str_item< value $lid:get_resource_name name$ =
-         Mp_resource.create_resource $str:fqn$ (**)
+         Mp_resource.create_resource $str:fqn$
             ( $res.res_body$ : Mp_resource.resource_info $lid:inp_name$ '$intermediate$ $lid:outp_name$ ) >>]
 
 let rec is_list_expr = function
@@ -1531,8 +1531,10 @@ let define_magic_block proc loc { magic_name = name; magic_code = stmts } =
    let index = List.fold_left Filter_hash.hash_str_item 0 stmts in
       <:str_item< value $lid:name$ = $int:string_of_int index$ >> :: stmts
 
+(*
 let define_prefix loc s =
    [<:str_item< value _ = $lid:Infix.prefix_name s$ >>]
+*)
 
 (*
  * Prolog declares the refiner and dformer.
@@ -1559,7 +1561,7 @@ let implem_prolog proc loc name =
                                 $lid:global_num_var$) =
                             Ml_term.term_arrays_of_string $str:String.escaped marshalled_terms$>>]
    in
-      <:str_item< Lm_debug.show_loading $str: "Loading theory " ^ String.capitalize_ascii name ^ "%t"$ >>
+      <:str_item< Lm_debug.show_loading $str: "Loading theory " ^ String.capitalize_ascii name$ >>
       :: <:str_item< value $lid:local_refiner_id$ = $refiner_expr loc$ . null_refiner $str: name$ >>
       :: term_let
 
@@ -1580,7 +1582,7 @@ let implem_postlog proc loc =
                   Theory.thy_groupdesc = $str:proc.imp_groupdesc$;
                   Theory.thy_refiner = $lid:refiner_id$
                }>>;
-            <:str_item< Lm_debug.show_loading $str: ("Finished loading " ^ String.capitalize_ascii proc.imp_name ^ "%t") $ >>]
+            <:str_item< Lm_debug.show_loading $str:"Finished loading " ^ String.capitalize_ascii proc.imp_name$ >>]
 
 (*
  * Now extract the program.
@@ -1688,9 +1690,6 @@ let extract_str_item proc (item, loc) =
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: magic block%t" eflush;
          define_magic_block proc loc block
-    | MLGramUpd (Infix s)
-    | MLGramUpd (Suffix s) ->
-         define_prefix loc s
     | DefineTerm (shapeclass, class_term, def)
       when is_shape_normal shapeclass ->
          define_term proc loc class_term def
@@ -1699,6 +1698,7 @@ let extract_str_item proc (item, loc) =
     | DeclareType _
     | DeclareTerm _
     | DeclareTypeRewrite _
+    | MLGramUpd _
     | Id _
     | Comment _
     | PRLGrammar _ ->

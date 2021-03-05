@@ -235,6 +235,8 @@ value substp mloc env =
     | <:expr< $uid:x$ >> ->
         try List.assoc x env with
         [ Not_found -> <:patt< $uid:x$ >> ]
+    | <:expr:< $longid:li$ >> ->
+      <:patt< $longid:li$ >>
     | <:expr< $int:x$ >> -> <:patt< $int:x$ >>
     | <:expr< $str:s$ >> -> <:patt< $str:s$ >>
     | <:expr< ($list:x$) >> -> <:patt< ($list:List.map loop x$) >>

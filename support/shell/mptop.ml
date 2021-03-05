@@ -187,8 +187,8 @@ and mk_expr top_expr =
             let names = string_list_of_longident li in
                VarProjExpr (names, v)
        | (<:expr< $lid: v$ . val >>) ->
-            let f = loc, VarExpr ("deref_" ^ v) in
-            let x = loc, UnitExpr () in
+            let f = loc, VarExpr ("deref_" ^ v)
+            and x = loc, UnitExpr () in
                ApplyExpr (f, x)
        | (<:expr< $e1$ $e2$ >>) as app_expr ->
             (match unapplist app_expr with

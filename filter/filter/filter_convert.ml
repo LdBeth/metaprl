@@ -43,7 +43,7 @@ open Filter_cache
  * Show the file loading.
  *)
 let _ =
-   show_loading "Loading Convert%t"
+   show_loading "Loading Convert"
 
 (*
  * Include directories.

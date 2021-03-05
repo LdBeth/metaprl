@@ -51,8 +51,8 @@ open Tacticals_boot
 (*
  * Debug statement.
  *)
-let _ =
-   show_loading "Loading Conversionals_boot%t"
+let () =
+   show_loading "Loading Conversionals_boot"
 
 (* unused
 let debug_conv =
@@ -106,7 +106,7 @@ struct
    let failWithC s =
       funC (fun _ -> raise (RefineError ("failWithC", StringError s)))
 
-   let failC  =  failWithC "Fail"
+   let failC = failWithC "Fail"
 
    (*
     * Trial.
@@ -156,52 +156,52 @@ struct
    (*
     * Apply to leftmost-innermost term.
     *)
-   let rec lowerC rw =
-      let lowerCE e =
-         prefix_orelseC (someSubC (lowerC rw)) rw
+   let lowerC rw =
+      let rec lowerCE e =
+         prefix_orelseC (someSubC (funC lowerCE)) rw
       in
          funC lowerCE
 
    (*
     * Apply to all terms possible from innermost to outermost.
     *)
-   let rec sweepUpC rw =
-      let sweepUpCE e =
-         prefix_thenC (allSubC (sweepUpC rw)) (tryC rw)
+   let sweepUpC rw =
+      let rec sweepUpCE e =
+         prefix_thenC (allSubC (funC sweepUpCE)) (tryC rw)
       in
          funC sweepUpCE
 
-   let rec sweepDnC rw =
-      let sweepDnCE e =
-         prefix_thenC (tryC rw) (allSubC (sweepDnC rw))
+   let sweepDnC rw =
+      let rec sweepDnCE e =
+         prefix_thenC (tryC rw) (allSubC (funC sweepDnCE))
       in
          funC sweepDnCE
 
    (*
     * These are the same but don't allow failure.
     *)
-   let rec sweepUpFailC rw =
-      let sweepUpCE e =
-         prefix_thenC (allSubC (sweepUpFailC rw)) rw
+   let sweepUpFailC rw =
+      let rec sweepUpCE e =
+         prefix_thenC (allSubC (funC sweepUpCE)) rw
       in
          funC sweepUpCE
 
-   let rec sweepDnFailC rw =
-      let sweepDnCE e =
-         prefix_thenC rw (allSubC (sweepDnFailC rw))
+   let sweepDnFailC rw =
+      let rec sweepDnCE e =
+         prefix_thenC rw (allSubC (funC sweepDnCE))
       in
          funC sweepDnCE
 
    (*
     * Search for the term, then apply conversion.
     *)
-   let rec findThenC test rw =
-      let findThenCE e =
+   let findThenC test rw =
+      let rec findThenCE e =
          let t = env_term e in
             if test t then
                rw
             else
-               allSubC (findThenC test rw)
+               allSubC (funC findThenCE)
       in
          funC findThenCE
 
@@ -243,22 +243,22 @@ struct
     * Repeat the conversion until fails.
     *)
    let untilFailC conv =
-      let rec aux env =
-         (tryC (prefix_thenC conv (funC aux)))
+      let rec aux _ =
+         tryC (prefix_thenC conv (funC aux))
       in
          funC aux
 
-   let rec repeatForC i conv =
+   let repeatForC i conv =
       if i < 0 then
          raise (Invalid_argument "repeatForC: the argument should be not negative")
       else
-         let repeatForCE env =
+         let rec repeatForCE i =
             if i = 0 then
                idC
             else
-               prefix_thenC conv (repeatForC (i - 1) conv)
+               prefix_thenC conv (funC (fun _ -> repeatForCE (i - 1)))
          in
-            funC repeatForCE
+            repeatForCE i
 
    let rwc conv assum clause =
       Rewrite.rw conv assum (TermAddr.make_address [ClauseAddr clause])

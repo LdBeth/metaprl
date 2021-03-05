@@ -93,7 +93,7 @@ and auto_type =
  | AutoNormal
  | AutoComplete
 
-resource (auto_info, tactic * tactic * tactic * tactic) auto
+resource (auto_info, auto_info list * auto_info list * auto_info list) auto
 
 (*
  * Operations on precedences.

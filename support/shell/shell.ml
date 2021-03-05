@@ -60,8 +60,8 @@ open Shell_current
 (*
  * Show that the file is loading.
  *)
-let _ =
-   show_loading "Loading Shell%t"
+let () =
+   show_loading "Loading Shell"
 
 (* unused
 let debug_shell  = load_debug "shell"
@@ -72,8 +72,8 @@ let debug_shell  = load_debug "shell"
  *)
 module Shell (ShellP4 : ShellP4Sig) =
 struct
-   let _ =
-      show_loading "Loading Shell module%t"
+   let () =
+      show_loading "Loading Shell module"
 
 (* unused
    type t = shell

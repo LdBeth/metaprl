@@ -198,22 +198,18 @@ struct
 
    let rec print_arity buf = function
       [i] ->
-         Buffer.add_string buf (string_of_int i)
+         Printf.bprintf buf "%i" i
     | i :: t ->
-         Buffer.add_string buf (string_of_int i);
-         Buffer.add_char buf ';';
+         Printf.bprintf buf "%i;" i;
          print_arity buf t
     | [] ->
          ()
 
    let string_of_shape { shape_opname = name; shape_params = params; shape_arities = arities } =
       let buf = Buffer.create 32 in
-         Buffer.add_string buf (string_of_opname name);
-         Buffer.add_char buf '[';
+         Printf.bprintf buf "%s[" (string_of_opname name);
          List.iter (print_param buf) params;
-         Buffer.add_string buf "]{";
-         print_arity buf arities;
-         Buffer.add_string buf "}";
+         Printf.bprintf buf "]{%a}" print_arity arities;
          Buffer.contents buf
 
    let string_of_opparam op =
@@ -236,9 +232,7 @@ struct
              [] ->
                 ()
            | _ ->
-                Buffer.add_char buf '{';
-                print_arity buf arities;
-                Buffer.add_char buf '}');
+                Printf.bprintf buf "{%a}" print_arity arities);
          Buffer.contents buf
 
    let print_shape out shape =

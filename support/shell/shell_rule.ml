@@ -54,8 +54,8 @@ open Filter_summary_type
 (*
  * Show that the file is loading.
  *)
-let _ =
-   show_loading "Loading Shell_rule%t"
+let () =
+   show_loading "Loading Shell_rule"
 
 let debug_shell =
    create_debug (**)

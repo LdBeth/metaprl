@@ -42,13 +42,13 @@ open Refiner.Refiner.TermType
 
 open Tactic_boot
 open Sequent_boot
-open Tactic_boot_sig
+(* open Tactic_boot_sig *)
 
 (*
  * Debug statement.
  *)
-let _ =
-   show_loading "Loading Tacticals_boot%t"
+let () =
+   show_loading "Loading Tacticals_boot"
 
 (* unused
 let debug_subgoals =
@@ -59,12 +59,7 @@ let debug_subgoals =
       }
 *)
 
-let debug_profile_tactics =
-   create_debug (**)
-      { debug_name = "profile_tactics";
-        debug_description = "Collect and report profiling information for top-level tactics (not theads-safe)";
-        debug_value = false
-      }
+(* let debug_profile_tactics = load_debug "profile_tactics" *)
 
 module Tacticals =
 struct
@@ -461,10 +456,10 @@ struct
          prefix_thenFLT tac1 (aux tacs)
 
    let prefix_thenMLT =
-      thenLLT (function l -> isEmptyOrMainLabel l)
+      thenLLT isEmptyOrMainLabel
 
    let prefix_thenALT =
-      thenLLT (function l -> isAuxLabel l)
+      thenLLT isAuxLabel
 
    (************************************************************************
     * LABEL PROGRESS                                                       *
@@ -829,6 +824,7 @@ struct
    let get_alt_arg arg =
       match Sequent.get_bool_arg arg "alt" with Some v -> v | None -> false
 
+(* disabled
    let table = Hashtbl.create 19
 
    let profileWrapT args tac =
@@ -886,9 +882,10 @@ struct
                         raise exn
                end else
                   TacticInternal.wrapT args tac p
+*)
 
-   let wrapT =
-      if !debug_profile_tactics then profileWrapT else TacticInternal.wrapT
+   let wrapT = (* XXX: this is not working due to debug argument setting is too late *)
+      (* if !debug_profile_tactics then profileWrapT else *) TacticInternal.wrapT
 
 end
 

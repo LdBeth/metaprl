@@ -596,19 +596,19 @@ let rec terms2temp_multieq t0 t1 consts u var_hashtbl b_asslist0 b_asslist1 =
          let op_n0 =List.length tbvs_list0
          and op_n1 =List.length tbvs_list1 in
          if not (op_n0=op_n1) then raise(Clash(ClashTerms("terms2temp_multieq:7",t0,t1)));
-         let op_a0 = Array.of_list (List.map List.length tbvs_list0)
-         and op_a1 = Array.of_list (List.map List.length tbvs_list1) in
+         let op_a0 = Lm_array_util.of_list_map List.length tbvs_list0
+         and op_a1 = Lm_array_util.of_list_map List.length tbvs_list1 in
          if not (op_a0=op_a1) then raise(Clash(ClashTerms("terms2temp_multieq:8",t0,t1)));
          let fs = { opsymb = op0;
                     oparity_n = op_n0;
                     oparity_a = op_a0 ;
                     b_length = 2;
                     opbinding = (Array.init op_n0
-                                 (function i -> (Array.make op_a0.(i) [] )
+                                 (fun i -> (Array.make op_a0.(i) [] )
                                  )
                                 );
                     renamings = (Array.init op_n0
-                                 (function i -> (Array.make op_a0.(i) (V null_var) )
+                                 (fun i -> (Array.make op_a0.(i) (V null_var) )
                                  )
                                 );
                     timestamp = (-1)
