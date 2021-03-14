@@ -100,18 +100,18 @@ let main () =
          remove_output_file ();
          raise exn
 
-external exit : int -> unit = "caml_exit"
+external stop_gmon : unit -> unit = "stop_gmon"
 
 let _ =
    try
       main ();
-      do_at_exit ();
+      stop_gmon();
       close_out stdout;
       close_out stderr;
       exit 0
    with
       exn ->
-         do_at_exit ();
+         stop_gmon();
          close_out stdout;
          close_out stderr;
          exit 1

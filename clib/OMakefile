@@ -1,7 +1,6 @@
 LCFILES[] =
     print_symbols
     profile
-    exit
     debug
     ml_debug
     c_time

@@ -39,8 +39,8 @@ open Refiner.Refiner.Refine
 (*
  * Show the file loading.
  *)
-let _ =
-   show_loading "Loading Theory%t"
+let () =
+   show_loading "Loading Theory"
 
 (*
  * Info is saved in this format.

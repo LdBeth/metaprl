@@ -86,8 +86,8 @@ open Tactic_boot.TacticInternal
 (*
  * Show that the file is loading.
  *)
-let _ =
-   show_loading "Loading Proof%t"
+let () =
+   show_loading "Loading Proof"
 
 let debug_proof =
    create_debug (**)
@@ -201,7 +201,7 @@ struct
       let append = Lm_list_util.unionq
    end
 
-   module Cache = MakeMsequentTable (CacheBase);;
+   module Cache = MakeMsequentTable (CacheBase)
 
    (*
     * Cache is actually imperative.
@@ -487,16 +487,13 @@ struct
       else if i = 0 then
          goal
       else
-         let i' = pred i in
-         let len = List.length subgoals in
-            if i' < len then
-               List.nth subgoals i'
-            else
-               let i' = i' - len in
-                  if i' < List.length extras then
-                     List.nth extras i'
-                  else
-                     raise_select_error proof node raddr i
+         let rec in_ex n = function
+            x :: xs -> if n = 1 then x else in_ex (pred n) xs
+          | [] -> raise_select_error proof node raddr i in
+         let rec in_sub n = function
+            x :: xs -> if n = 1 then x else in_sub (pred n) xs
+          | [] -> in_ex n extras in
+            in_sub i subgoals
 
    let rec select_child proof node raddr i =
       match node with
@@ -659,7 +656,7 @@ struct
                List.iter (format_arg db buf) leaves;
                format_ezone buf;
                prerr_rbuffer buf;
-               eprintf "%t" eflush
+               eflush stderr
          end;
          leaves
 
@@ -1850,19 +1847,6 @@ struct
    (*
     * Convert from an io proof.
     *)
-   let lazy_apply f x =
-      let cell = ref None in
-      let f () =
-         match !cell with
-            None ->
-               let p = f x in
-                  cell := Some p;
-                  p
-          | Some x ->
-               x
-      in
-         f
-
    let proof_of_io_proof raw_attributes sentinal bookmark parse eval node =
       let parents = ref [] in
       let make_tactic_arg arg =
@@ -1911,12 +1895,12 @@ struct
                      io_rule_extras = extras;
                      _
          } ->
-            let expr = lazy_apply parse text in
-            let tactic = lazy_apply (fun () -> eval (expr ())) () in
+            let expr = lazy (parse text) in
+            let tactic = lazy (eval (Lazy.force_val expr)) in
                RuleBox { rule_status = LazyStatusDelayed;
                          rule_string = text;
-                         rule_expr = expr;
-                         rule_tactic = tactic;
+                         rule_expr = (fun () -> Lazy.force_val expr);
+                         rule_tactic = (fun () -> Lazy.force_val tactic);
                          rule_extract_normalized = false;
                          rule_extract = convert goal;
                          rule_subgoals = List.map convert subgoals;

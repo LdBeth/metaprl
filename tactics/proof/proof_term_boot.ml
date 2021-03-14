@@ -569,19 +569,6 @@ struct
         ref_sentinal = (fst info).sentinal
       }
 
-   let lazy_apply f x =
-      let cell = ref None in
-      let f () =
-         match !cell with
-            None ->
-               let p = f x in
-                  cell := Some p;
-                  p
-          | Some x ->
-               x
-      in
-         f
-
    let ext_make_extract info = function
       HeadGoal arg ->
          Goal (ext_retrieve_tactic_arg info arg)
@@ -602,12 +589,12 @@ struct
          let arg = fst info in
          let parse = arg.parse_expr in
          let eval = arg.parse_tactic in
-         let expr = lazy_apply parse text in
-         let tac = lazy_apply (fun text -> eval (parse text)) text in
+         let expr = lazy (parse text) in
+         let tac = lazy (eval (Lazy.force_val expr)) in
             RuleBox { rule_status = LazyStatusDelayed;
                       rule_string = text;
-                      rule_expr = expr;
-                      rule_tactic = tac;
+                      rule_expr = (fun () -> Lazy.force_val expr);
+                      rule_tactic = (fun () -> Lazy.force_val tac);
                       rule_extract_normalized = false;
                       rule_extract = ext_retrieve_extract info goal;
                       rule_subgoals = List.map (ext_retrieve_extract info) subgoals;

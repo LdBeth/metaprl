@@ -10,8 +10,10 @@ int mp_gmon_status = 1;
 
 value stop_gmon (value var) {
 #ifdef PROF
-   _mcleanup ();
-	mp_gmon_status = 0;
+    if (mp_gmon_status){
+         _mcleanup ();
+         mp_gmon_status = 0;
+    }
 #endif
    return Val_unit;
 }

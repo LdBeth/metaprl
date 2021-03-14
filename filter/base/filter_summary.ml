@@ -51,8 +51,8 @@ open Filter_base_type
 (*
  * Show the file loading.
  *)
-let _ =
-   show_loading "Loading Filter_summary%t"
+let () =
+   show_loading "Loading Filter_summary"
 
 let debug_summary =
    create_debug (**)

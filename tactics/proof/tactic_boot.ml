@@ -64,8 +64,8 @@ open Theory
 (*
  * Show that the file is loading.
  *)
-let _ =
-   show_loading "Loading Tactic_type%t"
+let () =
+   show_loading "Loading Tactic_boot"
 
 let debug_tactic =
    create_debug (**)

@@ -42,8 +42,8 @@ open Tactic_boot
 (*
  * Debug statement.
  *)
-let _ =
-   show_loading "Loading Sequent%t"
+let () =
+   show_loading "Loading Sequent"
 
 module Sequent =
 struct

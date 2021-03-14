@@ -51,13 +51,13 @@ let () =
 let () = ShellBrowser.main ()
 let () = Shell.Main.main ()
 
-external exit : int -> unit = "caml_exit"
+external stop_gmon : unit -> unit = "stop_gmon"
 
 let _ =
-   if not !Shell_state.batch_flag then eprintf "MetaPRL exiting\n";
+   if not !Shell_state.batch_flag then eprintf "\nMetaPRL exiting\n";
+   stop_gmon();
    flush stderr;
    flush stdout;
-   do_at_exit ();
    exit 0
 
 (*
