@@ -38,8 +38,8 @@ open Filter_parse
 (*
  * Show the file loading.
  *)
-let _ =
-   show_loading "Loading Filter_main%t"
+let () =
+   show_loading "Loading Filter_main"
 
 (*
  * string -> path commands

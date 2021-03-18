@@ -32,15 +32,7 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
-
-open Lm_debug
 open Lm_imp_dag
-
-(*
- * Show the file loading.
- *)
-let _ =
-   show_loading "Loading Precedence%t"
 
 (************************************************************************
  * TYPES                                                                *

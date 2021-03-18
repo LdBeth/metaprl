@@ -39,8 +39,8 @@ open Refiner.Refiner.Refine
 (*
  * Show loading of the file.
  *)
-let _ =
-   show_loading "Loading Mp_resource%t"
+let () =
+   show_loading "Loading Mp_resource"
 
 let debug_resource =
    create_debug (**)

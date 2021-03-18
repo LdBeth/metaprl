@@ -31,13 +31,6 @@
 let dat_magic = 0x2557f3ef
 
 (*
- * Defer requesting $MP_ROOT to init()
- *)
-let lib = ref ""
-let dat_filename = ref ""
-let words_filename = ref ""
-
-(*
  * The loaded dictionary.
  *)
 let dict = ref None
@@ -45,44 +38,19 @@ let dict = ref None
 (*
  * Check if the database is out-of-date.
  *)
-let check_magic () =
-   try
-      let inx = open_in_bin !dat_filename in
-         try
-            let i = input_binary_int inx in
-               close_in inx;
-               i = dat_magic
-         with
-            _ ->
-               close_in inx;
-               false
-   with
-      _ ->
-         false
-
-
-let check_dict () =
-   if check_magic () then
-      let tmp_stat = Unix.stat !dat_filename in
-      let check_magic' file =
-         (try
-             let file_stat = Unix.stat file in
-                file_stat.Unix.st_mtime > tmp_stat.Unix.st_mtime
-          with
-             Unix.Unix_error _ ->
-                false)
-      in
-         check_magic' !words_filename
-   else
-      true
+(*
+ * Check if the database is out-of-date.
+ *)
+let check_dict dat words =
+   let tmp_stat = Unix.stat dat in
+   let file_stat = Unix.stat words in
+      file_stat.Unix.st_mtime > tmp_stat.Unix.st_mtime
 
 (*
  * Borrowing from the Filename library, using the "lib" directory instead of the tmp one
  *)
-let make_dict () =
+let make_dict lib dat_filename words =
    let prng = Random.State.make_self_init () in
-   let lib = !lib in
-   let dat_filename = !dat_filename in
    let rec try_name counter =
       if counter >= 1000 then
          invalid_arg "Filter_spell.open_temp_file: lib directory nonexistent or full";
@@ -94,27 +62,26 @@ let make_dict () =
       with Sys_error _ ->
          try_name (counter + 1)
    in
-   let table = Lm_spell.make_dict !words_filename in
+   let table = Lm_spell.make_dict words in
       dict := Some table;
       let tmp, out = try_name 0 in
       let out = Stdlib.open_out_bin tmp in
          Stdlib.output_binary_int out dat_magic;
          Lm_spell.to_channel out table;
          Stdlib.close_out out;
-         try
-            Unix.rename tmp dat_filename
-         with exn ->
-            if Sys.file_exists dat_filename then
-               Unix.unlink tmp
-            else
-               raise exn
+         try Unix.rename tmp dat_filename with exn ->
+               if Sys.file_exists dat_filename then
+                  Unix.unlink tmp
+               else
+                  raise exn
 
 (*
  * Load the dict.
  *)
-let load_dict () =
+let load_dict lib dat words =
    try
-      let inx = open_in_bin !dat_filename in
+      if check_dict dat words then raise Not_found;
+      let inx = open_in_bin dat in
          try
             let magic = input_binary_int inx in
                if magic <> dat_magic then
@@ -125,10 +92,10 @@ let load_dict () =
          with
             _ ->
                close_in inx;
-               make_dict ()
+               make_dict lib dat words
    with
       _ ->
-         make_dict ()
+         make_dict lib dat words
 
 (*
  * Initialize.
@@ -136,15 +103,11 @@ let load_dict () =
 let init () =
    match !dict with
       None ->
-         lib := Setup.lib();
-         dat_filename := Filename.concat !lib "english_dictionary.dat";
-         words_filename := Filename.concat !lib "words.dict";
-         if check_dict () then
-            make_dict ()
-         else
-            load_dict ()
-    | Some _ ->
-         ()
+         let lib = Setup.lib() in
+         let dat = Filename.concat lib "english_dictionary.dat"
+         and words = Filename.concat lib "words.dict" in
+         load_dict lib dat words
+    | Some _ -> ()
 
 (*
  * Check a word.

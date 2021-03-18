@@ -40,12 +40,6 @@ type op_kind =
    NormalKind
  | TokenKind
 
-(*
- * Show the file loading.
- *)
-let _ =
-   show_loading "Loading Opname%t"
-
 let debug_opname =
    create_debug (**)
       { debug_name = "opname";
@@ -56,7 +50,7 @@ let debug_opname =
 (*
  * This changes the GC parameters for the whole MetaPRL system.
  *)
-let _ =
+let () =
    let r = Gc.get () in
       (* r.verbose <- 1; *)
       r.Gc.minor_heap_size <- 196608;
@@ -97,13 +91,14 @@ let (optable : (string list, opname) Hashtbl.t) = Hashtbl.create 97
  *)
 let nil_opname = { opname_token = opname_token; opname_name = [] }
 
-let _ = Hashtbl.add optable [] nil_opname
+let () = Hashtbl.add optable [] nil_opname
 
 let rec mk_opname s ({ opname_token = token; opname_name = name } as opname) =
    if token == opname_token then
       let name = s :: name in
-         try Hashtbl.find optable name with
-            Not_found ->
+         match Hashtbl.find_opt optable name with
+            Some op -> op
+          | None ->
                let op = { opname_token = opname_token; opname_name = name } in
                   Hashtbl.add optable name op;
                   op

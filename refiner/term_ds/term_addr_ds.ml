@@ -372,25 +372,8 @@ struct
           mk_bterm bt.bvars t :: bterms, arg),
       path_var_replace_bterm)
 
-   let rec var_run_hyps hyps bvars sub =
-      function
-         [] ->
-            List.rev hyps, bvars, sub
-       | Hypothesis(v, t) :: rest ->
-            let t = apply_subst sub t in
-            let v, sub =
-               if SymbolSet.mem bvars v then
-                  let v' = new_name v (SymbolSet.mem bvars) in
-                     v', (v, mk_var_term v') :: sub
-               else
-                  v, sub
-            in
-               var_run_hyps (Hypothesis(v, t) :: hyps) (SymbolSet.add bvars v) sub rest
-       | Context(v, cts, ts) :: rest ->
-            var_run_hyps (Context(v, cts, List.map (apply_subst sub) ts) :: hyps) (SymbolSet.add bvars v) sub rest
-
-   (* XXX: duplicated version for fold_map *)
-   let fold_var_run_hyps (bvars, sub) = function
+   (* XXX: aux function that can be used by fold_map *)
+   let var_run_hyps_aux (bvars, sub) = function
          Hypothesis(v, t) ->
             let t = apply_subst sub t in
             let v, sub =
@@ -403,6 +386,15 @@ struct
                (SymbolSet.add bvars v, sub), Hypothesis(v, t)
        | Context(v, cts, ts) ->
             (SymbolSet.add bvars v, sub), Context(v, cts, List.map (apply_subst sub) ts)
+
+   let rec var_run_hyps hyps bvars sub =
+      function
+         [] ->
+            List.rev hyps, bvars, sub
+       | hyp :: rest ->
+            let (bvars, sub), hyp = var_run_hyps_aux (bvars, sub) hyp
+            in
+               var_run_hyps (hyp :: hyps) bvars sub rest
 
    DEFINE VARS_APPLY_FUN_HYPS = fun FAIL f hyps bvars sub i ->
       function
@@ -438,7 +430,7 @@ struct
                   var_apply_fun_hyps FAIL f (hyp::hyps) (SymbolSet.add bvars v) sub (i-1) rest
 
    DEFINE VARS_CONCL_CASE =
-      let (bvars, sub), hyps = SeqHyp.fold_map fold_var_run_hyps (bvars, []) s.sequent_hyps in
+      let (bvars, sub), hyps = SeqHyp.fold_map var_run_hyps_aux (bvars, []) s.sequent_hyps in
          if sub = [] then
             let term, arg = f bvars s.sequent_concl in
                mk_sequent_term {s with sequent_concl = term}, arg

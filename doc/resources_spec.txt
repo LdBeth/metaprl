@@ -116,7 +116,7 @@ tactic) results), but we can not restrict the type of data.
 
 PROBLEM 3.2
 For a functional resource, the intermediate object that it constcucts
-functionally  would normally have a typoe different from the result_type. The
+functionally  would normally have a type different from the result_type. The
 types of these intermediate objects range wildly and we want the code that
 does not need to know these types.
 

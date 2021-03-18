@@ -379,12 +379,9 @@ struct
       funT (fun p ->
       let goal, assums = Refine.dest_msequent (Sequent.msequent p) in
       let t' =
-         if assum = 0 then
-            goal
-         else if assum > 0 && assum <= List.length assums then
-            List.nth assums (pred assum)
-         else
-            raise (RefineError ("rwcutT", StringIntError ("assum number is out of range", assum)))
+         match List.nth_opt (goal :: assums) assum with
+            Some e -> e
+          | _ -> raise (RefineError ("rwcutT", StringIntError ("assum number is out of range", assum)))
       in
       let t' = TermAddr.replace_subterm t' addr t in
          cutT t')

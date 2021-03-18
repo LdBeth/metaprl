@@ -119,19 +119,6 @@ let rl_history_length =
       _ ->
          100
 
-let () =
-   if not !batch_flag then begin
-      Lm_readline.initialize_readline ();
-      try
-         Lm_readline.read_history rl_history_file
-      with
-         Not_found ->
-            ()
-       | Sys_error err ->
-            eprintf "Couldn't load readline history file: \"%s\"\n%s\n" rl_history_file err;
-            flush_all ()
-   end
-
 (*
  * Save the text in the input_buffers during each toplevel read.
  *)
@@ -319,8 +306,8 @@ let term_exp s =
 let term_patt s =
    raise (Failure "Shell_mp.term_patt: not implemented yet")
 
-let _ = Quotation.add "term" (Quotation.ExAst (term_exp, term_patt))
-let _ = Quotation.default := "term"
+let () = Quotation.add "term" (Quotation.ExAst (term_exp, term_patt))
+let () = Quotation.default := "term"
 
 (*
  * Parse an input expression.
@@ -539,6 +526,21 @@ let set_module name =
 let get_toploop () =
    synchronize_read (fun state -> state.state_toploop)
 
+let common_prefix s1 s2 =
+   let len = String.length s1 in
+   let rec aux i = if i = len then s1 else
+                   if String.unsafe_get s1 i = String.unsafe_get s2 i then
+                      aux (succ i)
+                   else String.sub s1 0 i
+   in aux 0
+
+let toploop_comp s =
+   match Mptop.comp (get_toploop ()) s with
+      [] -> [||]
+    | [x] -> [|x|]
+    | (x :: xs) as rs -> let pfx = List.fold_left common_prefix x xs in
+                            Array.of_list (pfx :: rs)
+
 (*
  * Return interactive flag.
  *)
@@ -742,19 +744,17 @@ let stdin_stream () =
    let buf = create_buffer () in
    let refill loc =
       let state = State.get state_entry in
-      let str = if !batch_flag
-                then unsynchronize Stdlib.read_line ()
-                else unsynchronize Lm_readline.readline state.state_prompt1 in
-      (* XXX HACK (nogin): append ";;" at the end of a line, unless it ends with a '\' *)
       let str =
-         if !batch_flag then
-            str ^ "\n"
-         else if str <> "" && str.[String.length str - 1] = '\\'  then
-            String.sub str 0 (String.length str - 1)
-         else if Str.string_match scscregexp str 0 then
-            str
-         else
-            str ^ ";;"
+         if !batch_flag
+         then unsynchronize Stdlib.read_line () ^ "\n"
+         else let str = unsynchronize Lm_readline.readline state.state_prompt1 in
+              (* XXX HACK (nogin): append ";;" at the end of a line, unless it ends with a '\' *)
+                 if str <> "" && str.[String.length str - 1] = '\\'  then
+                    String.sub str 0 (String.length str - 1)
+                 else if Str.string_match scscregexp str 0 then
+                    str
+                 else
+                    str ^ ";;"
       in
          state.state_prompt1 <- state.state_prompt2;
          buf.buf_index <- 0;
@@ -780,6 +780,18 @@ let stdin_stream () =
       buf.buf_index <- 0;
       buf.buf_buffer <- ""
    in
+      if not !batch_flag then begin
+         Lm_readline.initialize_readline ();
+         Lm_readline.register_completion toploop_comp;
+         try
+            Lm_readline.read_history rl_history_file
+         with
+            Not_found ->
+               ()
+          | Sys_error err ->
+               eprintf "Couldn't load readline history file: \"%s\"\n%s\n" rl_history_file err;
+               flush_all ()
+      end;
       synchronize_write (fun state -> reset_input state);
       Stream.from read, flush
 

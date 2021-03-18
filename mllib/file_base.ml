@@ -39,11 +39,8 @@ open Lm_printf
 open File_base_type
 
 (*
- * Show the file loading.
+ * Debugging.
  *)
-let _ =
-   show_loading "Loading File_base%t"
-
 let debug_file_base =
    create_debug (**)
       { debug_name = "file_base";

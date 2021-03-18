@@ -83,8 +83,8 @@ open Refine_sig
 (*
  * Show the file loading.
  *)
-let _ =
-   show_loading "Loading Refine%t"
+let () =
+   show_loading "Loading Refine"
 
 let debug_refine =
    create_debug (**)
@@ -601,12 +601,10 @@ struct
     *)
    let rwtactic i rw sent mseq =
       let t =
-         if i = 0 then
-            mseq.mseq_goal
-         else if i <= List.length mseq.mseq_assums then
-            List.nth mseq.mseq_assums (pred i)
-         else
-            REF_RAISE(RefineError ("rwtactic", StringIntError ("assum number is out of range", i)))
+         match List.nth_opt (mseq.mseq_goal :: mseq.mseq_assums) i with
+            Some e -> e
+          | _ ->
+               REF_RAISE(RefineError ("rwtactic", StringIntError ("assum number is out of range", i)))
       in
       let t', just = rw sent t in
       let subgoal =
@@ -705,12 +703,10 @@ struct
    let crwtactic i ((addr, crw) : cond_rewrite) (sent : sentinal) (seq : msequent) =
       let { mseq_goal = goal; mseq_assums = assums; _ } = seq in
       let t =
-         if i = 0 then
-            goal
-         else if i <= List.length assums then
-            List.nth assums (pred i)
-         else
-            REF_RAISE(RefineError ("Refine.crwtactic", StringIntError ("assumption is out of range", i)))
+         match List.nth_opt (goal :: assums) i with
+            Some e -> e
+          | _ ->
+               REF_RAISE(RefineError ("Refine.crwtactic", StringIntError ("assumption is out of range", i)))
       in
       (*
        * XXX HACK!!! This should go away once we implement the crw mechanism properly

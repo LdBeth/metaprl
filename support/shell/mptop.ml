@@ -125,6 +125,9 @@ let add_list = List.fold_left add
 
 let mem = Table.mem
 
+(* XXX: TODO: using trie for completion? *)
+let comp tbl s = List.filter (Lm_string_util.is_string_prefix s) (Table.keys tbl)
+
 doc <:doc<
    Toplevel values are added to the @Comment!resource[toploop_resource] resource.
    The argument has type @code{string * top_expr}, which includes

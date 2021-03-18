@@ -31,14 +31,7 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
-open Lm_debug
 open File_base_type
-
-(*
- * Show the file loading.
- *)
-let _ =
-   show_loading "Loading File_type_base%t"
 
 (************************************************************************
  * TYPES                                                                *

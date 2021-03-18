@@ -8,12 +8,6 @@ open Lm_debug
 open Lm_printf
 
 (*
- * Show the file loading.
- *)
-let _ =
-   show_loading "Loading Env_arg%t"
-
-(*
  * Type of variable setting functions.
  *)
 type 'a env_set = string -> 'a ref -> string -> unit

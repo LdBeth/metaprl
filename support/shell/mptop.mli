@@ -45,6 +45,7 @@ type item = string * string * top_expr * top_type
 resource (item, item list -> top_table) toploop
 
 val mem : top_table -> string -> bool
+val comp : top_table -> string -> string list
 
 (*
  * A resource for compiling expressions from OCaml input.
