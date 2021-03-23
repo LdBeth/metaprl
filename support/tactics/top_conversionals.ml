@@ -256,8 +256,8 @@ doc <:doc<
    Subterms can also be addressed explicitly with the (@tt{addrC @it[addr] $c$})
    conversion.  The address is an integer list
    that describes the @emph{path} leading to the term to be rewritten.  For
-   example, the address $[ ]$ is the identity address, $[0]$ is its leftmost
-   subterm, $[0; 1]$ is the second subterm of the first subterm, @i[etc].
+   example, the address $[ ]$ is the identity address, $[1]$ is its leftmost
+   subterm, $[1; 2]$ is the second subterm of the first subterm, @i[etc].
    However addresses are somewhat fragile, and correct addresses can be difficult
    to discover. For this reason, the use of @tt[addrC] is discouraged.}
 

@@ -275,14 +275,14 @@ struct
       funT (fun p -> if pred p then tac1 else tac2)
 
    let ifOnConclT pred =
-      ifT (function p -> pred (Sequent.concl p))
+      ifT (fun p -> pred (Sequent.concl p))
 
    let ifOnHypT pred tac1 tac2 i =
       funT (fun p ->
          (if pred (Sequent.nth_hyp p i) then tac1 else tac2) i)
 
    let ifThenT pred tac1 =
-      ifT (function p -> pred (Sequent.goal p)) tac1 idT
+      ifT (fun p -> pred (Sequent.goal p)) tac1 idT
 
    let ifThenOnConclT pred tac =
       let failT = failWithT "ifThenOnConclT" in
@@ -299,7 +299,7 @@ struct
          funT aux
 
    let untilT pred =
-      whileT (function p -> not (pred p))
+      whileT (fun p -> not (pred p))
 
    (************************************************************************
     * LABEL TACTICS                                                        *
@@ -590,22 +590,20 @@ struct
 
    let onMHypsT = onMClausesT
 
-   let rec onAllT baseT thenT tac i = function
-      [hd] ->
-         (match hd with
-             Hypothesis _ ->
-                tac i
-           | Context _ ->
-                baseT)
-    | [] ->
-         baseT
-    | hd::tl ->
-         let i' = pred i in
-            match hd with
-               Hypothesis _ ->
-                  thenT (tac i) (onAllT baseT thenT tac i' tl)
-             | Context _ ->
-                  onAllT baseT thenT tac i' tl
+   let onAllT baseT thenT tac i hyps =
+      if i = 0 then baseT else
+         let rec aux i =
+            if i = 1 then match Term.SeqHyp.get hyps 0 with
+                             Hypothesis _ ->
+                                tac i
+                           | Context _ ->
+                                baseT
+            else
+               let i' = pred i in
+                  match Term.SeqHyp.get hyps i' with
+                     Hypothesis _ -> thenT (tac i) (aux i')
+                   | Context _ -> aux i'
+         in aux i
 
    let rec onAllCumulativeT_aux thenT tac i = funT (fun p ->
       if i < Sequent.hyp_count p then
@@ -624,8 +622,8 @@ struct
     * Work on all hyps.
     *)
    let onAllHypsT tac = funT (fun p ->
-      let hyps = Term.SeqHyp.to_list (Sequent.explode_sequent_arg p).sequent_hyps in
-         onAllT idT prefix_thenT tac (Sequent.hyp_count p) (List.rev hyps))
+      let hyps = (Sequent.explode_sequent_arg p).sequent_hyps in
+         onAllT idT prefix_thenT tac (Sequent.hyp_count p) hyps)
 
    let onAllCumulativeHypsT tac = onAllCumulativeT_aux prefix_thenT tac 0
 
@@ -639,34 +637,34 @@ struct
     * Try forms.
     *)
    let tryOnClausesT clauses tac =
-      onClausesT clauses (function i -> tryT (tac i))
+      onClausesT clauses (fun i -> tryT (tac i))
 
    let tryOnHypsT = tryOnClausesT
 
    let tryOnAllHypsT tac =
-      onAllHypsT (function i -> tryT (tac i))
+      onAllHypsT (fun i -> tryT (tac i))
 
    let tryOnAllCumulativeHypsT tac =
-      onAllCumulativeHypsT (function i -> tryT (tac i))
+      onAllCumulativeHypsT (fun i -> tryT (tac i))
 
    let tryOnAllClausesT tac =
-      onAllClausesT (function i -> tryT (tac i))
+      onAllClausesT (fun i -> tryT (tac i))
 
    (*
     * Labelled forms.
     *)
    let onAllMHypsT tac =
       funT (fun p ->
-            let hyps = Term.SeqHyp.to_list (Sequent.explode_sequent_arg p).sequent_hyps in
-               onAllT idT prefix_thenMT tac (Sequent.hyp_count p) (List.rev hyps))
+            let hyps = (Sequent.explode_sequent_arg p).sequent_hyps in
+               onAllT idT prefix_thenMT tac (Sequent.hyp_count p) hyps)
 
    let onAllMCumulativeHypsT tac = onAllCumulativeT_aux prefix_thenMT tac 0
 
    let tryOnAllMCumulativeHypsT tac =
-      onAllMCumulativeHypsT (function i -> tryT (tac i))
+      onAllMCumulativeHypsT (fun i -> tryT (tac i))
 
    let tryOnAllMHypsT tac =
-      onAllMHypsT (function i -> tryT (tac i))
+      onAllMHypsT (fun i -> tryT (tac i))
 
    let tryOnAllMClausesT tac =
       prefix_thenMT (tryOnAllMHypsT tac) (tryT (onConclT tac))
@@ -689,9 +687,9 @@ struct
    let onAllMClausesOfAssumT tac assum =
       funT (fun p ->
                         let assumption = List.nth (snd (dest_msequent (Sequent.msequent p))) assum in
-                        let hyps = Term.SeqHyp.to_list (TermMan.explode_sequent assumption).sequent_hyps in
+                        let hyps = (TermMan.explode_sequent assumption).sequent_hyps in
          prefix_thenMT
-            (onAllT idT prefix_thenMT (tac assum) (Sequent.assum_hyp_count p assum) (List.rev hyps))
+            (onAllT idT prefix_thenMT (tac assum) (Sequent.assum_hyp_count p assum) hyps)
             (onConclT (tac assum))
       )
 
@@ -730,12 +728,12 @@ struct
     * Make sure one of the hyps works.
     *)
    let onSomeHypT tac = funT (fun p ->
-      let hyps = Term.SeqHyp.to_list (Sequent.explode_sequent_arg p).sequent_hyps in
-         onAllT failT prefix_orelseT tac (Sequent.hyp_count p) (List.rev hyps))
+      let hyps = (Sequent.explode_sequent_arg p).sequent_hyps in
+         onAllT failT prefix_orelseT tac (Sequent.hyp_count p) hyps)
 
    let onAnyHypT tac = funT (fun p ->
-      let hyps = Term.SeqHyp.to_list (Sequent.explode_sequent_arg p).sequent_hyps in
-         onAllT idT prefix_orelseT tac (Sequent.hyp_count p) (List.rev hyps))
+      let hyps = (Sequent.explode_sequent_arg p).sequent_hyps in
+         onAllT idT prefix_orelseT tac (Sequent.hyp_count p) hyps)
 
    (************************************************************************
     * ARGUMENTS                                                            *

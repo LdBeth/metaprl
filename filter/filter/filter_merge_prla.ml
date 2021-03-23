@@ -50,8 +50,8 @@ open Tacticals_boot.Tacticals
 (*
  * Show the file loading.
  *)
-let _ =
-   show_loading "Loading Filter_merge_prla%t"
+let () =
+   show_loading "Loading Filter_merge_prla"
 
 type pf_kind =
    Empty
@@ -83,7 +83,7 @@ let trivial_proof t =
       else if
             Opname.eq op interactive_op &&
             let t = one_subterm t in
-            let pf = io_proof_of_term (fun _ -> ExUid(dummy_loc, Ploc.VaVal "()")) (fun _ -> idT) t in
+            let pf = io_proof_of_term (fun _ -> ExLid(dummy_loc, Ploc.VaVal "()")) (fun _ -> idT) t in
                fst (node_count_of_io_proof pf) = 0
          then
             Empty
@@ -138,7 +138,7 @@ let dest_proof term =
    in dest_rule [] 0 term
 
 let format_num num =
-   String.concat "." (List.map Int.to_string (List.rev num))
+   String.concat " " (List.map (function 0 -> "top" | i -> Int.to_string i) (List.rev num))
 
 let format_proof =
    let rec format_list f ppf = function
@@ -146,17 +146,17 @@ let format_proof =
     | (x :: xs) -> fprintf ppf "%a@,%a" f x (format_list f) xs
     | [] -> ()
    in
-   let format_tac ppf (nums, tac) = fprintf ppf "@[<hv>%s by@ %s@]" (format_num nums) tac in
+   let format_tac ppf (nums, tac) = fprintf ppf "@[<v 2>TACTIC  %s :@,%s@]" (format_num nums) tac in
    let rec format_aux ppf = function
       (Proof (nums, tac, subgoals, extras)) ->
          let format_goals ppf = function
-            [] -> fprintf ppf "No Subgoals"
+            [] -> fprintf ppf "<no subtrees>"
           | subgoals -> format_list format_aux ppf subgoals in
          let format_extras ppf = function
-            (num, []) -> fprintf ppf "Close %s" (format_num nums)
-          | (num, extras) -> fprintf ppf "%s Has Xtra: @[<v>%a@]" (format_num nums)
+            (num, []) -> fprintf ppf "END # %s" (format_num nums)
+          | (num, extras) -> fprintf ppf "@[<v 2>EXTRA@,%a@]"
                              (format_list format_aux) extras in
-            fprintf ppf "@[<v 0>@[<v 2>%a@ %a@]@,%a@]"
+            fprintf ppf "@[<v 0>%a@,@[<v 2>SUBTREES@,%a@]@,%a@]"
             format_tac (nums, tac) format_goals subgoals format_extras (nums, extras)
     | Goal -> fprintf ppf "<< Goal >>"
    in format_aux
@@ -169,9 +169,9 @@ let print_prla input =
          Some (name, pf) ->
             let fmt ppf () = match trivial_proof pf with
                                 Empty -> fprintf ppf "No proof"
-                              | Real -> fprintf ppf "@[<3>Proof:@ %a@]" format_proof (dest_proof pf)
+                              | Real -> fprintf ppf "Proof:@,%a" format_proof (dest_proof pf)
                               | Primitive -> fprintf ppf "Prim" in
-               printf "@[<hov 3>Rule/Rewrite %s:@ %a@]@." name fmt ()
+               printf "@[<hv>Rule/Rewrite %s:@ %a@]@\n@." name fmt ()
        | None -> ()
    in
       List.iter print_proof t

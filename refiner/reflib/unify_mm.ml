@@ -466,7 +466,7 @@ let rec cterm2multiterm t consts u var_hashtbl b_assoclist =
    let tbvs_list = get_bvars terms in
    let tbcore_list = get_bterms terms in
    let op_n = List.length tbvs_list in
-   let op_a = Array.of_list (List.map List.length tbvs_list) in
+   let op_a = Lm_array_util.of_list_map List.length tbvs_list in
    let fs =
       { opsymb    = op;
         oparity_n = op_n;
@@ -478,31 +478,28 @@ let rec cterm2multiterm t consts u var_hashtbl b_assoclist =
       }
    in
    let multit = { fsymb = Op fs ; args = [] } in
-   let i = ref 0 in
-   let conv_list l =
+   let conv_list i l =
         (* uses list l to set the values in
                  fs.opbinding.(!i) : array[1..length(l)] of bound_variable;
            returns an association list that associates
            the bound variable names from l with corresponding
            bound_variables; finally increments (!i)
         *)
-      let j = ref 0 and b_aslist_ref = ref b_assoclist in
-          List.iter (function v ->
-                (let bv =
-                    { name_bv = (V v);
-                      fsymb_bv = fs;
-                      arg_numb = (!i);
-                      binding_numb =(!j)
-                    }
-                 in
-                    ((fs.opbinding).(!i)).(!j) <- [bv];
-                    b_aslist_ref:= (v,bv)::(!b_aslist_ref);
-                    incr j)) l;
-          incr i;
-          !b_aslist_ref
+      let b_aslist_ref = ref b_assoclist in
+         List.iteri (fun j v ->
+               let bv =
+                  { name_bv = (V v);
+                    fsymb_bv = fs;
+                    arg_numb = i;
+                    binding_numb = j
+                  }
+               in
+                  ((fs.opbinding).(i)).(j) <- [bv];
+                  b_aslist_ref:= (v,bv)::(!b_aslist_ref)) l;
+         !b_aslist_ref
    in
       multit.args <-
-         targs2args tbcore_list consts u var_hashtbl (List.map conv_list tbvs_list);
+         targs2args tbcore_list consts u var_hashtbl (List.mapi conv_list tbvs_list);
                                          (* this List.map... makes
                                             the correct multit.fsymb
                                             as a side effect
