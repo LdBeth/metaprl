@@ -1480,7 +1480,10 @@ struct
                if not (check_conts conts conts' && check_vars vars ts) then
                   raise (RefineError("Refine.check_subgoal_arg",
                      StringTermError("Extract term is not general enough (not all hypotheses and/or contexts mentioned", arg)))
-         end else if is_sequent_term sub && is_sequent_term arg then begin
+         end else if is_sequent_term sub then begin
+            if not (is_sequent_term arg) then
+               raise (RefineError("Refine.check_subgoal_arg",
+                  StringTermError("Extract shape mismatch, either both are sequents or both are terms", arg)));
             let sub' = explode_sequent sub in
             let arg' = explode_sequent arg in
                if not (alpha_equal sub'.sequent_args arg'.sequent_args) then

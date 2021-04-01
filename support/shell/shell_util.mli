@@ -57,7 +57,15 @@ type ls_option =
  | LsExternalEditor
  | LsLineNumbers
 
-module LsOptionSet : Lm_set_sig.LmSet with type elt = ls_option
+module LsOptionSet :
+sig
+   type t
+   val empty : t
+   val is_empty : t -> bool
+   val singleton : ls_option -> t
+   val mem : t -> ls_option -> bool
+   val fold : ('a -> ls_option -> 'a) -> 'a -> t -> 'a
+end
 
 val string_of_ls_options : LsOptionSet.t -> string
 val ls_options_of_string : string -> LsOptionSet.t

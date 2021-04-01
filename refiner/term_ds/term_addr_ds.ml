@@ -505,12 +505,12 @@ struct
                   if args == coll then (term,coll) else core_term (SOContext(v, t, conts, ts)), args
           | Sequent s ->
                let arg, args = apply_fun_higher_term f coll s.sequent_args in
-               let hyps, args = apply_fun_higher_hyps f args (SeqHyp.to_list s.sequent_hyps) in
+               let args, hyps = apply_fun_higher_hyps f args s.sequent_hyps in
                let concl, args = apply_fun_higher_term f args s.sequent_concl in
                   if args == coll then (term, coll) else
                   core_term (Sequent {
                      sequent_args = arg;
-                     sequent_hyps = SeqHyp.of_list hyps;
+                     sequent_hyps = hyps;
                      sequent_concl = concl;
                   }), args
           | Hashed _ | Subst _ -> fail_core "apply_fun_higher_term"
@@ -541,16 +541,13 @@ struct
                let bt_new = if args2 == args then bt else mk_bterm bt.bvars bt_new in
                   (bt_new::btrms_new, args2)
 
-   and apply_fun_higher_hyps f coll = function
-      [] -> [], coll
-    | Hypothesis (v, t) :: hyps ->
+   and apply_fun_higher_hyps f = SeqHyp.fold_map (fun coll -> function
+    | Hypothesis (v, t) ->
          let t, args = apply_fun_higher_term f coll t in
-         let hyps, args = apply_fun_higher_hyps f args hyps in
-            (Hypothesis (v, t) :: hyps, args)
-    | Context (c, conts, ts) :: hyps ->
+            args, Hypothesis (v, t)
+    | Context (c, conts, ts) ->
          let ts, args = apply_fun_higher_terms f coll ts in
-         let hyps, args = apply_fun_higher_hyps f args hyps in
-            (Context (c, conts, ts) :: hyps, args)
+            args, Context (c, conts, ts))
 
    let apply_fun_higher f term = apply_fun_higher_term f [] term
 
@@ -577,12 +574,12 @@ struct
                   if args == coll then (term,coll) else core_term (SOContext(v, t, conts, ts)), args
           | Sequent s -> (*raise(Invalid_argument "Term_addr_ds.apply_var_fun_higher called on a sequent")*)
                let arg, args = apply_var_fun_higher_term f bvars coll s.sequent_args in
-               let bvars', hyps, args = apply_var_fun_higher_hyps f bvars args (SeqHyp.to_list s.sequent_hyps) in
+               let (bvars', args), hyps = apply_var_fun_higher_hyps f (bvars, args) s.sequent_hyps in
                let concl, args = apply_var_fun_higher_term f bvars' args s.sequent_concl in
                   if args == coll then (term, coll) else
                   core_term (Sequent {
                      sequent_args = arg;
-                     sequent_hyps = SeqHyp.of_list hyps;
+                     sequent_hyps = hyps;
                      sequent_concl = concl;
                   }), args
           | Hashed _ | Subst _ -> fail_core "apply_var_fun_higher_term"
@@ -608,16 +605,13 @@ struct
             else
                (mk_bterm bvars' bterm_new) :: bterms_new, args
 
-   and apply_var_fun_higher_hyps f bvars coll = function
-      [] -> bvars, [], coll
-    | Hypothesis (v, t) :: hyps ->
-         let t, args = apply_var_fun_higher_term f bvars coll t in
-         let bvars', hyps, args = apply_var_fun_higher_hyps f (SymbolSet.add bvars v) args hyps in
-            (bvars', Hypothesis (v, t) :: hyps, args)
-    | Context (c, conts, ts) :: hyps ->
-         let ts, args = apply_var_fun_higher_terms f bvars coll ts in
-         let bvars', hyps, args = apply_var_fun_higher_hyps f (SymbolSet.add bvars c) args hyps in
-            (bvars', Context (c, conts, ts) :: hyps, args)
+    and apply_var_fun_higher_hyps f = SeqHyp.fold_map (fun bvars, coll -> function
+     | Hypothesis (v, t) ->
+          let t, args = apply_var_fun_higher_term f bvars coll t in
+             (SymbolSet.add bvars v, args), Hypothesis (v, t)
+     | Context (c, conts, ts) ->
+          let ts, args = apply_var_fun_higher_terms f bvars coll ts in
+             (SymbolSet.add bvars c, args), Context (c, conts, ts))
 
    let apply_var_fun_higher f bvars term =
       apply_var_fun_higher_term f bvars [] term

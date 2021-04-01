@@ -61,17 +61,6 @@ type ls_option =
  | LsLineNumbers
 
 (*
- * LS options.
- *)
-module LsOptionCompare =
-struct
-   type t = ls_option
-   let compare = Stdlib.compare
-end
-
-module LsOptionSet = Lm_set.LmMake (LsOptionCompare)
-
-(*
  * Folding.
  *)
 let string_fold f x s =
@@ -143,6 +132,75 @@ let char_of_option option =
     | LsFileModifiers -> 'F'
     | LsLineNumbers -> 'L'
 
+let code = function
+   LsRewrites -> 0
+ | LsRules -> 1
+ | LsUnjustified -> 2
+ | LsDisplay -> 3
+ | LsFormal -> 4
+ | LsInformal -> 5
+ | LsParent -> 6
+ | LsAll -> 7
+ | LsDocumentation -> 8
+ | LsInterface -> 9
+ | LsFileAll -> 10
+ | LsFileModifiers -> 11
+ | LsHandles -> 12
+ | LsExternalEditor -> 13
+ | LsLineNumbers -> 14
+
+
+let decode =
+   Array.get [| LsRewrites
+              ; LsRules
+              ; LsUnjustified
+              ; LsDisplay
+              ; LsFormal
+              ; LsInformal
+              ; LsParent
+              ; LsAll
+              ; LsDocumentation
+              ; LsInterface
+              ; LsFileAll
+              ; LsFileModifiers
+              ; LsHandles
+              ; LsExternalEditor
+              ; LsLineNumbers |]
+
+(*
+ * LS options.
+ *)
+module LsOptionSet =
+struct
+   (* XXX: this is a 15 bit set *)
+   type t = int
+
+   let empty = 0
+   let is_empty a = a = 0
+
+   let singleton opt = 1 lsl (code opt)
+   let mem options opt = (options land (1 lsl (code opt))) <> 0
+
+   let rec fold f a opts =
+      if opts = 0 then a
+      else fold f (f a (decode (Lm_int_util.ctz opts)))
+           (opts land (opts - 1))
+
+   let rec iter f opts =
+      if opts > 0 then begin
+         f (decode (Lm_int_util.ctz opts));
+         iter f (opts land (opts - 1))
+      end
+
+   let union a b = a lor b
+
+   let add opts opt = opts lor (singleton opt)
+   let remove opts opt = opts land (lnot (singleton opt))
+
+   let add_list = List.fold_left add
+   let subtract_list = List.fold_left remove
+end
+
 (*
  * Translate string options to LS options.
  *)
@@ -159,10 +217,10 @@ let string_of_ls_options options =
 (*
  * Default options.
  *)
-let ls_default_list = [LsFormal; LsParent; LsRules; LsRewrites; LsDocumentation; LsFileModifiers]
+(* [LsFormal; LsParent; LsRules; LsRewrites; LsDocumentation; LsFileModifiers]
+ rRfpDF *)
 
-let ls_options_default =
-   LsOptionSet.of_sorted_list ls_default_list
+let ls_options_default = 0x953
 
 (*
  * Set some additional options.
@@ -226,7 +284,7 @@ let ls_options_clear options s =
              | LsInformal ->
                   LsOptionSet.subtract_list options [ LsParent; LsDisplay; LsDocumentation; LsInformal ]
              | LsUnjustified ->
-                  let options = LsOptionSet.add_list options ls_default_list in
+                  let options = LsOptionSet.union options ls_options_default in
                      LsOptionSet.remove options option
              | LsInterface
              | LsHandles

@@ -14,7 +14,7 @@ open Opname
 let _ =
    show_loading "Loading LinkMini%t"
 
-type sockopt = Fd of Unix.file_descr | Null of unit
+type sockopt = Fd of Unix.file_descr | Null
 
 type link = (in_channel * out_channel) * sockopt
 
@@ -22,7 +22,7 @@ let token s = Token (mk_opname s nil_opname)
 
 let dest_link ((in_channel, out_channel), socket) =
   match socket with Fd fd -> ((in_channel, out_channel), (Fd fd))
-  | Null _ -> ((in_channel, out_channel), (Null ()))
+  | Null -> ((in_channel, out_channel), Null)
 
 let iconnect_term port host =
   mk_term (mk_op nuprl5_opname
@@ -45,7 +45,7 @@ let disconnect link =
   let ((in_channel, out_channel), socket) = dest_link link in
   close_client (in_channel, out_channel);
   match socket with Fd fd -> destroy_socket fd
-  | Null _ -> ()
+  | Null -> ()
 
 (*
 let rec recv ((in_channel, out_channel), socket) =
@@ -78,7 +78,7 @@ let connect_with_callback host port =
   (* cautious_in := Unix.descr_of_in_channel in_channel;
   cautious_out := Unix.descr_of_out_channel out_channel;*)
   (*Unix.set_nonblock (Unix.descr_of_in_channel in_channel);*)
-  ((in_channel, out_channel), (Null ()))
+  ((in_channel, out_channel), Null)
 
 (* called after port-term sent and returned successful*)
 (* let connect_callback link =

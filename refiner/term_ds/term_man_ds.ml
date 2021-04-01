@@ -291,27 +291,23 @@ struct
        | Hypothesis (v, _) ->
             SymbolSet.mem vars v || need_renaming hyps len (SymbolSet.add vars v) (succ i))
 
-   let rec rename_hyps vars sub = function
-      [] -> [], sub
-    | Context(c, cts, ts) :: hyps ->
-         let hyps', sub' = rename_hyps (SymbolSet.add vars c) sub hyps in
-            Context(c, cts, List.map (apply_subst sub) ts) :: hyps', sub'
-    | Hypothesis (v,t) :: hyps when SymbolSet.mem vars v ->
+   let rename_hyps = SeqHyp.fold_map (fun vars, sub -> function
+    | Context(c, cts, ts) ->
+            (SymbolSet.add vars c, sub), Context(c, cts, List.map (apply_subst sub) ts)
+    | Hypothesis (v,t) when SymbolSet.mem vars v ->
          let v' = new_name v (SymbolSet.mem vars) in
          let sub' = (v, mk_var_term v') :: sub in
-         let hyps', sub' = rename_hyps (SymbolSet.add vars v') sub' hyps in
-            Hypothesis(v', apply_subst sub t) :: hyps', sub'
-    | Hypothesis (v,t) :: hyps ->
-         let hyps', sub' = rename_hyps (SymbolSet.add vars v) sub hyps in
-            Hypothesis(v, apply_subst sub t) :: hyps', sub'
+            (SymbolSet.add vars v', sub'), Hypothesis(v', apply_subst sub t)
+    | Hypothesis (v,t) ->
+            (SymbolSet.add vars v, sub), Hypothesis(v, apply_subst sub t))
 
    let explode_sequent_and_rename t vars =
       let s = explode_sequent t in
          if need_renaming s.sequent_hyps (SeqHyp.length s.sequent_hyps) vars 0 then
-            let hyps, subst = rename_hyps vars [] (SeqHyp.to_list s.sequent_hyps) in
+            let (_, subst), hyps = rename_hyps (vars, []) s.sequent_hyps in
                {
                   sequent_args = s.sequent_args;
-                  sequent_hyps = SeqHyp.of_list hyps;
+                  sequent_hyps = hyps;
                   sequent_concl = apply_subst subst s.sequent_concl
                }
          else

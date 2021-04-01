@@ -96,12 +96,12 @@ struct
         st_bvars : (var * int) list;    (* All the bindings we are under, and their stack locations *)
         st_bconts : (var * int) list;   (* All the contexts we are in, and their stack locations  *)
         st_arg : bool;                  (* Whether we are compiling an argument ("semiformal") term *)
-        st_restricts : (int * var list) list ref;
+        mutable st_restricts : (int * var list) list;
                                         (* Output: additional restrictions: SO var location * SO conts locations *)
         (* Handling of context instances (sequent contexts only for now) *)
         st_all_contexts : int list ref; (* Temporaty output: contexts that should be wrapped if they are instances *)
         st_will_wrap : int list;        (* Somebody outside promised to wrap this for us *)
-        st_context_instances : int list ref;
+        mutable st_context_instances : int list;
                                         (* Output: "unwrapped" context instances in the current term *)
       }
 
@@ -168,7 +168,7 @@ struct
                raise (Invalid_argument("Rewrite_compile_redex.wrap_context_instances: internal error: we found ourselves \"below\" the place where context was introduced"))
             else
                let stack, prog = stack_prog in
-                  st.st_context_instances := Lm_list_util.remove inst !(st.st_context_instances);
+                  st.st_context_instances <- Lm_list_util.remove inst st.st_context_instances;
                   stack, RWAvoidBindings (inst, prog)
          in
             wrap_context_instances all_contexts_before st stack_prog insts
@@ -201,7 +201,7 @@ struct
                   let restrict_conts =
                      if st.st_strict then
                         if st.st_arg then begin
-                           st.st_restricts := (index, []) :: !(st.st_restricts);
+                           st.st_restricts <- (index, []) :: st.st_restricts;
                            []
                         end else
                            List.map bvar_ind st.st_bconts
@@ -245,7 +245,7 @@ struct
                   let restrict_conts =
                      if st.st_strict then
                         if st.st_arg then begin
-                           st.st_restricts := (v', conts) :: !(st.st_restricts);
+                           st.st_restricts <- (v', conts) :: st.st_restricts;
                            []
                         end else
                            restricted_conts v st.st_bconts conts
@@ -297,7 +297,7 @@ struct
                   let restrict_conts =
                      if st.st_strict then
                         if st.st_arg then begin
-                           st.st_restricts := (index, conts) :: !(st.st_restricts);
+                           st.st_restricts <- (index, conts) :: st.st_restricts;
                            []
                         end else
                            restricted_conts v st.st_bconts conts
@@ -336,8 +336,8 @@ struct
             let stack, bterms = compile_so_redex_bterms st stack bterms in
                stack, RWComposite { rw_op = { rw_name = name; rw_params = params }; rw_bterms = bterms }
       in
-         if !(st.st_context_instances) <> [] then
-            wrap_context_instances all_contexts_before orig_st stack_prog !(st.st_context_instances)
+         if st.st_context_instances <> [] then
+            wrap_context_instances all_contexts_before orig_st stack_prog st.st_context_instances
          else
             stack_prog
 
@@ -442,8 +442,8 @@ struct
                         let stack, terms = compile_so_redex_terms { st with st_patterns = false } stack terms in
                         let ind = rstack_c_index v stack in
                            if not (Lm_list_util.assoc_in_range (=) ind st.st_bconts) then begin
-                              if not (List.mem ind !(st.st_context_instances)) then
-                                 st.st_context_instances := ind :: !(st.st_context_instances);
+                              if not (List.mem ind st.st_context_instances) then
+                                 st.st_context_instances <- ind :: st.st_context_instances;
                               if not (List.mem ind st.st_will_wrap) then
                                  raise (Invalid_argument "Rewrite_compile_redex.compile_so_redex_sequent_inner: internal error: found a bug in the context wrapping mechanism")
                            end;
@@ -468,7 +468,7 @@ struct
                      let restrict_conts =
                         if st.st_strict then
                            if st.st_arg then begin
-                              st.st_restricts := (stack_ind, conts) :: !(st.st_restricts);
+                              st.st_restricts <- (stack_ind, conts) :: st.st_restricts;
                               []
                            end else
                               restricted_conts v st.st_bconts conts
@@ -625,10 +625,10 @@ struct
               st_bvars = [];
               st_bconts = [];
               st_arg = true;
-              st_restricts = ref [];
+              st_restricts = [];
               st_all_contexts = ref [];
               st_will_wrap = [];
-              st_context_instances = ref [];
+              st_context_instances = [];
             }
          in
          let stack, args' = compile_so_redex_terms st [] args in
@@ -636,7 +636,7 @@ struct
          let stack, goal = compile_so_redex_term st stack goal in
          let () = List.iter check_stack stack in
          let bconts = stack_cvars 0 stack in
-         let extra_restricts = List.filter_map (filter_restricts bconts) !(st.st_restricts) in
+         let extra_restricts = List.filter_map (filter_restricts bconts) st.st_restricts in
          let args = if extra_restricts = [] then args' else List.map (map_restricts_term extra_restricts) args' in
             Array.of_list stack, goal :: args
 end

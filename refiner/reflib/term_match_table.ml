@@ -61,8 +61,8 @@ open Mp_resource
 (*
  * Show the file loading.
  *)
-let _ =
-   show_loading "Loading Term_match_table%t"
+let () =
+   show_loading "Loading Term_match_table"
 
 let debug_term_table =
    create_debug (**)

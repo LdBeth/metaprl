@@ -40,10 +40,6 @@ let debug_http =
         debug_value = false
       }
 
-let eflush out =
-   output_char out '\n';
-   flush out
-
 let rec print_string_list out sl =
    match sl with
       [s] ->
@@ -224,7 +220,7 @@ let head out uri protocol =
    let filename = decode_uri uri in
    let _ =
       if !debug_http then
-         eprintf "Editor_http.head %s%t" filename eflush
+         eprintf "Editor_http.head %s\n%!" filename
    in
    let rec search = function
       root :: roots ->
@@ -243,7 +239,7 @@ let head out uri protocol =
          end
     | [] ->
          if !debug_http then
-            eprintf "Editor_http.get: failed%t" eflush;
+            eprintf "Editor_http.get: failed\n%!";
          if protocol then
             let code, msg = not_found_code in
                fprintf out "%s %d %s\r\n" http_protocol code msg
@@ -279,7 +275,7 @@ let get out uri protocol =
    let filename = decode_uri uri in
    let _ =
       if !debug_http then
-         eprintf "Editor_http.get %s%t" filename eflush;
+         eprintf "Editor_http.get %s\n%!" filename;
    in
    let rec search = function
       root :: roots ->
@@ -332,7 +328,7 @@ let handle server connect client =
    let line = input_line inx in
    let _ =
       if !debug_http then
-         eprintf "Editor_http.handle: %s%t" line eflush
+         eprintf "Editor_http.handle: %s\n%!" line
    in
    let args =
       match parse_args line with
@@ -352,7 +348,7 @@ let handle server connect client =
             head outx uri true
        | "connect" :: pass :: _ ->
             if !debug_http then
-               eprintf "Http_server.connect: %s/%s%t" pass password eflush;
+               eprintf "Http_server.connect: %s/%s\n%!" pass password;
             let pass =
                if String.length pass = 0 then
                   pass
@@ -366,12 +362,12 @@ let handle server connect client =
                else
                   begin
                      if !debug_http then
-                        eprintf "Editor_http.handle: illegal connection with password %s%t" pass eflush;
+                        eprintf "Editor_http.handle: illegal connection with password %s\n%!" pass;
                      Unix.close fd
                   end
        | _ ->
             if !debug_http then
-               eprintf "Editor_http.handle: unknown command: %a%t" print_string_list args eflush;
+               eprintf "Editor_http.handle: unknown command: %a\n%!" print_string_list args;
             Unix.close fd
 
 (*
@@ -379,27 +375,27 @@ let handle server connect client =
  *)
 let serve connect fd =
    if !debug_http then
-      eprintf "Editor_http: starting web services%t" eflush;
+      eprintf "Editor_http: starting web services\n%!";
    try
       while true do
          let client = Lm_inet.accept fd in
          let fd' = Lm_inet.file_descr_of_client client in
             if !debug_http then
-               eprintf "Editor_http: connection on fd=%d%t" (Lm_unix_util.int_of_fd fd') eflush;
+               eprintf "Editor_http: connection on fd=%d\n%!" (Lm_unix_util.int_of_fd fd');
 
             (* Ignore errors when the connection is handled *)
             try handle fd connect client with
                Unix.Unix_error _
              | Sys_error _ ->
                   if !debug_http then
-                     eprintf "Editor_http: stopping web services%t" eflush;
+                     eprintf "Editor_http: stopping web services\n%!";
                   Unix.close fd'
       done
    with
       Unix.Unix_error _
     | Sys_error _ ->
          if !debug_http then
-            eprintf "Editor_http: service closed%t" eflush
+            eprintf "Editor_http: service closed\n%!"
 
 (*
  * Set the search path.

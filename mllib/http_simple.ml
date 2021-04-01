@@ -56,13 +56,6 @@ let (_: unit ref) =
       Env_arg.string Setup.hostname_var () "Hostname to use in browser URLs" setter
 
 (*
- * IO.
- *)
-let eflush out =
-   output_char out '\n';
-   flush out
-
-(*
  * Localhost has this common address.
  *)
 let localhost_addr =
@@ -442,7 +435,7 @@ let rec read_header inx lines =
       match header_line inx with
          Some (tag, field) ->
             if !debug_http then
-               eprintf "Http_simple.header line: %s: %s%t" tag field eflush;
+               eprintf "Http_simple.header line: %s: %s\n%!" tag field;
             read_header inx ((tag, field) :: lines)
        | None ->
             lines
@@ -486,7 +479,7 @@ let string_read_header part =
       match string_header_line part i with
          StringEntry (tag, field, i) ->
             if !debug_http then
-               eprintf "Http_simple.string_header line: %s: %s%t" tag field eflush;
+               eprintf "Http_simple.string_header line: %s: %s\n%!" tag field;
             split ((tag, field) :: lines) i
        | StringOffset i ->
             i, lines
@@ -606,7 +599,7 @@ let split_eq_val arg =
                let field = String.sub arg (succ index) (length - index - 1) in
                let field = decode_hex field in
                   if !debug_http then
-                     eprintf "Http_simple.post_body: %s=%s%t" tag (String.escaped field) eflush;
+                     eprintf "Http_simple.post_body: %s=%s\n%!" tag (String.escaped field);
                   tag, field
             else
                arg, ""
@@ -616,7 +609,7 @@ let split_eq_val arg =
 
 let parse_eq_list sep body =
       if !debug_http then
-         eprintf "parse_post_body: \"%s\"%t" (String.escaped body) eflush;
+         eprintf "parse_post_body: \"%s\"\n%!" (String.escaped body);
       List.map split_eq_val (Lm_string_util.split sep body)
 
 let parse_cookies body =
@@ -771,7 +764,7 @@ let parse_post_body part i =
 
 let parse_post_part part =
    if !debug_http then
-      eprintf "Http_simple.parse_post_part: %s%t" (String.escaped part) eflush;
+      eprintf "Http_simple.parse_post_part: %s\n%!" (String.escaped part);
    let i, header = string_read_header part in
    let header = List.map parse_header_entry header in
       match get_content_disposition header with
@@ -786,14 +779,14 @@ let parse_post_part part =
             let name = Lm_string_util.unescape name in
             let body = parse_post_body part i in
                if !debug_http then
-                  eprintf "Http_simple.parse_post_part: %s = %s%t" name (String.escaped body) eflush;
+                  eprintf "Http_simple.parse_post_part: %s = %s\n%!" name (String.escaped body);
                name, body
        | { content_disposition_type = dtype; _ } ->
             raise (Failure ("parse_post_body: bad Content-Disposition: " ^ dtype))
 
 let parse_post_multipart boundary body =
    if !debug_http then
-      eprintf "Http_simple.parse_post_multipart: %s%t" (String.escaped body) eflush;
+      eprintf "Http_simple.parse_post_multipart: %s\n%!" (String.escaped body);
    let parts = Lm_string_util.split_mime_string boundary body in
       List.map parse_post_part parts
 
@@ -817,8 +810,8 @@ let parse_post_body content_type body =
             if !debug_http then
                begin
                   List.iter (fun (name, x) ->
-                        eprintf "parse_post_body: %s=%s%t" name x eflush) params;
-                  eprintf "parse_post_body.boundary = %s%t" boundary eflush
+                        eprintf "parse_post_body: %s=%s\n%!" name x) params;
+                  eprintf "parse_post_body.boundary = %s\n%!" boundary
                end;
             parse_post_multipart boundary body
 
@@ -846,12 +839,12 @@ let read_body inx header =
       let length = find_content_length header in
       let body = Bytes.create length in
          if !debug_http then
-            eprintf "Http_simple.read_body: trying to read %d chars%t" length eflush;
+            eprintf "Http_simple.read_body: trying to read %d chars\n%!" length;
          Lm_ssl.really_input inx body 0 length;
          let str = Bytes.to_string body in
             if !debug_http then
-               eprintf "Http_simple.read_body: %d, %s%t" length
-                  (String.escaped str) eflush;
+               eprintf "Http_simple.read_body: %d, %s\n%!" length
+                  (String.escaped str);
          str
    with
       Not_found
@@ -881,14 +874,14 @@ let close_http server =
 let handle server client connect info =
    let _ =
       if !debug_http then
-         eprintf "Http_simple.handle: begin%t" eflush
+         eprintf "Http_simple.handle: begin\n%!"
    in
    let inx  = Lm_ssl.in_channel_of_ssl client in
    let outx = Lm_ssl.out_channel_of_ssl client in
    let line = Lm_ssl.input_line inx in
    let _ =
       if !debug_http then
-         eprintf "Http_simple.handle: %s%t" line eflush
+         eprintf "Http_simple.handle: %s\n%!" line
    in
    let args =
       match parse_args line with
@@ -901,7 +894,7 @@ let handle server client connect info =
    let body = read_body inx header in
    let _ =
       if !debug_http then
-         eprintf "Http_simple.handle: %s%t" line eflush
+         eprintf "Http_simple.handle: %s\n%!" line
    in
    let state = connect server info outx inx args header body in
       Lm_ssl.flush outx;
@@ -912,7 +905,7 @@ let handle server client connect info =
  *)
 let serve connect server info =
    if !debug_http then
-      eprintf "Http_simple: starting web services%t" eflush;
+      eprintf "Http_simple: starting web services\n%!";
 
    (* Catch sigpipe *)
    let () = catch_sigpipe () in
@@ -925,7 +918,7 @@ let serve connect server info =
           | Sys_error _
           | Failure _
           | SigPipe as exn ->
-               eprintf "Http_simple: %s: accept failed%t" (Printexc.to_string exn) eflush;
+               eprintf "Http_simple: %s: accept failed\n%!" (Printexc.to_string exn);
                None
       in
       let info =
@@ -940,22 +933,22 @@ let serve connect server info =
                    | Failure _
                    | End_of_file
                    | SigPipe as exn ->
-                        eprintf "Http_simple: %s: error during web service%t" (Printexc.to_string exn) eflush;
+                        eprintf "Http_simple: %s: error during web service\n%!" (Printexc.to_string exn);
                         info
                    | Unix.Unix_error (errno, funinfo, arginfo) ->
-                        eprintf "Http_simple: Unix error: %s: %s(%s)%t" (Unix.error_message errno) funinfo arginfo eflush;
+                        eprintf "Http_simple: Unix error: %s: %s(%s)\n%!" (Unix.error_message errno) funinfo arginfo;
                         info
                in
                let () =
                   try Lm_ssl.shutdown client with
                      Failure _
                    | SigPipe as exn ->
-                        eprintf "Http_simple: %s: shutdown failed%t" (Printexc.to_string exn) eflush
+                        eprintf "Http_simple: %s: shutdown failed\n%!" (Printexc.to_string exn)
                and () =
                   try Lm_ssl.close client with
                       Failure _
                     | SigPipe as exn ->
-                         eprintf "Http_simple: %s: close failed%t" (Printexc.to_string exn) eflush
+                         eprintf "Http_simple: %s: close failed\n%!" (Printexc.to_string exn)
                in
                   info
       in
@@ -963,7 +956,7 @@ let serve connect server info =
    in
       try serve info with
          exn ->
-            eprintf "Http_simple: %s: service closed%t" (Printexc.to_string exn) eflush;
+            eprintf "Http_simple: %s: service closed\n%!" (Printexc.to_string exn);
             raise exn
 
 (*

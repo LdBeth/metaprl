@@ -1,8 +1,5 @@
 LCFILES[] =
-    print_symbols
     profile
-    debug
-    ml_debug
     c_time
 
 StaticCLibraryInstall($(MPINSTALL), $(LIB), clib, $(LCFILES))

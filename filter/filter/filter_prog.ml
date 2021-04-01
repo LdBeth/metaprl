@@ -333,7 +333,7 @@ let expr_of_loc loc =
 (*
  * Each rule gets a refiner associated with it, with the following name.
  *)
-(* TODO: switch to mnemonic names after OCaml 4.12 *)
+(* TODO: switch warning to mnemonic names after OCaml 4.12 *)
 let refiner_let loc =
    <:str_item< value $lid: refiner_id$ =
       $refiner_expr loc$ .refiner_of_build $lid: local_refiner_id$ [@@ warning "-32" ;] >>

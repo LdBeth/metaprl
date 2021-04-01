@@ -44,8 +44,8 @@ open Filter_prog.ProofCaches
 (*
  * Show the file loading.
  *)
-let _ =
-   show_loading "Loading Filter_bin%t"
+let () =
+   show_loading "Loading Filter_bin"
 
 (*
  * string -> path commands

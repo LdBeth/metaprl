@@ -158,7 +158,7 @@ let format_proof =
                              (format_list format_aux) extras in
             fprintf ppf "@[<v 0>%a@,@[<v 2>SUBTREES@,%a@]@,%a@]"
             format_tac (nums, tac) format_goals subgoals format_extras (nums, extras)
-    | Goal -> fprintf ppf "<< Goal >>"
+    | Goal -> fprintf ppf "<empty>"
    in format_aux
 
 let print_prla input =
@@ -171,7 +171,7 @@ let print_prla input =
                                 Empty -> fprintf ppf "No proof"
                               | Real -> fprintf ppf "Proof:@,%a" format_proof (dest_proof pf)
                               | Primitive -> fprintf ppf "Prim" in
-               printf "@[<hv>Rule/Rewrite %s:@ %a@]@\n@." name fmt ()
+               printf "@[<v>Rule/Rewrite %s: %a@,@]@." name fmt ()
        | None -> ()
    in
       List.iter print_proof t

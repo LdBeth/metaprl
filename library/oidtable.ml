@@ -47,7 +47,7 @@ module type Oid =
 module Oid =
  struct
   type t = object_id
-  let equal = (fun x y -> (oideq x y))
+  let equal = oideq
   let hash oid = Hashtbl.hash (List.map parmhash oid)
  end
 
@@ -99,19 +99,18 @@ let insert ot st oid i v =
 exception Oidtablemap
 
 let oidtable_unit_map ot stamp f =
- iter (fun oid tent ->
-	try (f oid (try tent_lookup tent stamp with _ -> raise Oidtablemap))
-	with Oidtablemap -> ())
-      ot
+   iter (fun oid tent ->
+         try (f oid (try tent_lookup tent stamp with _ -> raise Oidtablemap))
+         with Oidtablemap -> ())
+   ot
 
 let oidtable_map ot stamp f =
- let acc = ref [] in
-   iter (fun oid tent ->
-	     (* (print_string "oid_table_map "); *)
-	try (match (f oid (try tent_lookup tent stamp with _ -> raise Oidtablemap)) with
-	      None -> ()
-	    | Some x -> (acc :=  x :: !acc); ())
-	with Oidtablemap -> (print_string "oidtablemap fail"); ())
-       ot;
- !acc
-
+   let acc = ref [] in
+      iter (fun oid tent ->
+            (* (print_string "oid_table_map "); *)
+            try (match (f oid (try tent_lookup tent stamp with _ -> raise Oidtablemap)) with
+                    None -> ()
+                  | Some x -> (acc :=  x :: !acc); ())
+            with Oidtablemap -> (print_string "oidtablemap fail"); ())
+      ot;
+      !acc

@@ -31,14 +31,6 @@
 let dat_magic = 0x2557f3ef
 
 (*
- * The loaded dictionary.
- *)
-let dict = ref None
-
-(*
- * Check if the database is out-of-date.
- *)
-(*
  * Check if the database is out-of-date.
  *)
 let check_dict dat words =
@@ -63,51 +55,53 @@ let make_dict lib dat_filename words =
          try_name (counter + 1)
    in
    let table = Lm_spell.make_dict words in
-      dict := Some table;
-      let tmp, out = try_name 0 in
-      let out = Stdlib.open_out_bin tmp in
-         Stdlib.output_binary_int out dat_magic;
-         Lm_spell.to_channel out table;
-         Stdlib.close_out out;
-         try Unix.rename tmp dat_filename with exn ->
+   let tmp, out = try_name 0 in
+   let out = Stdlib.open_out_bin tmp in
+      Stdlib.output_binary_int out dat_magic;
+      Lm_spell.to_channel out table;
+      Stdlib.close_out out;
+      begin
+         try
+            Unix.rename tmp dat_filename with exn ->
                if Sys.file_exists dat_filename then
                   Unix.unlink tmp
                else
                   raise exn
+      end;
+      table
 
 (*
  * Load the dict.
  *)
 let load_dict lib dat words =
-   try
-      if check_dict dat words then raise Not_found;
-      let inx = open_in_bin dat in
-         try
-            let magic = input_binary_int inx in
-               if magic <> dat_magic then
-                  raise Not_found;
-               let table = Lm_spell.from_channel inx in
-                  close_in inx;
-                  dict := Some table
-         with
-            _ ->
+   if check_dict dat words then raise Not_found;
+   let inx = open_in_bin dat in
+      try
+         let magic = input_binary_int inx in
+            if magic <> dat_magic then
+               raise Not_found;
+            let table = Lm_spell.from_channel inx in
                close_in inx;
-               make_dict lib dat words
-   with
-      _ ->
-         make_dict lib dat words
+               table
+      with
+         exn ->
+            close_in inx;
+            raise exn
+
+(*
+ * The loaded dictionary.
+ *)
+let dict = lazy (let lib = Setup.lib() in
+                 let dat = Filename.concat lib "english_dictionary.dat"
+                 and words = Filename.concat lib "words.dict" in
+                    try load_dict lib dat words
+                    with
+                       _ -> make_dict lib dat words)
 
 (*
  * Initialize.
  *)
-let init () =
-   match !dict with
-      None ->
-         let lib = Setup.lib() in
-         let dat = Filename.concat lib "english_dictionary.dat"
-         and words = Filename.concat lib "words.dict" in
-         load_dict lib dat words
-    | Some _ -> ()
+let init () = ignore (Lazy.force dict)
 
 (*
  * Check a word.
@@ -119,35 +113,24 @@ let is_num = function
  | _ -> false
 
 let check s =
-   match !dict with
-      Some dict ->
-         if String.length s >= 2 then
-            match s.[0] with
-               'A'..'Z' ->
-                  Lm_spell.check dict s || (Lm_spell.check dict (String.lowercase_ascii s))
-             | '0'..'9' when Lm_string_util.for_all is_num s ->
-                  true
-             | _ ->
-                  Lm_spell.check dict s
-         else
-            true
-    | None ->
+   let dict = Lazy.force_val dict in
+      if String.length s >= 2 then
+         match s.[0] with
+            'A'..'Z' ->
+               Lm_spell.check dict s || (Lm_spell.check dict (String.lowercase_ascii s))
+          | '0'..'9' when Lm_string_util.for_all is_num s ->
+               true
+          | _ ->
+               Lm_spell.check dict s
+      else
          true
 
-let do_you_mean s =
-   match !dict with
-      Some dict -> Lm_spell.anagram dict s false
-    | None -> ""
+let do_you_mean s = Lm_spell.anagram (Lazy.force_val dict) s false
 
 (*
  * Add a word to the table.
  *)
-let add word =
-   match !dict with
-      Some table ->
-         Lm_spell.add_word table word
-    | None ->
-         ()
+let add w = Lm_spell.add_word (Lazy.force_val dict) w
 
 (*
  * -*-

@@ -782,11 +782,11 @@ let get_mode_base dfbase dfmode dfshort =
 let special_modes = ["src"]
 
 let mode_selector mode df =
-   match df with
-      { df_modes = ExceptModes l; _ } -> not (List.mem mode l) && not (List.mem mode special_modes)
-    | { df_modes = Modes l; _ } -> List.mem mode l
-    | { df_modes = AllModes; _ } -> not (List.mem mode special_modes)
-    | { df_modes = PrimitiveModes; _ } -> true
+   match df.df_modes with
+      ExceptModes l -> not (List.mem mode l) && not (List.mem mode special_modes)
+    | Modes l -> List.mem mode l
+    | AllModes -> not (List.mem mode special_modes)
+    | PrimitiveModes -> true
 
 (*
  * Print a term to a buffer.
