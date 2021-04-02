@@ -94,7 +94,7 @@ OCAMLINCLUDES += $(dir refiner/refsig refiner/refbase refiner/refiner refiner/re
 ########################################################################
 # Generic directories with no special options
 #
-.SUBDIRS: library debug $(ENSEMBLE_DIR) tactics/proof
+.SUBDIRS: library $(ENSEMBLE_DIR) tactics/proof
 
 # Add camlp5 library to include path
 OCAMLINCLUDES += $(dir library tactics/proof)
