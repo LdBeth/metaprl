@@ -28,5 +28,6 @@ REFLIB_FILES[] =
     term_order
     arith
     supinf
+    omega
     term_ty_infer
     term_hash_code
