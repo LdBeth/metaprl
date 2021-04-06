@@ -290,7 +290,7 @@ struct
          synchronize (fun shell ->
                let objs = ref [] in
                let f obj _ =
-                  objs := obj.edit_get_contents shell.shell_subdir:: !objs;
+                  objs := obj#edit_get_contents shell.shell_subdir:: !objs;
                   false
                in
                   chdir parse_arg shell false false (module_dir mname);
@@ -322,7 +322,7 @@ struct
                chdir parse_arg shell false false (module_dir mname);
                let package = get_current_package shell in
                let item = Shell_rule.create package parse_arg (get_display_mode shell) name in
-                  item.edit_save ();
+                  item#edit_save;
                   touch shell;
                   cd_thm mname name)
 
@@ -332,7 +332,7 @@ struct
                chdir parse_arg shell false false (module_dir mname);
                let package = get_current_package shell in
                let item = Shell_rule.create package parse_arg (get_display_mode shell) name in
-                  item.edit_save ();
+                  item#edit_save;
                   touch shell;
                   cd_thm mname name)
 
@@ -386,7 +386,7 @@ struct
                         edit_expr = tac;
                         edit_subgoals = subgoals;
                         edit_extras = extras
-                      } = proof.edit_info (List.map string_of_int addr)
+                      } = proof#edit_info (List.map string_of_int addr)
                   in
                   let goal = Sequent.msequent goal in
                   let children = List.map Sequent.msequent subgoals in
@@ -399,12 +399,12 @@ struct
                let expr = ShellP4.parse_string str in
                let tac = ShellP4.eval_tactic expr in
                let addr = List.map string_of_int addr in
-                  if proof.edit_interpret addr (ProofRefine (str, expr, tac)) then touch shell;
+                  if proof#edit_interpret addr (ProofRefine (str, expr, tac)) then touch shell;
                   let { edit_goal = goal;
                         edit_subgoals = subgoals;
                         edit_extras = extras;
                         _
-                      } = proof.edit_info addr
+                      } = proof#edit_info addr
                   in
                   let goal = Sequent.msequent goal in
                   let children = List.map Sequent.msequent subgoals in

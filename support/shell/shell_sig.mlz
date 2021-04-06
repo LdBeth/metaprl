@@ -180,39 +180,40 @@ type was_modified = bool
  * An editable object.
  * Whenever the first arg is the string list, it is the cwd relative to the "mount point"
  *)
-type edit_object =
-   { (* Display the object to the screen *)
-     edit_display      : string list -> LsOptionSet.t -> unit;
-     edit_get_names    : string list -> LsOptionSet.t -> string list;
-     edit_get_contents : string list -> obj_contents;
-     edit_get_terms    : unit -> term list;
-     edit_info         : string list -> edit_info;
+class type edit_object =
+ object
+    (* Display the object to the screen *)
+    method edit_display      : string list -> LsOptionSet.t -> unit
+    method edit_get_names    : string list -> LsOptionSet.t -> string list
+    method edit_get_contents : string list -> obj_contents
+    method edit_get_terms    : term list
+    method edit_info         : string list -> edit_info
 
-     (* Copy the object *)
-     edit_copy         : unit -> edit_object;
+    (* Copy the object *)
+    method edit_copy         : edit_object
 
-     (* Adjust the contents of the object *)
-     edit_set_goal        : term -> unit;
-     edit_set_redex       : term -> unit;
-     edit_set_contractum  : term -> unit;
-     edit_set_assumptions : term list -> unit;
-     edit_set_params      : term Filter_base_type.poly_param list -> unit;
+    (* Adjust the contents of the object *)
+    method edit_set_goal        : term -> unit
+    method edit_set_redex       : term -> unit
+    method edit_set_contractum  : term -> unit
+    method edit_set_assumptions : term list -> unit
+    method edit_set_params      : term Filter_base_type.poly_param list -> unit
 
-     (* Navigation *)
-     edit_check_addr : string list -> unit; (* Raise exn if the address is not found; must accept an empty list *)
-     edit_find       : string list -> int -> string list; (* find a subgoal; edit_addr is a side-effect *)
+    (* Navigation *)
+    method edit_check_addr : string list -> unit (* Raise exn if the address is not found; must accept an empty list *)
+    method edit_find       : string list -> int -> string list (* find a subgoal; edit_addr is a side-effect *)
 
-     (* Proof operations *)
-     edit_save        : unit -> unit;
-     edit_interpret   : string list -> proof_command -> was_modified;
-     edit_undo        : string list -> string list; (* Returns the new (old, actually) relative path *)
-     edit_redo        : string list -> string list; (* Returns the new relative path *)
-     edit_get_extract : unit -> was_modified * Refine.extract;
-     edit_check       : unit -> was_modified * ref_status;
+    (* Proof operations *)
+    method edit_save        : unit
+    method edit_interpret   : string list -> proof_command -> was_modified
+    method edit_undo        : string list -> string list (* Returns the new (old, actually) relative path *)
+    method edit_redo        : string list -> string list (* Returns the new relative path *)
+    method edit_get_extract : was_modified * Refine.extract
+    method edit_check       : was_modified * ref_status
 
-     (* State checking *)
-     edit_is_enabled : string list -> method_name -> bool
-   }
+    (* State checking *)
+    method edit_is_enabled : string list -> method_name -> bool
+end
 
 (*
  * Save status of a module.

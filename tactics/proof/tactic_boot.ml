@@ -118,7 +118,7 @@ struct
 
    type sentinal = Refine.sentinal ThreadRefiner.key
 
-   and raw_attribute_info =
+   type raw_attribute_info =
       RawTerm of term
     | RawTermList of term list
     | RawType of term
@@ -129,15 +129,15 @@ struct
     | RawSentinal of sentinal
     | RawOption of option_key
 
-   and raw_attribute = string * raw_attribute_info
+   type raw_attribute = string * raw_attribute_info
 
-   and raw_attributes = raw_attribute list
+   type raw_attributes = raw_attribute list
 
    (*
     * Attributes are user-defined arguments that are
     * threaded through the proof tree.
     *)
-   and attribute_info =
+   type attribute_info =
       { attr_terms      : (string * term) list;
         attr_term_lists : (string * term list) list;
         attr_types      : (string * term) list;
@@ -152,7 +152,7 @@ struct
     * A tactic argument includes the msequent goal,
     * as well as the attributes.
     *)
-   and tactic_arg =
+   type tactic_arg =
       { ref_goal : msequent;
         ref_label : string;
         ref_attributes : attribute_info;
@@ -160,7 +160,7 @@ struct
         ref_sentinal : sentinal
       }
 
-   and tactic_value = (tactic_arg, arglist, extract) ThreadRefiner.t
+   type tactic_value = (tactic_arg, arglist, extract) ThreadRefiner.t
 
    and tactic = tactic_arg -> tactic_value
 
@@ -223,9 +223,9 @@ struct
    (*
     * Conversions are used by the rewrite module.
     *)
-   and env = tactic_arg * term
+   type env = tactic_arg * term
 
-   and conv =
+   type conv =
       RewriteConv of rw
     | CondRewriteConv of cond_rewrite
     | ComposeConv of conv Flist.t

@@ -2391,7 +2391,7 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          let res2 = wrap4 TermAddr2.apply_var_fun_arg_at_addr p0_2 p1_2 p2 p3_2 in
          let (res0_1, res1_1), (res0_2, res1_2) = merge merge_triv "TermAddr.apply_var_fun_arg_at_addr" res1 res2 in
          (merge_term "TermAddr.apply_var_fun_arg_at_addr - 0" res0_1 res0_2),
-         (merge_poly "TermAddr.apply_var_fun_arg_at_addr - 1" res1_1 res1_2)
+         (* XXX: disabled (merge_poly "TermAddr.apply_var_fun_arg_at_addr - 1" res1_1 res1_2) *) res1_1
 
       let subterm_addresses (p0 : term) =
          let p0_1, p0_2 = p0 in

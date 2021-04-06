@@ -318,13 +318,13 @@ let filename parse_arg shell =
  * Return a list of avaliable items in the package.
  *)
 let items info options =
-  info.shell_proof.edit_get_names info.shell_subdir options
+  info.shell_proof#edit_get_names info.shell_subdir options
 
 (*
  * Display the current proof.
  *)
 let display_proof info options =
-   info.shell_proof.edit_display info.shell_subdir options
+   info.shell_proof#edit_display info.shell_subdir options
 
 (************************************************************************
  * Objects.
@@ -351,8 +351,8 @@ let create_ax_statement parse_arg shell seq name =
    let display_mode = get_display_mode shell in
    let package = get_current_package shell in
    let item = Shell_rule.create package parse_arg display_mode name in
-      item.edit_set_goal seq;
-      item.edit_save ();
+      item#edit_set_goal seq;
+      item#edit_save;
       touch shell
 
 (* unused
@@ -398,27 +398,27 @@ let create_ml shell name =
  *)
 let set_goal shell t =
    touch shell;
-   shell.shell_proof.edit_set_goal t;
+   shell.shell_proof#edit_set_goal t;
    display_proof shell LsOptionSet.empty
 
 let set_redex shell t =
    touch shell;
-   shell.shell_proof.edit_set_redex t;
+   shell.shell_proof#edit_set_redex t;
    display_proof shell LsOptionSet.empty
 
 let set_contractum shell t =
    touch shell;
-   shell.shell_proof.edit_set_contractum t;
+   shell.shell_proof#edit_set_contractum t;
    display_proof shell LsOptionSet.empty
 
 let set_assumptions shell tl =
    touch shell;
-   shell.shell_proof.edit_set_assumptions tl;
+   shell.shell_proof#edit_set_assumptions tl;
    display_proof shell LsOptionSet.empty
 
 let set_params shell pl =
    touch shell;
-   shell.shell_proof.edit_set_params pl;
+   shell.shell_proof#edit_set_params pl;
    display_proof shell LsOptionSet.empty
 
 let mk_dep_name opname =
@@ -452,7 +452,7 @@ let check shell =
 let expand shell =
    let start = Unix.times () in
    let start_time = Unix.gettimeofday () in
-   let () = if shell.shell_proof.edit_interpret shell.shell_subdir ProofExpand then touch shell in
+   let () = if shell.shell_proof#edit_interpret shell.shell_subdir ProofExpand then touch shell in
    let finish = Unix.times () in
    let finish_time = Unix.gettimeofday () in
       display_proof shell LsOptionSet.empty;
@@ -468,7 +468,7 @@ let refine shell tac =
    let str, ast = Shell_state.get_tactic () in
       if !debug_refine then
          eprintf "Starting refinement%t" eflush;
-      if shell.shell_proof.edit_interpret shell.shell_subdir (ProofRefine (str, ast, tac)) then
+      if shell.shell_proof#edit_interpret shell.shell_subdir (ProofRefine (str, ast, tac)) then
          touch shell;
       if !debug_refine then
          eprintf "Displaying proof%t" eflush;
@@ -482,11 +482,11 @@ let refine shell tac =
  *)
 (* unused
 let goal shell =
-   (shell.shell_proof.edit_info shell.shell_subdir).edit_goal
+   (shell.shell_proof#edit_info shell.shell_subdir)#edit_goal
 *)
 
 let interpret shell command =
-   if shell.shell_proof.edit_interpret shell.shell_subdir command then
+   if shell.shell_proof#edit_interpret shell.shell_subdir command then
       touch shell;
    display_proof shell LsOptionSet.empty
 
@@ -686,7 +686,7 @@ let mount_proof modname itemname parse_arg shell force_flag need_shell verbose =
 
    (* Install the proof *)
    let proof = get_item parse_arg shell modname itemname in
-      Shell_state.set_so_var_context (Some (proof.edit_get_terms ()));
+      Shell_state.set_so_var_context (Some proof#edit_get_terms);
       shell.shell_proof <- proof
 
 (*
@@ -715,7 +715,7 @@ let chdir_full parse_arg shell force_flag need_shell verbose (new_fs, new_subdir
                raise exn
       end;
       try
-         shell.shell_proof.edit_check_addr new_subdir;
+         shell.shell_proof#edit_check_addr new_subdir;
          shell.shell_subdir <- new_subdir
       with
          exn ->
@@ -767,10 +767,10 @@ let unredo unredo_fun shell =
       display_proof shell LsOptionSet.empty
 
 let undo shell =
-   unredo shell.shell_proof.edit_undo shell
+   unredo shell.shell_proof#edit_undo shell
 
 let redo shell =
-   unredo shell.shell_proof.edit_redo shell
+   unredo shell.shell_proof#edit_redo shell
 
 let fs_pwd shell =
    match shell.shell_fs, shell.shell_subdir with
@@ -827,7 +827,7 @@ let apply_all parse_arg shell (f : item_fun) (time : bool) (clean_item : clean_i
        * Here we indeed want to ignore absolutely any kind of error.
        * Whatever went wrong, we just want to skip the bad item and continue to the next one.
        *)
-      (try Shell_state.set_so_var_context (Some (item.edit_get_terms ())) with
+      (try Shell_state.set_so_var_context (Some item#edit_get_terms) with
           _ ->
              ());
 
@@ -919,7 +919,7 @@ let clean_and_abandon pack =
 
 let expand_all parse_arg shell =
    let f item db =
-      item.edit_interpret [] ProofExpand
+      item#edit_interpret [] ProofExpand
    in
       apply_all parse_arg shell f true clean_resources dont_clean_module
 
@@ -940,7 +940,7 @@ let extract parse_arg shell path () =
    let dir = shell.shell_fs, shell.shell_subdir in
       try
          chdir parse_arg shell false false path;
-         let modified, res = shell.shell_proof.edit_get_extract () in
+         let modified, res = shell.shell_proof#edit_get_extract in
             if modified then touch shell;
             chdir parse_arg shell false false dir;
             res
@@ -959,13 +959,13 @@ let term_of_extract shell terms =
 let edit_find info i =
    match info.shell_fs with
       DirProof (_, modname, name) ->
-         info.shell_subdir <- info.shell_proof.edit_find info.shell_subdir i;
+         info.shell_subdir <- info.shell_proof#edit_find info.shell_subdir i;
          pwd info
     | _ ->
          raise (Invalid_argument "Shell.find_subgoal: not in a proof")
 
 let edit_is_enabled shell name =
-   shell.shell_proof.edit_is_enabled shell.shell_subdir name
+   shell.shell_proof#edit_is_enabled shell.shell_subdir name
 
 (************************************************************************
  * MODULES                                                              *

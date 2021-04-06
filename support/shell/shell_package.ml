@@ -298,47 +298,69 @@ let mk_interface_filter options =
 let raise_edit_error s =
    raise (RefineError ("Shell_package", StringError s))
 
-let raise_edit_error_fun s _ = raise_edit_error s
-
-let edit_check_addr = function
-   [] -> ()
- | _ -> raise (Invalid_argument "Shell_package.edit_check_addr")
-
 (*
  * Build the shell interface.
  *)
-let rec edit pack_info parse_arg get_dfm =
-   let edit_display addr options =
-      edit_check_addr addr;
+class edit a b c =
+ (object (self)
+   val pack_info = a
+   val parse_arg = b
+   val get_dfm = c
+
+   method edit_check_addr = function
+      [] -> ()
+    | _ -> raise (Invalid_argument "Shell_package.edit_check_addr")
+
+   method edit_display addr options =
+      self#edit_check_addr addr;
       if LsOptionSet.mem options LsInterface
       then
          Proof_edit.display_term (get_dfm ())
          (term_of_interface pack_info (mk_interface_filter options) parse_arg)
       else
          Proof_edit.display_term (get_dfm ())
-         (term_of_implementation pack_info (mk_ls_filter options) parse_arg);
-   in
-   let edit_get_names addr options =
-      edit_check_addr addr;
+         (term_of_implementation pack_info (mk_ls_filter options) parse_arg)
+
+   method edit_get_names addr options =
+      self#edit_check_addr addr;
       if LsOptionSet.mem options LsInterface
       then
          items_of_interface pack_info (mk_interface_filter options) parse_arg
       else
          items_of_implementation pack_info (mk_ls_filter options) parse_arg
-   in
-   let edit_copy () =
-      edit pack_info parse_arg get_dfm
-   in
-   let edit_save () =
-      Package_info.save parse_arg pack_info
-   in
 
-   (*
-    * This function always returns false.
-    * However, it is wise to keep it because
-    * we may add more methods.
-    *)
-   let edit_is_enabled _ = function
+   method edit_copy = ({< >} :> edit_object)
+
+   method private not_a_rule : 'a. 'a = raise_edit_error "this is not a rule or rewrite"
+   method edit_get_terms = self#not_a_rule
+   method edit_set_goal = self#not_a_rule
+   method edit_set_redex = self#not_a_rule
+   method edit_set_contractum = self#not_a_rule
+   method edit_set_assumptions = self#not_a_rule
+   method edit_set_params = self#not_a_rule
+   method edit_get_extract = self#not_a_rule
+   method edit_find = self#not_a_rule
+
+   method edit_save =
+      Package_info.save parse_arg pack_info
+
+   method edit_check =
+      raise_edit_error "check the entire package? Use check_all."
+
+   method edit_undo = self#not_a_rule
+
+   method edit_redo = self#not_a_rule
+
+   method edit_info addr =
+      raise_edit_error "no info for the package"
+
+   method edit_interpret command =
+      raise_edit_error "this is not a proof"
+
+   method edit_get_contents addr =
+      raise_edit_error "can only retrieve contents of an individual item, not of a package"
+
+   method edit_is_enabled _ = function
       MethodRefine
     | MethodPaste _
     | MethodUndo
@@ -347,34 +369,10 @@ let rec edit pack_info parse_arg get_dfm =
          false
     | MethodApplyAll ->
          true
-   in
-   let not_a_rule _ =
-      raise_edit_error "this is not a rule or rewrite"
-   in
-      { edit_display = edit_display;
-        edit_get_contents = raise_edit_error_fun "can only retrieve contents of an individual item, not of a package";
-        edit_get_names = edit_get_names;
-        edit_get_terms = not_a_rule;
-        edit_copy = edit_copy;
-        edit_set_goal = not_a_rule;
-        edit_set_redex = not_a_rule;
-        edit_set_contractum = not_a_rule;
-        edit_set_assumptions = not_a_rule;
-        edit_set_params = not_a_rule;
-        edit_get_extract = not_a_rule;
-        edit_save = edit_save;
-        edit_check = raise_edit_error_fun "check the entire package? Use check_all.";
-        edit_check_addr = edit_check_addr;
-        edit_info = raise_edit_error_fun "no info for the package";
-        edit_undo = not_a_rule;
-        edit_redo = not_a_rule;
-        edit_interpret = raise_edit_error_fun "this is not a proof";
-        edit_find = not_a_rule;
-        edit_is_enabled = edit_is_enabled
-      }
+ end : edit_object)
 
-let create = edit
-let view = edit
+let create = new edit
+let view = create
 
 (*
  * -*-

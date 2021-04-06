@@ -61,10 +61,10 @@ type info_data =
 (*
  * Info for a specific file.
  *)
-type info =
-   { mutable info_root    : string;
-     mutable info_subdir  : string;
-     mutable info_data    : info_data
+type file_info =
+   { info_root    : string;
+     info_subdir  : string;
+     info_data    : info_data
    }
 
 (************************************************************************
@@ -268,39 +268,6 @@ let load_cvsignore dirname =
       Sys_error _ ->
          None
 
-let dirname_of_subdir info subdir =
-   Filename.concat info.info_root subdir
-
-let load_dir_entries_exn info subdir =
-   let filename = dirname_of_subdir info subdir in
-   let data =
-      match (Unix.stat filename).Unix.st_kind with
-         Unix.S_DIR ->
-            let dir_info =
-               { dir_entries = entries_of_dir filename;
-                 dir_ignore = load_cvsignore filename
-               }
-            in
-               Directory dir_info
-       | Unix.S_REG ->
-            Session.add_edit subdir;
-            File (lines_of_file filename)
-       | _ ->
-            raise Not_found
-   in
-      info.info_subdir <- subdir;
-      info.info_data <- data
-
-let load_dir_entries info subdir =
-   try load_dir_entries_exn info subdir with
-      Unix.Unix_error _
-    | Sys_error _
-    | Failure _ ->
-         raise (RefineError ("Shell_fs.load_dir_entries", StringStringError (subdir, "unreadable")))
-
-let refresh_dir_entries info =
-   load_dir_entries info info.info_subdir
-
 (************************************************************************
  * SHELL INTERFACE                                                      *
  ************************************************************************)
@@ -308,7 +275,7 @@ let refresh_dir_entries info =
 (*
  * Display the entries in a directory.
  *)
-let term_of_dir info options subdir dir_info =
+let term_of_dir options subdir dir_info =
    let { dir_entries = entries;
          dir_ignore = ignore
        } = dir_info
@@ -338,7 +305,7 @@ let term_of_dir info options subdir dir_info =
    in
       mk_dirlisting_term subdir terms
 
-let names_of_dir info options dir_info =
+let names_of_dir options dir_info =
    let { dir_entries = entries;
          dir_ignore = ignore
        } = dir_info
@@ -362,7 +329,7 @@ let names_of_dir info options dir_info =
 (*
  * File lines.
  *)
-let term_of_file info options subdir lines =
+let term_of_file options subdir lines =
    let _, lines =
       Lm_list_util.fold_left (fun i line ->
             let line = mk_fileline_term (Lm_num.num_of_int i) line in
@@ -370,23 +337,50 @@ let term_of_file info options subdir lines =
    in
       mk_filelisting_term subdir lines
 
-(*
- * Display the listing.
- *)
-let edit_display get_dfm info options =
-   let { info_root    = root;
-         info_subdir  = subdir;
-         info_data    = data
-       } = info
-   in
-   let term =
-      match data with
+class info =
+   object (self)
+   val info_root = Setup.root ()
+   val mutable info_subdir = "."
+   val mutable info_data = Directory { dir_entries = []; dir_ignore = None }
+   method private to_term options =
+      match info_data with
          Directory dir_info ->
-            term_of_dir info options subdir dir_info
+            term_of_dir options info_subdir dir_info
        | File file_info ->
-            term_of_file info options subdir file_info
-   in
-      Proof_edit.display_term (get_dfm ()) term
+            term_of_file options info_subdir file_info
+
+   method private dirname_of_subdir subdir =
+      Filename.concat info_root subdir
+   method private load_dir_entries subdir =
+      try
+         let filename = self#dirname_of_subdir subdir in
+         let data =
+            match (Unix.stat filename).Unix.st_kind with
+               Unix.S_DIR ->
+                  let dir_info =
+                     { dir_entries = entries_of_dir filename;
+                       dir_ignore = load_cvsignore filename
+                     }
+                  in
+                     Directory dir_info
+             | Unix.S_REG ->
+                  Session.add_edit subdir;
+                  File (lines_of_file filename)
+             | _ ->
+                  raise Not_found
+         in
+            info_subdir <- subdir;
+            info_data <- data
+      with
+         Unix.Unix_error _
+       | Sys_error _
+       | Failure _ ->
+            raise (RefineError ("Shell_fs.load_dir_entries", StringStringError (subdir, "unreadable")))
+   method private refresh_dir_entries =
+      self#load_dir_entries info_subdir
+   initializer self#refresh_dir_entries
+
+end
 
 (*
  * Error handler.
@@ -397,63 +391,71 @@ let raise_edit_error s =
 (*
  * Build the shell interface.
  *)
-let rec edit get_dfm info =
-   let edit_check_addr addr =
+class edit a =
+ (object (self)
+   val get_dfm = a
+   inherit info
+
+   method edit_check_addr addr =
       let path = Lm_filename_util.simplify_path addr in
       let path = Lm_filename_util.concat_path path in
-         if info.info_subdir <> path then
-            load_dir_entries info path
-   in
-   let edit_display addr options =
-      edit_check_addr addr;
-      edit_display get_dfm info options
-   in
-   let edit_get_names addr options =
-      edit_check_addr addr;
-      let { info_root    = root;
-            info_subdir  = subdir;
-            info_data    = data
-          } = info
-      in match data with
-            Directory dir_info ->
-                  names_of_dir info options dir_info
-          | File _ ->
-               raise_edit_error "cannot get items from a file"
-   in
-   let edit_copy () =
-      edit get_dfm { info with info_root = info.info_root }
-   in
-   let not_a_rule _ =
-      raise_edit_error "this is not a rule or rewrite"
-   in
-   let edit_save () =
+         if info_subdir <> path then
+            self#load_dir_entries path
+
+(*
+ * Display the listing.
+ *)
+   method edit_display addr options =
+      self#edit_check_addr addr;
+      Proof_edit.display_term (get_dfm ()) (self#to_term options)
+
+   method edit_get_names addr options =
+      self#edit_check_addr addr;
+      match info_data with
+         Directory dir_info ->
+            names_of_dir options dir_info
+       | File _ ->
+            raise_edit_error "cannot get items from a file"
+
+   method edit_copy = ({< >} :> edit_object)
+
+   method private not_a_rule : 'a. 'a = raise_edit_error "this is not a rule or rewrite"
+   method edit_get_terms = self#not_a_rule
+   method edit_set_goal = self#not_a_rule
+   method edit_set_redex = self#not_a_rule
+   method edit_set_contractum = self#not_a_rule
+   method edit_set_assumptions = self#not_a_rule
+   method edit_set_params = self#not_a_rule
+   method edit_get_extract = self#not_a_rule
+   method edit_find = self#not_a_rule
+
+   method edit_save =
       raise_edit_error "list of files can't be saved"
-   in
-   let edit_check _ =
+
+   method edit_check =
       raise_edit_error "files can't be checked"
-   in
-   let edit_undo addr =
+
+   method edit_undo addr =
       addr
-   in
-   let edit_redo addr =
+
+   method edit_redo addr =
       addr
-   in
-   let edit_info addr =
+
+   method edit_info addr =
       raise_edit_error "no info for the files"
-   in
-   let edit_interpret command =
+
+   method edit_interpret command =
       raise_edit_error "this is not a proof"
-   in
-   let edit_get_contents addr =
+
+   method edit_get_contents addr =
       raise_edit_error "can only retrieve contents of an individual item, not of a file"
-   in
 
    (*
     * This function always returns false.
     * However, it is wise to keep it because
     * we may add more methods.
     *)
-   let edit_is_enabled _ = function
+   method edit_is_enabled _ = function
       MethodRefine
     | MethodPaste _
     | MethodUndo
@@ -461,38 +463,9 @@ let rec edit get_dfm info =
     | MethodApplyAll
     | MethodExpand ->
          false
-   in
-      { edit_display = edit_display;
-        edit_get_contents = edit_get_contents;
-        edit_get_names = edit_get_names;
-        edit_get_terms = not_a_rule;
-        edit_copy = edit_copy;
-        edit_set_goal = not_a_rule;
-        edit_set_redex = not_a_rule;
-        edit_set_contractum = not_a_rule;
-        edit_set_assumptions = not_a_rule;
-        edit_set_params = not_a_rule;
-        edit_get_extract = not_a_rule;
-        edit_save = edit_save;
-        edit_check = edit_check;
-        edit_check_addr = edit_check_addr;
-        edit_info = edit_info;
-        edit_undo = edit_undo;
-        edit_redo = edit_redo;
-        edit_interpret = edit_interpret;
-        edit_find = not_a_rule;
-        edit_is_enabled = edit_is_enabled
-      }
+ end : edit_object)
 
-let create get_dfm =
-   let info =
-      { info_root    = Setup.root ();
-        info_subdir  = ".";
-        info_data    = Directory { dir_entries = []; dir_ignore = None }
-      }
-   in
-      refresh_dir_entries info;
-      edit get_dfm info
+let create = new edit
 
 let view = create
 

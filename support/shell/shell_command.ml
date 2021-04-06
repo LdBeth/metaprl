@@ -149,7 +149,7 @@ let make_assum _ = commands.interpret ProofMakeAssum
 
 let interpret_all command modifies =
    let f item db =
-      item.edit_interpret [] command
+      item#edit_interpret [] command
    in
       apply_all f true dont_clean_item dont_clean_module
 
@@ -197,7 +197,7 @@ let ls s =
       commands.view options
 
 let status item =
-   let name, status, _, _ = item.edit_get_contents [] in
+   let name, status, _, _ = item#edit_get_contents [] in
    let str_status =
       match status with
          ObjPrimitive ->
@@ -217,9 +217,9 @@ let status item =
 
 let status_all_aux clean_item clean_module =
    let f item db =
-      eprintf "Expanding `%s':%t" (let name, _, _, _ = item.edit_get_contents [] in name) eflush;
+      eprintf "Expanding `%s':%t" (let name, _, _, _ = item#edit_get_contents [] in name) eflush;
       let modified =
-         try item.edit_interpret [] ProofExpand with
+         try item#edit_interpret [] ProofExpand with
             Invalid_argument _
           | _ ->
                false
@@ -239,7 +239,7 @@ let status_and_abandon_all () =
 let debug_status_all () =
    let f item db =
       let modified =
-         try item.edit_interpret [] ProofExpand with
+         try item#edit_interpret [] ProofExpand with
             Invalid_argument _
           | _ ->
                false
@@ -265,9 +265,9 @@ dform status_df : mode[src] :: status_bf[s] =
 
 let check_all () =
    let check item db =
-      let name, _, _, _ = item.edit_get_contents [] in
+      let name, _, _, _ = item#edit_get_contents [] in
       let buf = new_buffer () in
-      let modified, status = item.edit_check () in
+      let modified, status = item#edit_check in
          format_szone buf;
          format_pushm buf 3;
          Dform.format_term db buf <:con< refiner_status[$name$:s] >>;

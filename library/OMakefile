@@ -3,12 +3,6 @@ OCAMLFLAGS += -rectypes
 # Libraries
 OCAML_OTHER_LIBS = unix
 
-OCAMLLIBS[] =
-    $(ROOT)/mllib/util
-    $(ROOT)/refiner/refiner
-    $(ROOT)/refiner/refsig/reflib
-    library
-
 # Library files
 LMFILES[] =
     utils

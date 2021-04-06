@@ -77,13 +77,13 @@ type goal =
  *)
 module Info = struct
    type info =
-      { mutable rule_params    : term_param list;
-        mutable rule_assums    : term list;
-        mutable rule_goal      : goal;
-        mutable rule_proof     : Package_info.proof proof_type;
-        mutable rule_ped       : Proof_edit.ped proof_type;
-        mutable rule_resources : (MLast.expr, term) resource_def;
-        mutable rule_name      : string
+      { rule_params    : term_param list;
+        rule_assums    : term list;
+        rule_goal      : goal;
+        rule_proof     : Package_info.proof proof_type;
+        rule_ped       : Proof_edit.ped proof_type;
+        rule_resources : (MLast.expr, term) resource_def;
+        rule_name      : string
       }
 end
 
@@ -117,45 +117,6 @@ let comment _ _ t =
    t
 *)
 
-(*
- * Build an item from the object.
- *)
-let item_of_obj pack name
-    { Info.rule_params = params;
-      Info.rule_assums = assums;
-      Info.rule_proof = proof;
-      Info.rule_ped = ped;
-      Info.rule_goal = goal;
-      Info.rule_resources = res;
-      _
-    } =
-   match goal with
-      GRule goal ->
-         Filter_type.Rule {
-            Filter_type.rule_name = name;
-            Filter_type.rule_params = params;
-            Filter_type.rule_stmt = zip_mimplies assums goal;
-            Filter_type.rule_proof = proof;
-            Filter_type.rule_resources = res
-         }
-    | GRewrite (redex, contractum, _) when params = [] && assums = [] ->
-         Filter_type.Rewrite {
-            rw_name = name;
-            rw_redex = redex;
-            rw_contractum = contractum;
-            rw_proof = proof;
-            rw_resources = res
-         }
-    | GRewrite (redex, contractum, _) ->
-         Filter_type.CondRewrite {
-            crw_name = name;
-            crw_params = params;
-            crw_assums = assums;
-            crw_redex = redex;
-            crw_contractum = contractum;
-            crw_proof = proof;
-            crw_resources = res
-         }
 
 (*
  * The object has a package in scope.
@@ -167,18 +128,143 @@ let mk_addr addr =
       Failure _ ->
          raise (Failure "Invalid proof node address (contains non-numerical elements)")
 
-let rec edit pack parse_arg name window (obj : Info.info) =
-   let edit_copy () =
-      edit pack parse_arg name window { obj with Info.rule_name = obj.Info.rule_name }
-   in
-   let update_ped () =
-      obj.Info.rule_ped <- Primitive unit_term
-   in
-   let save_ped () =
-      let item = item_of_obj pack name obj in
+class info w obj =
+   let { Info.rule_params = params;
+         Info.rule_assums = assums;
+         Info.rule_proof = proof;
+         Info.rule_ped = ped;
+         Info.rule_goal = goal;
+         Info.rule_resources = res;
+         Info.rule_name = name } = obj in
+ object (self)
+    val window = w
+
+    val mutable rule_params = params
+    val mutable rule_assums = assums
+    val mutable rule_goal = goal
+    val mutable rule_proof = proof
+    val mutable rule_ped = ped
+    val rule_resources = res
+    val rule_name = name
+
+(*
+ * Build an item from the object.
+ *)
+    method private to_item =
+       (match rule_goal with
+           GRule goal ->
+              Filter_type.Rule {
+                 Filter_type.rule_name = rule_name;
+                 Filter_type.rule_params = rule_params;
+                 Filter_type.rule_stmt = zip_mimplies rule_assums goal;
+                 Filter_type.rule_proof = rule_proof;
+                 Filter_type.rule_resources = rule_resources
+              }
+         | GRewrite (redex, contractum, _) when rule_params = [] && rule_assums = [] ->
+              Filter_type.Rewrite {
+                 rw_name = rule_name;
+                 rw_redex = redex;
+                 rw_contractum = contractum;
+                 rw_proof = rule_proof;
+                 rw_resources = rule_resources
+              }
+         | GRewrite (redex, contractum, _) ->
+              Filter_type.CondRewrite {
+                 crw_name = rule_name;
+                 crw_params = rule_params;
+                 crw_assums = rule_assums;
+                 crw_redex = redex;
+                 crw_contractum = contractum;
+                 crw_proof = rule_proof;
+                 crw_resources = rule_resources
+              } : ('a, 'b, 'c,
+    (MLast.ctyp, MLast.expr) resource_str,
+    MLast.ctyp,
+    MLast.expr,
+    MLast.str_item) Filter_summary.summary_item)
+
+    method private update_ped = rule_ped <- Primitive unit_term
+
+    method edit_get_terms =
+      match rule_goal with
+         GRule goal ->
+            goal :: rule_assums
+       | GRewrite (_, _, mseq) ->
+            let goal, assums = dest_msequent mseq in goal :: assums
+    method edit_set_goal t =
+       rule_goal <- GRule t;
+       self#update_ped
+    method edit_set_redex t =
+       match rule_goal with
+          GRule _ ->
+             raise (RefineError ("Shell_rule.set_redex", StringError "can't set redex in rules"))
+        | GRewrite (_, contractum, _) ->
+             rule_goal <- GRewrite (t, contractum, mk_rw_goal rule_assums t contractum);
+             self#update_ped
+    method edit_set_contractum t =
+       match rule_goal with
+          GRule _ ->
+             raise (RefineError ("Shell_rule.set_contractum", StringError "can't set contractum in rules"))
+        | GRewrite (redex, _, _) ->
+             rule_goal <- GRewrite (redex, t, mk_rw_goal rule_assums redex t);
+             self#update_ped
+
+    method edit_set_assumptions tl =
+       rule_assums <- tl;
+       self#update_ped
+    method edit_set_params pl =
+       rule_params <- pl;
+       self#update_ped
+
+    method edit_get_extract =
+      match rule_ped with
+         Primitive _ ->
+            raise (RefineError ("Shell_rule.check", StringError "can't check primitive rules"))
+       | Derived _ ->
+            raise (RefineError ("Shell_rule.check", StringError "can't check noninteractive proofs"))
+       | Incomplete ->
+            raise (RefineError ("Shell_rule.check", StringError "proof is incomplete"))
+       | Interactive ped ->
+            try Proof_edit.refiner_extract_of_ped window ped with
+               RefineError (name', err) ->
+                  raise (RefineError (name, StringWrapError (name', err)))
+
+    method private get_ped =
+       match rule_ped with
+          Primitive _
+        | Derived _
+        | Incomplete ->
+             raise (RefineError ("Shell_rule.get_ped", StringError "proof is not interactive"))
+        | Interactive ped ->
+             ped
+
+    method edit_undo addr =
+       List.map string_of_int (Proof_edit.undo_ped self#get_ped (mk_addr addr))
+    method edit_redo addr =
+       List.map string_of_int (Proof_edit.redo_ped self#get_ped (mk_addr addr))
+ end
+
+class edit p a w (obj : Info.info) =
+ (object (self)
+   val pack = p
+   val parse_arg = a
+   inherit info w obj
+
+   method edit_copy = ({< >} :> edit_object)
+   method edit_check =
+      match rule_ped with
+         Primitive _ ->
+            false, RefPrimitive
+       | Derived _
+       | Incomplete ->
+            false, RefIncomplete (0, 0)
+       | Interactive ped ->
+            Proof_edit.check_ped window (Package_info.get_refiner pack) (make_opname [rule_name; Package_info.name pack]) ped
+   method edit_save =
+      let item = self#to_item in
          Package_info.set pack parse_arg item
-   in
-   let edit_display addr _ =
+
+   method edit_display addr _ =
       (* Convert to a term *)
       let addr = mk_addr addr in
       let { Info.rule_assums = assums; Info.rule_goal = goal; _ } = obj in
@@ -194,160 +280,66 @@ let rec edit pack parse_arg name window (obj : Info.info) =
                   Proof_edit.format_incomplete window (Proof_edit.Incomplete goal)
           | Interactive ped ->
                Proof_edit.format window ped addr
-   in
-   let edit_get_terms () =
-      match obj.Info.rule_goal with
-         GRule goal ->
-            goal :: obj.Info.rule_assums
-       | GRewrite (_, _, mseq) ->
-            let goal, assums = dest_msequent mseq in goal :: assums
-   in
-   let edit_set_goal t =
-      obj.Info.rule_goal <- GRule t;
-      update_ped ()
-   in
-   let edit_set_redex t =
-      match obj.Info.rule_goal with
-         GRule _ ->
-            raise (RefineError ("Shell_rule.set_redex", StringError "can't set redex in rules"))
-       | GRewrite (_, contractum, _) ->
-            obj.Info.rule_goal <- GRewrite (t, contractum, mk_rw_goal obj.Info.rule_assums t contractum);
-            update_ped ()
-   in
-   let edit_set_contractum t =
-      match obj.Info.rule_goal with
-         GRule _ ->
-            raise (RefineError ("Shell_rule.set_contractum", StringError "can't set contractum in rules"))
-       | GRewrite (redex, _, _) ->
-            obj.Info.rule_goal <- GRewrite (redex, t, mk_rw_goal obj.Info.rule_assums redex t);
-            update_ped ()
-   in
-   let edit_set_assumptions tl =
-      obj.Info.rule_assums <- tl;
-      update_ped ()
-   in
-   let edit_set_params pl =
-      obj.Info.rule_params <- pl;
-      update_ped ()
-   in
-   let edit_get_extract () =
-      match obj.Info.rule_ped with
-         Primitive _ ->
-            raise (RefineError ("Shell_rule.check", StringError "can't check primitive rules"))
-       | Derived _ ->
-            raise (RefineError ("Shell_rule.check", StringError "can't check noninteractive proofs"))
-       | Incomplete ->
-            raise (RefineError ("Shell_rule.check", StringError "proof is incomplete"))
-       | Interactive ped ->
-            try Proof_edit.refiner_extract_of_ped window ped with
-               RefineError (name', err) ->
-                  raise (RefineError (name, StringWrapError (name', err)))
-   in
-   let edit_check () =
-      match obj.Info.rule_ped with
-         Primitive _ ->
-            false, RefPrimitive
-       | Derived _
-       | Incomplete ->
-            false, RefIncomplete (0, 0)
-       | Interactive ped ->
-            Proof_edit.check_ped window (Package_info.get_refiner pack) (make_opname [obj.Info.rule_name; Package_info.name pack]) ped
-   in
-   let get_ped obj =
-      match obj.Info.rule_ped with
-         Primitive _
-       | Derived _
-       | Incomplete ->
-            raise (RefineError ("Shell_rule.get_ped", StringError "proof is not interactive"))
-       | Interactive ped ->
-            ped
-   in
-   let edit_undo addr =
-      List.map string_of_int (Proof_edit.undo_ped (get_ped obj) (mk_addr addr))
-   in
-   let edit_redo addr =
-      List.map string_of_int (Proof_edit.redo_ped (get_ped obj) (mk_addr addr))
-   in
-   let edit_get_contents addr =
+
+   method edit_get_contents addr =
       if addr <> [] then
          raise (Invalid_argument "Shell_rule.edit_get_contents: only implemented for the root of the proof");
       let goal =
-         match obj.Info.rule_goal with
+         match rule_goal with
             GRule goal -> MetaTheorem goal
           | GRewrite (redex, contractum, _) -> MetaIff(MetaTheorem redex, MetaTheorem contractum)
       in
-         obj.Info.rule_name,
-         Proof_edit.ped_status obj.Info.rule_ped,
-         List.fold_right (fun x y -> MetaImplies (MetaTheorem x, y)) obj.Info.rule_assums goal,
-         obj.Info.rule_params
-   in
-   let get_ped () =
-      match obj.Info.rule_ped with
+         rule_name,
+         Proof_edit.ped_status rule_ped,
+         List.fold_right (fun x y -> MetaImplies (MetaTheorem x, y)) rule_assums goal,
+         rule_params
+
+   method! private get_ped =
+      match rule_ped with
          Primitive _ ->
             raise (RefineError ("Shell_rule.get_ped", StringError "Editing of primitive rules is not currently allowed"))
        | Derived _
        | Incomplete ->
             let goal, assums =
-               match obj.Info.rule_goal with
+               match rule_goal with
                   GRule goal ->
-                     goal, obj.Info.rule_assums
+                     goal, rule_assums
                 | GRewrite (_, _, mseq) ->
                      dest_msequent mseq
             in
-            let proof = Package_info.new_proof pack parse_arg name assums goal in
+            let proof = Package_info.new_proof pack parse_arg rule_name assums goal in
             let ped = Package_info.ped_of_proof pack parse_arg proof (mk_msequent goal assums) in
-               obj.Info.rule_proof <- Interactive proof;
-               obj.Info.rule_ped <- Interactive ped;
-               save_ped ();
+               rule_proof <- Interactive proof;
+               rule_ped <- Interactive ped;
+               self#edit_save;
                ped
        | Interactive ped ->
             ped
-   in
-   let edit_get_names addr _ = (* get all pending subgoals *)
+
+   method edit_get_names addr _ = (* get all pending subgoals *)
 	    List.map (fun l -> String.concat "/" (List.map string_of_int l))
-      (Proof.find_all_subgoals (Proof_edit.proof_of_ped (get_ped ())) (mk_addr addr))
-   in
-   let edit_info addr =
-      Proof_edit.edit_info_of_ped (get_ped ()) (mk_addr addr)
-   in
-   let edit_check_addr addr =
-      if addr <> [] then Proof_edit.check_addr_ped (get_ped ()) (mk_addr addr)
-   in
-   let edit_interpret addr command =
-      Proof_edit.interpret window (get_ped ()) (mk_addr addr) command
-   in
-   let edit_find addr i =
-      List.map string_of_int (Proof.find_subgoal (Proof_edit.proof_of_ped (get_ped ())) (mk_addr addr) i)
-   in
-   let edit_is_enabled addr name =
-      match obj.Info.rule_ped with
+      (Proof.find_all_subgoals (Proof_edit.proof_of_ped self#get_ped) (mk_addr addr))
+
+   method edit_info addr =
+      Proof_edit.edit_info_of_ped self#get_ped (mk_addr addr)
+
+   method edit_check_addr addr =
+      if addr <> [] then Proof_edit.check_addr_ped self#get_ped (mk_addr addr)
+
+   method edit_interpret addr command =
+      Proof_edit.interpret window self#get_ped (mk_addr addr) command
+
+   method edit_find addr i =
+      List.map string_of_int (Proof.find_subgoal (Proof_edit.proof_of_ped self#get_ped) (mk_addr addr) i)
+
+   method edit_is_enabled addr name =
+      match rule_ped with
          Primitive _ -> false
        | Derived _
        | Incomplete
        | Interactive _ ->
-            Proof_edit.is_enabled_ped (get_ped ()) (mk_addr addr) name
-   in
-      { edit_display = edit_display;
-        edit_get_contents = edit_get_contents;
-        edit_get_names = edit_get_names;
-        edit_get_terms = edit_get_terms;
-        edit_copy = edit_copy;
-        edit_set_goal = edit_set_goal;
-        edit_set_redex = edit_set_redex;
-        edit_set_contractum = edit_set_contractum;
-        edit_set_assumptions = edit_set_assumptions;
-        edit_set_params = edit_set_params;
-        edit_get_extract = edit_get_extract;
-        edit_save = save_ped;
-        edit_check = edit_check;
-        edit_check_addr = edit_check_addr;
-        edit_info = edit_info;
-        edit_undo = edit_undo;
-        edit_redo = edit_redo;
-        edit_interpret = edit_interpret;
-        edit_find = edit_find;
-        edit_is_enabled = edit_is_enabled
-      }
+            Proof_edit.is_enabled_ped self#get_ped (mk_addr addr) name
+ end : edit_object)
 
 let create pack parse_arg window name =
    let obj =
@@ -360,7 +352,7 @@ let create pack parse_arg window name =
         Info.rule_name = name
       }
    in
-      edit pack parse_arg name window obj
+      new edit pack parse_arg window obj
 
 let ped_of_proof pack parse_arg goal = function
    Primitive proof ->
@@ -391,7 +383,7 @@ let view_rule pack parse_arg window
         Info.rule_name = name
       }
    in
-      edit pack parse_arg name window obj
+      new edit pack parse_arg window obj
 
 let view_rw pack parse_arg window
     { rw_name = name;
@@ -410,7 +402,7 @@ let view_rw pack parse_arg window
         Info.rule_name = name;
       }
    in
-      edit pack parse_arg name window obj
+      new edit pack parse_arg window obj
 
 let view_crw pack parse_arg window
     { crw_name = name;
@@ -432,14 +424,14 @@ let view_crw pack parse_arg window
         Info.rule_name = name;
       }
    in
-      edit pack parse_arg name window obj
+      new edit pack parse_arg window obj
 
 let view_def pack parse_arg window ty_term def =
    let redex = term_of_ty ty_term in
    let contractum = def.term_def_value in
    let goal = mk_rw_goal [] redex contractum in
    let proof = Primitive (mk_xrewrite_term redex contractum) in
-      edit pack parse_arg def.term_def_name window {
+      new edit pack parse_arg window {
          Info.rule_assums = [];
          Info.rule_params = [];
          Info.rule_goal = GRewrite (redex, contractum, goal);

@@ -109,11 +109,11 @@ class inline_data (s : stamp) (inl : term) =
 
  val inline = inl
 
-  method read_term = term_of_idata_term inline
-  method get_term =
+  method! read_term = term_of_idata_term inline
+  (* method! get_term =
      match term with
        None -> self#read_term
-     | Some t -> t
+     | Some t -> t *)
 
 end
 
@@ -294,7 +294,7 @@ class ['a] term_definition d da st =
   method dyn_p = match dyneval with None -> false | Some s -> true
   method get_dyneval = match dyneval with None -> raise NoDyneval | Some s -> s
 
-  method set_substance (s : term_substance) = sub <- Some s
+  (* method! set_substance (s : term_substance) = sub <- Some s *)
   method get_term = (self#get_substance)#get_term
 
 end

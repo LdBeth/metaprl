@@ -82,15 +82,19 @@ let raise_edit_error s =
 (*
  * Build the shell interface.
  *)
-let rec edit pack get_dfm =
-   let edit_check_addr = function
+class edit a b =
+ (object (self)
+   val pack = a
+   val get_dfm = b
+
+   method edit_check_addr = function
       [] -> ()
     | [ name ] when Package_info.group_exists pack name -> ()
     | _ ->
          raise (Failure "Shell_root.edit_check_addr: internal error")
-   in
-   let edit_display addr _ =
-      edit_check_addr addr;
+
+   method edit_display addr _ =
+      self#edit_check_addr addr;
       match addr with
          [] ->
             let groups = Package_info.groups pack @ ["fs", "Browse MetaPRL Source Code"] in
@@ -102,8 +106,8 @@ let rec edit pack get_dfm =
                Proof_edit.display_term_newline (get_dfm ()) <:con< packages[$name$:s,$dsc$:s]{$mk_xlist_term packs$} >>
        | _ ->
             raise (Invalid_argument "Shell_root.edit_display: internal error")
-   in
-   let edit_get_names addr _ =
+
+   method edit_get_names addr _ =
       match addr with
          [] -> List.map fst (Package_info.groups pack) @ ["fs"]
        | [ name ] ->
@@ -111,41 +115,41 @@ let rec edit pack get_dfm =
                packs
        | _ ->
             raise (Invalid_argument "Shell_root.edit_get_names: internal error")
-   in
-   let edit_copy () =
-      edit pack get_dfm
-   in
-   let not_a_rule _ =
-      raise_edit_error "this is not a rule or rewrite"
-   in
-   let edit_save () =
-      raise_edit_error "list of packages can't be saved"
-   in
-   let edit_check _ =
-      raise_edit_error "check the complete set of packages? Use check_all."
-   in
-   let edit_undo addr =
-      addr
-   in
-   let edit_redo addr =
-      addr
-   in
-   let edit_info addr =
-      raise_edit_error "no info for the root packages"
-   in
-   let edit_interpret command =
-      raise_edit_error "this is not a proof"
-   in
-   let edit_get_contents addr =
-      raise_edit_error "can only retrieve contents of an individual item, not of a root package"
-   in
 
-   (*
-    * This function always returns false.
-    * However, it is wise to keep it because
-    * we may add more methods.
-    *)
-   let edit_is_enabled _ = function
+   method edit_copy = ({< >} :> edit_object)
+
+   method private not_a_rule : 'a. 'a = raise_edit_error "this is not a rule or rewrite"
+   method edit_get_terms = self#not_a_rule
+   method edit_set_goal = self#not_a_rule
+   method edit_set_redex = self#not_a_rule
+   method edit_set_contractum = self#not_a_rule
+   method edit_set_assumptions = self#not_a_rule
+   method edit_set_params = self#not_a_rule
+   method edit_get_extract = self#not_a_rule
+   method edit_find = self#not_a_rule
+
+   method edit_save =
+      raise_edit_error "list of files can't be saved"
+
+   method edit_check =
+      raise_edit_error "check the complete set of packages? Use check_all."
+
+   method edit_undo addr =
+      addr
+
+   method edit_redo addr =
+      addr
+
+   method edit_info addr =
+      raise_edit_error "no info for the root packages"
+
+   method edit_interpret command =
+      raise_edit_error "this is not a proof"
+
+   method edit_get_contents addr =
+      raise_edit_error "can only retrieve contents of an individual item, not of a root package"
+
+   method edit_is_enabled _ = function
       MethodRefine
     | MethodPaste _
     | MethodUndo
@@ -154,30 +158,9 @@ let rec edit pack get_dfm =
          false
     | MethodApplyAll ->
          true
-   in
-      { edit_display = edit_display;
-        edit_get_contents = edit_get_contents;
-        edit_get_names = edit_get_names;
-        edit_get_terms = not_a_rule;
-        edit_copy = edit_copy;
-        edit_set_goal = not_a_rule;
-        edit_set_redex = not_a_rule;
-        edit_set_contractum = not_a_rule;
-        edit_set_assumptions = not_a_rule;
-        edit_set_params = not_a_rule;
-        edit_get_extract = not_a_rule;
-        edit_save = edit_save;
-        edit_check = edit_check;
-        edit_check_addr = edit_check_addr;
-        edit_info = edit_info;
-        edit_undo = edit_undo;
-        edit_redo = edit_redo;
-        edit_interpret = edit_interpret;
-        edit_find = not_a_rule;
-        edit_is_enabled = edit_is_enabled
-      }
+ end : edit_object)
 
-let create = edit
+let create = new edit
 
 (*
  * Note: in this particular case, view is the same as create.

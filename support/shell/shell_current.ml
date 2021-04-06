@@ -228,7 +228,7 @@ let fork_shell shell =
                index)
    in
       { shell with shell_debug = Printf.sprintf "%s.%d" shell.shell_debug index;
-                   shell_proof = shell.shell_proof.edit_copy ();
+                   shell_proof = shell.shell_proof#edit_copy;
                    shell_needs_refresh = true
       }
 
