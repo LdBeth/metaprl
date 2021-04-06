@@ -73,21 +73,6 @@ type goal =
  | GRewrite of term*term * msequent (*XXX: HACK: the third part is the cached mk_rw_goal *)
 
 (*
- * This is the actual rule/rewrite object.
- *)
-module Info = struct
-   type info =
-      { rule_params    : term_param list;
-        rule_assums    : term list;
-        rule_goal      : goal;
-        rule_proof     : Package_info.proof proof_type;
-        rule_ped       : Proof_edit.ped proof_type;
-        rule_resources : (MLast.expr, term) resource_def;
-        rule_name      : string
-      }
-end
-
-(*
  * Make a rule/rewrite goal from the assumptions, and the info goal.
  *)
 let mk_rw_goal assums redex contractum =
@@ -128,24 +113,17 @@ let mk_addr addr =
       Failure _ ->
          raise (Failure "Invalid proof node address (contains non-numerical elements)")
 
-class info w obj =
-   let { Info.rule_params = params;
-         Info.rule_assums = assums;
-         Info.rule_proof = proof;
-         Info.rule_ped = ped;
-         Info.rule_goal = goal;
-         Info.rule_resources = res;
-         Info.rule_name = name } = obj in
+class virtual info w =
  object (self)
     val window = w
 
-    val mutable rule_params = params
-    val mutable rule_assums = assums
-    val mutable rule_goal = goal
-    val mutable rule_proof = proof
-    val mutable rule_ped = ped
-    val rule_resources = res
-    val rule_name = name
+    val mutable virtual rule_params : term_param list
+    val mutable virtual rule_assums : term list
+    val mutable virtual rule_goal : goal
+    val mutable virtual rule_proof : Package_info.proof proof_type
+    val mutable virtual rule_ped : Proof_edit.ped proof_type
+    val virtual rule_resources : (MLast.expr, term) resource_def
+    val virtual rule_name : string
 
 (*
  * Build an item from the object.
@@ -227,7 +205,7 @@ class info w obj =
        | Interactive ped ->
             try Proof_edit.refiner_extract_of_ped window ped with
                RefineError (name', err) ->
-                  raise (RefineError (name, StringWrapError (name', err)))
+                  raise (RefineError (rule_name, StringWrapError (name', err)))
 
     method private get_ped =
        match rule_ped with
@@ -244,11 +222,11 @@ class info w obj =
        List.map string_of_int (Proof_edit.redo_ped self#get_ped (mk_addr addr))
  end
 
-class edit p a w (obj : Info.info) =
- (object (self)
+class virtual edit p a w =
+ object (self)
    val pack = p
    val parse_arg = a
-   inherit info w obj
+   inherit info w
 
    method edit_copy = ({< >} :> edit_object)
    method edit_check =
@@ -266,9 +244,10 @@ class edit p a w (obj : Info.info) =
 
    method edit_display addr _ =
       (* Convert to a term *)
-      let addr = mk_addr addr in
-      let { Info.rule_assums = assums; Info.rule_goal = goal; _ } = obj in
-         match obj.Info.rule_ped with
+      let addr = mk_addr addr
+      and assums = rule_assums
+      and goal = rule_goal in
+         match rule_ped with
             Primitive t ->
                let goal = mk_bare_goal assums goal in
                   Proof_edit.format_incomplete window (Proof_edit.Primitive goal)
@@ -339,20 +318,21 @@ class edit p a w (obj : Info.info) =
        | Incomplete
        | Interactive _ ->
             Proof_edit.is_enabled_ped self#get_ped (mk_addr addr) name
- end : edit_object)
+ end
 
-let create pack parse_arg window name =
-   let obj =
-      { Info.rule_assums = [];
-        Info.rule_params = [];
-        Info.rule_goal = GRewrite (unit_term, unit_term, mk_msequent unit_term []);
-        Info.rule_proof = Incomplete;
-        Info.rule_ped = Incomplete;
-        Info.rule_resources = no_resources;
-        Info.rule_name = name
-      }
-   in
-      new edit pack parse_arg window obj
+class view pack parse_arg window name =
+ object
+   inherit edit pack parse_arg window
+   val mutable rule_assums = []
+   val mutable rule_params = []
+   val mutable rule_goal = GRewrite (unit_term, unit_term, mk_msequent unit_term [])
+   val mutable rule_proof = Incomplete
+   val mutable rule_ped = Incomplete
+   val rule_resources = no_resources
+   val rule_name = name
+end
+
+let create = new view
 
 let ped_of_proof pack parse_arg goal = function
    Primitive proof ->
@@ -364,8 +344,7 @@ let ped_of_proof pack parse_arg goal = function
  | Interactive proof ->
       Interactive (Package_info.ped_of_proof pack parse_arg proof goal)
 
-let view_rule pack parse_arg window
-    { Filter_type.rule_name = name;
+class view_rule pack_i parse_arg_i window { Filter_type.rule_name = name;
       Filter_type.rule_params = params;
       Filter_type.rule_stmt = stmt;
       Filter_type.rule_proof = proof;
@@ -373,38 +352,40 @@ let view_rule pack parse_arg window
     } =
    let assums, goal = unzip_mfunction stmt in
    let assums = List.map (fun (_, _, t) -> t) assums in
-   let obj =
-      { Info.rule_assums = assums;
-        Info.rule_params = params;
-        Info.rule_goal = GRule goal;
-        Info.rule_proof = proof;
-        Info.rule_ped = ped_of_proof pack parse_arg (mk_msequent goal assums) proof;
-        Info.rule_resources = res;
-        Info.rule_name = name
-      }
-   in
-      new edit pack parse_arg window obj
+ object
+   inherit edit pack_i parse_arg_i window
+   val mutable rule_assums = assums
+   val mutable rule_params = params
+   val mutable rule_goal = GRule goal
+   val mutable rule_proof = proof
+   val mutable rule_ped = ped_of_proof pack_i parse_arg_i (mk_msequent goal assums) proof
+   val rule_resources = res
+   val rule_name = name
+end
 
-let view_rw pack parse_arg window
+let view_rule = new view_rule
+
+class view_rw pack_i parse_arg_i window
     { rw_name = name;
       rw_redex = redex;
       rw_contractum = contractum;
       rw_proof = proof;
       rw_resources = res;
     } =
-   let obj =
-      { Info.rule_assums = [];
-        Info.rule_params = [];
-        Info.rule_goal = GRewrite (redex, contractum, mk_rw_goal [] redex contractum);
-        Info.rule_proof = proof;
-        Info.rule_ped = ped_of_proof pack parse_arg (mk_rw_goal [] redex contractum) proof;
-        Info.rule_resources = res;
-        Info.rule_name = name;
-      }
-   in
-      new edit pack parse_arg window obj
+ object
+   inherit edit pack_i parse_arg_i window
+   val mutable rule_assums = []
+   val mutable rule_params = []
+   val mutable rule_goal = GRewrite (redex, contractum, mk_rw_goal [] redex contractum)
+   val mutable rule_proof = proof
+   val mutable rule_ped = ped_of_proof pack_i parse_arg_i (mk_rw_goal [] redex contractum) proof
+   val rule_resources = res
+   val rule_name = name
+end
 
-let view_crw pack parse_arg window
+let view_rw = new view_rw
+
+class view_crw pack_i parse_arg_i window
     { crw_name = name;
       crw_params = params;
       crw_assums = args;
@@ -414,32 +395,36 @@ let view_crw pack parse_arg window
       crw_resources = res;
     } =
    let mseq = mk_rw_goal args redex contractum in
-   let obj =
-      { Info.rule_assums = args;
-        Info.rule_params = params;
-        Info.rule_goal = GRewrite (redex, contractum, mseq);
-        Info.rule_proof = proof;
-        Info.rule_ped = ped_of_proof pack parse_arg mseq proof;
-        Info.rule_resources = res;
-        Info.rule_name = name;
-      }
-   in
-      new edit pack parse_arg window obj
+ object
+   inherit edit pack_i parse_arg_i window
+   val mutable rule_assums = args
+   val mutable rule_params = params
+   val mutable rule_goal = GRewrite (redex, contractum, mseq)
+   val mutable rule_proof = proof
+   val mutable rule_ped = ped_of_proof pack_i parse_arg_i mseq proof
+   val rule_resources = res
+   val rule_name = name
+end
 
-let view_def pack parse_arg window ty_term def =
+let view_crw = new view_crw
+
+class view_def pack_i parse_arg_i window ty_term def =
    let redex = term_of_ty ty_term in
    let contractum = def.term_def_value in
    let goal = mk_rw_goal [] redex contractum in
    let proof = Primitive (mk_xrewrite_term redex contractum) in
-      new edit pack parse_arg window {
-         Info.rule_assums = [];
-         Info.rule_params = [];
-         Info.rule_goal = GRewrite (redex, contractum, goal);
-         Info.rule_proof = proof;
-         Info.rule_ped = ped_of_proof pack parse_arg goal proof;
-         Info.rule_resources = def.term_def_resources;
-         Info.rule_name = def.term_def_name;
-      }
+ object
+   inherit edit pack_i parse_arg_i window
+   val mutable rule_assums = []
+   val mutable rule_params = []
+   val mutable rule_goal = GRewrite (redex, contractum, goal)
+   val mutable rule_proof = proof
+   val mutable rule_ped = ped_of_proof pack_i parse_arg_i goal proof
+   val rule_resources = def.term_def_resources
+   val rule_name = def.term_def_name
+end
+
+let view_def = new view_def
 
 (*
  * -*-

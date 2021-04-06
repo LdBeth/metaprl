@@ -337,7 +337,7 @@ let term_of_file options subdir lines =
    in
       mk_filelisting_term subdir lines
 
-class info =
+class virtual info =
    object (self)
    val info_root = Setup.root ()
    val mutable info_subdir = "."
