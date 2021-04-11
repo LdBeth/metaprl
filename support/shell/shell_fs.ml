@@ -38,6 +38,7 @@ open Refiner.Refiner.RefineError
 
 open Shell_sig
 open Shell_util
+open Shell_error
 
 (************************************************************************
  * TYPES                                                                *
@@ -383,16 +384,10 @@ class virtual info =
 end
 
 (*
- * Error handler.
- *)
-let raise_edit_error s =
-   raise (RefineError ("Shell_fs", StringError s))
-
-(*
  * Build the shell interface.
  *)
-class edit a =
- (object (self)
+class edit a : edit_object =
+ object (self)
    val get_dfm = a
    inherit info
 
@@ -415,40 +410,17 @@ class edit a =
          Directory dir_info ->
             names_of_dir options dir_info
        | File _ ->
-            raise_edit_error "cannot get items from a file"
+            self#raise_edit_error "cannot get items from a file"
 
    method edit_copy = ({< >} :> edit_object)
 
-   method private not_a_rule : 'a. 'a = raise_edit_error "this is not a rule or rewrite"
-   method edit_get_terms = self#not_a_rule
-   method edit_set_goal = self#not_a_rule
-   method edit_set_redex = self#not_a_rule
-   method edit_set_contractum = self#not_a_rule
-   method edit_set_assumptions = self#not_a_rule
-   method edit_set_params = self#not_a_rule
-   method edit_get_extract = self#not_a_rule
-   method edit_find = self#not_a_rule
-
-   method edit_save =
-      raise_edit_error "list of files can't be saved"
-
-   method edit_check =
-      raise_edit_error "files can't be checked"
-
-   method edit_undo addr =
-      addr
-
-   method edit_redo addr =
-      addr
-
-   method edit_info addr =
-      raise_edit_error "no info for the files"
-
-   method edit_interpret command =
-      raise_edit_error "this is not a proof"
-
-   method edit_get_contents addr =
-      raise_edit_error "can only retrieve contents of an individual item, not of a file"
+   inherit edit_error { package = "Shell_fs";
+                        save = "list of files can't be saved";
+                        check = "files can't be checked";
+                        info = "no info for the files";
+                        interpret = "this is not a proof";
+                        get_contents = "can only retrieve contents of an individual item, not of a file"
+   }
 
    (*
     * This function always returns false.
@@ -463,7 +435,7 @@ class edit a =
     | MethodApplyAll
     | MethodExpand ->
          false
- end : edit_object)
+ end
 
 let create = new edit
 

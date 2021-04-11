@@ -31,8 +31,6 @@
  *)
 extends Summary
 
-open Refiner.Refiner.RefineError
-
 open Filter_type
 open Filter_shape
 open Filter_summary_type
@@ -42,6 +40,7 @@ open Tactic_type
 open Summary
 open Shell_sig
 open Shell_util
+open Shell_error
 
 (************************************************************************
  * FORMATTING                                                           *
@@ -293,16 +292,10 @@ let mk_interface_filter options =
  ************************************************************************)
 
 (*
- * Error handler.
- *)
-let raise_edit_error s =
-   raise (RefineError ("Shell_package", StringError s))
-
-(*
  * Build the shell interface.
  *)
-class edit a b c =
- (object (self)
+class edit a b c : edit_object =
+ object (self)
    val pack_info = a
    val parse_arg = b
    val get_dfm = c
@@ -331,34 +324,19 @@ class edit a b c =
 
    method edit_copy = ({< >} :> edit_object)
 
-   method private not_a_rule : 'a. 'a = raise_edit_error "this is not a rule or rewrite"
-   method edit_get_terms = self#not_a_rule
-   method edit_set_goal = self#not_a_rule
-   method edit_set_redex = self#not_a_rule
-   method edit_set_contractum = self#not_a_rule
-   method edit_set_assumptions = self#not_a_rule
-   method edit_set_params = self#not_a_rule
-   method edit_get_extract = self#not_a_rule
-   method edit_find = self#not_a_rule
+   inherit edit_error { package = "Shell_package";
+                        save = "";
+                        check = "check the entire package? Use check_all.";
+                        info = "no info for the package";
+                        interpret = "this is not a proof";
+                        get_contents = "can only retrieve contents of an individual item, not of a package"
+   }
 
-   method edit_save =
+   method! edit_save =
       Package_info.save parse_arg pack_info
 
-   method edit_check =
-      raise_edit_error "check the entire package? Use check_all."
-
-   method edit_undo = self#not_a_rule
-
-   method edit_redo = self#not_a_rule
-
-   method edit_info addr =
-      raise_edit_error "no info for the package"
-
-   method edit_interpret command =
-      raise_edit_error "this is not a proof"
-
-   method edit_get_contents addr =
-      raise_edit_error "can only retrieve contents of an individual item, not of a package"
+   method! edit_undo = self#not_a_rule
+   method! edit_redo = self#not_a_rule
 
    method edit_is_enabled _ = function
       MethodRefine
@@ -369,7 +347,7 @@ class edit a b c =
          false
     | MethodApplyAll ->
          true
- end : edit_object)
+ end
 
 let create = new edit
 let view = create

@@ -26,42 +26,42 @@
 (*
  * TeX prologue.
  *)
-let tex_prologue = "% -*- Mode: fundamental -*-
-\\documentclass{report}
+let tex_prologue = {|% -*- Mode: fundamental -*-
+\documentclass{report}
 
 %
 % Ludica-Bright fonts
 %
-%\\usepackage{lucidbry}
-%\\usepackage[ansinew]{texnansi}
-%\\usepackage[LY1]{fontenc}
+%\usepackage{lucidbry}
+%\usepackage[ansinew]{texnansi}
+%\usepackage[LY1]{fontenc}
 
 %
 % Otherwise, you need to include amssymb to get the math chars.
 %
-\\usepackage{amssymb}
+\usepackage{amssymb}
 
 %
 % Hyperlinks
 %
-\\usepackage[dvipdfm]{hyperref}
+\usepackage[dvipdfm]{hyperref}
 
 %
 % Definitions.
 %
-\\input{metaprl}
-\\widepage
-\\makeindex
+\input{metaprl}
+\widepage
+\makeindex
 
-\\begin{document}
+\begin{document}
 
-\\sloppy
+\sloppy
 
-"
+|}
 
-let tex_epilogue = "
-\\end{document}
-"
+let tex_epilogue = {|
+\end{document}
+|}
 
 (*
  * The output file is an out_channel option.

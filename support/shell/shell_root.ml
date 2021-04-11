@@ -32,9 +32,9 @@
 extends Summary
 
 open Refiner.Refiner.TermMan
-open Refiner.Refiner.RefineError
 
 open Shell_sig
+open Shell_error
 
 (************************************************************************
  * SHELL INTERFACE                                                      *
@@ -74,16 +74,10 @@ dform packages_df2 : theories_df{xcons{theory[name:s,dsc:s]; 'next}} =
 dform packages_df3 : theories_df{xnil} = `""
 
 (*
- * Error handler.
- *)
-let raise_edit_error s =
-   raise (RefineError ("Shell_root", StringError s))
-
-(*
  * Build the shell interface.
  *)
-class edit a b =
- (object (self)
+class edit a b : edit_object =
+ object (self)
    val pack = a
    val get_dfm = b
 
@@ -118,36 +112,13 @@ class edit a b =
 
    method edit_copy = ({< >} :> edit_object)
 
-   method private not_a_rule : 'a. 'a = raise_edit_error "this is not a rule or rewrite"
-   method edit_get_terms = self#not_a_rule
-   method edit_set_goal = self#not_a_rule
-   method edit_set_redex = self#not_a_rule
-   method edit_set_contractum = self#not_a_rule
-   method edit_set_assumptions = self#not_a_rule
-   method edit_set_params = self#not_a_rule
-   method edit_get_extract = self#not_a_rule
-   method edit_find = self#not_a_rule
-
-   method edit_save =
-      raise_edit_error "list of files can't be saved"
-
-   method edit_check =
-      raise_edit_error "check the complete set of packages? Use check_all."
-
-   method edit_undo addr =
-      addr
-
-   method edit_redo addr =
-      addr
-
-   method edit_info addr =
-      raise_edit_error "no info for the root packages"
-
-   method edit_interpret command =
-      raise_edit_error "this is not a proof"
-
-   method edit_get_contents addr =
-      raise_edit_error "can only retrieve contents of an individual item, not of a root package"
+   inherit edit_error { package = "Shell_root";
+                        save = "list of files can't be saved";
+                        check = "check the complete set of packages? Use check_all.";
+                        info = "no info for the root packages";
+                        interpret = "this is not a proof";
+                        get_contents = "can only retrieve contents of an individual item, not of a root package"
+   }
 
    method edit_is_enabled _ = function
       MethodRefine
@@ -158,7 +129,7 @@ class edit a b =
          false
     | MethodApplyAll ->
          true
- end : edit_object)
+ end
 
 let create = new edit
 

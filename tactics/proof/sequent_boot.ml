@@ -106,18 +106,29 @@ struct
    let explode_sequent_arg arg =
       TermMan.explode_sequent (goal arg)
 
-   let rec all_hyps_aux hyps l i =
-      if i = 0 then l else
-      let i = pred i in
-         match Term.SeqHyp.get hyps i with
-            Hypothesis (_, t) ->
-               all_hyps_aux hyps (t::l) i
-          | Context _ ->
-               all_hyps_aux hyps l i
-
    let all_hyps arg =
       let hyps = (explode_sequent_arg arg).sequent_hyps in
-         all_hyps_aux hyps [] (Term.SeqHyp.length hyps)
+      let rec aux l i =
+         if i = 0 then l else
+            let i = pred i in
+               match Term.SeqHyp.get hyps i with
+                  Hypothesis (_, t) ->
+                     aux (t::l) i
+                | Context _ ->
+                     aux l i in
+         aux [] (Term.SeqHyp.length hyps)
+
+   let all_hypsi arg =
+      let hyps = (explode_sequent_arg arg).sequent_hyps in
+      let rec aux l i =
+         if i = 0 then l else
+            let i = pred i in
+               match Term.SeqHyp.get hyps i with
+                  Hypothesis (_, t) ->
+                     aux ((succ i, t)::l) i
+                | Context _ ->
+                     aux l i in
+         aux [] (Term.SeqHyp.length hyps)
 
    (*
     * Argument functions.

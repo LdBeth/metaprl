@@ -180,27 +180,23 @@ type was_modified = bool
  * An editable object.
  * Whenever the first arg is the string list, it is the cwd relative to the "mount point"
  *)
-class type edit_object =
+class type edit_action =
  object
-    (* Display the object to the screen *)
-    method edit_display      : string list -> LsOptionSet.t -> unit
-    method edit_get_names    : string list -> LsOptionSet.t -> string list
+    method private not_a_rule : 'a. 'a
+    method private raise_edit_error : 'a. string -> 'a
+    (* Infos *)
     method edit_get_contents : string list -> obj_contents
     method edit_get_terms    : term list
-    method edit_info         : string list -> edit_info
-
-    (* Copy the object *)
-    method edit_copy         : edit_object
+    method edit_info : string list -> edit_info
 
     (* Adjust the contents of the object *)
-    method edit_set_goal        : term -> unit
-    method edit_set_redex       : term -> unit
+    method edit_set_goal  : term -> unit
+    method edit_set_redex : term -> unit
     method edit_set_contractum  : term -> unit
     method edit_set_assumptions : term list -> unit
     method edit_set_params      : term Filter_base_type.poly_param list -> unit
 
     (* Navigation *)
-    method edit_check_addr : string list -> unit (* Raise exn if the address is not found; must accept an empty list *)
     method edit_find       : string list -> int -> string list (* find a subgoal; edit_addr is a side-effect *)
 
     (* Proof operations *)
@@ -210,6 +206,20 @@ class type edit_object =
     method edit_redo        : string list -> string list (* Returns the new relative path *)
     method edit_get_extract : was_modified * Refine.extract
     method edit_check       : was_modified * ref_status
+end
+
+class type edit_object =
+ object
+    inherit edit_action
+    (* Display the object to the screen *)
+    method edit_display      : string list -> LsOptionSet.t -> unit
+    method edit_get_names    : string list -> LsOptionSet.t -> string list
+
+    (* Copy the object *)
+    method edit_copy         : edit_object
+
+    (* Navigation *)
+    method edit_check_addr : string list -> unit (* Raise exn if the address is not found; must accept an empty list *)
 
     (* State checking *)
     method edit_is_enabled : string list -> method_name -> bool

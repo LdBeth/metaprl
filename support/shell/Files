@@ -17,6 +17,7 @@ SHELL_FILES[] =
     shell_syscall_sig
     mptop
     shell_internal_sig
+    shell_error
     shell_rule
     shell_package
     shell_root

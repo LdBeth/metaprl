@@ -85,10 +85,10 @@ let default_mode_base = Mp_resource.theory_bookmark "shell_theory"
 let default_base = get_mode_base default_mode_base "prl" null_shortener
 
 let get_display_mode info () =
-   info.shell_df_method
+   !(info.shell_df_method)
 
 let get_db info =
-   info.shell_df_method.df_base
+   (!(info.shell_df_method)).df_base
 
 (*
  * Get the current printing base.
@@ -122,16 +122,16 @@ let update_dfbase info =
                eprintf "Restoring default display forms%t" eflush;
             default_mode_base, null_shortener
    in
-   let dfbase = get_mode_base bookmark info.shell_df_method.df_mode shortener in
-      info.shell_df_method <- { info.shell_df_method with df_base = dfbase };
+   let dfbase = get_mode_base bookmark (!(info.shell_df_method)).df_mode shortener in
+      info.shell_df_method := { !(info.shell_df_method) with df_base = dfbase };
       Shell_state.set_dfbase (Some dfbase)
 
 let set_dfmode info mode =
-   info.shell_df_method <- { info.shell_df_method with df_mode = mode };
+   info.shell_df_method := { !(info.shell_df_method) with df_mode = mode };
    update_dfbase info
 
 let set_dftype info dft =
-   info.shell_df_method <- { info.shell_df_method with df_type = dft }
+   info.shell_df_method := { !(info.shell_df_method) with df_type = dft }
 
 (*
  * Get the resource collection.
@@ -790,7 +790,7 @@ let relative_pwd shell =
  * Window width.
  *)
 let set_window_width shell i =
-   shell.shell_df_method <- {shell.shell_df_method with df_width = max !Lm_termsize.min_screen_width i}
+   shell.shell_df_method := { !(shell.shell_df_method) with df_width = max !Lm_termsize.min_screen_width i}
 
 (*
  * Interface to the HTTP shell.
@@ -927,13 +927,13 @@ let expand_all parse_arg shell =
  * TeX functions.
  *)
 let print_theory parse_arg shell name =
-   let dfm = shell.shell_df_method in
+   let dfm = !(shell.shell_df_method) in
    let dir = shell.shell_fs, shell.shell_subdir in
-      shell.shell_df_method <- { dfm with df_type = DisplayTex; df_width = 60; df_mode = "tex" };
+      shell.shell_df_method := { dfm with df_type = DisplayTex; df_width = 60; df_mode = "tex" };
       chdir parse_arg shell false true (module_dir name);
       expand_all parse_arg shell;
       view shell (LsOptionSet.singleton LsAll);
-      shell.shell_df_method <- dfm;
+      shell.shell_df_method := dfm;
       chdir parse_arg shell false false dir
 
 let extract parse_arg shell path () =
