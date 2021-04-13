@@ -343,7 +343,7 @@ struct
                      check_conts sub conts;
                      SOVar(v, conts, List.map (do_term_subst sub) ts)
                 | Term ttt ->
-                     Term { term_op = ttt.term_op;
+                     Term { ttt with
                             term_terms = List.map (do_bterm_subst sub) ttt.term_terms }
                 | SOContext(v, t, conts, ts) ->
                      check_conts sub conts;
@@ -445,10 +445,10 @@ struct
    let xcons_opname = Opname.xcons_opname
 
    let xnil_term =
-      core_term (Term { term_op = { op_name = xnil_opname; op_params = [] }; term_terms = [] })
+      core_term (Term { term_op = { op_name = xnil_opname; op_params = [] }; term_terms = []; comment = [] })
 
    let xconcl_term =
-      core_term (Term { term_op = { op_name = xconcl_opname; op_params = [] }; term_terms = [] })
+      core_term (Term { term_op = { op_name = xconcl_opname; op_params = [] }; term_terms = []; comment = [] })
 
    let rec is_xlist_term t =
       match get_core t with
@@ -498,7 +498,7 @@ struct
    let rec mk_xlist_term =
       let cons_op = { op_name = xcons_opname; op_params = [] } in function
          h::t ->
-            core_term (Term { term_op = cons_op; term_terms = [mk_simple_bterm h; mk_simple_bterm (mk_xlist_term t)] })
+            core_term (Term { term_op = cons_op; term_terms = [mk_simple_bterm h; mk_simple_bterm (mk_xlist_term t)]; comment = [] })
     | [] ->
          xnil_term
 
@@ -513,12 +513,14 @@ struct
             raise (Invalid_argument "Term_base_ds.dest_term: dest_term called on a sequent")
        | SOVar (v, conts, terms) -> {
             term_op = { op_name = var_opname; op_params = [Var v] };
-            term_terms = List.map mk_simple_bterm (terms @ [mk_xlist_term (List.map mk_var_term conts)]) }
+            term_terms = List.map mk_simple_bterm (terms @ [mk_xlist_term (List.map mk_var_term conts)]);
+            comment = [] }
        | SOContext (v, t, conts, ts) -> {
             term_op = { op_name = context_opname; op_params = [Var v] };
-            term_terms = collect_context_bterms v t conts ts }
+            term_terms = collect_context_bterms v t conts ts;
+            comment = [] }
        | FOVar v ->
-             { term_op = { op_name = var_opname; op_params = [Var v] }; term_terms = [] }
+             { term_op = { op_name = var_opname; op_params = [Var v] }; term_terms = []; comment = [] }
        | Subst _ -> let _ = get_core t in dest_term t
        | Hashed d -> dest_term (Weak_memo.TheWeakMemo.retrieve_hack d)
 
@@ -568,8 +570,13 @@ struct
                raise(Invalid_argument "Term.base_ds.make_term with context_opname, but the term does not look like a context")
       else core_term (Term t)
 
-   let mk_term op bterms =
-      make_term { term_op = op; term_terms = bterms }
+   let mk_term ?(com = []) op bterms =
+      make_term { term_op = op; term_terms = bterms; comment = com }
+
+   let dest_comment t =
+      match t.core with
+         Term t -> t.comment
+       | _ -> []
 
    let mk_level_var v i =
       { le_var = v; le_offset = i }

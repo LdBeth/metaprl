@@ -70,7 +70,8 @@ sig
    type true_term_header =
       { op_name: Opname.opname;
         op_params: hashed_param list;
-        term_terms: bound_term_header list
+        term_terms: bound_term_header list;
+        comment: Term_sig.comment list
       }
 
    type seq_header =

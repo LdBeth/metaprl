@@ -46,6 +46,11 @@ sig
     ************************************************************************)
 
    (*
+    * Short alias for comments.
+    *)
+   type comments = comment list
+
+   (*
     * The type are just the naive types.
     *)
    type level_exp_var = level_exp_var'
@@ -122,7 +127,8 @@ sig
    (*
     * General interface.
     *)
-   val mk_term : operator -> bound_term list -> term
+   val mk_term : ?com:comments -> operator -> bound_term list -> term
+   val dest_comment : term -> comments
    val make_term : term' -> term
    val dest_term : term -> term'
    val mk_op : opname -> param list -> operator

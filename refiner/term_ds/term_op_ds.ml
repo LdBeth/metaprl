@@ -70,11 +70,12 @@ struct
            } when Opname.eq opname' opname -> bt.bvars = []
     | _ -> false
 
-   let mk_dep0_term opname t =
+   let mk_dep0_term ?(com=[]) opname t =
       { free_vars = t.free_vars;
         core = Term
          { term_op = { op_name = opname; op_params = [] };
-           term_terms = [mk_simple_bterm t]}}
+           term_terms = [mk_simple_bterm t];
+           comment = com }}
 
    let dest_dep0_term opname t = match get_core t with
       Term { term_op = { op_name = opname'; op_params = [] };
@@ -104,9 +105,9 @@ struct
 
    let mk_dep0_dep0_term opname t1 t2 =
       core_term (
-         Term {
-               term_op = { op_name = opname; op_params = [] };
-               term_terms = [mk_simple_bterm t1; mk_simple_bterm t2]})
+         Term {term_op = { op_name = opname; op_params = [] };
+               term_terms = [mk_simple_bterm t1; mk_simple_bterm t2];
+               comment = []})
 
    let dest_dep0_dep0_term opname t = match get_core t with
       Term { term_op = { op_name = opname'; op_params = [] }; term_terms = [bt1 ; bt2 ] }
@@ -138,7 +139,8 @@ struct
       core_term (
          Term {
             term_op = { op_name = opname; op_params = [] };
-            term_terms = [mk_simple_bterm t1; mk_simple_bterm t2; mk_simple_bterm t3]})
+            term_terms = [mk_simple_bterm t1; mk_simple_bterm t2; mk_simple_bterm t3];
+            comment = [] })
 
    let dest_dep0_dep0_dep0_term opname t = match get_core t with
       Term { term_op = { op_name = opname'; op_params = [] };
@@ -161,8 +163,8 @@ struct
       { free_vars = VarsDelayed;
         core = Term
          { term_op = { op_name = opname; op_params = [] };
-           term_terms =
-            [mk_simple_bterm t1; mk_simple_bterm t2; mk_simple_bterm t3; mk_simple_bterm t4]}}
+           term_terms = [mk_simple_bterm t1; mk_simple_bterm t2; mk_simple_bterm t3; mk_simple_bterm t4];
+           comment = [] }}
 
    let dest_dep0_dep0_dep0_dep0_term opname t = match get_core t with
       Term { term_op = { op_name = opname'; op_params = [] };
@@ -247,7 +249,7 @@ struct
    let mk_string_term opname s =
       { free_vars = Vars SymbolSet.empty;
         core = Term
-         { term_op = { op_name = opname; op_params = [String s] }; term_terms = [] }}
+         { term_op = { op_name = opname; op_params = [String s] }; term_terms = []; comment = [] }}
 
    (*
     * Two string params.
@@ -269,7 +271,7 @@ struct
    let mk_string_string_term opname s1 s2 =
       { free_vars = Vars SymbolSet.empty;
         core = Term
-         { term_op = { op_name = opname; op_params = [String s1; String s2] }; term_terms = [] }}
+         { term_op = { op_name = opname; op_params = [String s1; String s2] }; term_terms = []; comment = []}}
 
    (*
     * One var parameter.
@@ -293,7 +295,7 @@ struct
          raise (Invalid_argument "Term_op_ds.mk_var_param_term: special opnames not allowed");
       { free_vars = Vars SymbolSet.empty;
         core = Term
-         { term_op = { op_name = opname; op_params = [Var s] }; term_terms = [] }}
+         { term_op = { op_name = opname; op_params = [Var s] }; term_terms = []; comment = [] }}
 
    (*
     * One var parameter.
@@ -325,7 +327,8 @@ struct
    let mk_var_dep0_term opname v t =
       { free_vars = VarsDelayed;
         core = Term { term_op = { op_name = opname; op_params = [Var v] };
-                      term_terms = [mk_simple_bterm t]
+                      term_terms = [mk_simple_bterm t];
+                      comment = []
                }
       }
 
@@ -348,7 +351,8 @@ struct
    let mk_var_dep0_dep0_term opname s t1 t2 =
       { free_vars = VarsDelayed;
         core = Term { term_op = { op_name = opname; op_params = [Var s] };
-                      term_terms = [mk_simple_bterm t1; mk_simple_bterm t2]
+                      term_terms = [mk_simple_bterm t1; mk_simple_bterm t2];
+                      comment = []
                }
       }
 
@@ -371,7 +375,8 @@ struct
       { free_vars = t.free_vars;
         core = Term
          { term_op = { op_name = opname; op_params = [String s] };
-           term_terms = [mk_simple_bterm t] }}
+           term_terms = [mk_simple_bterm t];
+           comment = [] }}
 
    (*
     * Two string parameters, and one simple subterm.
@@ -403,7 +408,8 @@ struct
       { free_vars = t.free_vars;
         core = Term
          { term_op = { op_name = opname; op_params = [String s1; String s2] };
-           term_terms = [mk_simple_bterm t] }}
+           term_terms = [mk_simple_bterm t];
+           comment = [] }}
 
    (*
     * One number parameter and one subterm.
@@ -435,7 +441,8 @@ struct
       { free_vars = t.free_vars;
         core = Term
          { term_op = { op_name = opname; op_params = [Number s1] };
-           term_terms = [mk_simple_bterm t]}}
+           term_terms = [mk_simple_bterm t];
+           comment = [] }}
 
    let is_number_dep1_term opname t = match get_core t with
       Term { term_op = { op_name = opname'; op_params = [Number _] };
@@ -466,7 +473,8 @@ struct
       { free_vars = t.free_vars;
         core = Term
          { term_op = { op_name = opname; op_params = [Number s1] };
-           term_terms = [mk_bterm [v] t]}}
+           term_terms = [mk_bterm [v] t];
+           comment = [] }}
 
    (*
     * Two number parameters and one subterm.
@@ -498,71 +506,8 @@ struct
       { free_vars = t.free_vars;
         core = Term
          { term_op = { op_name = opname; op_params = [Number s1; Number s2] };
-           term_terms = [mk_simple_bterm t]}}
-
-   (*
-    * Two number parameters, a string, and one subterm.
-    *)
-   let is_number_number_string_dep0_term opname t = match get_core t with
-      Term { term_op = { op_name = opname'; op_params = [Number _; Number _; String _] };
-             term_terms = [ { bvars = []; _ } ]
-           } -> Opname.eq opname opname'
-    | _ ->
-         false
-
-   let dest_number_number_string_dep0_term opname t = match get_core t with
-      Term { term_op = { op_name = opname'; op_params = [Number s1; Number s2; String s3] };
-             term_terms = [bt]
-           } when Opname.eq opname opname' ->
-         s1, s2, s3, dest_simple_bterm bt
-    | _ ->
-         REF_RAISE(RefineError ("dest_number_number_dep0_term", TermMatchError (t, "bad arity")))
-
-   let dest_number_number_string_dep0_any_term t = match get_core t with
-      Term { term_op = { op_name = opname'; op_params = [Number s1; Number s2; String s3] };
-             term_terms = [bt]
-           } ->
-         s1, s2, s3, dest_simple_bterm bt
-    | _ ->
-         REF_RAISE(RefineError ("dest_number_number_dep0_any_term", TermMatchError (t, "bad arity")))
-
-   let mk_number_number_string_dep0_term opname s1 s2 s3 t =
-      { free_vars = t.free_vars;
-        core = Term
-         { term_op = { op_name = opname; op_params = [Number s1; Number s2; String s3] };
-           term_terms = [mk_simple_bterm t]}}
-
-   (*
-    * Two number parameters, a string, and two subterms.
-    *)
-   let is_number_number_string_dep0_dep0_term opname t = match get_core t with
-      Term { term_op = { op_name = opname'; op_params = [Number _; Number _; String _] };
-             term_terms = [ { bvars = []; _ }; { bvars = []; _ } ]
-           } -> Opname.eq opname opname'
-    | _ ->
-         false
-
-   let dest_number_number_string_dep0_dep0_term opname t = match get_core t with
-      Term { term_op = { op_name = opname'; op_params = [Number s1; Number s2; String s3] };
-             term_terms = [{bvars=[]; bterm=t1}; {bvars=[]; bterm=t2}]
-           } when Opname.eq opname opname' ->
-         s1, s2, s3, t1, t2
-    | _ ->
-         REF_RAISE(RefineError ("dest_number_number_dep0_dep0_term", TermMatchError (t, "bad arity")))
-
-   let dest_number_number_string_dep0_dep0_any_term t = match get_core t with
-      Term { term_op = { op_name = opname'; op_params = [Number s1; Number s2; String s3] };
-             term_terms = [{bvars=[]; bterm=t1}; {bvars=[]; bterm=t2}]
-           } ->
-         s1, s2, s3, t1, t2
-    | _ ->
-         REF_RAISE(RefineError ("dest_number_number_dep0_dep0_any_term", TermMatchError (t, "bad arity")))
-
-   let mk_number_number_string_dep0_dep0_term opname s1 s2 s3 t1 t2 =
-      { free_vars = VarsDelayed;
-        core = Term
-         { term_op = { op_name = opname; op_params = [Number s1; Number s2; String s3] };
-           term_terms = [{bvars=[]; bterm=t1}; {bvars=[]; bterm=t2}]}}
+           term_terms = [mk_simple_bterm t];
+           comment = [] }}
 
    (*
     * One string parameter, two subterms.
@@ -592,17 +537,19 @@ struct
     | _ ->
          REF_RAISE(RefineError ("dest_string_dep0_dep0_any_term", TermMatchError (t, "bad arity")))
 
-   let mk_string_dep0_dep0_term opname s t1 t2 =
+   let mk_string_dep0_dep0_term ?(com=[]) opname s t1 t2 =
       { free_vars = VarsDelayed;
         core = Term
          { term_op = { op_name = opname; op_params = [String s] };
-           term_terms = [mk_simple_bterm t1; mk_simple_bterm t2]}}
+           term_terms = [mk_simple_bterm t1; mk_simple_bterm t2];
+           comment = com }}
 
    let mk_string_dep0_dep0_dep0_term opname s t1 t2 t3 =
       { free_vars = VarsDelayed;
         core = Term
          { term_op = { op_name = opname; op_params = [String s] };
-           term_terms = [mk_simple_bterm t1; mk_simple_bterm t2; mk_simple_bterm t3]}}
+           term_terms = [mk_simple_bterm t1; mk_simple_bterm t2; mk_simple_bterm t3];
+           comment = [] }}
 
    (*
     * Two string parameters, two subterms.
@@ -636,7 +583,8 @@ struct
       { free_vars = VarsDelayed;
         core = Term
          { term_op = { op_name = opname; op_params = [String s1; String s2] };
-           term_terms = [mk_simple_bterm t1; mk_simple_bterm t2]}}
+           term_terms = [mk_simple_bterm t1; mk_simple_bterm t2];
+           comment = [] }}
 
    (*
     * One number param.
@@ -663,7 +611,8 @@ struct
       { free_vars = Vars SymbolSet.empty;
         core = Term
          { term_op = { op_name = opname; op_params = [Number n] };
-           term_terms = [] }}
+           term_terms = [];
+           comment = [] }}
 
    (*
     * One universe param.
@@ -684,7 +633,8 @@ struct
       { free_vars = Vars SymbolSet.empty;
         core = Term
          { term_op = { op_name = opname; op_params = [MLevel n] };
-           term_terms = [] }}
+           term_terms = [];
+           comment = [] }}
 
    (*
     * One quote param.
@@ -694,20 +644,20 @@ struct
     | _ -> false
 
    let unquote_term t = match get_core t with
-      Term { term_op = { op_name = opname; op_params = Quote::params }; term_terms = bterms } ->
+      Term ({ term_op = { op_name = opname; op_params = Quote::params }; _ } as tt) ->
          if Opname.eq opname var_opname || Opname.eq opname sequent_opname then
             raise (Invalid_argument "Term_op_ds.unquote_term: support for variables and sequents not implementes");
          { free_vars = VarsDelayed;
            core = Term
-            { term_op = { op_name = opname; op_params = params }; term_terms = bterms }
+            { tt with term_op = { op_name = opname; op_params = params } }
          }
     | _ -> REF_RAISE(RefineError ("unquote_term", TermMatchError (t, "not a quote term")))
 
    let quote_term t = match get_core t with
-      Term { term_op = { op_name = opname; op_params = params }; term_terms = bterms } ->
+      Term ({ term_op = { op_name = opname; op_params = params }; _ } as tt) ->
          { free_vars = VarsDelayed;
            core = Term
-            { term_op = { op_name = opname; op_params = Quote::params }; term_terms = bterms }
+            { tt with term_op = { op_name = opname; op_params = Quote::params } }
          }
     | FOVar _ | SOVar _ | Sequent _ | SOContext _ ->
          raise (Invalid_argument "Term_op_ds.quote_term: support for variables, sequents and contexts not implemented")
@@ -737,7 +687,8 @@ struct
       { free_vars = Vars SymbolSet.empty;
         core = Term
          { term_op = { op_name = opname; op_params = [Token n] };
-           term_terms = [] }}
+           term_terms = [];
+           comment = [] }}
 
    (*
     * One token param.
@@ -763,7 +714,8 @@ struct
    let mk_token_simple_term opname n terms =
       { free_vars = VarsDelayed;
         core = Term { term_op = { op_name = opname; op_params = [Token n] };
-                      term_terms = List.map mk_simple_bterm terms
+                      term_terms = List.map mk_simple_bterm terms;
+                      comment = []
                }
       }
 
@@ -781,7 +733,8 @@ struct
         core = Term
          { term_op = { op_name = opname; op_params = [] };
            term_terms =
-            [{ bvars = [v]; bterm = t }]}}
+            [{ bvars = [v]; bterm = t }];
+           comment = [] }}
 
    let dest_dep1_term opname t = match get_core t with
       Term { term_op = { op_name = opname'; op_params = [] };
@@ -808,7 +761,8 @@ struct
         core = Term { term_op = { op_name = opname; op_params = [] };
                       term_terms =
                          [{ bvars = [v1]; bterm = t1 };
-                          { bvars = [v2]; bterm = t2 }]
+                          { bvars = [v2]; bterm = t2 }];
+                      comment = []
                }
       }
 
@@ -831,8 +785,8 @@ struct
       { free_vars = VarsDelayed;
         core = Term
          { term_op = { op_name = opname; op_params = [] };
-           term_terms =
-            [{ bvars = [v1;v2]; bterm = t }]}}
+           term_terms = [{ bvars = [v1;v2]; bterm = t }];
+           comment = [] }}
 
    let dest_dep2_term opname t = match get_core t with
       Term { term_op = { op_name = opname'; op_params = [] };
@@ -857,7 +811,8 @@ struct
          { term_op = { op_name = opname; op_params = [] };
            term_terms =
                [ mk_simple_bterm t1;
-                 { bvars = [v]; bterm = t2 }]}}
+                 { bvars = [v]; bterm = t2 }];
+           comment = [] }}
 
    let mk_dep0_dep1_any_term op v t1 t2 =
       { free_vars = VarsDelayed;
@@ -865,7 +820,8 @@ struct
          { term_op = op;
            term_terms =
                [ mk_simple_bterm t1;
-                 { bvars = [v]; bterm = t2 }]}}
+                 { bvars = [v]; bterm = t2 }];
+           comment = [] }}
 
    let dest_dep0_dep1_term opname t = match get_core t with
       Term { term_op = { op_name = opname'; op_params = [] };
@@ -894,7 +850,8 @@ struct
          { term_op = { op_name = opname; op_params = [] };
            term_terms =
                [ { bvars = [v]; bterm = t1 };
-                 { bvars = []; bterm = t2 }]}}
+                 { bvars = []; bterm = t2 }];
+           comment = [] }}
 
    let dest_dep1_dep0_term opname t = match get_core t with
       Term { term_op = { op_name = opname'; op_params = [] };
@@ -922,7 +879,8 @@ struct
          { term_op = { op_name = opname; op_params = [] };
            term_terms =
             [{ bvars = [v1; v2]; bterm = t1 };
-             mk_simple_bterm t2]}}
+             mk_simple_bterm t2];
+           comment = [] }}
 
    let dest_dep2_dep0_term opname t = match get_core t with
       Term { term_op = { op_name = opname'; op_params = [] };
@@ -946,7 +904,8 @@ struct
          { term_op = { op_name = opname; op_params = [] };
            term_terms =
             [mk_simple_bterm t1;
-             { bvars = [v1; v2]; bterm = t2 }]}}
+             { bvars = [v1; v2]; bterm = t2 }];
+           comment = [] }}
 
    let dest_dep0_dep2_term opname t = match get_core t with
       Term { term_op = { op_name = opname'; op_params = [] };
@@ -971,8 +930,8 @@ struct
            core = Term
                   { term_op = { op_name = opname; op_params = [] };
                     term_terms =
-                       [mk_simple_bterm t1;
-                        { bvars = [v1; v2; v3]; bterm = t2 }]}}
+                       [mk_simple_bterm t1; { bvars = [v1; v2; v3]; bterm = t2 }];
+                    comment = [] }}
 
    let dest_dep0_dep3_term opname t =
       match get_core t with
@@ -1028,7 +987,8 @@ struct
            term_terms =
             [mk_simple_bterm t0;
              mk_simple_bterm t1;
-             { bvars = [v2]; bterm = t2 }]}}
+             { bvars = [v2]; bterm = t2 }];
+           comment = [] }}
 
    let dest_dep0_dep0_dep1_term opname t = match get_core t with
       Term { term_op = { op_name = opname'; op_params = [] };
@@ -1053,7 +1013,8 @@ struct
            term_terms =
             [mk_simple_bterm t0;
              mk_simple_bterm t1;
-             { bvars = [v21;v22]; bterm = t2 }]}}
+             { bvars = [v21;v22]; bterm = t2 }];
+           comment = [] }}
 
    let dest_dep0_dep0_dep2_term opname t = match get_core t with
       Term { term_op = { op_name = opname'; op_params = [] };
@@ -1076,7 +1037,8 @@ struct
            term_terms =
             [mk_simple_bterm t0;
              mk_simple_bterm t1;
-             { bvars = [v2]; bterm = t2 }]}}
+             { bvars = [v2]; bterm = t2 }];
+           comment = [] }}
 
    let dest_dep0_dep0_dep1_any_term t = match get_core t with
       Term { term_terms = [{ bvars = []; bterm = t0 };
@@ -1254,7 +1216,7 @@ struct
       let t = f t in
       match get_core t with
          Term trm ->
-            make_term { term_op = trm.term_op; term_terms = List.map (bterm_down f) trm.term_terms }
+            make_term { trm with term_terms = List.map (bterm_down f) trm.term_terms }
        | FOVar _ -> t
        | SOVar(v, conts, ts) -> core_term (SOVar(v, conts, List.map (map_down f) ts))
        | SOContext(v, t, conts, ts) -> core_term (SOContext(v, map_down f t, conts, List.map (map_down f) ts))
@@ -1283,7 +1245,7 @@ struct
    and map_up f t =
       match get_core t with
          Term trm ->
-            f (make_term { term_op = trm.term_op; term_terms = List.map (bterm_up f) trm.term_terms })
+            f (make_term { trm with term_terms = List.map (bterm_up f) trm.term_terms })
        | FOVar _ -> f t
        | SOVar(v, conts, ts) -> f (core_term (SOVar(v, conts, List.map (map_up f) ts)))
        | SOContext(v, t, conts, ts) -> f (core_term (SOContext(v, map_up f t, conts, List.map (map_up f) ts)))

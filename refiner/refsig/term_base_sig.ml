@@ -57,7 +57,8 @@ sig
    (*
     * General interface.
     *)
-   val mk_term : operator -> bound_term list -> term
+   val mk_term : ?com:comments -> operator -> bound_term list -> term
+   val dest_comment : term -> comments
    val make_term : term' -> term
    val dest_term : term -> term'
    val mk_op : opname -> param list -> operator

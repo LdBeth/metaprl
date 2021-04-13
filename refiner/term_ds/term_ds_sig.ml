@@ -43,6 +43,11 @@ sig
     ************************************************************************)
 
    (*
+    * Short alias for comments.
+    *)
+   type comments = comment list
+
+   (*
     * Level expression have offsets from level expression
     * vars, plus a constant offset.
     *)
@@ -157,7 +162,8 @@ sig
    val dest_term : term -> term'
    val make_term : term' -> term
    val mk_op : opname -> param list -> operator
-   val mk_term : operator -> bound_term list -> term
+   val mk_term : ?com:comments -> operator -> bound_term list -> term
+   val dest_comment : term -> comments
    val mk_bterm : var list -> term -> bound_term
    val make_bterm : bound_term' -> bound_term
    val dest_bterm : bound_term -> bound_term'

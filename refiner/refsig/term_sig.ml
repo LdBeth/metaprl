@@ -123,11 +123,16 @@ type ('param, 'level_exp) poly_match_param =
  | MatchUnsupported
 
 (*
+ * Comment is a extensible variant type
+ *)
+type comment = ..
+
+(*
  * Bound terms.
  *)
 type 'term poly_bound_term =
    { bvars : var list;
-     bterm : 'term
+     bterm : 'term;
    }
 
 (*
@@ -143,7 +148,8 @@ type 'param poly_operator =
  *)
 type ('operator, 'bound_term) poly_term =
    { term_op    : 'operator;
-     term_terms : 'bound_term list
+     term_terms : 'bound_term list;
+     comment    : comment list
    }
 
 module type TermSig =
@@ -159,16 +165,21 @@ sig
     * following for type definitions become abstract.
     *)
    type level_exp_var
-   and level_exp
-   and param
-   and operator
+   type level_exp
+   type param
+   type operator
 
    (*
     * A term has an operator, and a finite number of subterms
     * that may be bound.
     *)
-   and term
-   and bound_term
+   type term
+   type bound_term
+
+   (*
+    * Short alias for comments.
+    *)
+   type comments = comment list
 
    (************************************************************************
     * Interface types                                                      *
@@ -178,7 +189,7 @@ sig
     * An operator combines a name with a list of parameters.
     * The order of params is significant.
     *)
-   and level_exp_var' = poly_level_exp_var
+   type level_exp_var' = poly_level_exp_var
    and level_exp' = level_exp_var poly_level_exp
    and operator' = param poly_operator
 

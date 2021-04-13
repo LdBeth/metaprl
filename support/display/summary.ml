@@ -297,7 +297,7 @@ declare "proof"{'main : Dform; 'goal : Dform; 'status : Dform; 'text : Dform; 's
 declare "tactic_arg"[label:s]{'goal : Dform; 'attrs : Dform; 'parents : Dform} : Dform
 
 (* Location *)
-declare "location"[start:n, finish:n]{'body : Dform} : Dform
+declare "location"{'body : Dform} : Dform
 
 (************************************************************************
  * DISPLAY FORMS                                                        *
@@ -384,7 +384,7 @@ dform interface_df : "interface"{'body} =
 dform implementation_df : "implementation"{'body} =
    szone pushm[0] lines{'body} popm ezone
 
-dform location_df : "location"[start:n, finish:n]{'body} =
+dform location_df : "location"{'body} =
    'body
 
 (*

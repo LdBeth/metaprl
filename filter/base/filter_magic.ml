@@ -39,7 +39,7 @@ open File_type_base
  ************************************************************************
  *
  * Current MD5 hash of the summary-related types (as computed by OMake):
- * FILTER_MD5: 2cba8f8a16c795b59ef3e5d3b94bfb79
+ * FILTER_MD5: 1725c385d338aa9d3e556e00208b5e81
  *
  * The arguments for pack_version are:
  *    major version number, minor sub-version number, revision number
@@ -87,10 +87,11 @@ open File_type_base
  * Rev 32: moved the type of rule parameters into Filter_base_type
  * Rev 33: added "opaque" qualifier to the "define" statements
  * Rev 34: there were a number changes in Lm_hash, some are probably incompatible
+ * Rev 35: added term comment
  *)
-let raw_versions = List.map (pack_version 1 0) [34]
+let raw_versions = List.map (pack_version 1 0) [35]
 
-let term_versions = List.map (pack_version 1 0) [34;33;32;31;30;29;28;27;25;24]
+let term_versions = List.map (pack_version 1 0) [35;34;33;32;31;30;29;28;27;25;24]
 
 (*
  * ASCII IO format revision history:

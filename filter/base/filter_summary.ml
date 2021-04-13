@@ -852,29 +852,32 @@ struct
     * XXX: TODO: This converts the old-style location data into the modern one.
     * Ideally, we should be able to embed location data as comments (bug 256).
     *)
+   type comment += Loc of Ploc.t
+
+   (* TODO: work arounds for old data *)
+   let rec get_loc = function
+      [] -> dummy_loc (* raise (Failure "get_loc: location not found") *)
+    | Loc loc :: _ -> loc
+    | _ :: xs -> get_loc xs
+
    let loc_op = mk_opname "location"
 
    let dest_loc t =
-      let i, j, t = dest_number_number_dep0_any_term t in
-         if Lm_num.is_integer_num i && Lm_num.is_integer_num j then
-            t, (mk_proper_loc i j)
-         else
-            raise (Failure "dest_loc: location is not an integer")
+      let t = one_subterm t in
+      let c = dest_comment t in
+         t, (get_loc c)
 
-   (* XXX HACK: only used for ASCII IO <= 1.0.24 compatibility *)
    let dest_loc_string t =
-      let i, j, s, t = dest_number_number_string_dep0_any_term t in
-         if Lm_num.is_integer_num i && Lm_num.is_integer_num j then
-            t, (mk_proper_loc i j), s
-         else
-            raise (Failure "dest_loc_string: location is not an integer")
-
-   let dest_loc_string2 t =
-      let i, j, s, t1, t2 = dest_number_number_string_dep0_dep0_any_term t in
-         if Lm_num.is_integer_num i && Lm_num.is_integer_num j then
-            t1, t2, (mk_proper_loc i j), s
-         else
-            raise (Failure "dest_loc_string2: location is not an integer")
+   (* XXX: HACK: for ASCII IO format <= 1.0.24 compatibility *)
+   try
+      let s, t1, t2 = dest_string_dep0_dep0_any_term t in
+      let c = dest_comment t in
+         t1, t2, (get_loc c), s
+   with _ -> let t1, t2 = two_subterms t in
+             let op = dest_op ((dest_term t).term_op) in
+             match dest_params op.op_params with
+              [_;_;String s] -> t1, t2, dummy_loc, s
+             | _ -> raise (Failure "dest_loc_string")
 
    (*
     * PRL bindings
@@ -1036,15 +1039,7 @@ struct
          else raise (RefineError ("Filter_summary.dest_opaque_flag", StringTermError ("malformed term", t)))
 
    let dest_resource_term expr_f t =
-      let t1, t2, loc, name =
-         (*
-          * XXX HACK: ASCII IO format <= 1.0.24 compatibility:
-          *           resource improvement terms used to have one subterm
-          *)
-         if is_two_subterm res_op t then
-            dest_loc_string2 t
-         else
-            let t2, loc, name = dest_loc_string t in public_term, t2, loc, name
+      let t1, t2, loc, name = dest_loc_string t
       in {
          res_loc = loc;
          res_name = name;
@@ -1486,7 +1481,7 @@ struct
     * Ideally, we should be able to embed location data as comments (bug 256).
     *)
    let mk_loc loc t =
-      mk_number_number_dep0_term loc_op (Lm_num.num_of_int (Ploc.first_pos loc)) (Lm_num.num_of_int (Ploc.last_pos loc)) t
+      mk_dep0_term ~com:([Loc loc]) loc_op t
 
 (* unused
    let mk_loc_string_term op loc name t =
@@ -1494,7 +1489,7 @@ struct
 *)
 
    let mk_loc_string_term2 op loc name t1 t2 =
-      mk_number_number_string_dep0_dep0_term op (Lm_num.num_of_int (Ploc.first_pos loc)) (Lm_num.num_of_int (Ploc.last_pos loc)) name t1 t2
+      mk_string_dep0_dep0_term ~com:([Loc loc]) op name t1 t2
 
    (*
     * Make a optional arg.

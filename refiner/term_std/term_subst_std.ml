@@ -365,9 +365,9 @@ struct
          (* Var case *)
          List.nth terms (Lm_list_util.find_index v vars)
     | { term_terms = []; _ } as t -> t (* Optimization *)
-    | { term_op = op; term_terms = bterms } ->
+    | { term_terms = bterms ; _ } as t ->
          (* Other term *)
-         { term_op = op; term_terms = subst_bterms terms fv vars bterms }
+         { t with term_terms = subst_bterms terms fv vars bterms }
 
    and subst_bterms terms fv vars bterms =
       (* When subst through bterms, catch binding occurrences *)
@@ -469,9 +469,7 @@ struct
             if Opname.eq opname' opname && alpha_equal t t' then
                vt
             else
-               { term_op = { op_name = opname'; op_params = params };
-                 term_terms = List.map subst_bterm bterms
-               }
+               { t with term_terms = List.map subst_bterm bterms }
 
       and subst_bterm bt =
          let bt = dest_bterm_and_rename fv bt in

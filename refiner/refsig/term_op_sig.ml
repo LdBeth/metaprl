@@ -54,7 +54,7 @@ sig
    val is_no_subterms_term : opname -> term -> bool
 
    val is_dep0_term : opname -> term -> bool
-   val mk_dep0_term : opname -> term -> term
+   val mk_dep0_term : ?com:comments -> opname -> term -> term
    val dest_dep0_term : opname -> term -> term
    val one_subterm : term -> term
    val one_subterm_opname : opname -> term -> term
@@ -191,18 +191,8 @@ sig
    val dest_number_number_dep0_term : opname -> term -> Lm_num.num * Lm_num.num * term
    val dest_number_number_dep0_any_term : term -> Lm_num.num * Lm_num.num * term
 
-   val is_number_number_string_dep0_term : opname -> term -> bool
-   val mk_number_number_string_dep0_term : opname -> Lm_num.num -> Lm_num.num -> string -> term -> term
-   val dest_number_number_string_dep0_term : opname -> term -> Lm_num.num * Lm_num.num * string * term
-   val dest_number_number_string_dep0_any_term : term -> Lm_num.num * Lm_num.num * string * term
-
-   val is_number_number_string_dep0_dep0_term : opname -> term -> bool
-   val mk_number_number_string_dep0_dep0_term : opname -> Lm_num.num -> Lm_num.num -> string -> term -> term -> term
-   val dest_number_number_string_dep0_dep0_term : opname -> term -> Lm_num.num * Lm_num.num * string * term * term 
-   val dest_number_number_string_dep0_dep0_any_term : term -> Lm_num.num * Lm_num.num * string * term * term
-
    val is_string_dep0_dep0_term : opname -> term -> bool
-   val mk_string_dep0_dep0_term : opname -> string -> term -> term -> term
+   val mk_string_dep0_dep0_term : ?com:comments -> opname -> string -> term -> term -> term
    val dest_string_dep0_dep0_term : opname -> term -> string * term * term
    val dest_string_dep0_dep0_any_term : term -> string * term * term
 

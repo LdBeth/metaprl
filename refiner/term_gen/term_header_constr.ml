@@ -77,11 +77,12 @@ struct
 *)
 
    and make_true_term_header info tterm =
-      let { term_op = term_op; term_terms = term_terms } = FTerm.dest_term tterm in
+      let { term_op = term_op; term_terms = term_terms; comment = com } = FTerm.dest_term tterm in
       let { op_name = opname; op_params = params } = FTerm.dest_op term_op in
          { TermHash.op_name = normalize_opname opname;
            TermHash.op_params = List.map (make_param info) params;
-           TermHash.term_terms = List.map (make_bterm_header info) term_terms
+           TermHash.term_terms = List.map (make_bterm_header info) term_terms;
+           TermHash.comment = com
          }
 
    and make_bterm_header info bterm =

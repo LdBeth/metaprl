@@ -78,13 +78,15 @@ struct
    type true_term_header =
       { op_name: opname;
         op_params: TType.param list;
-        term_terms: bound_term_header list
+        term_terms: bound_term_header list;
+        comment: Term_sig.comment list
       }
 
    type true_term_weak_header =
       { op_name_weak: opname;
         op_params_weak: TType.param list;
-        term_terms_weak: bound_term_weak_header list
+        term_terms_weak: bound_term_weak_header list;
+        comment_weak: Term_sig.comment list
       }
 
    type seq_header =
@@ -160,10 +162,11 @@ struct
 
    let weak_hyp_header' = weak_hyp_header ()
 
-   let weak_tterm_header () { op_name = op; op_params = params; term_terms = bterms } =
+   let weak_tterm_header () { op_name = op; op_params = params; term_terms = bterms; comment = com } =
       { op_name_weak = op;
         op_params_weak = params;
-        term_terms_weak = List.map weak_bterm_header' bterms }
+        term_terms_weak = List.map weak_bterm_header' bterms;
+        comment_weak = com }
 
    let weak_tterm_header' = weak_tterm_header ()
 
@@ -269,10 +272,11 @@ struct
          Hypothesis (v, t) -> Term_sig.Hypothesis (v, WM.retrieve info.term_hash info t)
        | Context (v, conts, trms) -> Term_sig.Context (v, conts, List.map (WM.retrieve info.term_hash info) trms)
 
-   let p_constr_tterm info { op_name = op; op_params = params; term_terms = bterms } =
+   let p_constr_tterm info { op_name = op; op_params = params; term_terms = bterms; comment = com } =
       TTerm.make_term
       { Term_sig.term_op = p_constr_operator info (op, params);
-        Term_sig.term_terms = List.map (p_constr_bterm info) bterms }
+        Term_sig.term_terms = List.map (p_constr_bterm info) bterms;
+        Term_sig.comment = com }
 
    let p_constr_term info th =
       match th with

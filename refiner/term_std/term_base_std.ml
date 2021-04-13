@@ -130,7 +130,8 @@ struct
    (*
     * These are basically identity functions for this implementation.
     *)
-   let mk_term op bterms = { term_op = op; term_terms = bterms }
+   let mk_term ?(com=[]) op bterms = { term_op = op; term_terms = bterms; comment = com }
+   let dest_comment x = x.comment
 
    let make_term x = x (* external make_term : term' -> term = "%identity" *)
    let dest_term x = x (* external dest_term : term -> term' = "%identity" *)
@@ -211,7 +212,8 @@ struct
     *)
    let mk_var_term v =
       { term_op = { op_name = var_opname; op_params = [Var v] };
-        term_terms = []
+        term_terms = [];
+        comment = []
       }
 
    (************************************************************************
@@ -237,7 +239,7 @@ struct
       let aux t =
          { bvars = []; bterm = t }
       in
-         { term_op = op; term_terms = List.map aux terms }
+         { term_op = op; term_terms = List.map aux terms; comment = [] }
 
    let mk_simple_term name terms =
       mk_any_term { op_name = name; op_params = [] } terms

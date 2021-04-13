@@ -48,6 +48,11 @@ struct
     ************************************************************************)
 
    (*
+    * Short alias for comments.
+    *)
+   type comments = comment list
+
+   (*
     * Level expression have offsets from level expression
     * vars, plus a constant offset.
     *)

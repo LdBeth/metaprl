@@ -90,9 +90,10 @@ struct
       } -> Opname.eq opname' opname
     | _ -> false
 
-   let mk_dep0_term opname t =
+   let mk_dep0_term ?(com=[]) opname t =
       { term_op = { op_name = opname; op_params = [] };
-        term_terms = [{ bvars = []; bterm = t }]
+        term_terms = [{ bvars = []; bterm = t }];
+        comment = com
       }
 
    let dest_dep0_term opname = function
@@ -119,11 +120,11 @@ struct
       } -> Opname.eq opname' opname
     | _ -> false
 
-   let mk_dep0_dep0_term opname = fun
-      t1 t2 ->
+   let mk_dep0_dep0_term opname t1 t2 =
          { term_op = { op_name = opname; op_params = [] };
            term_terms = [{ bvars = []; bterm = t1 };
-                         { bvars = []; bterm = t2 }]
+                         { bvars = []; bterm = t2 }];
+           comment = []
          }
 
    let dest_dep0_dep0_term opname = function
@@ -156,12 +157,12 @@ struct
       } -> Opname.eq opname' opname
     | _ -> false
 
-   let mk_dep0_dep0_dep0_term opname = fun
-      t1 t2 t3  ->
+   let mk_dep0_dep0_dep0_term opname t1 t2 t3 =
          { term_op = { op_name = opname; op_params = [] };
            term_terms = [{ bvars = []; bterm = t1 };
                          { bvars = []; bterm = t2 };
-                         { bvars = []; bterm = t3 }]
+                         { bvars = []; bterm = t3 }];
+           comment = []
          }
 
    let dest_dep0_dep0_dep0_term opname = function
@@ -187,7 +188,8 @@ struct
            term_terms = [{ bvars = []; bterm = t1 };
                          { bvars = []; bterm = t2 };
                          { bvars = []; bterm = t3 };
-                         { bvars = []; bterm = t4 }]
+                         { bvars = []; bterm = t4 }];
+           comment = []
          }
 
    let dest_dep0_dep0_dep0_dep0_term opname = function
@@ -300,7 +302,7 @@ struct
          REF_RAISE(RefineError ("dest_string_param", TermMatchError (t, "no string parameter")))
 
    let mk_string_term opname s =
-      { term_op = { op_name = opname; op_params = [String s] }; term_terms = [] }
+      { term_op = { op_name = opname; op_params = [String s] }; term_terms = []; comment = [] }
 
    (*
     * Two string params.
@@ -322,7 +324,7 @@ struct
          REF_RAISE(RefineError ("dest_string_string_term", TermMatchError (t, "not a string-pair term")))
 
    let mk_string_string_term opname s1 s2 =
-      { term_op = { op_name = opname; op_params = [String s1; String s2] }; term_terms = [] }
+      { term_op = { op_name = opname; op_params = [String s1; String s2] }; term_terms = []; comment = [] }
 
    (*
     * One variable param.
@@ -344,7 +346,7 @@ struct
          REF_RAISE(RefineError ("dest_var_param_term", TermMatchError (t, "not a var param term")))
 
    let mk_var_param_term opname v =
-      { term_op = { op_name = opname; op_params = [Var v] }; term_terms = [] }
+      { term_op = { op_name = opname; op_params = [Var v] }; term_terms = []; comment = [] }
 
    (*
     * One variable param, and two simple subterms.
@@ -375,7 +377,8 @@ struct
 
    let mk_var_dep0_term opname v t =
       { term_op = { op_name = opname; op_params = [Var v] };
-        term_terms = [{ bvars = []; bterm = t }]
+        term_terms = [{ bvars = []; bterm = t }];
+        comment = []
       }
 
    let is_var_dep0_dep0_term opname = function
@@ -396,7 +399,8 @@ struct
 
    let mk_var_dep0_dep0_term opname v t1 t2 =
       { term_op = { op_name = opname; op_params = [Var v] };
-        term_terms = [{ bvars = []; bterm = t1 }; { bvars = []; bterm = t2 }]
+        term_terms = [{ bvars = []; bterm = t1 }; { bvars = []; bterm = t2 }];
+        comment = []
       }
 
    (*
@@ -414,10 +418,10 @@ struct
       } when Opname.eq opname opname' -> s, t
     | t -> REF_RAISE(RefineError ("dest_string_dep0_term", TermMatchError (t, "bad arity")))
 
-   let mk_string_dep0_term opname = fun
-      s t ->
+   let mk_string_dep0_term opname s t =
          { term_op = { op_name = opname; op_params = [String s] };
-           term_terms = [{ bvars = []; bterm = t }]
+           term_terms = [{ bvars = []; bterm = t }];
+           comment = []
          }
 
    (*
@@ -447,10 +451,10 @@ struct
     | t ->
          REF_RAISE(RefineError ("dest_string_string_dep0_any_term", TermMatchError (t, "bad arity")))
 
-   let mk_string_string_dep0_term opname = fun
-      s1 s2 t ->
+   let mk_string_string_dep0_term opname s1 s2 t =
          { term_op = { op_name = opname; op_params = [String s1; String s2] };
-           term_terms = [{ bvars = []; bterm = t }]
+           term_terms = [{ bvars = []; bterm = t }];
+           comment = []
          }
 
    (*
@@ -483,7 +487,8 @@ struct
    let mk_number_dep0_term opname = fun
       s1 t ->
          { term_op = { op_name = opname; op_params = [Number s1] };
-           term_terms = [{ bvars = []; bterm = t }]
+           term_terms = [{ bvars = []; bterm = t }];
+           comment = []
          }
 
    let is_number_dep1_term opname = function
@@ -513,7 +518,7 @@ struct
    let mk_number_dep1_term opname = fun
       s1 v t ->
          { term_op = { op_name = opname; op_params = [Number s1] };
-           term_terms = [{ bvars = [v]; bterm = t }]
+           term_terms = [{ bvars = [v]; bterm = t }]; comment = []
          }
 
    (*
@@ -546,73 +551,7 @@ struct
    let mk_number_number_dep0_term opname = fun
       s1 s2 t ->
          { term_op = { op_name = opname; op_params = [Number s1; Number s2] };
-           term_terms = [{ bvars = []; bterm = t }]
-         }
-
-   (*
-    * Two number parameters, a string, and one subterm.
-    *)
-   let is_number_number_string_dep0_term opname = function
-      { term_op = { op_name = opname'; op_params = [Number _; Number _; String _] };
-        term_terms = [{ bvars = []; _ }]
-      } when Opname.eq opname opname' ->
-         true
-    | _ ->
-         false
-
-   let dest_number_number_string_dep0_term opname = function
-      { term_op = { op_name = opname'; op_params = [Number s1; Number s2; String s3] };
-        term_terms = [{ bvars = []; bterm = t }]
-      } when Opname.eq opname opname' ->
-         s1, s2, s3, t
-    | t ->
-         REF_RAISE(RefineError ("dest_number_number_dep0_term", TermMatchError (t, "bad arity")))
-
-   let dest_number_number_string_dep0_any_term = function
-      { term_op = { op_name = opname'; op_params = [Number s1; Number s2; String s3] };
-        term_terms = [{ bvars = []; bterm = t }]
-      } ->
-         s1, s2, s3, t
-    | t ->
-         REF_RAISE(RefineError ("dest_number_number_dep0_any_term", TermMatchError (t, "bad arity")))
-
-   let mk_number_number_string_dep0_term opname = fun
-      s1 s2 s3 t ->
-         { term_op = { op_name = opname; op_params = [Number s1; Number s2; String s3] };
-           term_terms = [{ bvars = []; bterm = t }]
-         }
-
-   (*
-    * Two number parameters, a string, and two subterms.
-    *)
-   let is_number_number_string_dep0_dep0_term opname = function
-      { term_op = { op_name = opname'; op_params = [Number _; Number _; String _] };
-        term_terms = [{ bvars = []; _ }; { bvars = []; _ }]
-      } when Opname.eq opname opname' ->
-         true
-    | _ ->
-         false
-
-   let dest_number_number_string_dep0_dep0_term opname = function
-      { term_op = { op_name = opname'; op_params = [Number s1; Number s2; String s3] };
-        term_terms = [{ bvars = []; bterm = t1 }; { bvars = []; bterm = t2 }]
-      } when Opname.eq opname opname' ->
-         s1, s2, s3, t1, t2
-    | t ->
-         REF_RAISE(RefineError ("dest_number_number_dep0_dep0_term", TermMatchError (t, "bad arity")))
-
-   let dest_number_number_string_dep0_dep0_any_term = function
-      { term_op = { op_name = opname'; op_params = [Number s1; Number s2; String s3] };
-        term_terms = [{ bvars = []; bterm = t1 }; { bvars = []; bterm = t2 }]
-      } ->
-         s1, s2, s3, t1, t2
-    | t ->
-         REF_RAISE(RefineError ("dest_number_number_dep0_dep0_any_term", TermMatchError (t, "bad arity")))
-
-   let mk_number_number_string_dep0_dep0_term opname = fun
-      s1 s2 s3 t1 t2 ->
-         { term_op = { op_name = opname; op_params = [Number s1; Number s2; String s3] };
-           term_terms = [{ bvars = []; bterm = t1 }; { bvars = []; bterm = t2 }]
+           term_terms = [{ bvars = []; bterm = t }]; comment = []
          }
 
    (*
@@ -642,16 +581,18 @@ struct
     | t ->
          REF_RAISE(RefineError ("dest_string_dep0_dep0_any_term", TermMatchError (t, "bad arity")))
 
-   let mk_string_dep0_dep0_term opname = fun
+   let mk_string_dep0_dep0_term ?(com=[]) opname = fun
       s t1 t2 ->
          { term_op = { op_name = opname; op_params = [String s] };
-           term_terms = [{ bvars = []; bterm = t1 }; { bvars = []; bterm = t2 }]
+           term_terms = [{ bvars = []; bterm = t1 }; { bvars = []; bterm = t2 }];
+           comment = com
          }
 
    let mk_string_dep0_dep0_dep0_term opname = fun
       s t1 t2 t3 ->
          { term_op = { op_name = opname; op_params = [String s] };
-           term_terms = [{ bvars = []; bterm = t1 }; { bvars = []; bterm = t2 }; { bvars = []; bterm = t3 }]
+           term_terms = [{ bvars = []; bterm = t1 }; { bvars = []; bterm = t2 }; { bvars = []; bterm = t3 }];
+           comment = []
          }
 
    (*
@@ -684,7 +625,8 @@ struct
    let mk_string_string_dep0_dep0_term opname = fun
       s1 s2 t1 t2 ->
          { term_op = { op_name = opname; op_params = [String s1; String s2] };
-           term_terms = [{ bvars = []; bterm = t1 }; { bvars = []; bterm = t2 }]
+           term_terms = [{ bvars = []; bterm = t1 }; { bvars = []; bterm = t2 }];
+           comment = []
          }
 
    (*
@@ -713,7 +655,7 @@ struct
    let mk_number_term opname = function
       n ->
          { term_op = { op_name = opname; op_params = [Number n] };
-           term_terms = []
+           term_terms = []; comment = []
          }
 
    (*
@@ -734,7 +676,7 @@ struct
    let mk_univ_term opname = function
       n ->
          { term_op = { op_name = opname; op_params = [MLevel n] };
-           term_terms = []
+           term_terms = []; comment = []
          }
 
    (*
@@ -745,13 +687,13 @@ struct
     | _ -> false
 
    let unquote_term = function
-      { term_op = { op_name = opname; op_params = Quote::params }; term_terms = bterms } ->
-         { term_op = { op_name = opname; op_params = params }; term_terms = bterms }
+      { term_op = { op_name = opname; op_params = Quote::params }; _ } as t ->
+         { t with term_op = { op_name = opname; op_params = params } }
     | t -> REF_RAISE(RefineError ("unquote_term", TermMatchError (t, "not a quoted term")))
 
    let quote_term = function
-      { term_op = { op_name = opname; op_params = params }; term_terms = bterms } ->
-         { term_op = { op_name = opname; op_params = Quote::params }; term_terms = bterms }
+      { term_op = { op_name = opname; op_params = params }; _ } as t ->
+         { t with term_op = { op_name = opname; op_params = Quote::params } }
 
    (*
     * One token param.
@@ -775,7 +717,7 @@ struct
    let mk_token_term opname = function
       n ->
          { term_op = { op_name = opname; op_params = [Token n] };
-           term_terms = []
+           term_terms = []; comment = []
          }
 
    (*
@@ -799,7 +741,7 @@ struct
 
    let mk_token_simple_term opname n terms =
       { term_op = { op_name = opname; op_params = [Token n] };
-        term_terms = mk_simple_bterms terms
+        term_terms = mk_simple_bterms terms; comment = []
       }
 
    (*
@@ -813,7 +755,8 @@ struct
 
    let mk_dep1_term opname = fun
       v t -> { term_op = { op_name = opname; op_params = [] };
-               term_terms = [{ bvars = [v]; bterm = t }]
+               term_terms = [{ bvars = [v]; bterm = t }];
+               comment = []
              }
 
    let dest_dep1_term opname = function
@@ -837,7 +780,8 @@ struct
    let mk_dep1_dep1_term opname v1 t1 v2 t2 =
       { term_op = { op_name = opname; op_params = [] };
         term_terms = [{ bvars = [v1]; bterm = t1 };
-                      { bvars = [v2]; bterm = t2 }]
+                      { bvars = [v2]; bterm = t2 }];
+        comment = [];
       }
 
    let dest_dep1_dep1_term opname = function
@@ -855,7 +799,8 @@ struct
 
    let mk_dep2_term opname = fun
       v1 v2 t -> { term_op = { op_name = opname; op_params = [] };
-                   term_terms = [{ bvars = [v1;v2]; bterm = t }]
+                   term_terms = [{ bvars = [v1;v2]; bterm = t }];
+                   comment = []
                  }
 
    let dest_dep2_term opname = function
@@ -879,13 +824,15 @@ struct
    let mk_dep0_dep1_term opname = fun
       v t1 t2 -> { term_op = { op_name = opname; op_params = [] };
                    term_terms = [{ bvars = []; bterm = t1 };
-                                 { bvars = [v]; bterm = t2 }]
+                                 { bvars = [v]; bterm = t2 }];
+                   comment = []
                  }
 
    let mk_dep0_dep1_any_term op = fun
       v t1 t2 -> { term_op = op;
                    term_terms = [{ bvars = []; bterm = t1 };
-                                 { bvars = [v]; bterm = t2 }]
+                                 { bvars = [v]; bterm = t2 }];
+                   comment = []
                  }
 
    let dest_dep0_dep1_term opname = function
@@ -911,7 +858,8 @@ struct
    let mk_dep1_dep0_term opname = fun
       v t1 t2 -> { term_op = { op_name = opname; op_params = [] };
                    term_terms = [{ bvars = [v]; bterm = t1 };
-                                 { bvars = []; bterm = t2 }]
+                                 { bvars = []; bterm = t2 }];
+                   comment = []
                  }
 
    let dest_dep1_dep0_term opname = function
@@ -933,7 +881,8 @@ struct
    let mk_dep2_dep0_term opname = fun
       v1 v2 t1 t2 -> { term_op = { op_name = opname; op_params = [] };
                    term_terms = [{ bvars = [v1; v2]; bterm = t1 };
-                                 { bvars = []; bterm = t2 }]
+                                 { bvars = []; bterm = t2 }];
+                   comment = []
                  }
 
    let dest_dep2_dep0_term opname = function
@@ -955,7 +904,8 @@ struct
    let mk_dep0_dep2_term opname = fun
       v1 v2 t1 t2 -> { term_op = { op_name = opname; op_params = [] };
                    term_terms = [{ bvars = []; bterm = t1 };
-                                 { bvars = [v1; v2]; bterm = t2 }]
+                                 { bvars = [v1; v2]; bterm = t2 }];
+                   comment = []
                  }
 
    let dest_dep0_dep2_term opname = function
@@ -977,7 +927,8 @@ struct
    let mk_dep0_dep3_term opname = fun
       v1 v2 v3 t1 t2 -> { term_op = { op_name = opname; op_params = [] };
                           term_terms = [{ bvars = []; bterm = t1 };
-                                        { bvars = [v1; v2; v3]; bterm = t2 }]
+                                        { bvars = [v1; v2; v3]; bterm = t2 }];
+                   comment = []
                         }
 
    let dest_dep0_dep3_term opname = function
@@ -997,13 +948,14 @@ struct
       } when Opname.eq opname' opname -> true
     | _ -> false
 
-   let mk_dep0_dep2_dep0_dep2_term opname = fun
-      t0 v11 v12 t1 base v21 v22 t2 -> { term_op = { op_name = opname; op_params = [] };
-                                         term_terms = [{ bvars = []; bterm = t0 };
-                                                       { bvars = [v11; v12]; bterm = t1 };
-                                                       { bvars = []; bterm = base };
-                                                       { bvars = [v21; v22]; bterm = t2 }]
-                                       }
+   let mk_dep0_dep2_dep0_dep2_term opname t0 v11 v12 t1 base v21 v22 t2 =
+      { term_op = { op_name = opname; op_params = [] };
+        term_terms = [{ bvars = []; bterm = t0 };
+                      { bvars = [v11; v12]; bterm = t1 };
+                      { bvars = []; bterm = base };
+                      { bvars = [v21; v22]; bterm = t2 }];
+        comment = []
+      }
 
    let dest_dep0_dep2_dep0_dep2_term opname = function
       { term_op = { op_name = opname'; op_params = [] };
@@ -1025,7 +977,8 @@ struct
         term_terms = [{ bvars = [v11; v12]; bterm = t1 };
                       { bvars = [v21; v22]; bterm = t2 };
                       { bvars = []; bterm = t3 };
-                      { bvars = []; bterm = t4 }]
+                      { bvars = []; bterm = t4 }];
+        comment = []
       }
 
    let dest_dep2_dep2_dep0_dep0_term opname = function
@@ -1050,9 +1003,10 @@ struct
 
    let mk_dep0_dep0_dep1_term opname = fun
       t0 t1 v2 t2 -> { term_op = { op_name = opname; op_params = [] };
-                          term_terms = [{ bvars = []; bterm = t0 };
-                                        { bvars = []; bterm = t1 };
-                                        { bvars = [v2]; bterm = t2 }]
+                       term_terms = [{ bvars = []; bterm = t0 };
+                                     { bvars = []; bterm = t1 };
+                                     { bvars = [v2]; bterm = t2 }];
+                       comment = []
                         }
 
    let dest_dep0_dep0_dep1_term opname = function
@@ -1077,7 +1031,8 @@ struct
       t0 t1 v21 v22 t2 -> 	{ term_op = { op_name = opname; op_params = [] };
 									  term_terms = [{ bvars = []; bterm = t0 };
                                         { bvars = []; bterm = t1 };
-                                        { bvars = [v21;v22]; bterm = t2 }]
+                                        { bvars = [v21;v22]; bterm = t2 }];
+                    comment = []
 									}
 
    let dest_dep0_dep0_dep2_term opname = function
@@ -1100,7 +1055,8 @@ struct
       t0 t1 v2 t2 -> { term_op = op;
                        term_terms = [{ bvars = []; bterm = t0 };
                                      { bvars = []; bterm = t1 };
-                                     { bvars = [v2]; bterm = t2 }]
+                                     { bvars = [v2]; bterm = t2 }];
+                       comment = []
                      }
 
    let dest_dep0_dep0_dep1_any_term = function
@@ -1123,7 +1079,8 @@ struct
       t0 v1 t1 v2 t2 -> { term_op = { op_name = opname; op_params = [] };
                           term_terms = [{ bvars = []; bterm = t0 };
                                         { bvars = [v1]; bterm = t1 };
-                                        { bvars = [v2]; bterm = t2 }]
+                                        { bvars = [v2]; bterm = t2 }];
+                          comment = []
                         }
 
    let dest_dep0_dep1_dep1_term opname = function
@@ -1140,12 +1097,13 @@ struct
       } when Opname.eq opname' opname -> true
     | _ -> false
 
-   let mk_dep0_dep0_dep3_term opname = fun
-      t0 t1 v1 v2 v3 t2 -> { term_op = { op_name = opname; op_params = [] };
-                             term_terms = [{ bvars = []; bterm = t0 };
-                                           { bvars = []; bterm = t1 };
-                                           { bvars = [v1; v2; v3]; bterm = t2 }]
-                           }
+   let mk_dep0_dep0_dep3_term opname t0 t1 v1 v2 v3 t2 =
+      { term_op = { op_name = opname; op_params = [] };
+        term_terms = [{ bvars = []; bterm = t0 };
+                      { bvars = []; bterm = t1 };
+                      { bvars = [v1; v2; v3]; bterm = t2 }];
+        comment = []
+      }
 
    let dest_dep0_dep0_dep3_term opname = function
       { term_op = { op_name = opname'; op_params = [] };
@@ -1200,7 +1158,7 @@ struct
     * Sweep a function down through the term.
     *)
    let rec map_down f t =
-      let { term_op = op; term_terms = bterms } = if normal_term t then f t else t in
+      let { term_op = op; term_terms = bterms; _ } as tt = if normal_term t then f t else t in
       let apply { bvars = vars; bterm = t } =
          { bvars = vars; bterm = map_down f t }
       in
@@ -1211,9 +1169,9 @@ struct
          else
             List.map apply bterms
       in
-         { term_op = op; term_terms = bterms }
+         { tt with term_terms = bterms }
 
-   let rec map_up f { term_op = op; term_terms = bterms } =
+   let rec map_up f ({ term_op = op; term_terms = bterms; _ } as tt) =
       let apply { bvars = vars; bterm = t } =
          { bvars = vars; bterm = map_up f t }
       in
@@ -1224,7 +1182,7 @@ struct
          else
             List.map apply bterms
       in
-      let t = { term_op = op; term_terms = bterms } in
+      let t = { tt with term_terms = bterms } in
          if normal_term t then f t else t
 end
 

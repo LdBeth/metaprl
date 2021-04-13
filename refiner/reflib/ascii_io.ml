@@ -115,8 +115,8 @@ struct
       (_, name, [op::bterms]) ->
          let (op,params) = Hashtbl.find r.io_ops op in
          let btrms = List.map (Hashtbl.find r.io_bterms) bterms in
-         let t =
-            lookup (Term { op_name = op; op_params = params; term_terms = btrms })
+         let t = (* XXX HACK: need to add support for comment *)
+            lookup (Term { op_name = op; op_params = params; term_terms = btrms; comment = [] })
          in
          hash_add_new r.io_terms name t;
          t
@@ -522,7 +522,8 @@ struct
          let btrms = List.map (out_bterm ctrl data) t'.Term_sig.term_terms in
          let ind = lookup ( Term { op_name = op;
                                    op_params = params;
-                                   term_terms = List.map snd btrms } ) in
+                                   term_terms = List.map snd btrms;
+                        (* HACK *) comment = [] } ) in
          let i_data = [oper_name :: List.map fst btrms] in
          try
             let name = HashTerm.find data.out_terms ind in

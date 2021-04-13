@@ -46,6 +46,7 @@ let _ =
  *)
 module TermType =
 struct
+   type comments = comment list
    (*
     * The type are just the naive types.
     *)

@@ -974,8 +974,8 @@ let opL = mk_op (Opname.make_opname ["L"]) []
 
 let unify_eqnl_eqnl l1 consts =
    let l = List.rev l1 in
-   let t_0 = {term_op = opL; term_terms =(fofeqnlist l)} in
-   let t_1={term_op = opL; term_terms =(sofeqnlist l)} in
+   let t_0 = {term_op = opL; term_terms =(fofeqnlist l); comment = []} in
+   let t_1={term_op = opL; term_terms =(sofeqnlist l); comment =[]} in
    let var_hashtbl = (Hashtbl.create 23) in
       solvedpart2eqnlist consts var_hashtbl (mm_unify (cterms2system t_0 t_1 consts var_hashtbl)).t
 
