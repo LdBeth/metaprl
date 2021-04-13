@@ -70,7 +70,6 @@ open Filter_summary_type
 open Filter_summary_util
 open Filter_prog
 open Filter_magic
-open Proof_boot
 open Proof_convert
 open Simple_print
 
@@ -1011,13 +1010,8 @@ let define_rule proc loc name
 let define_prim proc loc name params mterm extract res =
    define_rule proc loc name params mterm (Primitive extract) res
 
-let define_thm proc loc name params mterm s res =
-   let assums, goal = unzip_mfunction mterm in
-   let assums = List.map (fun (_, _, assum) -> assum) assums in
-   let mseq = mk_msequent goal assums in
-   let proof = Proof.create_io_rulebox mseq s in
-   let proof = Convert.of_raw () s proof in
-      define_rule proc loc name params mterm (Interactive proof) res
+let define_thm proc loc name params mterm tac res =
+   define_rule proc loc name params mterm (Derived tac) res
 
 let define_int_thm proc loc name params mterm res =
    define_rule proc loc name params mterm Incomplete res
@@ -1820,7 +1814,7 @@ EXTEND
            in
               handle_exn f ("prim " ^ name) loc;
               empty_str_item loc
-        | "thm"; name = LIDENT; res = optresources; params = optarglist; ":"; mt = bmterm; "="; tac = STRING ->
+        | "thm"; name = LIDENT; res = optresources; params = optarglist; ":"; mt = bmterm; "="; tac = expr ->
            let f () =
               let proc = StrFilter.get_proc loc in
               let _, mt, params, res = parse_rule loc name mt params res in

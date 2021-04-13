@@ -1218,9 +1218,10 @@ let prim_rule proc loc ax extract =
    let extract_expr = expr_of_term proc loc extract in
       define_rule true "prim_rule" proc loc ax extract_expr
 
+(*
 let derived_rule proc loc ax tac =
    define_rule false "derived_rule" proc loc ax tac
-
+*)
 let interactive_rule proc loc ax =
    define_rule false "delayed_rule" proc loc ax (extract_expr loc proc.imp_name ax.rule_name)
 
@@ -1634,7 +1635,7 @@ let extract_str_item proc (item, loc) =
     | Rule ({ rule_name = name; rule_proof = Derived tac; _ } as item) ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: thm rule: %s%t" name eflush;
-         derived_rule proc loc item tac
+         (* derived_rule proc loc item tac *) interactive_rule proc loc item
     | Rule ({ rule_name = name; rule_proof = Interactive _; _ } as item)
     | Rule ({ rule_name = name; rule_proof = Incomplete; _ } as item) ->
          if !debug_filter_prog then

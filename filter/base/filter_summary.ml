@@ -993,9 +993,9 @@ struct
    (*
     * Get a parameter.
     *)
-   let int_param_op    = mk_opname "int_param"
-   let addr_param_op    = mk_opname "addr_param"
-   let term_param_op       = mk_opname "term_param"
+   let int_param_op  = mk_opname "int_param"
+   let addr_param_op = mk_opname "addr_param"
+   let term_param_op = mk_opname "term_param"
 
    let dest_rule_param =
       let var_param pl =
