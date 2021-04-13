@@ -106,7 +106,7 @@ let debug_graph_arith3 =
         debug_value = false
       }
 
-module Graph = functor (Hyps : HypsSig) ->
+module Graph (Hyps : HypsSig) =
 struct
    module ArrayTool = ArrayTools(Hyps)
    open Hyps
@@ -265,7 +265,7 @@ let find_contradiction l =
       TG.Int (_,r) ->
          let rl = List.map (fun i -> ar.(i)) r in
             if !debug_graph_arith2 then
-               eprintf"Cycle size %i, list size %i%t" (List.length r) (List.length rl) eflush;
+               eprintf "Cycle size %i, list size %i%t" (List.length r) (List.length rl) eflush;
             rl
     | TG.Disconnected ->
          raise (RefineError("arithT", StringError "Proof by contradiction - No contradiction found"))
