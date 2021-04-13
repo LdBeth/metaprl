@@ -44,8 +44,8 @@ open Refiner_sig
 (*
  * Show the file loading.
  *)
-let _ =
-   show_loading "Loading Simple_print%t"
+let () =
+   show_loading "Loading Simple_print"
 
 let debug_simple_print =
    create_debug (**)

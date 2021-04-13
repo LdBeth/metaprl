@@ -61,7 +61,7 @@ open Rewrite_build_contractum
  * Show the file loading.
  *)
 let _ =
-   show_loading "Loading Rewrite%t"
+   show_loading "Loading Rewrite"
 
 let debug_rewrite = load_debug "rewrite"
 
