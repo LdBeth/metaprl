@@ -64,7 +64,6 @@ val elim_resources : MLast.loc -> (MLast.expr, term) resource_def
 
 val make_dummy_loc : string -> MLast.loc
 val dummy_loc : MLast.loc
-val mk_proper_loc : Lm_num.num -> Lm_num.num -> MLast.loc (* XXX: temporary OCaml 3.06 -> 3.08 conversion HACK *)
 val shift_pos : Ploc.t -> int -> Ploc.t
 val adjust_pos : Ploc.t -> Ploc.t -> Ploc.t
 val ploc_of_lexing : Lexing.position * Lexing.position -> Ploc.t

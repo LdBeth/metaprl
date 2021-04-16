@@ -849,12 +849,14 @@ struct
 
    (*
     * Destruct a location.
-    * XXX: TODO: This converts the old-style location data into the modern one.
-    * Ideally, we should be able to embed location data as comments (bug 256).
+    * XXX: This embed location data as comments.
     *)
    type comment += Loc of Ploc.t
 
-   (* TODO: work arounds for old data *)
+   (* XXX: work arounds for ascii io data
+    * The term comments are not saved in ascii io format currently,
+    * although these are not used anyway.
+    *)
    let rec get_loc = function
       [] -> dummy_loc (* raise (Failure "get_loc: location not found") *)
     | Loc loc :: _ -> loc
@@ -1477,16 +1479,10 @@ struct
 
    (*
     * Make a location.
-    * XXX: TODO: This converts the modern location data into the old-style one.
-    * Ideally, we should be able to embed location data as comments (bug 256).
+    * XXX: This embed location data as comments.
     *)
    let mk_loc loc t =
       mk_dep0_term ~com:([Loc loc]) loc_op t
-
-(* unused
-   let mk_loc_string_term op loc name t =
-      mk_number_number_string_dep0_term op (Lm_num.num_of_int (Ploc.first_pos loc)) (Lm_num.num_of_int (Ploc.last_pos loc)) name t
-*)
 
    let mk_loc_string_term2 op loc name t1 t2 =
       mk_string_dep0_dep0_term ~com:([Loc loc]) op name t1 t2

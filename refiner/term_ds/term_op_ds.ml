@@ -477,39 +477,6 @@ struct
            comment = [] }}
 
    (*
-    * Two number parameters and one subterm.
-    *)
-   let is_number_number_dep0_term opname t = match get_core t with
-      Term { term_op = { op_name = opname'; op_params = [Number _; Number _] };
-             term_terms = [ { bvars = []; _ } ]
-           } -> Opname.eq opname opname'
-    | _ ->
-         false
-
-   let dest_number_number_dep0_term opname t = match get_core t with
-      Term { term_op = { op_name = opname'; op_params = [Number s1; Number s2] };
-             term_terms = [bt]
-           } when Opname.eq opname opname' ->
-         s1, s2, dest_simple_bterm bt
-    | _ ->
-         REF_RAISE(RefineError ("dest_number_number_dep0_term", TermMatchError (t, "bad arity")))
-
-   let dest_number_number_dep0_any_term t = match get_core t with
-      Term { term_op = { op_name = opname'; op_params = [Number s1; Number s2] };
-             term_terms = [bt]
-           } ->
-         s1, s2, dest_simple_bterm bt
-    | _ ->
-         REF_RAISE(RefineError ("dest_number_number_dep0_any_term", TermMatchError (t, "bad arity")))
-
-   let mk_number_number_dep0_term opname s1 s2 t =
-      { free_vars = t.free_vars;
-        core = Term
-         { term_op = { op_name = opname; op_params = [Number s1; Number s2] };
-           term_terms = [mk_simple_bterm t];
-           comment = [] }}
-
-   (*
     * One string parameter, two subterms.
     *)
    let is_string_dep0_dep0_term opname t = match get_core t with

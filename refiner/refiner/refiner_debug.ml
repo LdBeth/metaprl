@@ -955,6 +955,7 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
    let merge_bterms' = merge_list merge_bterm' "bound_term'"
    let merge_bterms = merge_list merge_bterm "bterm"
 
+   (* XXX: TODO: need some consistency checks *)
    let merge_comment x c1 c2 = c1
 
    let merge_term' x { term_op = op1; term_terms = btl1; comment = com1 }
@@ -2106,32 +2107,6 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          (merge_num "TermOp.dest_number_dep1_any_term - 0" res0_1 res0_2),
          (merge_var "TermOp.dest_number_dep1_any_term - 1" res1_1 res1_2),
          (merge_term "TermOp.dest_number_dep1_any_term - 2" res2_1 res2_2)
-
-      let is_number_number_dep0_term (p0 : opname) (p1 : term) =
-         let p1_1, p1_2 = p1 in
-         merge merge_bool "TermOp.is_number_number_dep0_term" (wrap2 TermOp1.is_number_number_dep0_term p0 p1_1) (wrap2 TermOp2.is_number_number_dep0_term p0 p1_2)
-
-      let mk_number_number_dep0_term (p0 : opname) (p1 : Lm_num.num) (p2 : Lm_num.num) (p3 : term) =
-         let p3_1, p3_2 = p3 in
-         merge merge_term "TermOp.mk_number_number_dep0_term" (wrap4 TermOp1.mk_number_number_dep0_term p0 p1 p2 p3_1) (wrap4 TermOp2.mk_number_number_dep0_term p0 p1 p2 p3_2)
-
-      let dest_number_number_dep0_term (p0 : opname) (p1 : term) =
-         let p1_1, p1_2 = p1 in
-         let res1 = wrap2 TermOp1.dest_number_number_dep0_term p0 p1_1 in
-         let res2 = wrap2 TermOp2.dest_number_number_dep0_term p0 p1_2 in
-         let (res0_1, res1_1, res2_1), (res0_2, res1_2, res2_2) = merge merge_triv "TermOp.dest_number_number_dep0_term" res1 res2 in
-         (merge_num "TermOp.dest_number_number_dep0_term - 0" res0_1 res0_2),
-         (merge_num "TermOp.dest_number_number_dep0_term - 1" res1_1 res1_2),
-         (merge_term "TermOp.dest_number_number_dep0_term - 2" res2_1 res2_2)
-
-      let dest_number_number_dep0_any_term (p0 : term) =
-         let p0_1, p0_2 = p0 in
-         let res1 = wrap1 TermOp1.dest_number_number_dep0_any_term p0_1 in
-         let res2 = wrap1 TermOp2.dest_number_number_dep0_any_term p0_2 in
-         let (res0_1, res1_1, res2_1), (res0_2, res1_2, res2_2) = merge merge_triv "TermOp.dest_number_number_dep0_any_term" res1 res2 in
-         (merge_num "TermOp.dest_number_number_dep0_any_term - 0" res0_1 res0_2),
-         (merge_num "TermOp.dest_number_number_dep0_any_term - 1" res1_1 res1_2),
-         (merge_term "TermOp.dest_number_number_dep0_any_term - 2" res2_1 res2_2)
 
       let is_string_dep0_dep0_term (p0 : opname) (p1 : term) =
          let p1_1, p1_2 = p1 in

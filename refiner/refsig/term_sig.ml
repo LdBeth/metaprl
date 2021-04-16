@@ -132,7 +132,7 @@ type comment = ..
  *)
 type 'term poly_bound_term =
    { bvars : var list;
-     bterm : 'term;
+     bterm : 'term
    }
 
 (*

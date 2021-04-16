@@ -648,7 +648,7 @@ struct
     * Check that the term denotes a typeclass.
     *)
    let check_is_typeclass_term cache term =
-      let { term_op = op; term_terms = bterms } = dest_term term in
+      let { term_op = op; term_terms = bterms; _ } = dest_term term in
       let { op_name = opname; op_params = params } = dest_op op in
          match bterms, params with
             [], [] ->

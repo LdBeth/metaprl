@@ -30,7 +30,6 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
-open Lm_debug
 open Lm_printf
 
 open Opname
@@ -41,14 +40,8 @@ open Filter_type
 open Lexing
 open Simple_print.SimplePrint
 
-(*
- * Show the file loading.
- *)
-let _ =
-   show_loading "Loading Filter_util%t"
-
 (************************************************************************
- * UTILS								*
+ * UTILS                                                                *
  ************************************************************************)
 
 (*
@@ -58,17 +51,6 @@ let make_dummy_loc name =
    Ploc.make_loc name 1 0 (0, 0) ""
 
 let dummy_loc = make_dummy_loc "<dummy>"
-
-(*
- * Construct a location.
- * XXX: TODO: This converts the old-style location data into modern one.
- * Ideally, we should be able to embed location data as comments (bug 256).
- *)
-let mk_pos i j =
-   Ploc.make_unlined (i, j)
-
-let mk_proper_loc i j =
-   mk_pos (Lm_num.int_of_num i) (Lm_num.int_of_num j)
 
 let shift_pos pos offset =
    Ploc.shift offset pos

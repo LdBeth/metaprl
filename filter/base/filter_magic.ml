@@ -39,7 +39,7 @@ open File_type_base
  ************************************************************************
  *
  * Current MD5 hash of the summary-related types (as computed by OMake):
- * FILTER_MD5: 1725c385d338aa9d3e556e00208b5e81
+ * FILTER_MD5: 7f49af43344433634c1bcada7c7bb1bd
  *
  * The arguments for pack_version are:
  *    major version number, minor sub-version number, revision number
@@ -87,7 +87,7 @@ open File_type_base
  * Rev 32: moved the type of rule parameters into Filter_base_type
  * Rev 33: added "opaque" qualifier to the "define" statements
  * Rev 34: there were a number changes in Lm_hash, some are probably incompatible
- * Rev 35: added term comment
+ * Rev 35: added term comment and changed loc representation
  *)
 let raw_versions = List.map (pack_version 1 0) [35]
 
@@ -125,6 +125,7 @@ let term_versions = List.map (pack_version 1 0) [35;34;33;32;31;30;29;28;27;25;2
  * Rev 26: added options to the tactic_arg
  * Rev 27: changed the stging encoding of option_info
  * Rev 28: added "opaque" qualifier to the "define" statements
+ * Rev 29: added term comment and changed loc representation
  *
  * Filter_summary has another HACK needed to read some rev 0-17 files.
  * Filter_summary has another HACK needed to read some rev 0-18 files.
@@ -134,7 +135,7 @@ let term_versions = List.map (pack_version 1 0) [35;34;33;32;31;30;29;28;27;25;2
  * Options_boot has a HACK needed to read some rev 25-26 files.
  * Filter_summary has another HACK needed to read some rev ??-27 files.
  *)
-let ascii_versions = List.map (pack_version 1 0) [28;27;26;25;24;23;22;21;20;19;18;17;16;15]
+let ascii_versions = List.map (pack_version 1 0) [29;28;27;26;25;24;23;22;21;20;19;18;17;16;15]
 
 (************************************************************************
  * Magic numbers for interactive files                                  *

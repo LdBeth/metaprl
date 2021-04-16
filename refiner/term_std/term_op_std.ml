@@ -522,39 +522,6 @@ struct
          }
 
    (*
-    * Two number parameters and one subterm.
-    *)
-   let is_number_number_dep0_term opname = function
-      { term_op = { op_name = opname'; op_params = [Number _; Number _] };
-        term_terms = [{ bvars = []; _ }]
-      } when Opname.eq opname opname' ->
-         true
-    | _ ->
-         false
-
-   let dest_number_number_dep0_term opname = function
-      { term_op = { op_name = opname'; op_params = [Number s1; Number s2] };
-        term_terms = [{ bvars = []; bterm = t }]
-      } when Opname.eq opname opname' ->
-         s1, s2, t
-    | t ->
-         REF_RAISE(RefineError ("dest_number_number_dep0_term", TermMatchError (t, "bad arity")))
-
-   let dest_number_number_dep0_any_term = function
-      { term_op = { op_name = opname'; op_params = [Number s1; Number s2] };
-        term_terms = [{ bvars = []; bterm = t }]
-      } ->
-         s1, s2, t
-    | t ->
-         REF_RAISE(RefineError ("dest_number_number_dep0_any_term", TermMatchError (t, "bad arity")))
-
-   let mk_number_number_dep0_term opname = fun
-      s1 s2 t ->
-         { term_op = { op_name = opname; op_params = [Number s1; Number s2] };
-           term_terms = [{ bvars = []; bterm = t }]; comment = []
-         }
-
-   (*
     * One string parameter, two subterms.
     *)
    let is_string_dep0_dep0_term opname = function

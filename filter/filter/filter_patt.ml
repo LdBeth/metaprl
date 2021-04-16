@@ -86,7 +86,7 @@ let patt_of_fso_var loc t =
  * The bterms should all be vars.
  *)
 let build_term_patt loc term =
-   let { term_op = op; term_terms = bterms } = dest_term term in
+   let { term_op = op; term_terms = bterms; _ } = dest_term term in
    let { op_name = op; op_params = params } = dest_op op in
 
    (* String form of the operator name *)
