@@ -278,9 +278,6 @@ let format_term_list format_term buf = function
 
 let make_cont v = <:con< df_context_var[$dstring_of_var v$:s] >>
 
-dform context_src : mode[src] :: df_context{'t} =
-   `"<" 't `">"
-
 (*
  * The refiner uses a special representation for sequents that requires the
  * display form to be implemented in ML.
@@ -314,7 +311,7 @@ let format_seq_src format_term buf =
          format_pushm buf 0;
          format_string buf "sequent (";
          format_term buf NOParens arg;
-         format_string buf ") {";
+         format_string buf ") { ";
          format_hyp hyps 0 (SeqHyp.length hyps);
          format_string buf " >-";
          format_space buf;
@@ -336,14 +333,14 @@ dform seq_sep_df : mode[tex] :: seq_sep{'a} =
 
 declare inner_df_context{'t : Dform} : Dform
 
-ml_dform inner_df_context_df : inner_df_context{'t} format_term buf =
+ml_dform inner_df_context_df : mode[src] :: mode[prl] :: mode[html] :: inner_df_context{'t} format_term buf =
    fun _ ->
       let v, conts, values = dest_so_var t in
          format_term buf NOParens (make_cont v);
          format_term buf NOParens <:con< df_bconts{$mk_xlist_term (List.map make_cont conts)$} >>;
          format_term_list format_term buf values
 
-dform df_context_prl : mode[prl] :: mode[html] :: df_context{'t} =
+dform context_df : mode[src] :: mode[prl] :: mode[html] :: df_context{'t} =
    `"<" inner_df_context{'t} `">" (* note: U27E8/U27E9 are much nicer, but not all fonts have it *)
 
 let format_seq_prl format_term buf =
