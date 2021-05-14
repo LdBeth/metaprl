@@ -238,9 +238,9 @@ let no_resources =
      item_bindings = [];
    }
 
-let intro_resources _loc =
+let intro_resources loc =
    let intro =
-      { res_loc  = _loc;
+      { res_loc  = loc;
         res_name = "intro";
         res_flag = Mp_resource.Public;
         res_args = []
@@ -250,9 +250,9 @@ let intro_resources _loc =
         item_bindings = []
       }
 
-let elim_resources _loc =
+let elim_resources loc =
    let elim =
-      { res_loc  = _loc;
+      { res_loc  = loc;
         res_name = "elim";
         res_flag = Mp_resource.Public;
         res_args = []

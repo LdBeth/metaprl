@@ -40,8 +40,8 @@ open Mp_resource
 (*
  * Show the file loading.
  *)
-let _ =
-   show_loading "Loading Term_stable%t"
+let () =
+   show_loading "Loading Term_stable"
 
 (************************************************************************
  * TYPES                                                                *

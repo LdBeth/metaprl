@@ -193,23 +193,25 @@ let file_info_of_strings strings =
  * Shell entry.
  *)
 let default_shell =
-   let df_ref =
-      ref { df_mode  = "prl";
-            df_base  = default_base;
-            df_width = 80;
-            df_type  = DisplayText;
-      } in
-   let get_dfm () = !df_ref
+   let df =
+      { df_mode  = "prl";
+        df_base  = default_base;
+        df_width = 80;
+        df_type  = DisplayText;
+      }
    in
-   let proof = Shell_root.create packages get_dfm in
+   let shell =
       { shell_debug          = "root";
         shell_fs             = DirRoot;
         shell_subdir         = [];
         shell_package        = None;
-        shell_proof          = proof;
+        shell_proof          = Shell_root.create packages (fun _ -> df);
         shell_needs_refresh  = false;
-        shell_df_method      = df_ref
+        shell_df_method      = df
       }
+   in shell.shell_proof <- Shell_root.create packages
+                           (fun _ -> shell.shell_df_method);
+      shell
 
 let index_entry = State.shared_val "Shell_current.shell_debug" (ref 0)
 

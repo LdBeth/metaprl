@@ -248,17 +248,16 @@ struct
          let start p =
             (* Save the first conclusion *)
             let t = Sequent.concl p in
-            let rec aux tacs =
-               funT (fun p ->
-               (* Recurse through the tactics *)
-               (match tacs with
-                   tac::tactl ->
-                      let t' = Sequent.concl p in
-                         if alpha_equal t t' then
-                            prefix_thenT tac (aux tactl)
-                         else
-                            idT
-                 | [] -> idT))
+            let rec aux = function
+               tac::tactl ->
+                  funT (fun p ->
+                        (* Recurse through the tactics *)
+                        let t' = Sequent.concl p in
+                           if alpha_equal t t' then
+                              prefix_thenT tac (aux tactl)
+                           else
+                              idT)
+             | [] -> idT
             in
                aux tacs
          in
@@ -342,12 +341,9 @@ struct
    let ifLabLT tacs =
       funT (fun p ->
          let lab = Sequent.label p in
-            try
-               List.assoc lab tacs
-            with
-               Not_found ->
-                  idT
-      )
+            match List.assoc_opt lab tacs with
+               Some a -> a
+             | None -> idT)
 
    let ifLabT lab tac1 tac2 =
       funT (fun p -> if lab = Sequent.label p then tac1 else tac2)
@@ -449,7 +445,7 @@ struct
                idT::(aux ts ps)
        | [] ->
             match ts with
-               [] -> []
+               [] -> ts
              | _ ->
                   raise (RefineError ("thenMLT", StringError "argument mismatch"))
       in
@@ -686,11 +682,11 @@ struct
 
    let onAllMClausesOfAssumT tac assum =
       funT (fun p ->
-                        let assumption = List.nth (snd (dest_msequent (Sequent.msequent p))) assum in
-                        let hyps = (TermMan.explode_sequent assumption).sequent_hyps in
-         prefix_thenMT
-            (onAllT idT prefix_thenMT (tac assum) (Sequent.assum_hyp_count p assum) hyps)
-            (onConclT (tac assum))
+            let assumption = List.nth (snd (dest_msequent (Sequent.msequent p))) assum in
+            let hyps = (TermMan.explode_sequent assumption).sequent_hyps in
+               prefix_thenMT
+               (onAllT idT prefix_thenMT (tac assum) (Sequent.assum_hyp_count p assum) hyps)
+               (onConclT (tac assum))
       )
 
    (*

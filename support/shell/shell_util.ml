@@ -278,9 +278,7 @@ let ls_options_clear options s =
                   let options = LsOptionSet.remove options LsInformal in
                      LsOptionSet.remove options option
              | LsFormal ->
-                  let options = LsOptionSet.remove options LsRules in
-                  let options = LsOptionSet.remove options LsRewrites in
-                     LsOptionSet.remove options LsFormal
+                  LsOptionSet.subtract_list options [ LsRules; LsRewrites; LsFormal ]
              | LsInformal ->
                   LsOptionSet.subtract_list options [ LsParent; LsDisplay; LsDocumentation; LsInformal ]
              | LsUnjustified ->
