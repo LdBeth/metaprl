@@ -409,8 +409,8 @@ let is_enabled_ped ped addr = function
  * When the proof is expanded, we make a dulicate.
  * Expansion never fails, but it may change the status of the proof.
  *)
-let handle_exn get_dfm =
-   let dfm = (get_dfm ()).df_base in
+let handle_exn window =
+   let dfm = window.df_base in
       if Refine_exn.backtrace then
          fun f -> Some (f ())
       else
@@ -524,10 +524,10 @@ let display_term = display_term_aux false
 let display_term_newline = display_term_aux true
 
 let format get_dfm ped addr =
-   display_term_newline (get_dfm()) (term_of_proof (proof_of_ped ped) addr)
+   display_term_newline get_dfm (term_of_proof (proof_of_ped ped) addr)
 
 let format_incomplete get_dfm proof =
-   display_term_newline (get_dfm()) (term_of_incomplete proof)
+   display_term_newline get_dfm (term_of_incomplete proof)
 
 (*
  * -*-

@@ -129,37 +129,33 @@ class virtual info w =
  * Build an item from the object.
  *)
     method private to_item =
-       (match rule_goal with
-           GRule goal ->
-              Filter_type.Rule {
-                 Filter_type.rule_name = rule_name;
-                 Filter_type.rule_params = rule_params;
-                 Filter_type.rule_stmt = zip_mimplies rule_assums goal;
-                 Filter_type.rule_proof = rule_proof;
-                 Filter_type.rule_resources = rule_resources
-              }
-         | GRewrite (redex, contractum, _) when rule_params = [] && rule_assums = [] ->
-              Filter_type.Rewrite {
-                 rw_name = rule_name;
-                 rw_redex = redex;
-                 rw_contractum = contractum;
-                 rw_proof = rule_proof;
-                 rw_resources = rule_resources
-              }
-         | GRewrite (redex, contractum, _) ->
-              Filter_type.CondRewrite {
-                 crw_name = rule_name;
-                 crw_params = rule_params;
-                 crw_assums = rule_assums;
-                 crw_redex = redex;
-                 crw_contractum = contractum;
-                 crw_proof = rule_proof;
-                 crw_resources = rule_resources
-              } : ('a, 'b, 'c,
-    (MLast.ctyp, MLast.expr) resource_str,
-    MLast.ctyp,
-    MLast.expr,
-    MLast.str_item) Filter_summary.summary_item)
+       match rule_goal with
+          GRule goal ->
+             Filter_type.Rule {
+                Filter_type.rule_name = rule_name;
+                Filter_type.rule_params = rule_params;
+                Filter_type.rule_stmt = zip_mimplies rule_assums goal;
+                Filter_type.rule_proof = rule_proof;
+                Filter_type.rule_resources = rule_resources
+             }
+        | GRewrite (redex, contractum, _) when rule_params = [] && rule_assums = [] ->
+             Filter_type.Rewrite {
+                rw_name = rule_name;
+                rw_redex = redex;
+                rw_contractum = contractum;
+                rw_proof = rule_proof;
+                rw_resources = rule_resources
+             }
+        | GRewrite (redex, contractum, _) ->
+             Filter_type.CondRewrite {
+                crw_name = rule_name;
+                crw_params = rule_params;
+                crw_assums = rule_assums;
+                crw_redex = redex;
+                crw_contractum = contractum;
+                crw_proof = rule_proof;
+                crw_resources = rule_resources
+             }
 
     method private update_ped = rule_ped <- Primitive unit_term
 
@@ -203,7 +199,7 @@ class virtual info w =
        | Incomplete ->
             raise (RefineError ("Shell_rule.check", StringError "proof is incomplete"))
        | Interactive ped ->
-            try Proof_edit.refiner_extract_of_ped window ped with
+            try Proof_edit.refiner_extract_of_ped (window ()) ped with
                RefineError (name', err) ->
                   raise (RefineError (rule_name, StringWrapError (name', err)))
 
@@ -237,7 +233,8 @@ class virtual edit p a w =
        | Incomplete ->
             false, RefIncomplete (0, 0)
        | Interactive ped ->
-            Proof_edit.check_ped window (Package_info.get_refiner pack) (make_opname [rule_name; Package_info.name pack]) ped
+            Proof_edit.check_ped (window ())
+            (Package_info.get_refiner pack) (make_opname [rule_name; Package_info.name pack]) ped
    method edit_save =
       let item = self#to_item in
          Package_info.set pack parse_arg item
@@ -246,7 +243,8 @@ class virtual edit p a w =
       (* Convert to a term *)
       let addr = mk_addr addr
       and assums = rule_assums
-      and goal = rule_goal in
+      and goal = rule_goal
+      and window = window() in
          match rule_ped with
             Primitive t ->
                let goal = mk_bare_goal assums goal in
@@ -306,7 +304,7 @@ class virtual edit p a w =
       if addr <> [] then Proof_edit.check_addr_ped self#get_ped (mk_addr addr)
 
    method edit_interpret addr command =
-      Proof_edit.interpret window self#get_ped (mk_addr addr) command
+      Proof_edit.interpret (window ()) self#get_ped (mk_addr addr) command
 
    method edit_find addr i =
       List.map string_of_int (Proof.find_subgoal (Proof_edit.proof_of_ped self#get_ped) (mk_addr addr) i)

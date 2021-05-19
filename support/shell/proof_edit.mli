@@ -103,7 +103,7 @@ type incomplete_ped =
  | Incomplete of tactic_arg
  | Derived of tactic_arg * MLast.expr
 
-val interpret : display_fun -> ped -> Proof.address -> proof_command -> was_modified
+val interpret : display_method -> ped -> Proof.address -> proof_command -> was_modified
 
 (*
  * Check the proof and return its extract.
@@ -113,8 +113,8 @@ val interpret : display_fun -> ped -> Proof.address -> proof_command -> was_modi
  *    expand_proof: check as much of the proof as possible,
  *       no exceptions are raised
  *)
-val check_ped              : display_fun -> Refine.refiner -> opname -> ped -> was_modified * ref_status
-val refiner_extract_of_ped : display_fun -> ped -> was_modified * Refine.extract
+val check_ped              : display_method -> Refine.refiner -> opname -> ped -> was_modified * ref_status
+val refiner_extract_of_ped : display_method -> ped -> was_modified * Refine.extract
 
 (*
  * Display utilities
@@ -125,8 +125,8 @@ val display_term_newline : display_method -> term -> unit
 (*
  * Display the goals.
  *)
-val format_incomplete : display_fun -> incomplete_ped -> unit
-val format : display_fun -> ped -> Proof.address -> unit
+val format_incomplete : display_method -> incomplete_ped -> unit
+val format : display_method -> ped -> Proof.address -> unit
 
 (*
  * -*-
