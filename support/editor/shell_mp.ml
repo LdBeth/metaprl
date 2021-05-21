@@ -113,20 +113,26 @@ struct
     | ListExpr l ->
          format_char buf '[';
          format_pushm buf 1;
-         format_expr_list buf df l;
+         format_expr_list ';' buf df l;
          format_popm buf;
          format_char buf ']'
+    | TupleExpr l ->
+         format_char buf '(';
+         format_pushm buf 1;
+         format_expr_list ',' buf df l;
+         format_popm buf;
+         format_char buf ')'
     | _ ->
          format_string buf "-"
 
-   and format_expr_list buf df = function
+   and format_expr_list sep buf df = function
       [expr] ->
          format_expr buf df expr
     | expr :: exprs ->
          format_expr buf df expr;
-         format_char buf ';';
+         format_char buf sep;
          format_space buf;
-         format_expr_list buf df exprs
+         format_expr_list sep buf df exprs
     | [] ->
          ()
 

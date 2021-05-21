@@ -1365,16 +1365,14 @@ let _ =
 
 
 let is_operator =
-   let ht = Hashtbl.create 73 in
-   let ct = Hashtbl.create 73 in
-   List.iter (function x -> Hashtbl.add ht x true)
-      ["asr"; "land"; "lor"; "lsl"; "lsr"; "lxor"; "mod"; "or"];
-   List.iter (function x -> Hashtbl.add ct x true)
-      ['!'; '&'; '*'; '+'; '-'; '/'; ':'; '<'; '='; '>'; '@'; '^'; '|'; '~';
-       '?'; '%'; '.'; '$'];
+   let ht = StringSet.of_list
+            ["asr"; "land"; "lor"; "lsl"; "lsr"; "lxor"; "mod"; "or"] in
+   let ct = Lm_int_set.IntSet.of_list
+            (List.map Char.code ['!'; '&'; '*'; '+'; '-'; '/'; ':'; '<'; '=';
+                                 '>'; '@'; '^'; '|'; '~'; '?'; '%'; '.'; '$'])
+   in
    function x ->
-      try Hashtbl.find ht x with
-      Not_found -> try Hashtbl.find ct x.[0] with _ -> false
+      StringSet.mem ht x || Lm_int_set.IntSet.mem ct (Char.code x.[0])
 
 let operator =
    Grammar.Entry.of_parser gram "operator"

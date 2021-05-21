@@ -99,28 +99,6 @@ struct
 
 (*
 
-   (*
-    * We don't support antiquations.
-    *)
-   let dest_vala name p =
-      match p with
-         Ploc.VaVal v -> v
-       | Ploc.VaAnt _ ->
-            raise (RefineError (name, StringError "antiquotations are not supported"))
-
-   let mk_vala name f p =
-      match p with
-         Ploc.VaVal v -> f v
-       | Ploc.VaAnt _ ->
-            raise (RefineError (name, StringError "antiquotations are not supported"))
-
-   (*
-    * Raise an error with the right format term.
-    *)
-   let raise_format_error str t =
-      raise (FormatError (str, TermCopy2.revert t))
-
-
    (************************************************************************
     * OCaml lists.
     *)
@@ -407,7 +385,7 @@ struct
       in mk_ident_term (aux () me)
 
    let mk_str_item =
-      let str_external_op = mk_caml_op "str_ext"
+      let str_external_op = mk_caml_op "str_external"
       and str_type_op = mk_caml_op "str_type"
       and str_fix_op = mk_caml_op "str_fix"
       and str_open_op = mk_caml_op "str_open"
