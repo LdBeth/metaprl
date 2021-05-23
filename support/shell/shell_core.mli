@@ -69,10 +69,10 @@ val get_view_options : shell -> string
 val set_view_options : shell -> string -> unit
 val clear_view_options : shell -> string -> unit
 
-val view : shell -> LsOptionSet.t -> unit
+val view : LsOptionSet.t -> shell -> unit
 val items : shell -> LsOptionSet.t -> string list
 val chdir : parse_arg -> shell -> bool -> bool -> shell_dir -> unit
-val cd : parse_arg -> shell -> string -> string
+val cd : parse_arg -> string -> shell -> string
 val root : parse_arg -> shell -> string
 val refresh : parse_arg -> shell -> unit
 
@@ -80,7 +80,7 @@ val refresh : parse_arg -> shell -> unit
  * Apply_all maps a function over the items in a module
  * or over items in the root theory.
  *)
-val apply_all : parse_arg -> shell -> item_fun -> bool -> clean_item_fun -> clean_module_fun -> unit
+val apply_all : parse_arg -> item_fun -> bool -> clean_item_fun -> clean_module_fun -> shell -> unit
 
 (*
  * Arguments to apply_all.
@@ -113,21 +113,21 @@ val abandon     : parse_arg -> shell -> unit
 val abandon_all : parse_arg -> shell -> unit
 
 val create_pkg : parse_arg -> shell -> string -> unit
-val create_ax_statement : parse_arg -> shell -> term -> string -> unit
+val create_ax_statement : parse_arg -> term -> string -> shell -> unit
 
 val check : shell -> unit
 val expand : shell -> unit
 val expand_all : parse_arg -> shell -> unit
-val interpret : shell -> proof_command -> unit
-val refine : shell -> tactic -> unit
+val interpret : proof_command -> shell -> unit
+val refine : tactic -> shell -> unit
 
-val print_theory : parse_arg -> shell -> string -> unit
+val print_theory : parse_arg -> string -> shell -> unit
 
 val extract : parse_arg -> shell -> shell_dir -> unit -> Refiner.Refiner.Refine.extract
-val term_of_extract : shell -> term list -> term
+val term_of_extract : term list -> shell -> term
 
-val edit_find : shell -> int -> string
-val edit_is_enabled : shell -> method_name -> bool
+val edit_find : int -> shell -> string
+val edit_is_enabled : method_name -> shell -> bool
 
 val undo : shell -> unit
 val redo : shell -> unit

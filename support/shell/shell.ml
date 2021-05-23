@@ -92,7 +92,7 @@ struct
     *)
    let flush shell =
       let options = Session.get_view_options () in
-         view shell options
+         view options shell
 
    (************************************************************************
     * NUPRL5 INTERFACE                                                     *
@@ -294,7 +294,7 @@ struct
                   false
                in
                   chdir parse_arg shell false false (module_dir mname);
-                  apply_all parse_arg shell f false Shell_core.dont_clean_item Shell_core.dont_clean_module;
+                  apply_all parse_arg f false Shell_core.dont_clean_item Shell_core.dont_clean_module shell;
                   List.rev !objs)
 
       (*
@@ -457,7 +457,7 @@ struct
       let chdir text =
          try
             synchronize (fun shell ->
-                  ignore (cd parse_arg shell text);
+                  ignore (cd parse_arg text shell);
                   true)
          with
             exn when not Refine_exn.backtrace ->
@@ -475,10 +475,6 @@ struct
 
       let wrap_unit cmd () =
          synchronize cmd
-
-      let wrap_arg cmd arg =
-         synchronize (fun shell ->
-               cmd parse_arg shell arg)
 
       let wrap_unit_arg cmd () =
          synchronize (cmd parse_arg)
@@ -532,14 +528,11 @@ struct
          Shell_command.synchronize (fun commands ->
                commands.initialized         <- true;
                commands.init                <- init;
-               commands.cd                  <- wrap_arg cd;
-               commands.root                <- wrap_unit_arg root;
+               commands.sync                <- synchronize;
+               commands.parse_arg           <- parse_arg;
                commands.refresh             <- refresh;
                commands.pwd                 <- pwd;
-               commands.relative_pwd        <- wrap_unit relative_pwd;
-               commands.fs_pwd              <- wrap_unit fs_pwd;
                commands.set_dfmode          <- set_dfmode;
-               commands.create_pkg          <- wrap_arg create_pkg;
                commands.backup              <- backup;
                commands.backup_all          <- backup_all;
                commands.save                <- save;
@@ -550,25 +543,10 @@ struct
                commands.revert_all          <- revert_all;
                commands.abandon             <- abandon;
                commands.abandon_all         <- abandon_all;
-               commands.view                <- wrap view;
-               commands.items               <- wrap items;
-               commands.check               <- wrap_unit check;
-               commands.expand              <- wrap_unit expand;
-               commands.expand_all          <- wrap_unit_arg expand_all;
-               commands.apply_all           <- wrap_arg apply_all;
-               commands.interpret           <- wrap interpret;
-               commands.undo                <- wrap_unit undo;
-               commands.redo                <- wrap_unit redo;
-               commands.create_ax_statement <- wrap_arg create_ax_statement;
-               commands.refine              <- wrap refine;
-               commands.print_theory        <- wrap_arg print_theory;
                commands.extract             <- wrap extract;
-               commands.term_of_extract     <- wrap term_of_extract;
                commands.get_view_options    <- get_view_options;
                commands.set_view_options    <- set_view_options;
                commands.clear_view_options  <- clear_view_options;
-               commands.find_subgoal        <- wrap edit_find;
-               commands.is_enabled          <- wrap edit_is_enabled;
                commands.edit                <- Shell_syscall.deref_edit ())
    end
 

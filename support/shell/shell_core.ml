@@ -52,9 +52,7 @@ let debug_shell = load_debug "shell"
  * We should skip the packages that do not have basic shell commands in them.
  *)
 let shell_package_name name =
-   try Mptop.mem (Mptop.get_toploop_resource (Mp_resource.find (Mp_resource.theory_bookmark name)) []) "cd" with
-      Not_found ->
-         false
+   Mptop.mem (Mptop.get_toploop_resource (Mp_resource.find (Mp_resource.theory_bookmark name)) []) "cd"
 
 let shell_package pkg =
    shell_package_name (Package_info.name pkg)
@@ -347,7 +345,7 @@ let create_thm shell name =
    raise (RefineError ("Shell.create_thm", StringError "not implemented"))
 *)
 
-let create_ax_statement parse_arg shell seq name =
+let create_ax_statement parse_arg seq name shell =
    let display_mode = get_display_mode shell in
    let package = get_current_package shell in
    let item = Shell_rule.create package parse_arg display_mode name in
@@ -464,7 +462,7 @@ let expand shell =
          (finish_time -. start_time)
          eflush
 
-let refine shell tac =
+let refine tac shell =
    let str, ast = Shell_state.get_tactic () in
       if !debug_refine then
          eprintf "Starting refinement%t" eflush;
@@ -482,10 +480,10 @@ let refine shell tac =
  *)
 (* unused
 let goal shell =
-   (shell.shell_proof#edit_info shell.shell_subdir)#edit_goal
+   (shell.shell_proof#edit_info shell.shell_subdir).edit_goal
 *)
 
-let interpret shell command =
+let interpret command shell =
    if shell.shell_proof#edit_interpret shell.shell_subdir command then
       touch shell;
    display_proof shell LsOptionSet.empty
@@ -748,7 +746,7 @@ let refresh parse_arg shell =
 let pwd shell =
    string_of_dir (shell.shell_fs, shell.shell_subdir)
 
-let cd parse_arg shell name =
+let cd parse_arg name shell =
    chdir parse_arg shell true true (parse_path shell name);
    pwd shell
 
@@ -756,9 +754,9 @@ let root parse_arg shell =
    chdir parse_arg shell true true (root_of_dir (shell.shell_fs, shell.shell_subdir));
    pwd shell
 
-let unredo unredo_fun shell =
+let unredo unredo shell =
    touch shell;
-   let dir = unredo_fun shell.shell_subdir in
+   let dir = unredo shell.shell_proof shell.shell_subdir in
       if dir <> shell.shell_subdir then
          begin
             shell.shell_subdir <- dir;
@@ -766,11 +764,9 @@ let unredo unredo_fun shell =
          end;
       display_proof shell LsOptionSet.empty
 
-let undo shell =
-   unredo shell.shell_proof#edit_undo shell
+let undo = unredo (fun x -> x#edit_undo)
 
-let redo shell =
-   unredo shell.shell_proof#edit_redo shell
+let redo = unredo (fun x -> x#edit_redo)
 
 let fs_pwd shell =
    match shell.shell_fs, shell.shell_subdir with
@@ -810,7 +806,7 @@ let clear_view_options shell s =
 (*
  * General purpose displayer.
  *)
-let view shell options =
+let view options shell =
    display_proof shell options
 
 (************************************************************************
@@ -820,7 +816,7 @@ let view shell options =
 (*
  * Apply a function to all elements.
  *)
-let apply_all parse_arg shell (f : item_fun) (time : bool) (clean_item : clean_item_fun) (clean_module : clean_module_fun) =
+let apply_all parse_arg (f : item_fun) (time : bool) (clean_item : clean_item_fun) (clean_module : clean_module_fun) shell =
    let dir = shell.shell_fs, shell.shell_subdir in
    let apply_it item mod_name name =
       (*
@@ -917,22 +913,22 @@ let clean_and_abandon pack =
    Package_info.abandon pack;
    Proof_boot.Proof.clear_cache ()
 
-let expand_all parse_arg shell =
+let expand_all parse_arg =
    let f item db =
       item#edit_interpret [] ProofExpand
    in
-      apply_all parse_arg shell f true clean_resources dont_clean_module
+      apply_all parse_arg f true clean_resources dont_clean_module
 
 (*
  * TeX functions.
  *)
-let print_theory parse_arg shell name =
+let print_theory parse_arg name shell =
    let dfm = shell.shell_df_method in
    let dir = shell.shell_fs, shell.shell_subdir in
       shell.shell_df_method <- { dfm with df_type = DisplayTex; df_width = 60; df_mode = "tex" };
       chdir parse_arg shell false true (module_dir name);
       expand_all parse_arg shell;
-      view shell (LsOptionSet.singleton LsAll);
+      view (LsOptionSet.singleton LsAll) shell;
       shell.shell_df_method <- dfm;
       chdir parse_arg shell false false dir
 
@@ -949,14 +945,14 @@ let extract parse_arg shell path () =
             chdir parse_arg shell false false dir;
             raise exn
 
-let term_of_extract shell terms =
+let term_of_extract terms shell =
    match shell with
       { shell_package = Some pack; shell_fs = DirProof (_, mod_name, name); _ } ->
          Refine.extract_term (Package_info.get_refiner pack) (make_opname [name; mod_name]) terms
     | _ ->
          raise (Failure "Shell.term_of_extract only works inside a proof")
 
-let edit_find info i =
+let edit_find i info =
    match info.shell_fs with
       DirProof (_, modname, name) ->
          info.shell_subdir <- info.shell_proof#edit_find info.shell_subdir i;
@@ -964,7 +960,7 @@ let edit_find info i =
     | _ ->
          raise (Invalid_argument "Shell.find_subgoal: not in a proof")
 
-let edit_is_enabled shell name =
+let edit_is_enabled name shell =
    shell.shell_proof#edit_is_enabled shell.shell_subdir name
 
 (************************************************************************
@@ -980,7 +976,7 @@ let create_pkg parse_arg shell name =
       DirModule (_, modname), [] ->
          (* Top level *)
          let _ = Package_info.create_package packages parse_arg modname in
-            view shell LsOptionSet.empty
+            view LsOptionSet.empty shell
     | DirRoot, _ ->
          raise (Failure "Shell.create_package: can't create root package")
     | DirFS, _ ->

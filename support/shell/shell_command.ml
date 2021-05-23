@@ -44,15 +44,12 @@ let uninitialized _ =
 
 let commands =
    { initialized = false;
+     sync = uninitialized;
+     parse_arg = uninitialized, uninitialized;
      init = uninitialized;
-     cd = uninitialized;
-     root = uninitialized;
      refresh = uninitialized;
      pwd = uninitialized;
-     relative_pwd = uninitialized;
-     fs_pwd = uninitialized;
      set_dfmode = uninitialized;
-     set_dftype = uninitialized;
      create_pkg = uninitialized;
      backup = uninitialized;
      backup_all = uninitialized;
@@ -64,25 +61,10 @@ let commands =
      revert_all = uninitialized;
      abandon = uninitialized;
      abandon_all = uninitialized;
-     view = uninitialized;
-     items = uninitialized;
-     check = uninitialized;
-     apply_all = uninitialized;
-     expand = uninitialized;
-     expand_all = uninitialized;
-     interpret = uninitialized;
-     undo = uninitialized;
-     redo = uninitialized;
-     create_ax_statement = uninitialized;
-     refine = uninitialized;
-     print_theory = uninitialized;
      extract = (fun _ -> uninitialized);
-     term_of_extract = uninitialized;
      get_view_options = uninitialized;
      set_view_options = uninitialized;
      clear_view_options = uninitialized;
-     find_subgoal = uninitialized;
-     is_enabled = uninitialized;
      edit = uninitialized
    }
 
@@ -104,14 +86,16 @@ external stop_gmon : unit -> unit = "stop_gmon"
  * Call the commands.
  *)
 let extract path () = commands.extract path ()
-let term_of_extract ts = commands.term_of_extract ts
+let term_of_extract ts = commands.sync (term_of_extract ts)
+
+let wrap_arg cmd arg = commands.sync (cmd commands.parse_arg arg)
 
 let init () = commands.init ()
-let cd s = commands.cd s
+let cd = wrap_arg cd
 let refresh () = commands.refresh ()
 let pwd () = commands.pwd ()
-let relative_pwd () = commands.relative_pwd ()
-let fs_pwd () = commands.fs_pwd ()
+let relative_pwd () = commands.sync relative_pwd
+let fs_pwd () = commands.sync fs_pwd
 (* let items _ = commands.items () XXX: Temporary *)
 let set_dfmode s = commands.set_dfmode s
 let create_pkg s = commands.create_pkg s
@@ -125,27 +109,27 @@ let revert _ = commands.revert ()
 let revert_all _ = commands.revert_all ()
 let abandon _ = commands.abandon ()
 let abandon_all _ = commands.abandon_all ()
-let check _ = commands.check ()
-let expand _ = commands.expand ()
-let expand_all _ = commands.expand_all ()
-let apply_all f t c1 c2 = commands.apply_all f t c1 c2
-let undo _ = commands.undo ()
-let redo _ = commands.redo ()
-let create_ax_statement t s = commands.create_ax_statement t s
-let refine t = commands.refine t
-let print_theory s = commands.print_theory s
+let check _ = commands.sync check
+let expand _ = commands.sync expand
+let apply_all f b g h = commands.sync (apply_all commands.parse_arg f b g h)
+let undo _ = commands.sync undo
+let redo _ = commands.sync redo
+let create_ax_statement t s = commands.sync (create_ax_statement commands.parse_arg t s)
+let refine t = commands.sync (refine t)
+let print_theory = wrap_arg print_theory
 let get_view_options _ = commands.get_view_options ()
 let set_view_options s = commands.set_view_options s
 let clear_view_options s = commands.clear_view_options s
-let find_subgoal i = commands.find_subgoal i
-let is_enabled name = commands.is_enabled name
+let find_subgoal i = commands.sync (edit_find i)
+let is_enabled name = commands.sync (edit_is_enabled name)
 
-let kreitz _ = commands.interpret ProofKreitz
-let clean _ = commands.interpret ProofClean
-let squash _ = commands.interpret ProofSquash
-let copy s = commands.interpret (ProofCopy s)
-let paste s = commands.interpret (ProofPaste s)
-let make_assum _ = commands.interpret ProofMakeAssum
+let interpret cmd = commands.sync (interpret cmd)
+let kreitz _ = interpret ProofKreitz
+let clean _ = interpret ProofClean
+let squash _ = interpret ProofSquash
+let copy s = interpret (ProofCopy s)
+let paste s = interpret (ProofPaste s)
+let make_assum _ = interpret ProofMakeAssum
 
 let interpret_all command modifies =
    let f item db =
@@ -153,10 +137,11 @@ let interpret_all command modifies =
    in
       apply_all f true dont_clean_item dont_clean_module
 
+let expand_all _ = interpret_all ProofClean false
 let clean_all _ = interpret_all ProofClean false
 let squash_all _ = interpret_all ProofSquash false
 
-let root () = commands.root ()
+let root () = commands.sync (root commands.parse_arg)
 
 (*
  * Toploop functions
@@ -194,7 +179,7 @@ let ls s =
       else
          options
    in
-      commands.view options
+      commands.sync (view options)
 
 let status item =
    let name, status, _, _ = item#edit_get_contents [] in
