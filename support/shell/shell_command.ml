@@ -53,14 +53,6 @@ let commands =
      create_pkg = uninitialized;
      backup = uninitialized;
      backup_all = uninitialized;
-     save = uninitialized;
-     save_all = uninitialized;
-     export = uninitialized;
-     export_all = uninitialized;
-     revert = uninitialized;
-     revert_all = uninitialized;
-     abandon = uninitialized;
-     abandon_all = uninitialized;
      extract = (fun _ -> uninitialized);
      get_view_options = uninitialized;
      set_view_options = uninitialized;
@@ -89,6 +81,7 @@ let extract path () = commands.extract path ()
 let term_of_extract ts = commands.sync (term_of_extract ts)
 
 let wrap_arg cmd arg = commands.sync (cmd commands.parse_arg arg)
+let wrap_arg_unit cmd () = commands.sync (cmd commands.parse_arg)
 
 let init () = commands.init ()
 let cd = wrap_arg cd
@@ -101,14 +94,14 @@ let set_dfmode s = commands.set_dfmode s
 let create_pkg s = commands.create_pkg s
 let backup _ = commands.backup ()
 let backup_all _ = commands.backup_all ()
-let save _ = commands.save ()
-let save_all _ = commands.save_all ()
-let export _ = commands.export ()
-let export_all _ = commands.export_all ()
-let revert _ = commands.revert ()
-let revert_all _ = commands.revert_all ()
-let abandon _ = commands.abandon ()
-let abandon_all _ = commands.abandon_all ()
+let save = wrap_arg_unit save
+let save_all = wrap_arg_unit save_all
+let export = wrap_arg_unit export
+let export_all = wrap_arg_unit export_all
+let revert = wrap_arg_unit revert
+let revert_all = wrap_arg_unit revert_all
+let abandon = wrap_arg_unit abandon
+let abandon_all = wrap_arg_unit abandon_all
 let check _ = commands.sync check
 let expand _ = commands.sync expand
 let apply_all f b g h = commands.sync (apply_all commands.parse_arg f b g h)
@@ -141,7 +134,7 @@ let expand_all _ = interpret_all ProofClean false
 let clean_all _ = interpret_all ProofClean false
 let squash_all _ = interpret_all ProofSquash false
 
-let root () = commands.sync (root commands.parse_arg)
+let root = wrap_arg_unit root
 
 (*
  * Toploop functions

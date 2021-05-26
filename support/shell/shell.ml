@@ -495,14 +495,6 @@ struct
 
       let backup             = wrap_unit_arg backup
       let backup_all         = wrap_unit_arg backup_all
-      let save               = wrap_unit_arg save
-      let save_all           = wrap_unit_arg save_all
-      let export             = wrap_unit_arg export
-      let export_all         = wrap_unit_arg export_all
-      let revert             = wrap_unit_arg revert
-      let revert_all         = wrap_unit_arg revert_all
-      let abandon            = wrap_unit_arg abandon
-      let abandon_all        = wrap_unit_arg abandon_all
 
       let extract shell path =
          extract parse_arg shell (dir_of_path path)
@@ -535,14 +527,6 @@ struct
                commands.set_dfmode          <- set_dfmode;
                commands.backup              <- backup;
                commands.backup_all          <- backup_all;
-               commands.save                <- save;
-               commands.save_all            <- save_all;
-               commands.export              <- export;
-               commands.export_all          <- export_all;
-               commands.revert              <- revert;
-               commands.revert_all          <- revert_all;
-               commands.abandon             <- abandon;
-               commands.abandon_all         <- abandon_all;
                commands.extract             <- wrap extract;
                commands.get_view_options    <- get_view_options;
                commands.set_view_options    <- set_view_options;

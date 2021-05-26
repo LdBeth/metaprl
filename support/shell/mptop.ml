@@ -83,7 +83,7 @@ doc <:doc<
 
       (* Untyped tuples and functions *)
     | ListExpr of top_expr list
-    | TupleExpr of top_expr list
+    | TupleExpr of top_expr * top_expr
 
       (* Common cases are typed *)
     | UnitFunExpr of (unit -> top_expr)
@@ -165,12 +165,15 @@ let string_list_of_longident li =
 
 (*
  * A tuple of expressions.
- * We only support unit for now.
  *)
-let rec mk_tuple_expr loc = function
-   [] ->
-      UnitExpr ()
- | l -> TupleExpr(List.map (fun e -> snd (mk_expr e)) l)
+let rec mk_tuple_expr loc xs =
+   match List.rev xs with
+      [] ->
+         UnitExpr ()
+    | x :: xs ->
+         List.fold_left
+         (fun a b -> TupleExpr(snd (mk_expr b), a))
+         (snd (mk_expr x)) xs
 
 (*
  * Correctly handle N-ary function application
@@ -296,7 +299,7 @@ let rec str_typ = function
  | AddressType -> "address"
  | Addr_itemType -> "addr_item"
  | ListType t -> (par_str_type t) ^ " list"
- | TupleType l -> String.concat " # " (List.map par_str_type l)
+ | TupleType (t1, t2) -> (par_str_type t1) ^ " # " ^ (prod_str_type t2)
  | NilType -> "* list"
  | ConsType -> "* -> * list -> * list"
  | FunType (t1, t2) -> (par_str_type t1) ^ " -> " ^ (str_typ t2)
@@ -304,6 +307,10 @@ let rec str_typ = function
 
 and par_str_type = function
    (ListType _ | TupleType _ | FunType _ | ConsType) as t -> "(" ^ (str_typ t) ^ ")"
+ | t -> str_typ t
+
+and prod_str_type = function
+   (ListType _ | FunType _ | ConsType) as t -> "(" ^ (str_typ t) ^ ")"
  | t -> str_typ t
 
 let type_mismatch loc typ typ' =
@@ -349,7 +356,7 @@ let rec expr_tp base loc = function
       let typ = expr_tp base loc hd in
          List.iter (expr_typechk base loc typ) tl;
          ListType typ
- | TupleExpr l -> TupleType(List.map (expr_tp base loc) l)
+ | TupleExpr (a, b) -> TupleType(expr_tp base loc a, expr_tp base loc b)
  | VarExpr v ->
    begin try
       let _, _, typ = Table.find base v in typ

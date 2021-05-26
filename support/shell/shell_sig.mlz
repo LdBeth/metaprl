@@ -56,9 +56,9 @@ type top_expr =
  | AddressExpr of address
  | Addr_itemExpr of addr_item
 
-   (* Uptyped tuples and functions *)
+   (* Untyped tuples and functions *)
  | ListExpr of top_expr list
- | TupleExpr of top_expr list
+ | TupleExpr of top_expr * top_expr
 
    (* Common cases are typed *)
  | UnitFunExpr of (unit -> top_expr)
@@ -99,7 +99,7 @@ type top_type =
  | AddressType
  | Addr_itemType
  | ListType of top_type
- | TupleType of top_type list
+ | TupleType of top_type * top_type
  | NilType  (* 'a list *)
  | ConsType (* 'a -> 'a list -> 'a list *)
  | ConsFunType of top_type (* t list -> t list, with some hacks for address auto-coersions *)

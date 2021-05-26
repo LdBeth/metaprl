@@ -84,14 +84,6 @@ type shell_commands =
      mutable create_pkg : string -> unit;
      mutable backup : unit -> unit;
      mutable backup_all : unit -> unit;
-     mutable save : unit -> unit;
-     mutable save_all : unit -> unit;
-     mutable export : unit -> unit;
-     mutable export_all : unit -> unit;
-     mutable revert : unit -> unit;
-     mutable revert_all : unit -> unit;
-     mutable abandon : unit -> unit;
-     mutable abandon_all : unit -> unit;
      mutable extract : string list -> unit -> Refine.extract;
      mutable get_view_options : unit -> string;
      mutable set_view_options : string -> unit;
