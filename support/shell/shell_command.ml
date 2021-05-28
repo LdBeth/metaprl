@@ -272,6 +272,9 @@ let check_all () =
    in
       apply_all check true dont_clean_item dont_clean_module
 
+(*
+ * Navigation
+ *)
 let up i =
    ignore (cd (String.make (i + 1) '.'));
    ls ""
@@ -279,6 +282,19 @@ let up i =
 let down i =
    ignore (cd (string_of_int i));
    ls ""
+
+let yank () =
+   cd (Shell_register.top ())
+let swap () =
+   cd (Shell_register.swap ())
+
+let push () =
+   let path = pwd () in
+      Shell_register.push path;
+      path
+
+let pop = Shell_register.pop
+let clear = Shell_register.clear
 
 (*
  * Edit a file.

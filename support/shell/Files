@@ -23,6 +23,7 @@ SHELL_FILES[] =
     shell_root
     shell_fs
     shell_state
+    shell_register
     shell_core
     shell_command
     shell_current

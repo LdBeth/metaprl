@@ -523,11 +523,11 @@ let display_term_aux newline dfm term =
 let display_term = display_term_aux false
 let display_term_newline = display_term_aux true
 
-let format get_dfm ped addr =
-   display_term_newline get_dfm (term_of_proof (proof_of_ped ped) addr)
+let format dfm ped addr =
+   display_term_newline dfm (term_of_proof (proof_of_ped ped) addr)
 
-let format_incomplete get_dfm proof =
-   display_term_newline get_dfm (term_of_incomplete proof)
+let format_incomplete dfm proof =
+   display_term_newline dfm (term_of_incomplete proof)
 
 (*
  * -*-
