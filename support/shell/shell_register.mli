@@ -30,6 +30,8 @@ val push : string -> unit
 val pop : unit -> string
 val swap : unit -> string
 val top : unit -> string
+val prev : unit -> string
+val next : unit -> string
 val clear : unit -> unit
 
 (*!

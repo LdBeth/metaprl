@@ -287,6 +287,10 @@ let yank () =
    cd (Shell_register.top ())
 let swap () =
    cd (Shell_register.swap ())
+let prev () =
+   cd (Shell_register.prev ())
+let next () =
+   cd (Shell_register.next ())
 
 let push () =
    let path = pwd () in

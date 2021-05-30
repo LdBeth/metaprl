@@ -53,6 +53,8 @@ topval down : int -> unit
 topval yank : unit -> string
 topval swap : unit -> string
 topval push : unit -> string
+topval prev : unit -> string
+topval next : unit -> string
 topval pop : unit -> string
 topval clear : unit -> unit
 

@@ -26,44 +26,58 @@
  *)
 open Lm_thread
 open Lm_rprintf
+open Lm_link_list
+
 
 let path_stack =
    State.private_val "Shell_register.path_stack"
-   (Stack.create ()) Stack.copy
+   (ref empty) (fun stack -> ref (copy !stack))
 
 let push path =
    State.write path_stack (fun stack ->
-         Stack.push path stack)
+         stack := insert path !stack)
 
 let pop () =
    State.write path_stack (fun stack ->
-         try Stack.pop stack
-         with Stack.Empty ->
+         try let n, a = delete !stack
+             in stack := n;
+                a
+         with Not_found ->
                eprintf "Path stack underflow%t" eflush;
                ".")
 
 let swap () =
     State.write path_stack (fun stack ->
-          try let a = Stack.pop stack in
-              let b = Stack.pop stack in
-                 Stack.push a stack;
-                 Stack.push b stack;
+          try let n, a = delete !stack in
+              let n, b = delete n in
+                 stack := insert a n |> insert b;
                  b
-         with Stack.Empty ->
-               eprintf "Path stack underflow, performing clear%t" eflush;
-               Stack.clear stack;
-               ".")
+          with Not_found ->
+                eprintf "Path stack underflow, performing clear%t" eflush;
+                stack := empty;
+                ".")
+
+let prev () =
+   State.write path_stack (fun stack ->
+         let ns = prev !stack
+         in stack := ns;
+            top ns)
+let next () =
+   State.write path_stack (fun stack ->
+         let ns = next !stack
+         in stack := ns;
+            top ns)
 
 let top () =
    State.read path_stack (fun stack ->
-         try Stack.top stack
-         with Stack.Empty ->
+         try top !stack
+         with Not_found ->
                eprintf "Path stack has no element%t" eflush;
                ".")
 
 let clear () =
    State.write path_stack (fun stack ->
-         Stack.clear stack)
+         stack := empty)
 
 (*!
  * @docoff
