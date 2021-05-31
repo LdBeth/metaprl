@@ -57,16 +57,23 @@ let swap () =
                 stack := empty;
                 ".")
 
-let prev () =
+let rec do_times i fn arg =
+   if i <= 1 then
+      fn arg
+   else
+      do_times (i-1) fn (fn arg)
+
+let rot fn i =
    State.write path_stack (fun stack ->
-         let ns = prev !stack
-         in stack := ns;
-            top ns)
-let next () =
-   State.write path_stack (fun stack ->
-         let ns = next !stack
-         in stack := ns;
-            top ns)
+         try let ns = do_times i fn !stack
+             in stack := ns;
+                top ns
+         with _ ->
+               eprintf "Path stack has no element%t" eflush;
+               ".")
+
+let next = rot next
+let prev = rot prev
 
 let top () =
    State.read path_stack (fun stack ->
