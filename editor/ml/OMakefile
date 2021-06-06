@@ -75,7 +75,7 @@ else
 CMXADEPS[] =
     $(CAMLLIB)/unix.cmxa
     $(CAMLLIB)/str.cmxa
-    $(CAMLLIB)/zarith/zarith.cmxa
+    $(ZARITH)/zarith.cmxa
     $(OPTTHREADSLIB)
     $(CAMLP5LIB)/odyl$(PROF_EXT).cmxa
     $(CAMLP5LIB)/camlp5$(PROF_EXT).cmxa
@@ -94,7 +94,7 @@ CMADEPS[] =
     $(CAMLP5LIB)/odyl.cma
     $(CAMLLIB)/unix.cma
     $(CAMLLIB)/str.cma
-    $(CAMLLIB)/zarith/zarith.cma
+    $(ZARITH)/zarith.cma
     $(THREADSLIB)
     $(CAMLP5LIB)/camlp5.cma
     # $(CAMLP5LIB)/camlp5_top.cma
@@ -108,7 +108,7 @@ TCMADEPS[] =
     $(CAMLP5LIB)/odyl.cma
     $(CAMLLIB)/unix.cma
     $(CAMLLIB)/str.cma
-    $(CAMLLIB)/zarith/zarith.cma
+    $(ZARITH)/zarith.cma
     $(THREADSLIB)
     $(CAMLP5LIB)/camlp5.cma
     $(BASE_CMAS)

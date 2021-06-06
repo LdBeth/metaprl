@@ -7,7 +7,7 @@ MP_VERSION = 0.9.6.6
 # Versions of Ocaml/Camlp4 that are compatible with MetaPRL
 # CAML_VERSIONS shoud be a space-separated list of versions
 #
-CAML_VERSIONS = 4.11.0 4.11.1
+CAML_VERSIONS = 4.11.0 4.11.1 4.12.0
 
 if $(SHARED_MODE)
    if $(not $(file-exists $(MP_ROOT)/mk/OCaml_version))

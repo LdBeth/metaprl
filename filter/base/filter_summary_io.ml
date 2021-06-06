@@ -185,12 +185,11 @@ struct
    let info base { info_info = data; _ } =
       data
 
-   let sub_info base { info_info = info; info_path = path; info_root = root; _ } name =
-      let path' = path @ [name] in
-      let info' = Address.find_sub_module info path' in
-         { info_info = info';
-           info_path = path';
-           info_root = root
+   let sub_info base info name =
+      let path = info.info_path @ [name] in
+         { info with
+           info_info =  Address.find_sub_module info.info_info path;
+           info_path = path;
          }
 
    let set_info base info data =

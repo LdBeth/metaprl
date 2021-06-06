@@ -80,7 +80,7 @@ InstVarErr(var) =
         $"for instructions on compiling OCaml and setting the $(var) variable."
     return $(err)
 
-OCAMLINCLUDES += $(dir $(CAMLLIB)/zarith)
+OCAMLINCLUDES += $(dir $(ZARITH))
 OCAML_OTHER_LIBS += zarith
 
 if $(file-exists $(CAMLLIB)/../compiler-lib/parsetree.cmi)

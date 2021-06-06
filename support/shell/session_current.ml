@@ -60,8 +60,8 @@ let fork_session session =
          _
        } = session
    in
-      { session with session_history = LineBuffer.clone history (fun s -> s);
-                     session_messages = LineBuffer.clone messages clone_buffer;
+      { session with session_history = LineBuffer.clone Fun.id history;
+                     session_messages = LineBuffer.clone clone_buffer messages;
                      session_content_buffer = clone_buffer content_buffer
       }
 

@@ -34,7 +34,7 @@ sig
    type 'a t
 
    val create      : unit -> 'a t
-   val clone       : 'a t -> ('a -> 'a) -> 'a t
+   val clone       : ('a -> 'a) -> 'a t -> 'a t
    val add         : 'a t -> 'a -> unit
    val iter        : ('a -> unit) -> 'a t -> unit
    val fold        : ('a -> 'b -> 'a) -> 'a -> 'b t -> 'a
@@ -63,10 +63,10 @@ struct
         length = 0
       }
 
-   let clone ({ lines = lines;
-                alength = alength;
-                first = first;
-                length = length } as queue) f =
+   let clone f ({ lines = lines;
+                  alength = alength;
+                  first = first;
+                  length = length } as queue) =
       if length = 0 then queue else begin
          let new_lines = Array.make alength (f (Array.get lines first)) in
             for i = first + 1 to first + length - 1 do

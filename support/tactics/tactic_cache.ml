@@ -952,7 +952,7 @@ let mix_wild nargs terms wilds =
  *       that is an ancestor of the current world
  *    FindNone: no appropriate world was found
  *)
-let find_world_extension { ext_base = { ext_worlds = worlds; _ }; _ } world t hash =
+let find_world_extension extract world t hash =
    let rec search newest = function
       ((WorldHypothesis world') as next)::tl ->
          let { world_hyp = { inf_value = t'; inf_hash = hash'; _ };
@@ -985,7 +985,7 @@ let find_world_extension { ext_base = { ext_worlds = worlds; _ }; _ } world t ha
           | None ->
                FindNone
    in
-      search None worlds
+      search None extract.ext_base.ext_worlds
 
 (*
  * In this case, find_world_extension returned FindNone.

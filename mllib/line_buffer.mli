@@ -33,7 +33,7 @@ sig
    type 'a t
 
    val create      : unit -> 'a t
-   val clone       : 'a t -> ('a -> 'a) -> 'a t
+   val clone       : ('a -> 'a) -> 'a t -> 'a t
    val add         : 'a t -> 'a -> unit
    val iter        : ('a -> unit) -> 'a t -> unit
    val fold        : ('a -> 'b -> 'a) -> 'a -> 'b t -> 'a
