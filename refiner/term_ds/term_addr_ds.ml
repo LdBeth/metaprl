@@ -171,19 +171,15 @@ struct
    (*
     * Traslate a [-lenght..-1]U[1..length] index into a [0..length-1] one.
     *)
-   let make_index_name = "getnth"
+   let make_index_name = "make_index"
    let make_index ATERM i length =
-      if i > 0 then
-         if i > length then
-            REF_RAISE(RefineError (make_index_name, AddressError (a, term)))
-         else
-            (i - 1)
+      if abs i > length then
+         REF_RAISE(RefineError (make_index_name, AddressError (a, term)))
       else
-         let i = length + i in
-            if i < 0 then
-               REF_RAISE(RefineError (make_index_name, AddressError (a, term)))
-            else
-               i
+      if i > 0 then (i - 1)
+      else
+         length + i
+
    (*
     * Get a subterm.
     *)

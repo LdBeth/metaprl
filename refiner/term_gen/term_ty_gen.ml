@@ -78,14 +78,7 @@ struct
    (*
     * Equality.
     *)
-   let rec equal_lists pred l1 l2 =
-      match l1, l2 with
-         h1 :: t1, h2 :: t2 ->
-            pred h1 h2 && equal_lists pred t1 t2
-       | [], [] ->
-            true
-       | _ ->
-            false
+   let equal_lists = Lm_list_util.compare_cmp
 
    let eq_param param1 param2 =
       match param1, param2 with

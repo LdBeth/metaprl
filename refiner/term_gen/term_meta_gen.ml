@@ -245,8 +245,6 @@ struct
     | MetaLabeled (_, t) ->
          context_vars t
 
-let () = ();;
-
    (*
     * All free variables.
     *)
@@ -597,8 +595,8 @@ let () = ();;
             map:=SymbolTable.add !map v (List.length ts, conts);
          List.iter scan_term ts
       in
-      let _ = List.iter scan_term ts in
-      let map = ! map in
+      let () = List.iter scan_term ts in
+      let map = !map in
          fun v i ->
             if SymbolTable.mem map v then
                let i', conts = SymbolTable.find map v in

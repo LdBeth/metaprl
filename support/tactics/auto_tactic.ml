@@ -647,7 +647,7 @@ let make_defT =
 let byDefT conv = make_defT conv thenT autoT
 let byDefsT convs = seqT (List.map make_defT convs) thenT autoT
 
-let repeatWithRwsT convs tac  = repeatT (firstT (List.map (fun conv-> progressT (rwh conv 0) thenT tac ) convs))
+let repeatWithRwsT convs tac = repeatT (firstT (List.map (fun conv-> progressT (rwh conv 0) thenT tac ) convs))
 
 (*
  * Trivial is in auto tactic.

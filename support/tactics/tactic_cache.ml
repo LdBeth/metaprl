@@ -1231,21 +1231,17 @@ let expand_node extract ({ node_goal = goal; _ } as node) =
  *)
 let push_derivable_node subgoals fstack =
    let rec aux = function
-      subgoals::tl ->
-         (List.map (function node -> Node node) subgoals) @ (AndBranch :: aux tl)
-    | [] ->
-         OrBranch :: !fstack
-   in
-      fstack := aux subgoals
+      subgoals :: tl ->
+         Seq.append (aux tl) (List.to_seq (AndBranch :: List.rev_map (fun node -> Node node) subgoals))
+    | [] -> Seq.return OrBranch
+   in Stack.add_seq fstack (aux subgoals)
 
 (* Pop last and-branch *)
 let pop_failed_branch fstack =
    let rec aux = function
-      AndBranch::t -> t
-    | _::t -> aux t
-    | [] -> failwith "pop_failed_branch: empty stack"
-   in
-      fstack := aux !fstack
+      AndBranch -> ()
+    | _ -> aux (Stack.pop fstack)
+   in aux (Stack.pop fstack)
 
 (*
  * This node succeeded because one of its
@@ -1253,23 +1249,22 @@ let pop_failed_branch fstack =
  *)
 let pop_succeeded_node fstack =
    let rec aux = function
-      OrBranch::(Node node)::t ->
+      OrBranch ->
          begin
-            match node.node_status with
-               Derivable ->
-                  node.node_status <- Derived;
-                  t
-             | Derived | Primitive _ ->
-                  t
-             | Unproved | Unprovable ->
-                  failwith "pop_succeeded_node: unprovable"
+         match (Stack.pop fstack) with
+            Node node ->
+               begin
+               match node.node_status with
+                  Derivable ->
+                     node.node_status <- Derived
+                | Derived | Primitive _ -> ()
+                | Unproved | Unprovable ->
+                     failwith "pop_succeeded_node: unprovable"
+               end
+          | top -> aux top
          end
-    | _::t ->
-         aux t
-    | [] ->
-         failwith "pop_succeeded_node: empty stack"
-   in
-      fstack := aux !fstack
+    | _ -> aux (Stack.pop fstack)
+   in aux (Stack.pop fstack)
 
 (*
  * This creates a new function to perform backward chaining from a single
@@ -1284,7 +1279,8 @@ let pop_succeeded_node fstack =
  *)
 let new_bchain node =
    (* Search engine *)
-   let fstack = ref [RootNode node] in
+   let fstack = Stack.create() in
+   let () = Stack.push (RootNode node) fstack in
    let search_node extract ({ node_status = status; node_children = subgoals; _ } as node) =
       match status with
          Unproved ->
@@ -1301,13 +1297,12 @@ let new_bchain node =
 
        | Derived | Primitive _ ->
             (* This node is provable *)
-            let _ = Lm_ref_util.pop fstack in
-               ()
+            ignore (Stack.pop fstack)
 
    in
    let search extract =
       (* Process the top goal *)
-      match List.hd !fstack with
+      match Stack.top fstack with
          Node node ->
             (* Expand this node *)
             search_node extract node;
@@ -1320,9 +1315,9 @@ let new_bchain node =
 
        | OrBranch ->
             (* All subgoals failed, pop the node, and fail its branch *)
-            let _ = Lm_ref_util.pop fstack in
-            let _ = pop_failed_branch fstack in
-               false
+            ignore (Stack.pop fstack);
+            pop_failed_branch fstack;
+            false
 
        | RootNode node ->
             (* Is this node successful *)
@@ -1331,7 +1326,7 @@ let new_bchain node =
                   Unproved
                 | Derivable ->
                      (* Try backward chaining *)
-                     Lm_ref_util.push (Node node) fstack;
+                     Stack.push (Node node) fstack;
                      false
                 | Unprovable ->
                      (* Maybe this will be proved later by forward chaining *)
@@ -1361,7 +1356,7 @@ let new_goals world goal =
                Some node, tbl, new_bchain node
 
        | None ->
-            None, tbl, (function _ -> false)
+            None, tbl, (fun _ -> false)
 
 (************************************************************************
  * FORWARD CHAINING                                                     *
@@ -1433,7 +1428,7 @@ let try_arglist_normal ({ ext_base = base; _ } as extract) rw just world = funct
    [] ->
       ()
  | (arg::args) as all_args ->
-      let args' = List.map (function inf -> inf.inf_value) args in
+      let args' = List.map (fun inf -> inf.inf_value) args in
          try
             let values = apply_rewrite rw empty_args arg.inf_value args' in
             let root =
@@ -1471,11 +1466,11 @@ let try_arglist_wild extract rw wrw nargs just world args =
       [] ->
          ()
     | arg::argstl ->
-         let terms = List.map (function inf -> inf.inf_value) argstl in
+         let terms = List.map (fun inf -> inf.inf_value) argstl in
          let term = arg.inf_value in
             try
                let wilds = apply_rewrite wrw empty_args term terms in
-               let wargs = List.map (function t -> find_inf extract world t (shape_of_term t)) wilds in
+               let wargs = List.map (fun t -> find_inf extract world t (shape_of_term t)) wilds in
                let values = apply_rewrite rw empty_args term terms in
                let facts = mix_wild nargs args wargs in
                let root =
@@ -1618,7 +1613,7 @@ let rec simple_ants = function
 
 let compute_spread_ants ants =
    if simple_ants ants then
-      List.map (function x -> [], x)
+      List.map (fun x -> [], x)
    else
       let aux (l, _) = List.length l in
       let indices = List.map aux ants in
@@ -2199,7 +2194,7 @@ let used_hyps
       syn_used = used;
       _
     } =
-   List.map (function inf -> hcount - (Lm_list_util.find_indexq inf hyps) - 1) used
+   List.map (fun inf -> hcount - (Lm_list_util.find_indexq inf hyps) - 1) used
 
 (*
  * -*-

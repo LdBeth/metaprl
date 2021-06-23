@@ -44,14 +44,12 @@ open Refine_error_sig
 let () =
    show_loading "Loading Rewrite_util"
 
-let _debug_rewrite =
+let _ =
    create_debug (**)
       { debug_name = "rewrite";
         debug_description = "Term rewriting operations";
         debug_value = false
       }
-
-(* let debug_subst = load_debug "subst" *)
 
 module MakeRewriteUtil
    (TermType : TermSig)
