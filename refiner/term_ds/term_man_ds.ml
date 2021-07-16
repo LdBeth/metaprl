@@ -44,8 +44,7 @@ open Term_subst_sig
 (*
  * Show that the file is loading.
  *)
-let _ =
-   show_loading "Loading Term_man_ds%t"
+let () = show_loading "Loading Term_man_ds"
 
 (* unused
 let debug_address =
@@ -91,9 +90,8 @@ struct
     *)
    let incr_level_exp = function
       ({ le_const = c; le_vars = vars } : level_exp) ->
-         let add1 = function
-            { le_var = v; le_offset = o } ->
-               { le_var = v; le_offset = o + 1 }
+         let add1 var =
+            { var with le_offset = var.le_offset + 1 }
          in
             { le_const = c + 1; le_vars = List.map add1 vars }
 
@@ -110,19 +108,19 @@ struct
             ({ le_var = v1; le_offset = o1 } as h1::t1 as l1),
             ({ le_var = v2; le_offset = o2 } as h2::t2 as l2) ->
                if Lm_symbol.eq v1 v2 then
-                  { le_var = v1; le_offset = max o1 (o2 + o3) } :: join (t1, t2)
+                  { h1 with le_offset = max o1 (o2 + o3) } :: join (t1, t2)
                else if v1 < v2 then
                   h1 :: join (t1, l2)
                else if o3 = 0 then
                   h2 :: join (l1, t2)
                else
-                  { le_var = v2; le_offset = o2 + o3 } :: join (l1, t2)
+                  { h2 with le_offset = o2 + o3 } :: join (l1, t2)
           | [], l2 ->
                if o3 = 0 then
                   l2
                else
-                  let add_off { le_var = v2; le_offset = o2 } =
-                     { le_var = v2; le_offset = o2 + o3 }
+                  let add_off var =
+                     { var with le_offset = var.le_offset + o3 }
                   in
                      List.map add_off l2
           | l1, [] ->
@@ -133,53 +131,31 @@ struct
    (*
     * See if the first level is contained in the second.
     *)
-   let level_le = fun
-      { le_const = const1; le_vars = vars1 }
-      { le_const = const2; le_vars = vars2 } ->
-         let rec caux = function
-            ({ le_var = v1; le_offset = o1 }::t1 as l1),
-            { le_var = v2; le_offset = o2 }::t2 ->
-               if Lm_symbol.eq v1 v2 then
-                  if o1 <= o2 then
-                     caux (t1, t2)
-                  else
+   let level_le, level_lt =
+      let level_cmp op =
+      fun { le_const = const1; le_vars = vars1 }
+          { le_const = const2; le_vars = vars2 } ->
+            if op const1 const2 then
+               let rec caux = function
+                  ({ le_var = v1; le_offset = o1 }::t1 as l1),
+                  { le_var = v2; le_offset = o2 }::t2 ->
+                     if Lm_symbol.eq v1 v2 then
+                        if op o1 o2 then
+                           caux (t1, t2)
+                        else
+                           false
+                     else if v2 < v1 then
+                        caux (l1, t2)
+                     else
+                        false
+                | [], _ ->
+                     true
+                | _, [] ->
                      false
-               else if v2 < v1 then
-                  caux (l1, t2)
-               else
-                  false
-          | [], _ -> true
-          | _, [] -> false
-         in
-            if const1 <= const2 then
-               caux (vars1, vars2)
+               in caux (vars1, vars2)
             else
                false
-
-   let level_lt = fun
-      { le_const = const1; le_vars = vars1 }
-      { le_const = const2; le_vars = vars2 } ->
-         let rec caux = function
-            ({ le_var = v1; le_offset = o1 }::t1 as l1),
-            { le_var = v2; le_offset = o2 }::t2 ->
-               if Lm_symbol.eq v1 v2 then
-                  if o1 < o2 then
-                     caux (t1, t2)
-                  else
-                     false
-               else if v2 < v1 then
-                  caux (l1, t2)
-               else
-                  false
-          | [], _ ->
-               true
-          | _, [] ->
-               false
-         in
-            if const1 < const2 then
-               caux (vars1, vars2)
-            else
-               false
+      in level_cmp (<=), level_cmp (<)
 
    (************************************************************************
     * PRIMITIVE FORMS                                                      *

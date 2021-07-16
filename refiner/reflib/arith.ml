@@ -40,7 +40,7 @@ module type HypsSig = sig
     type 'a cmp (*= var * var * num*)
     type 'a hyps
     type addr
- 	  val dest_cmp : 'a cmp -> var * var * num
+    val dest_cmp : 'a cmp -> var * var * num
     val equal : var -> var -> bool
     val iter : 'a hyps -> (addr -> 'a cmp -> unit) -> unit
     val vars_of_hyps : 'a hyps -> var array
@@ -80,9 +80,9 @@ struct
    let set a coord e = Array.unsafe_set a (d2_1 coord) e
 
    let find a (e: var) =
-      let len = Array.length a in
+      (* let len = Array.length a in *)
       let rec aux i =
-         if i==len then raise Not_found;
+         (* if i==len then raise Not_found; *)
          if equal (Array.get a i) e then i else aux (i+1)
       in aux 0
 end
@@ -260,7 +260,7 @@ module TG = Graph(TermHyps)
 open RefineError
 
 let find_contradiction l =
-	let ar=Array.of_list l in
+   let ar=Array.of_list l in
    match TG.solve ar with
       TG.Int (_,r) ->
          let rl = List.map (fun i -> ar.(i)) r in

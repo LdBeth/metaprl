@@ -174,14 +174,14 @@ struct
                      format_string buf " | ";
                      format_vars t
                in
-                  format_string buf "{";
+                  format_char buf '{';
                   if maxoff < c then
                      begin
                         format_int buf c;
                         format_string buf " | "
                      end;
                   format_vars vars;
-                  format_string buf "}"
+                  format_char buf '}'
 
    (*
     * Operator name.

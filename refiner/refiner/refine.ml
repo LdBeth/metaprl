@@ -1093,31 +1093,29 @@ struct
             raise (Invalid_argument "Refine.term_of_extract: number of term arguments differs from the number of assumptions");
          let find = find_of_refiner refiner in
          (* XXX HACK: this approach of building a closure on-the-fly is probably too inefficient *)
-         let rec construct (rest : (term list -> term) list) just =
+         let rec construct (rest : (term list -> term) list) just args =
             match just, rest with
                RuleJust just, _ ->
                   let rule = (find.find_rule just.just_refiner).rule_proof in
-                     fun args ->
-                        get_proof rule just.just_addrs just.just_params just.just_goal.mseq_goal (all_args just.just_subgoals args rest)
+                     get_proof rule just.just_addrs just.just_params just.just_goal.mseq_goal (all_args just.just_subgoals args rest)
              | ComposeJust (just, justl), _ ->
-                  construct (partition_rest find rest justl) just
+                  construct (partition_rest find rest justl) just args
              | MLJust (just, f, _), _ ->
                   (* JYH: we used to assume that the assumptions are not
                    * changed by the ML rule.  This is no longer the case, so
                    * we pass the rest directly.
                    *)
-                  fun args ->
-                     f just.just_addrs just.just_params just.just_goal just.just_subgoals args rest
+                  f just.just_addrs just.just_params just.just_goal just.just_subgoals args rest
              | RewriteJust _, [f] ->
-                  f
+                  f args
              | Identity, [f] ->
-                  f
+                  f args
              | NthHypJust (_, i), [] ->
-                  fun args -> List.nth args i
+                  List.nth args i
              | CondRewriteJust _, f :: _ ->
-                  f
+                  f args
              | CutJust _, [cut_lemma; cut_then] ->
-                  fun args -> cut_then (args @ [cut_lemma args])
+                  cut_then (args @ [cut_lemma args])
              | _ ->
                   raise (Invalid_argument "Refine.term_of_extract: internal error: ill-formed extract")
 

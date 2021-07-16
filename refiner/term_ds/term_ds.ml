@@ -38,8 +38,8 @@ open Term_sig
 (*
  * Show the file loading.
  *)
-let _ =
-   show_loading "Loading Term_ds%t"
+let () =
+   show_loading "Loading Term_ds"
 
 module TermType =
 struct
@@ -66,7 +66,7 @@ struct
     * The order of params is significant.
     *)
    type operator' = param poly_operator
-   type operator =  operator'
+   type operator = operator'
 
    (*
     * A term has an operator, and a finite number of subterms

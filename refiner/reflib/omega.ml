@@ -235,15 +235,11 @@ struct
 *)
 
    let gcd f =
-      let r = ref Ring.ringZero in
-      let aux v k =
-         if v=constvar then
-            ()
-         else
-            r:=Ring.gcd !r k
-      in
-      Table.iter aux f;
-      !r
+      let r = ref Ring.ringZero
+      in Table.iter
+         (fun v k ->
+               if v <> constvar then r := Ring.gcd !r k) f;
+         !r
 
    let div f k = Table.map (fun v c -> Ring.div c k) f
 
@@ -267,13 +263,12 @@ struct
       v
 
    let isNumber f =
-      let test=ref true in
       let aux v c =
          if v<>constvar && Ring.compare c Ring.ringZero <>0 then
-            test:=false
+            raise Exit
       in
-      Table.iter aux f;
-      !test
+         try Table.iter aux f; true
+         with Exit -> false
 
    let value_of f =
       if isNumber f then
