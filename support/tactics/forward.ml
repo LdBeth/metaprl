@@ -121,12 +121,8 @@ struct
       IntMTable.add table (hash_term t) t
 
    let mem table t =
-      try
-         let tl = IntMTable.find_all table (hash_term t) in
-            List.exists (fun t' -> alpha_equal t' t) tl
-      with
-         Not_found ->
-            false
+      let tl = IntMTable.find_all table (hash_term t) in
+         List.exists (fun t' -> alpha_equal t' t) tl
 end
 
 type fwd_state = {

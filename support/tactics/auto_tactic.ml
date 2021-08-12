@@ -520,7 +520,7 @@ let extract tactics =
                 | AutoNormal -> t, tac::n, c
                 | AutoComplete -> t, n, tac::c
       ) ([],[],[]) tactics in
-	 let trivial = sort_nodes trivial
+   let trivial = sort_nodes trivial
    and normal = sort_nodes normal
    and complete = sort_nodes complete in
    if !debug_auto then begin

@@ -831,10 +831,7 @@ struct
    (*
     * Fetch the attributes.
     *)
-   let rec assoc_option name = function
-      (name', h) :: _ when name = name' -> Some h
-    | _ :: t -> assoc_option name t
-    | [] -> None
+   let assoc_option = List.assoc_opt
 
    let assoc_list name l =
       List.fold_left (fun vals (name', h) ->

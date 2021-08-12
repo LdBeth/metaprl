@@ -233,10 +233,8 @@ struct
     * We cash a number of items with each proof derivation
     *)
    type 'a derived_proof = {
-      pf_get_extract : unit -> extract;         (* Upcall *)
-      pf_create_proof : extract -> 'a;          (* Function for creating a proof out of extract *)
-      mutable pf_extract : extract option;      (* Cached extact from an upcall *)
-      mutable pf_proof : 'a option;             (* For rules, 'a is an computational content extraction function *)
+      pf_extract : extract Lazy.t;      (* Cached extact from an upcall *)
+      pf_proof : 'a Lazy.t;             (* For rules, 'a is an computational content extraction function *)
       mutable pf_dependencies : DepSet.t option (* Cached dependencies *)
    }
 
@@ -970,24 +968,12 @@ struct
    (*
     * Get the extract term for an item.
     *)
-   let get_derivation dp =
-      match dp.pf_extract with
-         Some e -> e
-       | None ->
-            let e = dp.pf_get_extract () in
-               dp.pf_extract <- Some e;
-               e
+   let get_derivation dp = Lazy.force dp.pf_extract
 
    let get_proof = function
       PPrim p -> p
     | PDerived dp ->
-         begin match dp.pf_proof with
-             Some p -> p
-           | None ->
-               let p = dp.pf_create_proof (get_derivation dp) in
-                  dp.pf_proof <- Some p;
-                  p
-         end
+         Lazy.force dp.pf_proof
     | PDefined ->
          raise (Invalid_argument "Refine.get_proof")
 
@@ -1526,21 +1512,20 @@ struct
          let compute_ext = compute_rule_ext name addrs params goal args result in
             justify_rule build name addrs params goal subgoals (PPrim compute_ext)
 
-   let wrap_extf build check_ext name extf =
+   let apply_extf build check_ext name extf =
       let opname = mk_opname name build.build_opname in
       let refiner = build.build_refiner in
-         fun () ->
-            (*
-             * Below we indeed want to catch absolutely everything - we do not care
-             * what exactly went wrong in the proof search.
-             *)
-            let ext = try extf () with _ -> raise (Incomplete opname) in
-               if ext.ext_sentinal.sent_refiner != refiner then
-                  raise(Invalid_argument ("Sentinals mismatch in extractor function"));
-               if ext.ext_subgoals <> [] then
-                  raise (Incomplete opname);
-               check_ext ext;
-               ext
+      (*
+       * Below we indeed want to catch absolutely everything - we do not care
+       * what exactly went wrong in the proof search.
+       *)
+      let ext = try extf () with _ -> raise (Incomplete opname) in
+          if ext.ext_sentinal.sent_refiner != refiner then
+             raise(Invalid_argument ("Sentinals mismatch in extractor function"));
+          if ext.ext_subgoals <> [] then
+             raise (Incomplete opname);
+          check_ext ext;
+          ext
 
    let make_wildcard_ext_args =
       let fold (vars, conts) = function
@@ -1574,11 +1559,11 @@ struct
          let args = make_wildcard_ext_args subgoals in
             compute_rule_ext name addrs params goal args (term_of_extract build.build_refiner ext args)
       in
+      let extract = lazy (apply_extf build check_ext name extf)
+      in
       let dp = {
-         pf_get_extract = wrap_extf build check_ext name extf;
-         pf_create_proof = compute_ext;
-         pf_extract = None;
-         pf_proof = None;
+         pf_extract = extract;
+         pf_proof = lazy (compute_ext (Lazy.force extract));
          pf_dependencies = None;
       } in
          justify_rule build name addrs params goal subgoals (PDerived dp)
@@ -1847,10 +1832,8 @@ struct
             REF_RAISE(RefineError (name, StringError "extract does not match"))
       in
       let dp = {
-         pf_get_extract = wrap_extf build check_ext name extf;
-         pf_create_proof = (fun _ -> ());
-         pf_extract = None;
-         pf_proof = None;
+         pf_extract = lazy (apply_extf build check_ext name extf);
+         pf_proof = Lazy.from_val ();
          pf_dependencies = None;
       } in
          justify_rewrite build name redex contractum (PDerived dp)
@@ -1964,10 +1947,8 @@ struct
          REF_RAISE(RefineError(name, StringError "derivation does not match"))
       in
       let dp = {
-         pf_get_extract = wrap_extf build check_ext name extf;
-         pf_create_proof = (fun _ -> ());
-         pf_extract = None;
-         pf_proof = None;
+         pf_extract = lazy (apply_extf build check_ext name extf);
+         pf_proof = Lazy.from_val ();
          pf_dependencies = None;
      } in
          justify_cond_rewrite build name params subgoals redex contractum (PDerived dp)

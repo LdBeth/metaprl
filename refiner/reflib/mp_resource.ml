@@ -334,13 +334,16 @@ let get_result = function
 let find ((name, _) as bookmark) =
    if not (Hashtbl.mem state.theory_includes name) then
       compute_data name;
-   ignore(Hashtbl.find state.bookmarker bookmark);
+   if not (Hashtbl.mem state.bookmarker bookmark) then
+      raise Not_found;
    bookmark
 
 let get_resource bookmark resource_name =
    let data = Hashtbl.find state.processed_data resource_name in
    let rec extract_bookmark bookmark =
-      if Hashtbl.mem data bookmark then Hashtbl.find data bookmark else begin
+      match Hashtbl.find_opt data bookmark with
+         Some a -> a
+       | None -> begin
       let incr = Hashtbl.find state.bookmarker bookmark in
       let proc = extract_bookmark incr.inc_bookmark in
       let incr = Table.find_all incr.inc_increment resource_name in
@@ -381,8 +384,9 @@ let rec get_parents_aux prnts = function
 
 let clear_results bookmark =
    let clear_results_aux _ data =
-      if Hashtbl.mem data bookmark then
-         (Hashtbl.find data bookmark).res_result <- None
+      match Hashtbl.find_opt data bookmark with
+         Some a -> a.res_result <- None
+       | _ -> ()
    in
       Hashtbl.iter clear_results_aux state.processed_data
 

@@ -43,8 +43,7 @@ open Term_ds
 (*
  * Show the file loading.
  *)
-let _ =
-   show_loading "Loading Term_base_ds%t"
+let () = show_loading "Loading Term_base_ds"
 
 let debug_subst =
    create_debug (**)

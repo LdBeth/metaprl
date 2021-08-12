@@ -54,8 +54,7 @@ open Simple_print.SimplePrint
 (*
  * Show loading of the file.
  *)
-let _ =
-   show_loading "Loading Dform%t"
+let () = show_loading "Loading Dform"
 
 let debug_dform =
    create_debug (**)

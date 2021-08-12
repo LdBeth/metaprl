@@ -171,10 +171,9 @@ struct
    (*
     * Traslate a [-lenght..-1]U[1..length] index into a [0..length-1] one.
     *)
-   let make_index_name = "make_index"
    let make_index ATERM i length =
       if abs i > length then
-         REF_RAISE(RefineError (make_index_name, AddressError (a, term)))
+         REF_RAISE(RefineError ("make_index", AddressError (a, term)))
       else
       if i > 0 then (i - 1)
       else
