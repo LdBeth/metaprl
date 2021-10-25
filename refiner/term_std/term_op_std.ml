@@ -1201,8 +1201,7 @@ struct
     *)
    let rec map_down f t =
       let { term_op = op; term_terms = bterms } = if normal_term t then f t else t in
-      let apply { bvars = vars; bterm = t } =
-         { bvars = vars; bterm = map_down f t }
+      let apply b = { b with bterm = map_down f b.bterm }
       in
       let bterms =
          if (Opname.eq op.op_name var_opname || Opname.eq op.op_name context_opname) && bterms != [] then
@@ -1214,8 +1213,7 @@ struct
          { term_op = op; term_terms = bterms }
 
    let rec map_up f { term_op = op; term_terms = bterms } =
-      let apply { bvars = vars; bterm = t } =
-         { bvars = vars; bterm = map_up f t }
+      let apply b = { b with bterm = map_up f b.bterm }
       in
       let bterms =
          if (Opname.eq op.op_name var_opname || Opname.eq op.op_name context_opname) && bterms != [] then

@@ -2068,7 +2068,7 @@ EXTEND
    (* Arglist is a list of terms *)
    optarglist:
       [[ args = LIST0 singleterm ->
-          List.map (function t -> t.aterm) args
+          List.map (fun t -> t.aterm) args
        ]];
 
    (* The optional list of resources to update *)
@@ -2139,12 +2139,12 @@ EXTEND
     *)
    parsed_df_options:
       [[ l = LIST1 singleterm SEP "::" ->
-          Lm_list_util.split_last (List.map (function { aterm = t; _ } -> parse_term loc t) l)
+          Lm_list_util.split_last (List.map (fun t -> parse_term loc t.aterm) l)
        ]];
 
    df_options:
       [[ l = LIST1 singleterm SEP "::" ->
-          Lm_list_util.split_last (List.map (function { aterm = t; _ } -> t) l)
+          Lm_list_util.split_last (List.map (fun t -> t.aterm) l)
        ]];
 
    (*

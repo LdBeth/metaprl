@@ -222,7 +222,7 @@ let check_header_equality multit0 multit1 current_ts =
               for i=0 to (op0.oparity_n - 1) do
                for j=0 to ((op0.oparity_a).(i) - 1) do
                 List.iter
-                 (function v ->
+                 (fun v ->
                   (v.fsymb_bv <-op0;
                    ((op0.opbinding).(i)).(j) <- v::(((op0.opbinding).(i)).(j))
                   )
@@ -352,8 +352,8 @@ and merge_multeq meq0ref meq1ref u =
          );
          (!meq0ref).counter<-(!meq0ref).counter + (!meq1ref).counter;
          (!meq0ref).var_number<-(!meq0ref).var_number + (!meq1ref).var_number;
-         List.iter (function v -> (v.m_v <- (!meq0ref);
-                                    (!meq0ref).s <- v::((!meq0ref).s)
+         List.iter (fun v -> (v.m_v <- (!meq0ref);
+                             (!meq0ref).s <- v::((!meq0ref).s)
                                   )
                    ) (!meq1ref).s ;
          (*  (!meq1ref).s <- [] ;   try to free something ? *)
@@ -375,7 +375,7 @@ and merge_multiterms m0 m1 current_ts =
              * in the case multit0.fsymb is (Op of op_with_binding).
              * We write the updated binding into multiterm0.
              *)
-             let append_to aa bb =Queue.iter (function x -> (Queue.add x bb )
+             let append_to aa bb = Queue.iter (fun x -> (Queue.add x bb )
                                                ) aa
                    (* given <aa< , <bb<   makes   <bbaa< , returnes () *)
              in
@@ -912,9 +912,9 @@ let update_subst varstringl terml sigma =
    match terml, varstringl with
       [], [] | [_], [] -> sigma
     | [], v::h ->
-         (List.map (function x -> x, mk_var_term v) h) @ sigma
+         (List.map (fun x -> x, mk_var_term v) h) @ sigma
     | [t], li ->
-         (List.map (function x -> x, apply_subst sigma t) li) @ sigma
+         (List.map (fun x -> x, apply_subst sigma t) li) @ sigma
     | _ -> raise impossible
 *)
 

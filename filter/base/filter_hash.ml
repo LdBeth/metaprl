@@ -38,8 +38,8 @@ open Filter_util
 (*
  * Show the file loading.
  *)
-let _ =
-   show_loading "Loading Filter_hash%t"
+let () =
+   show_loading "Loading Filter_hash"
 
 (*
  * Basic hash functions.

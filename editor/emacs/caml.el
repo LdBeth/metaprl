@@ -483,8 +483,7 @@ Return nil if there are no more tokens"
 ;;
 (defun caml-looking-at-token-end ()
   "Find the length of the next token in the file"
-  (let ((here (point))
-	next)
+  (let ((here (point)))
     ;; Literals
     (cond ((eobp) (cons 'eof here))
 	  ((looking-at caml-char-constant-pattern)
@@ -765,7 +764,7 @@ Return nil if there are no more tokens"
 (defun caml-accept (stack pos token &optional justify)
   "Process the next token in the input file"
   (let (newstack top state prec entry final edge
-		 entry2 edge2 new newprec
+		 new newprec
 		 push bol col colx shift syms
 		 token-prec)
 
