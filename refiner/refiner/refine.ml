@@ -1512,9 +1512,10 @@ struct
          let compute_ext = compute_rule_ext name addrs params goal args result in
             justify_rule build name addrs params goal subgoals (PPrim compute_ext)
 
-   let apply_extf build check_ext name extf =
+   let wrap_extf build check_ext name extf =
       let opname = mk_opname name build.build_opname in
       let refiner = build.build_refiner in
+      fun () ->
       (*
        * Below we indeed want to catch absolutely everything - we do not care
        * what exactly went wrong in the proof search.
@@ -1559,7 +1560,7 @@ struct
          let args = make_wildcard_ext_args subgoals in
             compute_rule_ext name addrs params goal args (term_of_extract build.build_refiner ext args)
       in
-      let extract = lazy (apply_extf build check_ext name extf)
+      let extract = Lazy.from_fun (wrap_extf build check_ext name extf)
       in
       let dp = {
          pf_extract = extract;
@@ -1832,7 +1833,7 @@ struct
             REF_RAISE(RefineError (name, StringError "extract does not match"))
       in
       let dp = {
-         pf_extract = lazy (apply_extf build check_ext name extf);
+         pf_extract = Lazy.from_fun (wrap_extf build check_ext name extf);
          pf_proof = Lazy.from_val ();
          pf_dependencies = None;
       } in
@@ -1947,7 +1948,7 @@ struct
          REF_RAISE(RefineError(name, StringError "derivation does not match"))
       in
       let dp = {
-         pf_extract = lazy (apply_extf build check_ext name extf);
+         pf_extract = Lazy.from_fun (wrap_extf build check_ext name extf);
          pf_proof = Lazy.from_val ();
          pf_dependencies = None;
      } in

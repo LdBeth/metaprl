@@ -172,9 +172,7 @@ end
 
 module LineTable : LineTableSig =
 struct
-   (*
-    * The float is the time the entry was added.
-    *)
+
    type 'a t = 'a StringTable.t * string Lm_fqueue.t
 
    (*

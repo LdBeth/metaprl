@@ -53,7 +53,7 @@ value c_mktime(value v_date)
     time.tm_mday = Int_val(Field(v_date, 3));
     time.tm_mon = Int_val(Field(v_date, 4)) - 1;
     time.tm_year = Int_val(Field(v_date, 5)) - 1900;
-    when = mktime(&time);
+    when = timegm(&time);
     when += Int_val(Field(v_date, 6));
     CAMLreturn(Val_int(when));
 }

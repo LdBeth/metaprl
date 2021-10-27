@@ -694,7 +694,7 @@ let parse_header_entry (tag, field) =
     | "cookie" ->
          RequestCookies (parse_cookies field)
     | "date" ->
-         RequestDate (float_of_int (Ctime.parse_time field))
+         RequestDate (Ctime.parse_time field)
     | "expect" ->
          RequestExpect
     | "from" ->
@@ -705,13 +705,13 @@ let parse_header_entry (tag, field) =
     | "if-match" ->
          RequestIfMatch (parse_if_match field)
     | "if-modified-since" ->
-         RequestIfModifiedSince (float_of_int (Ctime.parse_time field))
+         RequestIfModifiedSince (Ctime.parse_time field)
     | "if-none-match" ->
          RequestIfNoneMatch field
     | "if-range" ->
          RequestIfRange field
     | "if-unmodified-since" ->
-         RequestIfUnmodifiedSince (float_of_int (Ctime.parse_time field))
+         RequestIfUnmodifiedSince (Ctime.parse_time field)
     | "max-forwards" ->
          RequestMaxForwards (parse_int field)
     | "pragma" ->

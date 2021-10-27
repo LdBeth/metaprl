@@ -102,15 +102,15 @@ type request_header_entry =
  | RequestContentLength of int
  | RequestContentDisposition of content_disposition
  | RequestCookies of (string * string) list
- | RequestDate of float
+ | RequestDate of int
  | RequestExpect
  | RequestFrom of string
  | RequestHost of string * int option
  | RequestIfMatch of string list option
- | RequestIfModifiedSince of float
+ | RequestIfModifiedSince of int
  | RequestIfNoneMatch of string
  | RequestIfRange of string
- | RequestIfUnmodifiedSince of float
+ | RequestIfUnmodifiedSince of int
  | RequestMaxForwards of int
  | RequestPragma of string
  | RequestProxyAuthorization of string
